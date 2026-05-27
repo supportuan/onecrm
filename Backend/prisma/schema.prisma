@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSED
+  CONVERTED
+  LOST
+}
+
+enum CampaignType {
+  EMAIL
+  SMS
+  WHATSAPP
+  SOCIAL_MEDIA
+  PPC
+  CONTENT
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum AutomationStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+}
+
+enum LandingPageType {
+  COUNTRY
+  COURSE
+  INTAKE
+  CAMPAIGN
+  GUIDE
+  EVENT
+  FORM
+  APPLICATION
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  SMS
+  WHATSAPP
+  MEETING
+}
+
+// -----------------------------------------------------------------------------
+// Models
+// -----------------------------------------------------------------------------
+
+model LeadSource {
+  id          Int      @id @default(autoincrement())
+  name        String
+  sourceType  String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       Lead[]
+}
+
+model Lead {
+  id                   Int       @id @default(autoincrement())
+  fullName             String
+  email                String
+  phone                String?
+  country              String?
+  preferredCountry     String?
+  preferredCourse      String?
+  sourceId             Int?
+  assignedCounsellorId Int?
+  status               LeadStatus @default(NEW)
+  score                Int?
+  remark               String?
+  utmSource            String?
+  utmMedium            String?
+  utmCampaign          String?
+  utmTerm              String?
+  utmContent           String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  deletedAt            DateTime?
+
+  source               LeadSource? @relation(fields: [sourceId], references: [id])
+  activities           LeadActivity[]
+  campaigns            CampaignLead[]
+}
+
+model LeadActivity {
+  id           Int          @id @default(autoincrement())
+  leadId       Int
+  actorId      Int?
+  activityType ActivityType
+  comment      String?
+  metadata     Json?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id             Int            @id @default(autoincrement())
+  name           String
+  type           CampaignType
+  budget         Float?
+  spent          Float?         @default(0)
+  startDate      DateTime?
+  endDate        DateTime?
+  status         CampaignStatus @default(DRAFT)
+  targetAudience String?
+  description    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  leads          CampaignLead[]
+}
+
+model CampaignLead {
+  id           Int      @id @default(autoincrement())
+  campaignId   Int
+  leadId       Int
+  status       String?
+  engagement   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model MarketingAutomation {
+  id               Int                 @id @default(autoincrement())
+  workflowName     String
+  trigger          String
+  action           String
+  status           AutomationStatus    @default(DRAFT)
+  emailsSent       Int                 @default(0)
+  whatsappMessages Int                 @default(0)
+  smsSent          Int                 @default(0)
+  leadsAutomated   Int                 @default(0)
+  engagementRate   Float               @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  deletedAt        DateTime?
+  executions       AutomationExecution[]
+}
+
+model AutomationExecution {
+  id             Int                 @id @default(autoincrement())
+  automationId   Int
+  executionDate  DateTime            @default(now())
+  totalProcessed Int                 @default(0)
+  totalSuccess   Int                 @default(0)
+  totalFailed    Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  automation     MarketingAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+}
+
+model LandingPage {
+  id             Int             @id @default(autoincrement())
+  title          String
+  slug           String          @unique
+  type           LandingPageType
+  country        String?
+  course         String?
+  visits         Int             @default(0)
+  leads          Int             @default(0)
+  conversionRate Float           @default(0)
+  seoTitle       String?
+  seoDescription String?
+  content        String?
+  formId         String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+
+  forms          MarketingForm[]
+  pageVisits     LandingPageVisit[]
+}
+
+model MarketingForm {
+  id               Int          @id @default(autoincrement())
+  formName         String
+  formType         String
+  totalSubmissions Int          @default(0)
+  conversionRate   Float        @default(0)
+  landingPageId    Int?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  landingPage      LandingPage? @relation(fields: [landingPageId], references: [id], onDelete: SetNull)
+}
+
+model LandingPageVisit {
+  id            Int         @id @default(autoincrement())
+  landingPageId Int
+  visitorIp     String?
+  source        String?
+  visitedAt     DateTime    @default(now())
+
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+}
+
+model MarketingMetric {
+  id          Int      @id @default(autoincrement())
+  metricKey   String
+  metricValue Float
+  trend       String?
+  period      String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
+
+model MarketingPerformance {
+  id          Int      @id @default(autoincrement())
+  day         String
+  opens       Int      @default(0)
+  clicks      Int      @default(0)
+  conversions Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model MarketingChannelAnalytics {
+  id               Int      @id @default(autoincrement())
+  channelName      String
+  percentage       Float
+  totalLeads       Int      @default(0)
+  totalConversions Int      @default(0)
+  createdAt        DateTime @default(now())
+}
+
+model AgencyFunnelAnalytics {
+  id          Int      @id @default(autoincrement())
+  funnelName  String
+  funnelValue Float
+  createdAt   DateTime @default(now())
+}
+
+model AnalyticsLog {
+  id          Int      @id @default(autoincrement())
+  eventType   String
+  metricKey   String
+  metricValue Float
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
+
+model IntakeTrend {
+  id           Int      @id @default(autoincrement())
+  month        String
+  applications Int
+  enrollments  Int
+  revenue      Float
+  createdAt    DateTime @default(now())
+}
+
+model StudentFunnelStage {
+  id         Int      @id @default(autoincrement())
+  stage      String
+  count      Int
+  conversion String
+  createdAt  DateTime @default(now())
+}
+
+model AgencyFunnelStage {
+  id         Int      @id @default(autoincrement())
+  stage      String
+  count      Int
+  conversion String
+  createdAt  DateTime @default(now())
+}
+
+
+
+

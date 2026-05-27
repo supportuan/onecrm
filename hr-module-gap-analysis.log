@@ -1,0 +1,138 @@
+================================================================================
+HR MODULE — USER STORY GAP ANALYSIS
+================================================================================
+Source PDF : Scan document20260506_123646.pdf (6 pages)
+Scope      : Section 4 "HRM" (page 4) compared against Backend/src/modules/hr + frontend-next HR pages
+Generated  : 2026-05-26
+Note       : PDF pages 1–3 cover Marketing, Student Application, Agent CRM.
+             PDF pages 5–6 cover Allied Services & Dashboard (not HR).
+             This log focuses on Section 4 HRM requirements only.
+
+Legend:
+  [IMPLEMENTED]  — Backend API + UI present and functional
+  [PARTIAL]      — Some capability exists but does not fully meet the story
+  [MISSING]      — Not found in hr module codebase
+  [EXTRA]        — Present in hr module but not listed in PDF requirements
+
+================================================================================
+SECTION 4 — HRM PURPOSE (HIGH-LEVEL)
+================================================================================
+Requirement                                              | Status    | Notes
+---------------------------------------------------------|-----------|----------------------------------
+Manage employee lifecycle                                | PARTIAL   | Directory + roles exist; no lifecycle states or offboarding
+Track counselor/staff performance tied to conversions    | MISSING   | No cross-module KPI linkage (Marketing/Student CRM)
+Automate HR processes (attendance, payroll, appraisals)  | PARTIAL   | Attendance + payroll automated; appraisals are UI mock only
+Align HR with business goals (admissions, revenue)       | MISSING   | No enrolment/revenue integration in HR module
+
+================================================================================
+4.1 EMPLOYEE DIRECTORY
+================================================================================
+ID     | User Story / Requirement                              | Status      | Evidence in hrmodule
+-------|-------------------------------------------------------|-------------|------------------------------------------
+4.1.1  | Maintain employee records (personal details, job role)| PARTIAL     | Backend: hr.service.ts Employee model (name, email, employeeId, department, designation, phone, location, biometricId, access_role). Frontend: EmployeeDirectory.jsx list + search + role assignment. Missing: DOB, address, emergency contact, hire date.
+4.1.2  | Track employment status (Active/On Leave/Resigned/Terminated) | MISSING | No employment_status field in Employee interface or UI dropdown.
+4.1.3  | Store documents (offer letter, ID proofs, contracts)  | MISSING     | No document upload/storage endpoints or UI in HR module.
+
+EXTRA (not in PDF):
+  - Bulk employee import via Excel paste (EmployeeDirectory.jsx + POST /employees/bulk)
+  - Access role assignment (SUPER_ADMIN, HR_MANAGER, PAYROLL_ADMIN, etc.)
+  - Biometric ID mapping per employee
+
+================================================================================
+4.2 ATTENDANCE AND LEAVE MANAGEMENT
+================================================================================
+ID     | User Story / Requirement                              | Status      | Evidence in hrmodule
+-------|-------------------------------------------------------|-------------|------------------------------------------
+4.2.1  | Attendance tracking — manual / mobile check-in        | IMPLEMENTED | Remote clock-in/out (submitRemoteClockIn), biometric log processing, team calendar grid. UI: Attendance.jsx tabs (calendar, remote, biometric, networks).
+4.2.2  | Leave types: Casual, Sick, Paid, Unpaid               | PARTIAL     | Leave types seeded as Casual Leave (CL), Medical Leave (ML), Earned Leave (EL). Admin can configure plans/definitions. PDF-specific Sick/Paid/Unpaid naming not matched exactly.
+4.2.3  | Approval workflows: Employee → Manager → HR           | PARTIAL     | Attendance regularization has approve/reject (processRegularization). NO employee leave application request + multi-level approval chain.
+4.2.4  | Reports: Attendance summary / Leave balance           | PARTIAL     | Team calendar matrix + attendance events exist. Leave balance report per employee NOT implemented. No dedicated attendance summary export.
+
+EXTRA (not in PDF):
+  - Biometric hardware device registry (create/delete devices)
+  - IP network whitelist for remote check-in validation
+  - Attendance settings (biometric mode, IP validation toggle)
+  - Attendance regularization appeals (request + approve/reject)
+
+================================================================================
+4.3 PAYROLL MANAGEMENT
+================================================================================
+ID     | User Story / Requirement                              | Status      | Evidence in hrmodule
+-------|-------------------------------------------------------|-------------|------------------------------------------
+4.3.1  | Salary structure: Fixed + variable (incentives)       | PARTIAL     | basicSalary + allowances + deductions model exists. Allowances are generic — no separate "incentive" component tied to performance.
+4.3.2  | Incentive calculation based on enrolments / revenue   | MISSING     | calculatePayroll() uses static salary structures only. No enrolment count or revenue data pulled from Student/Marketing modules.
+4.3.3  | Deductions: Leaves, taxes                             | PARTIAL     | Manual deductions field on salary structure. No automatic LOP (loss-of-pay) from leave records or tax rule engine.
+4.3.4  | Payslip generation                                    | IMPLEMENTED | POST /payroll/execute (calculatePayroll), GET /payroll/payslips, PayrollInputs.jsx with statement viewer + print.
+
+EXTRA (not in PDF):
+  - Monthly batch execution UI with payout statistics dashboard
+  - Payslip detail modal with credit/debit component breakdown
+
+================================================================================
+4.4 PERFORMANCE REVIEW
+================================================================================
+ID     | User Story / Requirement                              | Status      | Evidence in hrmodule
+-------|-------------------------------------------------------|-------------|------------------------------------------
+4.4.1  | Define KPIs and measure performance per role          | MISSING     | PerformanceReviews.jsx uses hardcoded local state only. No backend routes, no KPI definition engine.
+4.4.2  | Counsellor KPIs: Leads handled, Conversions, Revenue  | MISSING     | PDF marks this unchecked. No integration with Marketing leads or Student Application enrolments.
+4.4.3  | Marketing Team KPIs: Leads generated, Cost per lead     | MISSING     | No HR performance linkage to Marketing module KPIs.
+4.4.4  | Processing Team KPIs: Accuracy, Processing time, Reviews| MISSING   | No application processing metrics in HR module.
+
+PARTIAL UI ONLY:
+  - PerformanceReviews.jsx: list view, initiate review modal, status badges (Self-Review, Manager Review, Calibrated, Completed), avg rating stat — all frontend mock, no persistence.
+
+================================================================================
+4.5 RECRUITMENT TRACKER
+================================================================================
+ID     | User Story / Requirement                              | Status      | Evidence in hrmodule
+-------|-------------------------------------------------------|-------------|------------------------------------------
+4.5.1  | Track job posting and candidate tracking              | PARTIAL     | RecruitmentTracker.jsx: 14-stage pipeline UI with candidate list, stage stepper, field forms. Frontend-only (useState), no backend API.
+4.5.2  | Interview scheduling and feedback                       | PARTIAL     | Stage fields for hr_round, tech_round, manager_round include interview date/time/mode/feedback — UI only, not persisted.
+4.5.3  | Offer management                                      | PARTIAL     | offer_generation + candidate_response stages with salary/designation/DOJ fields — UI only.
+4.5.4  | Generate offer letter aligned with company policies   | MISSING     | No offer letter PDF generation or template engine.
+4.5.5  | Onboarding checklist (docs, system access, training)  | PARTIAL     | onboarding + hrms_created stages have checklist fields — UI only. No integration to create employee in directory automatically.
+
+EXTRA (not in PDF):
+  - 14-stage recruitment pipeline (requirement → hrms_created) with per-stage dynamic fields
+  - Background verification stage (aadhaar/pan, education, employment checks)
+  - Document collection stage fields
+
+================================================================================
+SUMMARY COUNTS (Section 4 HRM only)
+================================================================================
+Category                          | Count
+----------------------------------|------
+IMPLEMENTED (fully met)             | 2   (4.2.1, 4.3.4)
+PARTIAL (incomplete)                | 11  (4.1.1, 4.2.2, 4.2.3, 4.2.4, 4.3.1, 4.3.3, 4.5.1–4.5.3, 4.5.5)
+MISSING (not built)               | 10  (4.1.2, 4.1.3, 4.3.2, 4.4.1–4.4.4, 4.5.4, + 3 purpose-level items)
+EXTRA (built but not in PDF)      | 8+  (bulk import, biometric devices, IP whitelist, regularization, etc.)
+
+Implementation coverage estimate: ~35% fully met, ~45% partial, ~20% missing
+
+================================================================================
+PRIORITY GAPS (recommended build order)
+================================================================================
+1. [HIGH] Employee employment status + document storage (4.1.2, 4.1.3)
+2. [HIGH] Leave application workflow with Employee→Manager→HR approval (4.2.3)
+3. [HIGH] Leave balance reports per employee (4.2.4)
+4. [HIGH] Recruitment tracker backend persistence + offer letter generation (4.5.x)
+5. [MEDIUM] Performance review backend + role-based KPI definitions (4.4.x)
+6. [MEDIUM] Counsellor/Marketing/Processing KPI integration with other modules (4.4.2–4.4.4)
+7. [MEDIUM] Payroll incentive calculation from enrolments/revenue (4.3.2)
+8. [LOW] Automatic LOP/tax deductions from leave records (4.3.3)
+
+================================================================================
+BACKEND API INVENTORY (existing hr routes)
+================================================================================
+Employees     : GET /employees, GET /team, PUT /employees/:id/role, POST /employees/bulk
+Attendance    : settings, devices, networks, biometric-users, events, process-biometric-logs, remote-clockin, team-calendar, regularizations
+Leave         : plans, types, definitions, plan employees, holidays
+Payroll       : structures, payslips, execute/calculate
+NOT present   : performance-reviews, recruitment, leave-requests, employee-documents, employment-status
+
+Frontend pages: /hr, /hr/employee-directory, /hr/attendance, /hr/leave-management,
+                /hr/payroll-inputs, /hr/recruitment-tracker, /hr/performance-reviews
+
+================================================================================
+END OF REPORT
+================================================================================
