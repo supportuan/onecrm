@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import metaService from './meta.service.js';
+import metaService from '../services/meta.service.js';
 
 export const getPages = async (_req: Request, res: Response) => {
     try {

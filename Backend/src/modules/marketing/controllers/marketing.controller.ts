@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import * as marketingService from './marketing.service.js';
-import { sendSuccess, sendError } from '../../utils/response.js';
+import * as marketingService from '../services/marketing.service.js';
+import { sendSuccess, sendError } from '../../../utils/response.js';
 import {
   createLeadSchema,
   updateLeadSchema,
@@ -27,9 +27,9 @@ import {
   updateMarketingChannelAnalyticsSchema,
   createAgencyFunnelAnalyticsSchema,
   updateAgencyFunnelAnalyticsSchema,
-} from './marketing.validation.js';
+} from '../validations/marketing.validation.js';
 import { LeadStatus, CampaignType, CampaignStatus } from '@prisma/client';
-import { bulkUploadLeadsFromExcel } from './lead-upload.service.js';
+import { bulkUploadLeadsFromExcel } from '../services/lead-upload.service.js';
 
 
 

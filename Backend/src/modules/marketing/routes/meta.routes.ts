@@ -7,7 +7,7 @@ import {
     syncLeads,
     verifyWebhook,
     receiveWebhook,
-} from './meta.controller.js';
+} from '../controllers/meta.controller.js';
 
 const router = Router();
 

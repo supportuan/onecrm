@@ -1,23 +1,26 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { setupSwagger } from './swagger.js';
 import { errorHandler } from './middleware/error.middleware.js';
-import marketingRouter from './modules/marketing/marketing.routes.js';
-// Import existing JavaScript routes (NodeNext resolution allows importing relative .js files)
-// @ts-ignore
-import authRouter from './routes/auth.js';
-// @ts-ignore
+import { tenantMiddleware } from './middleware/tenant.js';
+import marketingRouter from './modules/marketing/routes/marketing.routes.js';
+import hrRouter from './modules/hr/hr.routes.js';
+import authRouter from './routes/auth.ts';
+import usersRouter from './routes/users.ts';
 import customerRouter from './routes/customers.js';
-dotenv.config();
 const app = express();
 const port = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
+app.use(tenantMiddleware);
 // Set up Swagger UI documentation
 setupSwagger(app);
 // Mount Modular API Routes
 app.use('/api/marketing', marketingRouter);
+app.use('/api/hr', hrRouter);
+app.use('/api/users', usersRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/customers', customerRouter);
 // Health check endpoint

@@ -62,6 +62,14 @@ enum ActivityType {
   MEETING
 }
 
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  COUNSELLOR
+  STUDENT
+  HR
+}
+
 // -----------------------------------------------------------------------------
 // Models
 // -----------------------------------------------------------------------------
@@ -78,7 +86,7 @@ model LeadSource {
 }
 
 model Lead {
-  id                   Int       @id @default(autoincrement())
+  id                   Int        @id @default(autoincrement())
   fullName             String
   email                String
   phone                String?
@@ -100,6 +108,7 @@ model Lead {
   deletedAt            DateTime?
 
   source               LeadSource? @relation(fields: [sourceId], references: [id])
+  assignedCounsellor   User?       @relation("LeadCounsellor", fields: [assignedCounsellorId], references: [id])
   activities           LeadActivity[]
   campaigns            CampaignLead[]
 }
@@ -291,5 +300,16 @@ model AgencyFunnelStage {
 }
 
 
+model User {
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  email     String   @unique
+  phone     String?
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  assignedLeads Lead[] @relation("LeadCounsellor")
+}
 

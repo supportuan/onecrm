@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { LeadStatus, ActivityType } from '@prisma/client';
-import { prisma } from '../../prisma.js';
+import { prisma } from '../../../prisma.js';
 
 type MetaField = {
     name: string;

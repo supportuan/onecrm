@@ -1,8 +1,8 @@
-import { prisma } from '../../prisma.js';
+import { prisma } from '../../../prisma.js';
 import { LeadStatus, CampaignType, CampaignStatus, AutomationStatus, LandingPageType, ActivityType } from '@prisma/client';
-import { sendCampaignEmail } from './services/email.service.js';
-import { sendWhatsAppMessage } from './services/whatsapp.service.js';
-import { sendSMS } from './services/sms.service.js';
+import { sendCampaignEmail } from './email.service.js';
+import { sendWhatsAppMessage } from './whatsapp.service.js';
+import { sendSMS } from './sms.service.js';
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {

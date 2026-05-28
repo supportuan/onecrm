@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { LeadStatus } from '@prisma/client';
-import { prisma } from '../../prisma.js';
+import { prisma } from '../../../prisma.js';
 
 type ExcelLeadRow = {
     fullName?: string;
