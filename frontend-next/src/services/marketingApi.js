@@ -1,4 +1,4 @@
-const API_URL = '/api/marketing';
+const API_URL = 'http://localhost:4000/api/marketing';
 
 // ==========================================
 // 1. Dashboard & Reports Service
@@ -287,5 +287,90 @@ export const getAgencyFunnelApi = async (period = '30days') => {
 
 export const getMarketingAnalyticsSummaryApi = async (period = '30days') => {
   const res = await fetch(`${API_URL}/analytics/summary?period=${period}`);
+  return res.json();
+};
+
+
+// ===================================================================
+// 7. Messages
+// ===================================================================
+
+export const sendLeadEmail = async (leadId, payload) => {
+  const res = await fetch(`${API_URL}/leads/${leadId}/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  return res.json();
+};
+
+export const sendLeadSMS = async (leadId, payload) => {
+  const res = await fetch(`${API_URL}/leads/${leadId}/send-sms`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  return res.json();
+};
+
+export const sendLeadWhatsApp = async (leadId, payload) => {
+  const res = await fetch(`${API_URL}/leads/${leadId}/send-whatsapp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  return res.json();
+};
+
+export const scheduleLeadMeeting = async (leadId, payload) => {
+  const res = await fetch(`${API_URL}/leads/${leadId}/schedule-meeting`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  return res.json();
+};
+
+export const saveEmailReply = async (payload) => {
+  const res = await fetch(`${API_URL}/replies/email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  return res.json();
+};
+
+export const saveSMSReply = async (payload) => {
+  const res = await fetch(`${API_URL}/replies/sms`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  return res.json();
+};
+
+export const saveWhatsAppReply = async (payload) => {
+  const res = await fetch(`${API_URL}/replies/whatsapp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  return res.json();
+};
+
+export const saveStudentCRMReply = async (payload) => {
+  const res = await fetch(`${API_URL}/replies/student-crm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
   return res.json();
 };

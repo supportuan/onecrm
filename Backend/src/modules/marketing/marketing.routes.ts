@@ -3,6 +3,7 @@ import * as controller from './marketing.controller.js';
 import metaRoutes from './meta.routes.js';
 import { uploadExcel } from '../../middleware/upload.middleware.js';
 import leadActivityRoutes from './routes/lead-activity.routes.js';
+import leadReplyRoutes from './routes/lead-reply.routes.js';
 
 
 const router = Router();
@@ -12,6 +13,8 @@ router.post(
     uploadExcel.single('file'),
     controller.bulkUploadLeads
 );
+
+router.use('/', leadReplyRoutes);
 
 router.use('/', leadActivityRoutes);
 /**

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Shield, 
   ShieldAlert, 
@@ -21,36 +21,13 @@ import {
 import { ROLE_PERMISSIONS } from '../../lib/auth/rbac';
 
 export default function RolesPermissions() {
-  const [roles, setRoles] = useState(['SUPER_ADMIN', 'ADMIN']);
+  const [roles, setRoles] = useState(Object.keys(ROLE_PERMISSIONS));
   const [selectedRole, setSelectedRole] = useState('SUPER_ADMIN');
   const [searchQuery, setSearchQuery] = useState('');
-  const [newRoleName, setNewRoleName] = useState('');
   
   // Custom permissions state simulating stateful customization
   const [customPermissions, setCustomPermissions] = useState(ROLE_PERMISSIONS);
   const [successToast, setSuccessToast] = useState('');
-
-  // Fetch custom permissions from backend on mount
-  useEffect(() => {
-    const fetchCustom = async () => {
-      try {
-        const res = await fetch('/api/auth/custom-permissions');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.customPermissions && Object.keys(data.customPermissions).length > 0) {
-            setCustomPermissions(data.customPermissions);
-            // Include any dynamically loaded custom roles in the roles list
-            const loadedRoles = Object.keys(data.customPermissions);
-            const merged = Array.from(new Set(['SUPER_ADMIN', 'ADMIN', ...loadedRoles]));
-            setRoles(merged);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load custom permissions:", err);
-      }
-    };
-    fetchCustom();
-  }, []);
 
   const permissionCategories = [
     {
@@ -94,43 +71,6 @@ export default function RolesPermissions() {
     }
   ];
 
-  const handleAddRole = () => {
-    if (!newRoleName.trim()) return;
-    const formatted = newRoleName.trim().toUpperCase().replace(/[-\s]/g, '_');
-    if (roles.includes(formatted)) {
-      alert("This role already exists!");
-      return;
-    }
-    setRoles([...roles, formatted]);
-    setCustomPermissions({
-      ...customPermissions,
-      [formatted]: []
-    });
-    setSelectedRole(formatted);
-    setNewRoleName('');
-    setSuccessToast(`Custom role ${formatted} added to draft layout.`);
-    setTimeout(() => setSuccessToast(''), 3000);
-  };
-
-  const handleDeleteRole = (roleToDelete) => {
-    if (['SUPER_ADMIN', 'ADMIN'].includes(roleToDelete)) {
-      alert("Core platform roles cannot be deleted!");
-      return;
-    }
-    const updatedRoles = roles.filter(r => r !== roleToDelete);
-    setRoles(updatedRoles);
-    
-    const updatedPerms = { ...customPermissions };
-    delete updatedPerms[roleToDelete];
-    setCustomPermissions(updatedPerms);
-
-    if (selectedRole === roleToDelete) {
-      setSelectedRole('SUPER_ADMIN');
-    }
-    setSuccessToast(`Role ${roleToDelete} removed.`);
-    setTimeout(() => setSuccessToast(''), 3000);
-  };
-
   const handleTogglePermission = (role, permKey) => {
     const activePerms = customPermissions[role] || [];
     let updated;
@@ -145,55 +85,15 @@ export default function RolesPermissions() {
     });
   };
 
-  const handleCommitPermissions = async () => {
-    try {
-      const res = await fetch('/api/auth/custom-permissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customPermissions })
-      });
-      if (res.ok) {
-        setSuccessToast(`Security access guidelines committed successfully.`);
-        setTimeout(() => setSuccessToast(''), 3000);
-      } else {
-        alert("Failed to commit guidelines to backend customPermissionsStore");
-      }
-    } catch (err) {
-      console.error('Error committing custom permissions:', err);
-      alert("Error committing custom permissions");
-    }
+  const handleCommitPermissions = () => {
+    setSuccessToast(`Security access guidelines for ${selectedRole} committed successfully.`);
+    setTimeout(() => setSuccessToast(''), 3000);
   };
 
-  const handleResetDefaults = async () => {
-    const defaults = {
-      SUPER_ADMIN: [
-        'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-        'MANAGE_BIOMETRICS', 'MANAGE_NETWORK_SECURITY', 'MANAGE_SCHEDULING',
-        'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-        'MANAGE_ADMINS', 'MANAGE_SUPPORT_REQUESTS', 'MANAGE_SYSTEM', 'VIEW_REPORTS'
-      ],
-      ADMIN: [
-        'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-        'MANAGE_BIOMETRICS', 'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-        'MANAGE_SUPPORT_REQUESTS', 'MANAGE_SYSTEM', 'VIEW_REPORTS'
-      ]
-    };
-    try {
-      const res = await fetch('/api/auth/custom-permissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customPermissions: defaults })
-      });
-      if (res.ok) {
-        setCustomPermissions(defaults);
-        setRoles(['SUPER_ADMIN', 'ADMIN']);
-        setSelectedRole('SUPER_ADMIN');
-        setSuccessToast('Restored default role permissions from master config.');
-        setTimeout(() => setSuccessToast(''), 3000);
-      }
-    } catch (err) {
-      console.error("Failed to reset permissions:", err);
-    }
+  const handleResetDefaults = () => {
+    setCustomPermissions(JSON.parse(JSON.stringify(ROLE_PERMISSIONS)));
+    setSuccessToast('Restored default role permissions from RBAC master config.');
+    setTimeout(() => setSuccessToast(''), 3000);
   };
 
   const filteredRoles = roles.filter(r => r.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -222,29 +122,8 @@ export default function RolesPermissions() {
         <div className="flex flex-col lg:flex-row gap-8 min-h-[600px]">
           {/* Sidebar Roles list */}
           <div className="w-full lg:w-80 bg-slate-800 border border-slate-700/60 rounded-3xl flex flex-col overflow-hidden shadow-xl shrink-0">
-            <div className="p-6 border-b border-slate-700 bg-slate-800/40 space-y-4">
-              <div>
-                <h4 className="text-[11px] font-semibold text-slate-400 mb-2">Create Custom Role</h4>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. IT_LEAD"
-                    className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-medium text-slate-200 placeholder-slate-500 focus:border-purple-500 outline-none transition-all"
-                    value={newRoleName}
-                    onChange={(e) => setNewRoleName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAddRole();
-                    }}
-                  />
-                  <button
-                    onClick={handleAddRole}
-                    className="px-3 py-2 bg-purple-500 hover:bg-purple-600 text-slate-950 font-bold rounded-xl text-xs transition-all"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-
+            <div className="p-6 border-b border-slate-700 bg-slate-800/40">
+              <h4 className="text-[11px] font-semibold text-slate-400 mb-4">Enterprise Roles</h4>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
                 <input 
@@ -261,49 +140,30 @@ export default function RolesPermissions() {
               {filteredRoles.map(role => {
                 const isActive = selectedRole === role;
                 const permissionsCount = (customPermissions[role] || []).length;
-                const isSystemRole = ['SUPER_ADMIN', 'ADMIN'].includes(role);
                 return (
-                  <div
+                  <button
                     key={role}
-                    className={`w-full group relative transition-all flex items-center justify-between ${
+                    onClick={() => setSelectedRole(role)}
+                    className={`w-full p-5 text-left border-l-4 transition-all flex items-center justify-between group relative ${
                       isActive 
-                        ? 'bg-slate-750/90 border-l-4 border-l-purple-500' 
-                        : 'border-l-4 border-l-transparent hover:bg-slate-750/40'
+                        ? 'bg-slate-750/90 border-l-purple-500' 
+                        : 'border-l-transparent hover:bg-slate-750/40'
                     }`}
                   >
-                    <button
-                      onClick={() => setSelectedRole(role)}
-                      className="flex-1 p-5 text-left flex items-center justify-between"
-                    >
-                      <div>
-                        <p className={`text-xs font-extrabold tracking-wider uppercase ${
-                          isActive ? 'text-purple-400' : 'text-slate-200'
-                        }`}>
-                          {role.replace('_', ' ')}
-                        </p>
-                        <p className="text-[9px] font-semibold text-slate-500 mt-1">
-                          {permissionsCount} Active Guidelines
-                        </p>
-                      </div>
-                    </button>
-                    <div className="pr-4 flex items-center gap-2">
-                      {!isSystemRole && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteRole(role);
-                          }}
-                          className="p-1 hover:bg-red-500/10 text-slate-500 hover:text-red-400 rounded-md transition-colors"
-                          title="Delete Custom Role"
-                        >
-                          ✕
-                        </button>
-                      )}
-                      <Shield size={12} className={`transition-transform duration-300 ${
-                        isActive ? 'text-purple-400 scale-110' : 'text-slate-600 group-hover:scale-105'
-                      }`} />
+                    <div>
+                      <p className={`text-xs font-extrabold tracking-wider uppercase ${
+                        isActive ? 'text-purple-400' : 'text-slate-200'
+                      }`}>
+                        {role.replace('_', ' ')}
+                      </p>
+                      <p className="text-[9px] font-semibold text-slate-500 mt-1">
+                        {permissionsCount} Active Guidelines
+                      </p>
                     </div>
-                  </div>
+                    <Shield size={12} className={`transition-transform duration-300 ${
+                      isActive ? 'text-purple-400 scale-110' : 'text-slate-600 group-hover:scale-105'
+                    }`} />
+                  </button>
                 );
               })}
             </div>

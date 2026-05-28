@@ -14,32 +14,15 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
 
   // Filter navigation menu to keep only marketing/hr and settings based on active workspace
   const filteredNavMenu = useMemo(() => {
-    return navMenu
-      .filter((item) => {
-        if (activeWorkspace === 'hr') {
-          return item.label === 'HR' || item.label === 'Operations' || item.label === 'Admin & Settings';
-        }
-        if (activeWorkspace === 'marketing') {
-          return item.label === 'Marketing' || item.label === 'Operations' || item.label === 'Admin & Settings';
-        }
-        if (activeWorkspace === 'student') {
-          return item.label === 'Student CRM' || item.label === 'Operations';
-        }
-        if (activeWorkspace === 'agent') {
-          return item.label === 'Agent CRM' || item.label === 'Operations';
-        }
-        return false;
-      })
-      .map((item) => {
-        if (item.label === 'Admin & Settings' && activeWorkspace === 'hr') {
-          const hrRelevantLabels = ['Roles & Permissions', 'Users', 'System Settings'];
-          return {
-            ...item,
-            subItems: (item.subItems || []).filter(sub => hrRelevantLabels.includes(sub.label))
-          };
-        }
-        return item;
-      });
+    return navMenu.filter((item) => {
+      if (activeWorkspace === 'hr') {
+        return item.label === 'HR' || item.label === 'Admin & Settings';
+      }
+      if (activeWorkspace === 'marketing') {
+        return item.label === 'Marketing' || item.label === 'Admin & Settings';
+      }
+      return false;
+    });
   }, [activeWorkspace]);
 
   const initialOpen = useMemo(() => {
@@ -116,19 +99,11 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
           className="flex w-full items-center justify-between rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 px-3.5 py-2.5 transition text-left"
         >
           <div className="flex items-center gap-2.5">
-            <span className={`h-2 w-2 rounded-full animate-pulse ${
-              activeWorkspace === 'hr' ? 'bg-indigo-600' : activeWorkspace === 'marketing' ? 'bg-violet-600' : activeWorkspace === 'agent' ? 'bg-amber-600' : 'bg-emerald-600'
-            }`} />
+            <span className={`h-2 w-2 rounded-full animate-pulse ${activeWorkspace === 'hr' ? 'bg-indigo-600' : 'bg-violet-600'}`} />
             <div>
               <p className="text-xs font-semibold text-slate-500">Active workspace</p>
               <p className="text-sm font-semibold text-slate-805 mt-0.5">
-                {activeWorkspace === 'hr'
-                  ? 'HR Operations'
-                  : activeWorkspace === 'marketing'
-                    ? 'Marketing Suite'
-                    : activeWorkspace === 'agent'
-                      ? 'Agent CRM'
-                      : 'Student CRM'}
+                {activeWorkspace === 'hr' ? 'HR Operations' : 'Marketing Suite'}
               </p>
             </div>
           </div>
@@ -159,28 +134,6 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
               <span className="h-2 w-2 rounded-full bg-violet-600" />
               <span>Marketing Suite</span>
             </button>
-            <button
-              onClick={() => handleWorkspaceSwitch('student')}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-semibold transition ${
-                activeWorkspace === 'student'
-                  ? 'bg-emerald-50 text-emerald-700 font-bold'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <span className="h-2 w-2 rounded-full bg-emerald-600" />
-              <span>Student CRM</span>
-            </button>
-            <button
-              onClick={() => handleWorkspaceSwitch('agent')}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-semibold transition ${
-                activeWorkspace === 'agent'
-                  ? 'bg-amber-50 text-amber-700 font-bold'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <span className="h-2 w-2 rounded-full bg-amber-600" />
-              <span>Agent CRM</span>
-            </button>
             <div className="border-t border-slate-150 my-1" />
             <button
               onClick={logout}
@@ -199,21 +152,21 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
           <div key={item.label} className="space-y-1">
             <button
               type="button"
-              className={`flex w-full justify-between gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold transition ${
+              className={`flex w-full justify-between gap-3 rounded-2xl px-4 py-3 text-xs font-semibold transition ${
                 isSectionActive(item)
-                  ? 'text-slate-900 font-bold'
-                  : 'text-slate-650 hover:bg-slate-50'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-150 font-bold'
+                  : 'text-slate-600 hover:bg-slate-50'
               }`}
               onClick={() => toggleSection(item.label, item.path)}
             >
-              <span className="flex gap-3 font-semibold text-slate-700 items-center">
-                <item.icon className="h-4 w-4 text-slate-400" />
+              <span className="flex gap-3 font-semibold text-slate-800 items-center">
+                <item.icon className="h-4 w-4 text-slate-500" />
                 {item.label}
               </span>
-              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${openSections[item.label] ? 'rotate-180' : 'rotate-0'}`} />
+              <ChevronDown className={`h-4 w-4 text-slate-450 transition-transform ${openSections[item.label] ? 'rotate-180' : 'rotate-0'}`} />
             </button>
 
-            <div className={`${openSections[item.label] ? 'block' : 'hidden'} space-y-1 pt-1`}>
+            <div className={`${openSections[item.label] ? 'block' : 'hidden'} space-y-1 pt-2`}>
               {item.subItems?.map((sub) => (
                 <MenuItem key={sub.path} icon={sub.icon} label={sub.label} path={sub.path} onClick={onClose} nested />
               ))}

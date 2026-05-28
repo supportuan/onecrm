@@ -8,8 +8,6 @@ import { errorHandler } from './middleware/error.middleware.js';
 import { tenantMiddleware } from './middleware/tenant.js';
 import marketingRouter from './modules/marketing/marketing.routes.js';
 import hrRouter from './modules/hr/hr.routes.js';
-import studentRouter from './modules/student/student.routes.js';
-import agentRouter from './modules/agent/agent.routes.js';
 
 // Import existing JavaScript routes (NodeNext resolution allows importing relative .js files)
 // @ts-ignore
@@ -29,13 +27,11 @@ app.use(tenantMiddleware);
 setupSwagger(app);
 
 // Mount Modular API Routes
-app.use('/api/auth', authRouter);
 app.use('/api/marketing', marketingRouter);
 app.use('/api/hr', hrRouter);
-app.use('/api/student', studentRouter);
-app.use('/api/agent', agentRouter);
-app.use('/api/customers', customerRouter);
 app.use('/api', hrRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/customers', customerRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

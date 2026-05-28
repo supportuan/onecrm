@@ -1,24 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { 
-  getLeads, 
-  createLead, 
-  deleteLead, 
+import {
+  getLeads,
+  createLead,
+  deleteLead,
   getSources,
   getLeadActivities,
-  logLeadActivity
+  logLeadActivity,
+  sendLeadEmail,
+  sendLeadSMS,
+  sendLeadWhatsApp,
+  scheduleLeadMeeting,
+  saveStudentCRMReply
 } from '../../services/marketingApi';
-import { 
-  Search, 
-  Plus, 
-  Phone, 
-  Mail, 
-  Download, 
-  Loader2, 
-  AlertCircle, 
-  X, 
+
+import {
+  Search,
+  Plus,
+  Phone,
+  Mail,
+  Download,
+  Loader2,
+  AlertCircle,
+  X,
   Trash2,
   ChevronDown,
   ArrowUpDown,
@@ -32,9 +38,9 @@ const formatRelativeTime = (createdAtString) => {
   const date = new Date(createdAtString);
   const now = new Date();
   const diffMs = now - date;
-  
+
   if (diffMs < 0) return 'just now'; // catch future times
-  
+
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHr = Math.floor(diffMin / 60);
@@ -87,7 +93,7 @@ const LeadManagement = () => {
   const [sourcesList, setSourcesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Filters and Query State
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -106,6 +112,7 @@ const LeadManagement = () => {
   const [activities, setActivities] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [submittingLead, setSubmittingLead] = useState(false);
+  const [sendingAction, setSendingAction] = useState(false);
 
   // Form States
   const [intakeForm, setIntakeForm] = useState({
@@ -127,6 +134,95 @@ const LeadManagement = () => {
     comment: ''
   });
 
+  const buildLeadMessage = (type, lead) => {
+    const course = lead.preferredCourse || 'your selected course';
+    const country = lead.preferredCountry || 'your preferred country';
+
+    if (type === 'EMAIL') {
+      return {
+        subject: `Study Abroad Consultation - ${lead.fullName}`,
+        message: `Hi ${lead.fullName},
+
+    Thank you for your interest in ${course} in ${country}.
+
+    Our counsellor will contact you shortly and guide you with the next steps.
+
+    Regards,
+    One Workspace`,
+      };
+    }
+
+    if (type === 'SMS') {
+      return {
+        message: `Hi ${lead.fullName}, thank you for your interest in ${course}. Our counsellor will contact you shortly. - One Workspace`,
+      };
+    }
+
+    if (type === 'WHATSAPP') {
+      return {
+        message: `Hi ${lead.fullName}, thanks for showing interest in ${course} in ${country}. Reply YES to connect with our counsellor.`,
+      };
+    }
+
+    if (type === 'MEETING') {
+      return {
+        meetingDate: new Date().toISOString(),
+        meetingLink: 'Meeting link will be shared soon',
+        message: `Hi ${lead.fullName}, your counselling meeting will be scheduled shortly.`,
+      };
+    }
+
+    return {};
+  };
+
+  const refreshActivities = async () => {
+    if (!activeLead) return;
+
+    const res = await getLeadActivities(activeLead.id);
+
+    if (res.success) {
+      setActivities(res.data || []);
+    }
+  };
+
+  const handleLeadQuickAction = async (type) => {
+    if (!activeLead) return;
+
+    setSendingAction(true);
+
+    try {
+      const payload = buildLeadMessage(type, activeLead);
+      let response;
+
+      if (type === 'EMAIL') {
+        response = await sendLeadEmail(activeLead.id, payload);
+      }
+
+      if (type === 'SMS') {
+        response = await sendLeadSMS(activeLead.id, payload);
+      }
+
+      if (type === 'WHATSAPP') {
+        response = await sendLeadWhatsApp(activeLead.id, payload);
+      }
+
+      if (type === 'MEETING') {
+        response = await scheduleLeadMeeting(activeLead.id, payload);
+      }
+
+      if (response?.success) {
+        alert(`${type} completed successfully`);
+        await refreshActivities();
+      } else {
+        alert(response?.message || `${type} failed`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert(`${type} failed`);
+    } finally {
+      setSendingAction(false);
+    }
+  };
   // Check query parameters to open intake modal automatically
   useEffect(() => {
     if (searchParams && searchParams.get('intake') === 'true') {
@@ -279,13 +375,13 @@ const LeadManagement = () => {
       new Date(lead.createdAt).toLocaleString()
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
-    
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `leads_export_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", `leads_export_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -337,9 +433,19 @@ const LeadManagement = () => {
     }
   };
 
+  const activityEndRef = useRef(null);
+
+  const sortActivitiesOldToNew = (list = []) => {
+    return [...list].sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+    );
+  };
+
+
+
   return (
     <div className="space-y-6">
-      
+
       {/* 1. FILTER & ACTION BAR - Pill styled exactly as screenshot */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-2 py-1 rounded-2xl">
         <div className="flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 sm:max-w-md shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#0084ff]/20 focus-within:border-[#0084ff]/60">
@@ -426,7 +532,7 @@ const LeadManagement = () => {
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="bg-[#f8fafc] border-b border-slate-100">
-                  <th 
+                  <th
                     onClick={() => handleSort('fullName')}
                     className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 transition"
                   >
@@ -436,7 +542,7 @@ const LeadManagement = () => {
                     </div>
                   </th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Contact</th>
-                  <th 
+                  <th
                     onClick={() => handleSort('sourceId')}
                     className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
                   >
@@ -446,7 +552,7 @@ const LeadManagement = () => {
                     </div>
                   </th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Interested in</th>
-                  <th 
+                  <th
                     onClick={() => handleSort('score')}
                     className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
                   >
@@ -455,7 +561,7 @@ const LeadManagement = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </th>
-                  <th 
+                  <th
                     onClick={() => handleSort('status')}
                     className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
                   >
@@ -471,7 +577,7 @@ const LeadManagement = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {leads.map((lead) => (
-                  <tr 
+                  <tr
                     key={lead.id}
                     onClick={() => handleRowClick(lead)}
                     className="group hover:bg-[#f8fafc]/70 transition-all cursor-pointer duration-150"
@@ -492,7 +598,7 @@ const LeadManagement = () => {
                     <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-4 text-slate-600">
                         {lead.email && (
-                          <a 
+                          <a
                             href={`mailto:${lead.email}`}
                             title={lead.email}
                             className="p-2 rounded-lg hover:bg-slate-100 hover:text-[#0084ff] transition cursor-pointer"
@@ -501,7 +607,7 @@ const LeadManagement = () => {
                           </a>
                         )}
                         {lead.phone && (
-                          <a 
+                          <a
                             href={`tel:${lead.phone}`}
                             title={lead.phone}
                             className="p-2 rounded-lg hover:bg-slate-100 hover:text-[#0084ff] transition cursor-pointer"
@@ -533,10 +639,9 @@ const LeadManagement = () => {
                           {lead.score || 0}
                         </span>
                         <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              lead.score >= 80 ? 'bg-emerald-500' : lead.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                            }`}
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${lead.score >= 80 ? 'bg-emerald-500' : lead.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                              }`}
                             style={{ width: `${lead.score || 0}%` }}
                           />
                         </div>
@@ -592,7 +697,7 @@ const LeadManagement = () => {
                 <h3 className="text-xl font-semibold text-slate-900">Add New Lead</h3>
                 <p className="text-xs text-slate-400 font-semibold mt-0.5">Integrate counselor intake logs with CRM automation</p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsIntakeOpen(false)}
                 className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
               >
@@ -797,7 +902,7 @@ const LeadManagement = () => {
                   <p className="text-xs text-slate-400 font-semibold mt-0.5">{activeLead.email}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsActivityOpen(false)}
                 className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition cursor-pointer"
               >
@@ -814,9 +919,8 @@ const LeadManagement = () => {
               </div>
               <div className="flex items-center gap-1.5 text-slate-400">
                 <span>Score:</span>
-                <span className={`inline-flex px-2 py-0.5 rounded-full ${
-                  activeLead.score >= 80 ? 'bg-emerald-50 text-emerald-600' : activeLead.score >= 50 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
-                } text-[10px]`}>
+                <span className={`inline-flex px-2 py-0.5 rounded-full ${activeLead.score >= 80 ? 'bg-emerald-50 text-emerald-600' : activeLead.score >= 50 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                  } text-[10px]`}>
                   {activeLead.score}/100
                 </span>
               </div>
@@ -839,23 +943,121 @@ const LeadManagement = () => {
                 No history logs. Log an interaction note below to start the timeline.
               </div>
             ) : (
-              <div className="relative border-l-2 border-slate-200 ml-3.5 pl-6 space-y-6 py-2">
-                {activities.map((act) => (
-                  <div key={act.id} className="relative group">
-                    <span className="absolute -left-[33px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-4 ring-white shadow-inner group-hover:bg-[#0084ff] group-hover:text-white transition-all">
-                      <Phone className="h-3 w-3 stroke-[2.5]" />
-                    </span>
-                    <div>
-                      <div className="flex items-center justify-between text-[11px] font-semibold">
-                        <span className="text-[#0084ff]">{act.activityType}</span>
-                        <span className="text-slate-400 font-semibold">{new Date(act.createdAt).toLocaleDateString()}</span>
+              // <div className="relative border-l-2 border-slate-200 ml-3.5 pl-6 space-y-6 py-2">
+              //   {activities.map((act) => (
+              //     <div key={act.id} className="relative group">
+              //       <span className="absolute -left-[33px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-4 ring-white shadow-inner group-hover:bg-[#0084ff] group-hover:text-white transition-all">
+              //         <Phone className="h-3 w-3 stroke-[2.5]" />
+              //       </span>
+              //       <div>
+              //         <div className="flex items-center justify-between text-[11px] font-semibold">
+              //           <span className="text-[#0084ff]">{act.activityType}</span>
+              //           <span className="text-slate-400 font-semibold">{new Date(act.createdAt).toLocaleDateString()}</span>
+              //         </div>
+              //         <p className="mt-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200/60 p-3 rounded-2xl leading-relaxed shadow-sm">
+              //           {act.comment}
+              //         </p>
+              //       </div>
+              //     </div>
+              //   ))}
+              // </div>
+              <div className="flex flex-col gap-3 py-2">
+                {activities.map((act) => {
+                  const metadata = act.metadata || {};
+
+                  const isInbound =
+                    metadata.direction === 'INBOUND' ||
+                    metadata.fromLead === true;
+
+                  const channel =
+                    metadata.channel ||
+                    act.activityType ||
+                    'NOTE';
+
+                  const senderName = isInbound
+                    ? activeLead?.fullName || 'Lead'
+                    : 'CRM';
+
+                  return (
+                    <div
+                      key={act.id}
+                      className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm border ${isInbound
+                          ? 'bg-white border-slate-200 text-slate-700 rounded-bl-md'
+                          : 'bg-[#0084ff] border-[#0084ff] text-white rounded-br-md'
+                          }`}
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-4 mb-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-[10px] font-extrabold uppercase tracking-wide ${isInbound
+                                ? 'text-[#0084ff]'
+                                : 'text-white/90'
+                                }`}
+                            >
+                              {senderName}
+                            </span>
+
+                            <span
+                              className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${isInbound
+                                ? 'bg-slate-100 text-slate-500'
+                                : 'bg-white/20 text-white'
+                                }`}
+                            >
+                              {channel}
+                            </span>
+                          </div>
+
+                          <span
+                            className={`text-[10px] font-semibold whitespace-nowrap ${isInbound
+                              ? 'text-slate-400'
+                              : 'text-white/70'
+                              }`}
+                          >
+                            {formatRelativeTime(act.createdAt)}
+                          </span>
+                        </div>
+
+                        {/* Message */}
+                        <div className="text-xs font-semibold leading-relaxed whitespace-pre-line break-words">
+                          {act.comment}
+                        </div>
+
+                        {/* Reply metadata */}
+                        {metadata?.from && (
+                          <div
+                            className={`mt-2 text-[10px] ${isInbound
+                              ? 'text-slate-400'
+                              : 'text-white/70'
+                              }`}
+                          >
+                            From: {metadata.from}
+                          </div>
+                        )}
+
+                        {/* Meeting link */}
+                        {metadata?.meetingLink && (
+                          <a
+                            href={metadata.meetingLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`mt-2 inline-block text-[11px] font-bold underline ${isInbound
+                              ? 'text-[#0084ff]'
+                              : 'text-white'
+                              }`}
+                          >
+                            Join Meeting
+                          </a>
+                        )}
                       </div>
-                      <p className="mt-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200/60 p-3 rounded-2xl leading-relaxed shadow-sm">
-                        {act.comment}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+
+                <div ref={activityEndRef} />
               </div>
             )}
           </div>
@@ -863,18 +1065,39 @@ const LeadManagement = () => {
           {/* Activity Log Form Input */}
           <form onSubmit={handleActivitySubmit} className="p-4 border-t border-slate-100 bg-white">
             <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
-              {['NOTE', 'CALL', 'EMAIL', 'WHATSAPP', 'MEETING'].map((type) => (
+              {/* {['NOTE', 'CALL', 'EMAIL', 'WHATSAPP', 'MEETING'].map((type) => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => setActivityForm(p => ({ ...p, activityType: type }))}
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
-                    activityForm.activityType === type 
-                      ? 'bg-slate-900 border-slate-900 text-white shadow-md' 
-                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                  }`}
+                  className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${activityForm.activityType === type
+                    ? 'bg-slate-900 border-slate-900 text-white shadow-md'
+                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                    }`}
                 >
                   {type}
+                </button>
+              ))} */}
+              {['NOTE', 'CALL', 'EMAIL', 'SMS', 'WHATSAPP', 'MEETING'].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  disabled={sendingAction}
+                  onClick={() => {
+                    if (type === 'NOTE' || type === 'CALL') {
+                      setActivityForm((p) => ({ ...p, activityType: type }));
+                    } else {
+                      handleLeadQuickAction(type);
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${activityForm.activityType === type
+                    ? 'bg-slate-900 border-slate-900 text-white shadow-md'
+                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                    }`}
+                >
+                  {sendingAction && ['EMAIL', 'SMS', 'WHATSAPP', 'MEETING'].includes(type)
+                    ? 'Sending...'
+                    : type}
                 </button>
               ))}
             </div>

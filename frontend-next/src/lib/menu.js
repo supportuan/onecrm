@@ -38,8 +38,6 @@ import {
   Wallet,
   Zap,
   Clock,
-  Handshake,
-  UserPlus,
 } from "lucide-react";
 
 export const dashboardMenu = {
@@ -110,16 +108,6 @@ export const navMenu = [
         icon: Users,
       },
       {
-        label: "HR Groups",
-        path: "/hr/groups",
-        icon: Layers,
-      },
-      {
-        label: "Business Goals",
-        path: "/hr/business-goals",
-        icon: Target,
-      },
-      {
         label: "Attendance",
         path: "/hr/attendance",
         icon: Clock,
@@ -141,43 +129,6 @@ export const navMenu = [
         icon: Search,
       },
     ],
-  },
-  {
-    label: "Student CRM",
-    path: "/student-crm",
-    icon: GraduationCap,
-    subItems: [
-      { label: "Overview", path: "/student-crm", icon: LayoutDashboard },
-      { label: "Student Management", path: "/student-crm/student-managment", icon: Users },
-      { label: "Counselling", path: "/student-crm/counselling", icon: MessageCircle },
-      { label: "Applications", path: "/student-crm/applications", icon: FileText },
-      { label: "Visa Management", path: "/student-crm/visa-management", icon: Globe },
-    ],
-  },
-  {
-    label: "Agent CRM",
-    path: "/agent-crm",
-    icon: Handshake,
-    subItems: [
-      { label: "Dashboard", path: "/agent-crm", icon: LayoutDashboard },
-      { label: "My Profile", path: "/agent-crm/profile", icon: Users },
-      { label: "Students", path: "/agent-crm/students", icon: GraduationCap },
-      { label: "University POC", path: "/agent-crm/university-poc", icon: MessageSquare },
-      { label: "Tuition Payments", path: "/agent-crm/payments", icon: CreditCard },
-      { label: "Onboarding", path: "/agent-crm/onboarding", icon: UserPlus },
-    ],
-  },
-  {
-    label: "Operations",
-    path: "/operations",
-    icon: Briefcase,
-    subItems: [
-      {
-        label: "Document Management",
-        path: "/operations/document-management",
-        icon: Folder,
-      }
-    ]
   },
   {
     label: "Admin & Settings",

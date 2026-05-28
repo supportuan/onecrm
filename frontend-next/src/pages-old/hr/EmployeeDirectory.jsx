@@ -24,12 +24,7 @@ import {
 import { 
   getEmployees, 
   assignAccessRole, 
-  bulkImportEmployees,
-  createEmployee,
-  updateEmployee,
-  getEmployeeDocuments,
-  uploadEmployeeDocument,
-  deleteEmployeeDocument
+  bulkImportEmployees 
 } from '../../services/hrApi';
 
 export default function EmployeeDirectory() {
@@ -42,41 +37,6 @@ export default function EmployeeDirectory() {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [newRole, setNewRole] = useState('EMPLOYEE');
-
-  // Side Drawer detail panel
-  const [selectedEmployeeForDrawer, setSelectedEmployeeForDrawer] = useState(null);
-  const [drawerTab, setDrawerTab] = useState('details'); // 'details' | 'documents'
-  const [documents, setDocuments] = useState([]);
-  const [docsLoading, setDocsLoading] = useState(false);
-  const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('ALL');
-
-  // Form edit state
-  const [editForm, setEditForm] = useState({
-    dob: '',
-    address: '',
-    emergencyContact: '',
-    hireDate: '',
-    designation: '',
-    department: '',
-    phone: '',
-    location: '',
-    employmentStatus: 'Active'
-  });
-
-  // Add Employee modal
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newEmployee, setNewEmployee] = useState({
-    name: '',
-    email: '',
-    employeeId: '',
-    department: 'Operations',
-    designation: '',
-    phone: '',
-    location: '',
-    access_role: 'EMPLOYEE',
-    employmentStatus: 'Active',
-  });
 
   // Bulk Upload Panel state
   const [showBulkPanel, setShowBulkPanel] = useState(false);
@@ -121,93 +81,7 @@ export default function EmployeeDirectory() {
       setSubmitting(false);
     }
   };
-  const handleOpenDrawer = async (emp) => {
-    setSelectedEmployeeForDrawer(emp);
-    setDrawerTab('details');
-    setEditForm({
-      dob: emp.dob || '',
-      address: emp.address || '',
-      emergencyContact: emp.emergencyContact || '',
-      hireDate: emp.hireDate || '',
-      designation: emp.designation || '',
-      department: emp.department || '',
-      phone: emp.phone || '',
-      location: emp.location || '',
-      employmentStatus: emp.employmentStatus || 'Active'
-    });
-    fetchDocuments(emp.id);
-  };
 
-  const fetchDocuments = async (empId) => {
-    setDocsLoading(true);
-    try {
-      const res = await getEmployeeDocuments(empId);
-      if (res.success) {
-        setDocuments(res.data || []);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDocsLoading(false);
-    }
-  };
-
-  const handleUpdateDetails = async (e) => {
-    if (e) e.preventDefault();
-    if (!selectedEmployeeForDrawer) return;
-    setSubmitting(true);
-    try {
-      const res = await updateEmployee(selectedEmployeeForDrawer.id, editForm);
-      if (res.success) {
-        setEmployees(employees.map(emp => emp.id === selectedEmployeeForDrawer.id ? res.data : emp));
-        setSelectedEmployeeForDrawer(res.data);
-        alert('Employee details updated successfully!');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Failed to update employee details.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDocUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !selectedEmployeeForDrawer) return;
-    setUploadingDoc(true);
-    try {
-      const docPayload = {
-        name: file.name,
-        type: file.type || 'application/pdf',
-        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB'
-      };
-      const res = await uploadEmployeeDocument(selectedEmployeeForDrawer.id, docPayload);
-      if (res.success) {
-        await fetchDocuments(selectedEmployeeForDrawer.id);
-        alert('Document uploaded successfully!');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Failed to upload document.');
-    } finally {
-      setUploadingDoc(false);
-    }
-  };
-
-  const handleDocDelete = async (docId) => {
-    if (!selectedEmployeeForDrawer) return;
-    if (!confirm('Are you sure you want to delete this document?')) return;
-    try {
-      const res = await deleteEmployeeDocument(selectedEmployeeForDrawer.id, docId);
-      if (res.success) {
-        await fetchDocuments(selectedEmployeeForDrawer.id);
-        alert('Document deleted successfully!');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Failed to delete document.');
-    }
-  };
   // CSV/Tabular Paste Parser
   const handleParsePaste = () => {
     if (!pasteData.trim()) return;
@@ -308,36 +182,12 @@ export default function EmployeeDirectory() {
     }
   };
 
-  const handleCreateEmployee = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const res = await createEmployee(newEmployee);
-      if (res.success) {
-        setShowAddModal(false);
-        setNewEmployee({
-          name: '', email: '', employeeId: '', department: 'Operations',
-          designation: '', phone: '', location: '', access_role: 'EMPLOYEE', employmentStatus: 'Active',
-        });
-        await fetchDirectory();
-      }
-    } catch (err) {
-      alert(err.message || 'Failed to create employee');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = 
-      (emp.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (emp.employeeId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (emp.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (emp.department || '').toLowerCase().includes(searchQuery.toLowerCase());
-      
-    const matchesStatus = statusFilter === 'ALL' || emp.employmentStatus === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredEmployees = employees.filter(emp => 
+    (emp.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (emp.employeeId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (emp.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (emp.department || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-8">
@@ -352,30 +202,23 @@ export default function EmployeeDirectory() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider bg-emerald-600 text-white shadow-md hover:bg-emerald-700 transition-all"
-          >
-            <Plus size={14} /> Add New Employee
-          </button>
-          <button 
-            onClick={() => {
-              setShowBulkPanel(!showBulkPanel);
-              setImportFeedback(null);
-              setParsedRows([]);
-              setImportSummary(null);
-            }}
-            className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-md ${
-              showBulkPanel
-                ? 'bg-slate-200 border border-slate-300 text-slate-700 hover:bg-slate-300'
-                : 'bg-indigo-600 text-white shadow-indigo-600/10 hover:scale-[1.01] hover:shadow-lg hover:bg-indigo-700'
-            }`}
-          >
-            {showBulkPanel ? <Users size={14} /> : <Upload size={14} />}
-            {showBulkPanel ? 'View Directory' : 'Bulk Ingest Staff'}
-          </button>
-        </div>
+        {/* Action Button */}
+        <button 
+          onClick={() => {
+            setShowBulkPanel(!showBulkPanel);
+            setImportFeedback(null);
+            setParsedRows([]);
+            setImportSummary(null);
+          }}
+          className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-md ${
+            showBulkPanel
+              ? 'bg-slate-200 border border-slate-300 text-slate-700 hover:bg-slate-300'
+              : 'bg-indigo-600 text-white shadow-indigo-600/10 hover:scale-[1.01] hover:shadow-lg hover:bg-indigo-700'
+          }`}
+        >
+          {showBulkPanel ? <Users size={14} /> : <Upload size={14} />}
+          {showBulkPanel ? 'View Directory' : 'Bulk Ingest Staff'}
+        </button>
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -393,21 +236,8 @@ export default function EmployeeDirectory() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="flex items-center gap-4">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-650 outline-none focus:border-indigo-600 appearance-none cursor-pointer"
-                >
-                  <option value="ALL">All Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="On Leave">On Leave</option>
-                  <option value="Resigned">Resigned</option>
-                  <option value="Terminated">Terminated</option>
-                </select>
-                <div className="px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-semibold text-slate-600 shrink-0">
-                  {filteredEmployees.length} Account{filteredEmployees.length !== 1 ? 's' : ''} Listed
-                </div>
+              <div className="px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-semibold text-slate-600">
+                {employees.length} Active Accounts
               </div>
             </div>
 
@@ -419,7 +249,6 @@ export default function EmployeeDirectory() {
                     <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-semibold text-slate-550">
                       <th className="px-6 py-4">University ID</th>
                       <th className="px-6 py-4">Personnel</th>
-                      <th className="px-6 py-4">Lifecycle Status</th>
                       <th className="px-6 py-4">Contact Information</th>
                       <th className="px-6 py-4">Organization Profile</th>
                       <th className="px-6 py-4">Biometric ID</th>
@@ -430,14 +259,14 @@ export default function EmployeeDirectory() {
                   <tbody className="divide-y divide-slate-100">
                     {loading ? (
                       <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center">
+                        <td colSpan={7} className="px-6 py-12 text-center">
                           <Loader2 className="animate-spin text-indigo-600 mx-auto" size={24} />
                           <p className="text-[10px] font-semibold text-slate-500 mt-2">Loading Directory...</p>
                         </td>
                       </tr>
                     ) : filteredEmployees.length > 0 ? (
                       filteredEmployees.map((emp) => (
-                        <tr key={emp.id} className="hover:bg-slate-50/50 transition-all duration-200 cursor-pointer" onClick={() => handleOpenDrawer(emp)}>
+                        <tr key={emp.id} className="hover:bg-slate-50/50 transition-all duration-200">
                           <td className="px-6 py-5 text-xs font-mono font-semibold text-indigo-600">
                             {emp.employeeId || `EMP-${emp.id.substring(0, 4)}`}
                           </td>
@@ -450,19 +279,6 @@ export default function EmployeeDirectory() {
                             </div>
                           </td>
                           <td className="px-6 py-5">
-                            <span className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border ${
-                              emp.employmentStatus === 'Active'
-                                ? 'bg-emerald-50 border-emerald-250 text-emerald-700'
-                                : emp.employmentStatus === 'On Leave'
-                                  ? 'bg-amber-50 border-amber-250 text-amber-700'
-                                  : emp.employmentStatus === 'Resigned'
-                                    ? 'bg-slate-100 border-slate-200 text-slate-655'
-                                    : 'bg-red-50 border-red-250 text-red-700'
-                            }`}>
-                              {emp.employmentStatus || 'Active'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
                             <div className="space-y-1 text-xs">
                               <p className="text-slate-650 flex items-center gap-1.5 font-medium lowercase">
                                 <Mail size={11} className="text-slate-400" /> {emp.email}
@@ -474,7 +290,7 @@ export default function EmployeeDirectory() {
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-6 py-5">
                             <div className="space-y-1 text-xs">
                               <p className="text-slate-800 flex items-center gap-1.5 font-semibold">
                                 <Briefcase size={11} className="text-slate-400" /> {emp.designation || 'Staff Member'}
@@ -484,13 +300,13 @@ export default function EmployeeDirectory() {
                               </p>
                             </div>
                           </td>
-                          <td className="px-6 py-5 text-xs font-mono font-semibold text-slate-500" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-6 py-5 text-xs font-mono font-semibold text-slate-500">
                             <span className="flex items-center gap-1 text-[10px]">
                               <Fingerprint size={12} className="text-slate-400" />
                               {emp.biometricId || emp.employeeId || 'N/A'}
                             </span>
                           </td>
-                          <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-6 py-5">
                             <span className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border flex items-center gap-1 w-fit ${
                               emp.access_role?.includes('ADMIN')
                                 ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
@@ -502,20 +318,14 @@ export default function EmployeeDirectory() {
                               {emp.access_role?.replace('_', ' ') || 'EMPLOYEE'}
                             </span>
                           </td>
-                          <td className="px-6 py-5 text-right flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                            <button 
-                              onClick={() => handleOpenDrawer(emp)}
-                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[9px] font-semibold transition-all shadow-sm shrink-0"
-                            >
-                              Manage Profile
-                            </button>
+                          <td className="px-6 py-5 text-right">
                             <button 
                                onClick={() => {
                                  setSelectedEmp(emp);
                                  setNewRole(emp.access_role || 'EMPLOYEE');
                                  setShowRoleModal(true);
                                }}
-                              className="px-3.5 py-1.5 bg-white border border-slate-200 hover:border-indigo-600 hover:text-indigo-600 rounded-xl text-[9px] font-semibold transition-all shrink-0"
+                              className="px-3.5 py-1.5 bg-white border border-slate-200 hover:border-indigo-600 hover:text-indigo-600 rounded-xl text-[9px] font-semibold transition-all"
                             >
                               Role Access
                             </button>
@@ -697,7 +507,7 @@ export default function EmployeeDirectory() {
               <h2 className="text-xs font-semibold text-slate-800">Modify Access Permissions</h2>
               <button 
                 onClick={() => { setShowRoleModal(false); setSelectedEmp(null); }} 
-                className="text-slate-400 hover:text-slate-655 transition-colors"
+                className="text-slate-400 hover:text-slate-650 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -744,304 +554,6 @@ export default function EmployeeDirectory() {
                   Deploy Access
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Employee Side Drawer Detail Panel */}
-      {selectedEmployeeForDrawer && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-lg h-full overflow-y-auto shadow-2xl p-8 space-y-6 flex flex-col justify-between slide-in-from-right duration-350 transform transition-all font-sans">
-            <div className="space-y-6">
-              {/* Drawer Header */}
-              <div className="flex justify-between items-start border-b border-slate-150 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-indigo-900">{selectedEmployeeForDrawer.name}</h3>
-                  <p className="text-xs text-indigo-650 font-semibold">{selectedEmployeeForDrawer.designation || 'Staff Member'} · {selectedEmployeeForDrawer.department || 'Operations'}</p>
-                  <p className="text-[10px] text-slate-400 font-mono mt-1">{selectedEmployeeForDrawer.employeeId} · {selectedEmployeeForDrawer.email}</p>
-                </div>
-                <button 
-                  onClick={() => setSelectedEmployeeForDrawer(null)}
-                  className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Drawer Tabs */}
-              <div className="flex border-b border-slate-100">
-                <button
-                  onClick={() => setDrawerTab('details')}
-                  className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider border-b-2 text-center transition-all ${
-                    drawerTab === 'details'
-                      ? 'border-indigo-600 text-indigo-600 font-black'
-                      : 'border-transparent text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  Personal & Job Details
-                </button>
-                <button
-                  onClick={() => setDrawerTab('documents')}
-                  className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider border-b-2 text-center transition-all ${
-                    drawerTab === 'documents'
-                      ? 'border-indigo-600 text-indigo-600 font-black'
-                      : 'border-transparent text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  Documents Catalog
-                </button>
-              </div>
-
-              {/* Drawer Content */}
-              {drawerTab === 'details' ? (
-                <form onSubmit={handleUpdateDetails} className="space-y-4 text-slate-800">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-slate-500">Employment Status</label>
-                    <select
-                      value={editForm.employmentStatus}
-                      onChange={(e) => setEditForm({ ...editForm, employmentStatus: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 cursor-pointer appearance-none"
-                    >
-                      <option value="Active">Active</option>
-                      <option value="On Leave">On Leave</option>
-                      <option value="Resigned">Resigned</option>
-                      <option value="Terminated">Terminated</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-slate-500">Date of Birth</label>
-                      <input
-                        type="date"
-                        value={editForm.dob}
-                        onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-slate-500">Hire Date</label>
-                      <input
-                        type="date"
-                        value={editForm.hireDate}
-                        onChange={(e) => setEditForm({ ...editForm, hireDate: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-slate-500">Designation</label>
-                      <input
-                        type="text"
-                        value={editForm.designation}
-                        onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-slate-500">Department</label>
-                      <input
-                        type="text"
-                        value={editForm.department}
-                        onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-slate-500">Contact Phone</label>
-                      <input
-                        type="text"
-                        value={editForm.phone}
-                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-slate-500">Office Location</label>
-                      <input
-                        type="text"
-                        value={editForm.location}
-                        onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-slate-500">Personal Address</label>
-                    <textarea
-                      value={editForm.address}
-                      onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                      placeholder="e.g. 456 West Loop, Chicago IL"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600 min-h-[70px]"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-semibold text-slate-500">Emergency Contact Details</label>
-                    <input
-                      type="text"
-                      value={editForm.emergencyContact}
-                      onChange={(e) => setEditForm({ ...editForm, emergencyContact: e.target.value })}
-                      placeholder="e.g. Sita Kalla (+1 312-555-0144)"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-600"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-xs tracking-wider transition-all shadow-sm flex items-center justify-center gap-1.5"
-                  >
-                    {submitting && <Loader2 size={12} className="animate-spin" />}
-                    Save Profile Changes
-                  </button>
-                </form>
-              ) : (
-                <div className="space-y-6">
-                  {/* Document Uploader Card */}
-                  <div className="border border-dashed border-slate-350 bg-slate-50 rounded-2xl p-6 text-center space-y-4">
-                    <div className="p-3 bg-white border border-slate-100 rounded-full w-fit mx-auto shadow-sm">
-                      <Upload size={18} className="text-indigo-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">Upload Employee Documents</p>
-                      <p className="text-[9px] text-slate-400 mt-0.5">Submit offer letters, background checks, ID proofs, or contracts.</p>
-                    </div>
-                    <div className="relative w-fit mx-auto">
-                      <input 
-                        type="file" 
-                        id="employee-doc-upload" 
-                        className="hidden" 
-                        onChange={handleDocUpload}
-                        disabled={uploadingDoc}
-                      />
-                      <label 
-                        htmlFor="employee-doc-upload" 
-                        className="px-5 py-2.5 bg-white border border-slate-200 hover:border-indigo-600 text-slate-700 hover:text-indigo-650 rounded-xl text-[10px] font-bold shadow-sm transition-all cursor-pointer inline-flex items-center gap-1.5"
-                      >
-                        {uploadingDoc ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />}
-                        Select File to Upload
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Document list */}
-                  <div className="space-y-3">
-                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Stored Files ({documents.length})</h4>
-                    {docsLoading ? (
-                      <div className="text-center py-6">
-                        <Loader2 className="animate-spin text-indigo-600 mx-auto" size={18} />
-                      </div>
-                    ) : documents.length > 0 ? (
-                      <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar">
-                        {documents.map((doc) => (
-                          <div key={doc.id} className="p-4 border border-slate-200 bg-white rounded-2xl flex items-center justify-between shadow-sm">
-                            <div className="space-y-1">
-                              <p className="text-xs font-semibold text-slate-800 truncate max-w-[240px]">{doc.name}</p>
-                              <div className="flex gap-2 text-[9px] text-slate-400 font-semibold uppercase">
-                                <span>{doc.size || '1.2 MB'}</span>
-                                <span>•</span>
-                                <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <button 
-                                onClick={() => alert(`Downloading Document: ${doc.name} (File catalog link mock active)`)}
-                                className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-bold text-slate-600 transition-all"
-                              >
-                                Download
-                              </button>
-                              <button 
-                                onClick={() => handleDocDelete(doc.id)}
-                                className="p-2 hover:bg-red-50 hover:text-red-600 border border-transparent rounded-lg text-slate-400 hover:text-red-600 transition-colors"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 border border-slate-100 bg-slate-50 rounded-2xl text-[10px] text-slate-400 italic font-semibold">
-                        No official documents uploaded for this employee directory record.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="border-t border-slate-150 pt-4 mt-6">
-              <button
-                onClick={() => setSelectedEmployeeForDrawer(null)}
-                className="w-full py-3 border border-slate-200 hover:bg-slate-50 rounded-2xl text-xs font-semibold text-slate-500 transition-all"
-              >
-                Close Profile Panel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-sm font-semibold text-slate-800">Add New Employee</h2>
-              <button onClick={() => setShowAddModal(false)}><X size={20} className="text-slate-400" /></button>
-            </div>
-            <form onSubmit={handleCreateEmployee} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="text-[10px] font-semibold text-slate-500 ml-1">Full Name</label>
-                  <input required value={newEmployee.name} onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-                    className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-600" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-slate-500 ml-1">Employee ID</label>
-                  <input required value={newEmployee.employeeId} onChange={(e) => setNewEmployee({ ...newEmployee, employeeId: e.target.value })}
-                    className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-600" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-slate-500 ml-1">Email</label>
-                  <input required type="email" value={newEmployee.email} onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
-                    className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-600" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-slate-500 ml-1">Department</label>
-                  <select value={newEmployee.department} onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
-                    className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none">
-                    <option>Operations</option><option>Engineering</option><option>Human Resources</option>
-                    <option>Finance</option><option>Marketing</option><option>Counselling</option><option>Processing</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-slate-500 ml-1">Designation</label>
-                  <input value={newEmployee.designation} onChange={(e) => setNewEmployee({ ...newEmployee, designation: e.target.value })}
-                    className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-600" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-slate-500 ml-1">Phone</label>
-                  <input value={newEmployee.phone} onChange={(e) => setNewEmployee({ ...newEmployee, phone: e.target.value })}
-                    className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-600" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-slate-500 ml-1">Location</label>
-                  <input value={newEmployee.location} onChange={(e) => setNewEmployee({ ...newEmployee, location: e.target.value })}
-                    className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-600" />
-                </div>
-              </div>
-              <button type="submit" disabled={submitting}
-                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50">
-                {submitting ? 'Creating...' : 'Create Employee'}
-              </button>
             </form>
           </div>
         </div>
