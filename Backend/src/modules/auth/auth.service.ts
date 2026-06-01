@@ -33,7 +33,7 @@ export const register = async (data: RegisterData) => {
 
 export const login = async (email: string, password: string) => {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.isActive) throw new Error('Invalid credentials');
+  if (!user || !user.isActive || !user.passwordHash) throw new Error('Invalid credentials');
 
   const isValid = await comparePasswords(password, user.passwordHash);
   if (!isValid) throw new Error('Invalid credentials');
