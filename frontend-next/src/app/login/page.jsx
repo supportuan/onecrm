@@ -18,8 +18,21 @@ export default function LoginPage() {
     setError('');
 
     try {
-      await login({ email, password });
-      router.push('/');
+      const data = await login({ email, password });
+      const role = data.user?.role;
+      if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+        router.push('/marketing');
+      } else if (role === 'HR') {
+        router.push('/hr/employee-directory');
+      } else if (role === 'COUNSELLOR') {
+        router.push('/marketing');
+      } else if (role === 'AGENT') {
+        router.push('/agency-crm/agency-management');
+      } else if (role === 'STUDENT') {
+        router.push('/student-crm/student-management');
+      } else {
+        router.push('/');
+      }
     } catch (err) {
       setError(err.message || 'Login failed');
     } finally {
