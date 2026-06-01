@@ -1,5 +1,6 @@
 import { prisma } from '../../prisma.js';
 import { UserRole } from '@prisma/client';
+import { hashPassword } from '../../utils/password.js';
 
 const allowedRoles = [
   UserRole.ADMIN,
@@ -20,21 +21,42 @@ export const getUsers = async (role?: UserRole) => {
   });
 };
 
+export const getUserById = async (id: number) => {
+  return prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      role: true,
+      isActive: true,
+      lastLogin: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+};
+
 export const createUser = async (data: {
   fullName: string;
   email: string;
   phone?: string;
+  password: string;
   role: UserRole;
 }) => {
   if (!allowedRoles.includes(data.role)) {
     throw new Error('Invalid role selected');
   }
 
+  const passwordHash = await hashPassword(data.password);
+
   return prisma.user.create({
     data: {
       fullName: data.fullName,
       email: data.email,
       phone: data.phone || null,
+      passwordHash,
       role: data.role,
       isActive: true,
     },

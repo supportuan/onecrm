@@ -5,25 +5,50 @@ import { ChevronDown, Command, LogOut, RefreshCw, Briefcase, Sparkles, SlidersHo
 import MenuItem from './MenuItem';
 import { navMenu } from '../lib/menu';
 import { useWorkspace } from '../lib/workspaceContext';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 const Sidebar = ({ sidebarOpen, onClose }) => {
   const location = useLocation() || '';
   const router = useRouter();
-  const { activeWorkspace, loginToWorkspace, logout } = useWorkspace();
+  const { activeWorkspace, loginToWorkspace, logout: workspaceLogout } = useWorkspace();
+  const { logout: authLogout } = useAuth();
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
-  // Filter navigation menu to keep only marketing/hr and settings based on active workspace
+  const { user } = useAuth();
+
+  // Filter navigation menu to keep only items allowed by active workspace AND user role
   const filteredNavMenu = useMemo(() => {
+    if (!user) return [];
+
     return navMenu.filter((item) => {
-      if (activeWorkspace === 'hr') {
-        return item.label === 'HR' || item.label === 'Admin & Settings';
+      // workspace-level filter
+      let workspaceAllowed = false;
+      if (activeWorkspace === 'hr') workspaceAllowed = item.label === 'HR' || item.label === 'Admin & Settings';
+      else if (activeWorkspace === 'marketing') workspaceAllowed = item.label === 'Marketing' || item.label === 'Admin & Settings';
+      else workspaceAllowed = false;
+
+      // role-level filter
+      const role = user.role;
+      if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+        return workspaceAllowed;
       }
-      if (activeWorkspace === 'marketing') {
-        return item.label === 'Marketing' || item.label === 'Admin & Settings';
+
+      if (role === 'HR') {
+        return workspaceAllowed && (item.label === 'HR' || item.label === 'Admin & Settings');
       }
+
+      if (role === 'COUNSELLOR') {
+        return workspaceAllowed && (item.label === 'Marketing' || item.title === 'Dashboard');
+      }
+
+      if (role === 'STUDENT') {
+        // students see only limited dashboard views
+        return workspaceAllowed && item.title === 'Dashboard';
+      }
+
       return false;
     });
-  }, [activeWorkspace]);
+  }, [activeWorkspace, user]);
 
   const initialOpen = useMemo(() => {
     return filteredNavMenu.reduce((acc, item) => {
@@ -86,7 +111,7 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
             <Command className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-base font-bold text-slate-900">One Workspace</p>
+            <p className="text-base font-bold text-slate-900">ONECRM</p>
             <p className="text-xs font-medium text-slate-400">SSO integrated portal</p>
           </div>
         </div>
@@ -136,7 +161,10 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
             </button>
             <div className="border-t border-slate-150 my-1" />
             <button
-              onClick={logout}
+              onClick={() => {
+                try { authLogout(); } catch (e) {}
+                try { workspaceLogout(); } catch (e) {}
+              }}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-655 hover:bg-red-50 transition"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -183,7 +211,10 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
             <span className="text-xs font-semibold text-emerald-600">SSO secured</span>
           </div>
           <button
-            onClick={logout}
+            onClick={() => {
+              try { authLogout(); } catch (e) {}
+              try { workspaceLogout(); } catch (e) {}
+            }}
             className="p-1.5 text-slate-400 hover:text-red-655 hover:bg-red-50 rounded-lg transition"
             title="Log Out of SSO"
           >

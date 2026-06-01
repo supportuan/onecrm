@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import * as controller from './user.controller.js';
+import { authenticateToken } from '../../middleware/authenticate.js';
+import { authorizeRole } from '../../middleware/authorize.js';
 
 const router = Router();
 
@@ -28,7 +30,28 @@ const router = Router();
  *       200:
  *         description: Users fetched successfully
  */
-router.get('/users', controller.getUsers);
+router.get('/users', authenticateToken, authorizeRole('SUPER_ADMIN', 'ADMIN'), controller.getUsers);
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get a user by ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User fetched successfully
+ */
+router.get('/users/:id', authenticateToken, controller.getUserById);
 
 /**
  * @swagger
@@ -64,7 +87,7 @@ router.get('/users', controller.getUsers);
  *       201:
  *         description: User created successfully
  */
-router.post('/users', controller.createUser);
+router.post('/users', authenticateToken, authorizeRole('SUPER_ADMIN', 'ADMIN'), controller.createUser);
 
 /**
  * @swagger
@@ -103,7 +126,7 @@ router.post('/users', controller.createUser);
  *       200:
  *         description: User updated successfully
  */
-router.put('/users/:id', controller.updateUser);
+router.put('/users/:id', authenticateToken, authorizeRole('SUPER_ADMIN', 'ADMIN'), controller.updateUser);
 
 /**
  * @swagger
@@ -122,7 +145,7 @@ router.put('/users/:id', controller.updateUser);
  *       200:
  *         description: User deactivated successfully
  */
-router.delete('/users/:id', controller.deleteUser);
+router.delete('/users/:id', authenticateToken, authorizeRole('SUPER_ADMIN', 'ADMIN'), controller.deleteUser);
 
 /**
  * @swagger
