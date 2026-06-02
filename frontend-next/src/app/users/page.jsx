@@ -1,5 +1,15 @@
+'use client';
+
 import UserManagement from '../../pages-old/users/UserManagement';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import RoleGuard from '@/components/RoleGuard';
 
 export default function Page() {
-  return <UserManagement />;
+  return (
+    <ProtectedRoute>
+      <RoleGuard allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+        <UserManagement />
+      </RoleGuard>
+    </ProtectedRoute>
+  );
 }

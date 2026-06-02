@@ -19,19 +19,26 @@ export default function LoginPage() {
 
     try {
       const data = await login({ email, password });
+      
+      let targetRoute = '/';
       const role = data.user?.role;
       if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
-        router.push('/marketing');
+        targetRoute = '/marketing';
       } else if (role === 'HR') {
-        router.push('/hr/employee-directory');
+        targetRoute = '/hr/employee-directory';
       } else if (role === 'COUNSELLOR') {
-        router.push('/marketing');
+        targetRoute = '/marketing';
       } else if (role === 'AGENT') {
-        router.push('/agency-crm/agency-management');
+        targetRoute = '/agency-crm/agency-management';
       } else if (role === 'STUDENT') {
-        router.push('/student-crm/student-management');
+        targetRoute = '/student-crm/student-management';
+      }
+
+      if (data.isFirstLogin) {
+        localStorage.setItem('postPasswordChangeRedirect', targetRoute);
+        router.push('/change-password');
       } else {
-        router.push('/');
+        router.push(targetRoute);
       }
     } catch (err) {
       setError(err.message || 'Login failed');

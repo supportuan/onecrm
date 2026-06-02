@@ -10,7 +10,7 @@ const LayoutContent = ({ children }) => {
   const pathname = usePathname();
 
   // Show full screen portal only for authentication and landing routes
-  const isPortal = pathname === '/' || pathname === '/login' || pathname === '/forgot-password' || pathname === '/reset-password';
+  const isPortal = pathname === '/' || pathname === '/login' || pathname === '/forgot-password' || pathname === '/reset-password' || pathname === '/change-password';
 
   if (isPortal) {
     return (

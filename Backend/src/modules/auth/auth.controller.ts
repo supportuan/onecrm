@@ -30,8 +30,8 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const data = loginSchema.parse(req.body);
-        const { user, accessToken, refreshToken } = await authService.login(data.email, data.password);
-        return sendSuccess(res, 'Login successful', { user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role }, accessToken, refreshToken });
+        const { user, accessToken, refreshToken, isFirstLogin } = await authService.login(data.email, data.password);
+        return sendSuccess(res, 'Login successful', { user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role }, accessToken, refreshToken, isFirstLogin });
     } catch (error) {
         next(error);
     }

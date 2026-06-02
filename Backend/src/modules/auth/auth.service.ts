@@ -38,6 +38,8 @@ export const login = async (email: string, password: string) => {
   const isValid = await comparePasswords(password, user.passwordHash);
   if (!isValid) throw new Error('Invalid credentials');
 
+  const isFirstLogin = user.lastLogin === null;
+
   await prisma.user.update({
     where: { id: user.id },
     data: { lastLogin: new Date() },
@@ -60,7 +62,7 @@ export const login = async (email: string, password: string) => {
     },
   });
 
-  return { user, accessToken, refreshToken };
+  return { user, accessToken, refreshToken, isFirstLogin };
 };
 
 export const refreshToken = async (token: string) => {

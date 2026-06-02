@@ -11,6 +11,7 @@ import {
   X,
   ShieldCheck,
 } from "lucide-react";
+import { getUsers, createUser, deleteUser } from "../../services/userApi";
 
 const roles = [
   "SUPER_ADMIN",
@@ -20,6 +21,8 @@ const roles = [
   "STUDENT",
   "AGENT",
 ];
+
+const creatableRoles = ["ADMIN", "COUNSELLOR", "HR", "STUDENT"];
 
 const modules = [
   "Marketing",
@@ -64,7 +67,8 @@ const getPermissionsForModules = (selectedModules) => {
 };
 
 export default function UserManagementPage() {
-  const [users, setUsers] = useState(sampleUsers);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -79,6 +83,24 @@ export default function UserManagementPage() {
     permissions: getPermissionsForModules(roleModuleAccess.ADMIN),
   });
 
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await getUsers();
+      if (res.success) {
+        setUsers(res.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load users:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
   useEffect(() => {
     const allowedModules = roleModuleAccess[form.role] || [];
 
@@ -92,7 +114,7 @@ export default function UserManagementPage() {
   const filteredUsers = useMemo(() => {
     return users.filter(
       (u) =>
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
+        (u.fullName || "").toLowerCase().includes(search.toLowerCase()) ||
         u.email.toLowerCase().includes(search.toLowerCase()) ||
         u.role.toLowerCase().includes(search.toLowerCase())
     );
@@ -111,30 +133,53 @@ export default function UserManagementPage() {
     });
   };
 
-  const handleCreateUser = () => {
+  const handleCreateUser = async () => {
     if (!form.firstName || !form.email || !form.role) {
       alert("Please fill required fields");
       return;
     }
 
-    const newUser = {
-      id: Date.now(),
-      name: `${form.firstName} ${form.lastName}`.trim(),
-      email: form.email,
-      phone: form.phone,
-      role: form.role,
-      status: form.isActive ? "Active" : "Inactive",
-      modules: form.modules,
-      permissions: form.permissions,
-    };
+    try {
+      const payload = {
+        fullName: `${form.firstName} ${form.lastName}`.trim(),
+        email: form.email,
+        phone: form.phone || undefined,
+        role: form.role,
+        // Password length must be >= 8 to pass schema validation
+        password: Math.random().toString(36).slice(-10) + "A1!",
+      };
 
-    setUsers((prev) => [...prev, newUser]);
-    setShowCreateModal(false);
-    resetForm();
+      const res = await createUser(payload);
+      if (res.success) {
+        setShowCreateModal(false);
+        resetForm();
+        loadUsers();
+        alert(
+          "User created successfully. Credentials have been dispatched to their email."
+        );
+      } else {
+        alert(res.message || "Failed to create user");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "An error occurred while creating user");
+    }
+  };
 
-    alert(
-      "User created successfully. Random password will be sent to the user's email."
-    );
+  const handleDelete = async (id) => {
+    if (!window.confirm("Deactivate this user?")) return;
+
+    try {
+      const res = await deleteUser(id);
+      if (res.success) {
+        loadUsers();
+      } else {
+        alert(res.message || "Failed to deactivate user");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "An error occurred while deactivating user");
+    }
   };
 
   return (
@@ -181,79 +226,89 @@ export default function UserManagementPage() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-5 py-4">Name</th>
-                <th className="px-5 py-4">Email</th>
-                <th className="px-5 py-4">Role</th>
-                <th className="px-5 py-4">Modules</th>
-                <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-100">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-4 font-semibold text-slate-800">
-                    {user.name}
-                  </td>
-
-                  <td className="px-5 py-4 text-slate-500">
-                    {user.email}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                      {user.role}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4 text-slate-500">
-                    {user.role === "SUPER_ADMIN"
-                      ? "All Modules"
-                      : user.modules?.join(", ")}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${
-                        user.status === "Active"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-red-50 text-red-700"
-                      }`}
-                    >
-                      {user.status}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <div className="flex justify-end gap-2">
-                      <button className="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
-                        <Edit className="h-4 w-4" />
-                      </button>
-
-                      <button className="rounded-xl p-2 text-red-500 hover:bg-red-50">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {filteredUsers.length === 0 && (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-slate-50/50">
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600"></div>
+              <p className="mt-4 text-sm font-semibold text-slate-500">Retrieving system users...</p>
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="px-5 py-10 text-center text-slate-400"
-                  >
-                    No users found.
-                  </td>
+                  <th className="px-5 py-4">Name</th>
+                  <th className="px-5 py-4">Email</th>
+                  <th className="px-5 py-4">Role</th>
+                  <th className="px-5 py-4">Modules</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4 text-right">Actions</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100">
+                {filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-slate-50">
+                    <td className="px-5 py-4 font-semibold text-slate-800">
+                      {user.fullName}
+                    </td>
+
+                    <td className="px-5 py-4 text-slate-500">
+                      {user.email}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                        {user.role}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-4 text-slate-500">
+                      {user.role === "SUPER_ADMIN"
+                        ? "All Modules"
+                        : (roleModuleAccess[user.role] || []).join(", ")}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          user.isActive
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-red-50 text-red-700"
+                        }`}
+                      >
+                        {user.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button className="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
+                          <Edit className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          className="rounded-xl p-2 text-red-500 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="px-5 py-10 text-center text-slate-400"
+                    >
+                      No users found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -340,7 +395,7 @@ export default function UserManagementPage() {
                     }
                     className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
                   >
-                    {roles.map((role) => (
+                    {creatableRoles.map((role) => (
                       <option key={role} value={role}>
                         {role}
                       </option>
