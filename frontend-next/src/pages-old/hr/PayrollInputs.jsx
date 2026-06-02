@@ -602,62 +602,34 @@ export default function PayrollInputs() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-y border-slate-200 py-6">
                 {/* Left: Earnings */}
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-semibold text-indigo-650 border-b border-slate-200 pb-1.5 uppercase tracking-wider">Credit Components (Earnings)</h4>
+                  <h4 className="text-[10px] font-semibold text-indigo-650 border-b border-slate-200 pb-1.5">Credit Components</h4>
                   <div className="space-y-2.5 text-xs">
                     <div className="flex justify-between items-center text-slate-600">
                       <span>Basic Allocation Base</span>
                       <span className="font-semibold">₹{(selectedPayslip.basicSalary || 0).toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex justify-between items-center text-slate-600">
-                      <span>Special Allowances</span>
-                      <span className="font-semibold">
-                        {selectedPayslip.incentive !== undefined 
-                          ? `₹${(selectedPayslip.allowances - selectedPayslip.incentive).toLocaleString('en-IN')}`
-                          : `₹${(selectedPayslip.allowances || 0).toLocaleString('en-IN')}`}
-                      </span>
+                      <span>Housing Allowance / HRA</span>
+                      <span className="font-semibold">₹0</span>
                     </div>
-                    {selectedPayslip.incentive !== undefined && selectedPayslip.incentive > 0 && (
-                      <div className="flex justify-between items-start text-slate-600">
-                        <div>
-                          <span>Performance Incentives</span>
-                          <span className="block text-[8px] font-semibold text-indigo-600 uppercase">
-                            ({selectedPayslip.conversionsCount || 0} Conversions @ ₹150)
-                          </span>
-                        </div>
-                        <span className="font-bold text-indigo-650">₹{(selectedPayslip.incentive || 0).toLocaleString('en-IN')}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>Special Allowances</span>
+                      <span className="font-semibold">₹{(selectedPayslip.allowances || 0).toLocaleString('en-IN')}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Right: Deductions */}
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-semibold text-red-655 border-b border-slate-200 pb-1.5 uppercase tracking-wider">Debit Components (Deductions)</h4>
+                  <h4 className="text-[10px] font-semibold text-red-655 border-b border-slate-200 pb-1.5">Debit Components</h4>
                   <div className="space-y-2.5 text-xs">
-                    {selectedPayslip.taxDeductions !== undefined && selectedPayslip.taxDeductions > 0 && (
-                      <div className="flex justify-between items-center text-slate-655">
-                        <span>Progressive Tax (TDS)</span>
-                        <span className="font-semibold text-red-655">-₹{(selectedPayslip.taxDeductions || 0).toLocaleString('en-IN')}</span>
-                      </div>
-                    )}
-                    {selectedPayslip.lopDeductions !== undefined && selectedPayslip.lopDeductions > 0 && (
-                      <div className="flex justify-between items-start text-slate-655">
-                        <div>
-                          <span>Loss of Pay (LOP)</span>
-                          <span className="block text-[8px] font-semibold text-red-500 uppercase">
-                            ({selectedPayslip.lopDays || 0} Unpaid / Absent Days)
-                          </span>
-                        </div>
-                        <span className="font-semibold text-red-655">-₹{(selectedPayslip.lopDeductions || 0).toLocaleString('en-IN')}</span>
-                      </div>
-                    )}
                     <div className="flex justify-between items-center text-slate-655">
-                      <span>Standard & Voluntary Deductions</span>
-                      <span className="font-semibold">
-                        {selectedPayslip.taxDeductions !== undefined && selectedPayslip.lopDeductions !== undefined
-                          ? `₹${Math.max(0, selectedPayslip.deductions - selectedPayslip.taxDeductions - selectedPayslip.lopDeductions).toLocaleString('en-IN')}`
-                          : `₹${(selectedPayslip.deductions || 0).toLocaleString('en-IN')}`}
-                      </span>
+                      <span>Tax Withholding (TDS)</span>
+                      <span className="font-semibold">₹{(selectedPayslip.deductions || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-655">
+                      <span>Loss of Pay / Unexcused LOP</span>
+                      <span className="font-semibold text-red-655">-₹0</span>
                     </div>
                   </div>
                 </div>

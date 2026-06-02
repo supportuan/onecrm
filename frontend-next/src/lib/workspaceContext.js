@@ -34,10 +34,6 @@ export const WorkspaceProvider = ({ children }) => {
       router.push('/hr/employee-directory');
     } else if (workspace === 'marketing') {
       router.push('/marketing/lead-management');
-    } else if (workspace === 'student') {
-      router.push('/student-crm');
-    } else if (workspace === 'agent') {
-      router.push('/agent-crm');
     }
   };
 

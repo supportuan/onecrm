@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import { prisma } from '../../prisma.js';
 
 // In-Memory Data Models
 export interface Employee {
@@ -13,12 +12,6 @@ export interface Employee {
   phone?: string | null;
   biometricId?: string | null;
   location?: string | null;
-  employmentStatus?: 'Active' | 'On Leave' | 'Resigned' | 'Terminated';
-  dob?: string;
-  address?: string;
-  emergencyContact?: string;
-  hireDate?: string;
-  documents?: { id: string; name: string; type: string; size?: string; uploadedAt: string }[];
 }
 
 export interface Device {
@@ -81,35 +74,6 @@ export interface LeaveDefinition {
   carry_forward: boolean;
 }
 
-export interface LeaveRequest {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  leaveTypeId: string;
-  leaveTypeName: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  status: 'PENDING_MANAGER' | 'PENDING_HR' | 'APPROVED' | 'REJECTED';
-  managerApproval: 'PENDING' | 'APPROVED' | 'REJECTED';
-  hrApproval: 'PENDING' | 'APPROVED' | 'REJECTED';
-  managerRemarks?: string;
-  hrRemarks?: string;
-  createdAt: string;
-}
-
-export interface Candidate {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  department: string;
-  currentStage: string;
-  appliedDate: string;
-  fields: Record<string, any>;
-}
-
 export interface Holiday {
   id: string;
   name: string;
@@ -136,21 +100,16 @@ export interface Payslip {
   deductions: number;
   netSalary: number;
   status: 'DRAFT' | 'PAID';
-  conversionsCount?: number;
-  incentive?: number;
-  lopDays?: number;
-  lopDeductions?: number;
-  taxDeductions?: number;
 }
 
 // ----------------------------------------------------
 // STATE PRE-SEEDING
 // ----------------------------------------------------
 let employees: Employee[] = [
-  { id: '1', name: 'Raju Kalla', employeeId: 'E001', email: 'raju.kalla@onecrm.com', access_role: 'EMPLOYEE', department: 'Engineering', designation: 'Senior Developer', biometricId: 'E001', location: 'Chicago Office', employmentStatus: 'Active', dob: '1990-05-15', address: '456 West Loop, Chicago IL', emergencyContact: 'Sita Kalla (+1 312-555-0144)', hireDate: '2023-03-01', documents: [] },
-  { id: '2', name: 'Jane Admin', employeeId: 'E002', email: 'jane.admin@onecrm.com', access_role: 'SUPER_ADMIN', department: 'Operations', designation: 'Operations Lead', biometricId: 'E002', location: 'Chicago Office', employmentStatus: 'Active', dob: '1985-11-20', address: '789 North Michigan Ave, Chicago IL', emergencyContact: 'Mark Admin (+1 312-555-0188)', hireDate: '2021-06-15', documents: [] },
-  { id: '3', name: 'Alice Smith', employeeId: 'E003', email: 'alice.smith@onecrm.com', access_role: 'HR_MANAGER', department: 'Human Resources', designation: 'HR Manager', biometricId: 'E003', location: 'New York Office', employmentStatus: 'Active', dob: '1988-09-10', address: '123 Broadway, New York NY', emergencyContact: 'John Smith (+1 212-555-0122)', hireDate: '2022-01-10', documents: [] },
-  { id: '4', name: 'Bob Johnson', employeeId: 'E004', email: 'bob.johnson@onecrm.com', access_role: 'PAYROLL_ADMIN', department: 'Finance', designation: 'Payroll Admin', biometricId: 'E004', location: 'New York Office', employmentStatus: 'Active', dob: '1992-04-25', address: '456 Park Avenue, New York NY', emergencyContact: 'Mary Johnson (+1 212-555-0155)', hireDate: '2024-02-01', documents: [] },
+  { id: '1', name: 'Raju Kalla', employeeId: 'E001', email: 'raju.kalla@onecrm.com', access_role: 'EMPLOYEE', department: 'Engineering', designation: 'Senior Developer', biometricId: 'E001', location: 'Chicago Office' },
+  { id: '2', name: 'Jane Admin', employeeId: 'E002', email: 'jane.admin@onecrm.com', access_role: 'SUPER_ADMIN', department: 'Operations', designation: 'Operations Lead', biometricId: 'E002', location: 'Chicago Office' },
+  { id: '3', name: 'Alice Smith', employeeId: 'E003', email: 'alice.smith@onecrm.com', access_role: 'HR_MANAGER', department: 'Human Resources', designation: 'HR Manager', biometricId: 'E003', location: 'New York Office' },
+  { id: '4', name: 'Bob Johnson', employeeId: 'E004', email: 'bob.johnson@onecrm.com', access_role: 'PAYROLL_ADMIN', department: 'Finance', designation: 'Payroll Admin', biometricId: 'E004', location: 'New York Office' },
 ];
 
 let devices: Device[] = [
@@ -219,95 +178,6 @@ let payslips: Payslip[] = [
   { id: 'pay_2', employeeId: '2', name: 'Jane Admin', month: 4, year: 2026, basicSalary: 6500, allowances: 1200, deductions: 400, netSalary: 7300, status: 'PAID' }
 ];
 
-let leaveRequests: LeaveRequest[] = [
-  { id: 'req_1', employeeId: '1', employeeName: 'Raju Kalla', leaveTypeId: 'type_1', leaveTypeName: 'Casual Leave', startDate: '2026-06-01', endDate: '2026-06-03', reason: 'Family function trip', status: 'PENDING_MANAGER', managerApproval: 'PENDING', hrApproval: 'PENDING', createdAt: new Date().toISOString() },
-  { id: 'req_2', employeeId: '3', employeeName: 'Alice Smith', leaveTypeId: 'type_2', leaveTypeName: 'Medical Leave', startDate: '2026-05-12', endDate: '2026-05-13', reason: 'Doctor checkup', status: 'APPROVED', managerApproval: 'APPROVED', hrApproval: 'APPROVED', createdAt: new Date().toISOString() }
-];
-
-let candidates: Candidate[] = [
-  {
-    id: 'c1',
-    name: 'Raju Kalla',
-    email: 'raju.kalla@gmail.com',
-    phone: '+91 98765 43210',
-    role: 'Senior developer',
-    department: 'Engineering',
-    currentStage: 'tech_round',
-    appliedDate: '2026-05-18',
-    fields: {
-      jobId: 'job_101',
-      jobTitle: 'Senior developer',
-      experienceRequired: '5+ years',
-      salaryRange: '₹18,00,000 - ₹24,00,000',
-      jobLocation: 'Chicago office',
-      workMode: 'hybrid',
-      postingChannel: 'LinkedIn',
-      careerPortalUrl: 'https://careers.onecrm.com/jobs/101',
-      recruiterAssigned: 'Alice Smith',
-      expectedSalary: '₹22,00,000',
-      noticePeriod: '30 days',
-      applicationSource: 'LinkedIn referral',
-      screeningStatus: 'shortlisted',
-      skillMatchPct: '92%',
-      resumeScore: '8.8/10',
-      interviewerName: 'Alice Smith',
-      communicationSkillsRating: '4.5/5',
-      hrFeedback: 'Strong cultural fit and communications.',
-      technicalInterviewer: 'Jane Admin',
-      codingScore: '88/100',
-      technicalSkillsRating: '4.6/5',
-      testScore: '90%'
-    }
-  },
-  {
-    id: 'c2',
-    name: 'Jane Admin',
-    email: 'jane.admin@onecrm.com',
-    phone: '+91 99988 87766',
-    role: 'Operations manager',
-    department: 'Operations',
-    currentStage: 'hrms_created',
-    appliedDate: '2026-05-02',
-    fields: {
-      jobId: 'job_102',
-      jobTitle: 'Operations manager',
-      experienceRequired: '8+ years',
-      salaryRange: '₹20,00,000 - ₹26,00,000',
-      jobLocation: 'New York office',
-      workMode: 'onsite',
-      postingChannel: 'Direct career site',
-      careerPortalUrl: 'https://careers.onecrm.com/jobs/102',
-      recruiterAssigned: 'Alice Smith',
-      expectedSalary: '₹24,00,000',
-      noticePeriod: 'immediate',
-      applicationSource: 'organic search',
-      screeningStatus: 'shortlisted',
-      skillMatchPct: '98%',
-      resumeScore: '9.5/10',
-      interviewerName: 'Alice Smith',
-      communicationSkillsRating: '5.0/5',
-      hrFeedback: 'exceptional leader profiles.',
-      technicalInterviewer: 'Bob Johnson',
-      codingScore: 'not applicable',
-      technicalSkillsRating: '4.9/5',
-      testScore: '95%',
-      managerName: 'Jane Admin',
-      leadershipRating: '5.0/5',
-      teamFitRating: '4.8/5',
-      behavioralFeedback: 'highly recommended.',
-      finalSalaryOffered: '₹25,00,000',
-      offerId: 'off_902',
-      offeredSalary: '₹25,00,000',
-      offerStatus: 'accepted',
-      verificationStatus: 'verified',
-      employeeId: 'E002',
-      officialEmail: 'jane.admin@onecrm.com',
-      reportingManager: 'Alice Smith',
-      employeeStatus: 'active'
-    }
-  }
-];
-
 // ----------------------------------------------------
 // SERVICE INTERFACES & IMPLEMENTATION
 // ----------------------------------------------------
@@ -328,33 +198,6 @@ export const assignAccessRole = async (employeeId: string, role: string) => {
     return emp;
   }
   throw new Error('Employee not found');
-};
-
-export const createEmployee = async (data: Partial<Employee>) => {
-  if (!data.name?.trim() || !data.email?.trim() || !data.employeeId?.trim()) {
-    throw new Error('name, email, and employeeId are required');
-  }
-  const exists = employees.some(
-    e => e.email.toLowerCase() === data.email!.toLowerCase() || e.employeeId === data.employeeId
-  );
-  if (exists) throw new Error('Employee with this email or ID already exists');
-
-  const emp: Employee = {
-    id: crypto.randomUUID(),
-    name: data.name.trim(),
-    employeeId: data.employeeId.trim(),
-    email: data.email.trim().toLowerCase(),
-    access_role: data.access_role || 'EMPLOYEE',
-    department: data.department || 'Operations',
-    designation: data.designation || 'Staff Member',
-    phone: data.phone || null,
-    biometricId: data.biometricId || data.employeeId.trim(),
-    location: data.location || 'HQ Office',
-    employmentStatus: data.employmentStatus || 'Active',
-    documents: [],
-  };
-  employees.push(emp);
-  return emp;
 };
 
 export const bulkImportEmployees = async (rows: Partial<Employee>[]) => {
@@ -380,53 +223,7 @@ export const bulkImportEmployees = async (rows: Partial<Employee>[]) => {
   }
   return { success: true, count: importedCount };
 };
-export const updateEmployee = async (employeeId: string, updates: Partial<Employee>) => {
-  const emp = employees.find(e => e.id === employeeId || e.employeeId === employeeId);
-  if (!emp) throw new Error('Employee not found');
-  if (updates.name !== undefined) emp.name = updates.name;
-  if (updates.department !== undefined) emp.department = updates.department;
-  if (updates.designation !== undefined) emp.designation = updates.designation;
-  if (updates.phone !== undefined) emp.phone = updates.phone;
-  if (updates.location !== undefined) emp.location = updates.location;
-  if (updates.employmentStatus !== undefined) emp.employmentStatus = updates.employmentStatus;
-  if (updates.dob !== undefined) emp.dob = updates.dob;
-  if (updates.address !== undefined) emp.address = updates.address;
-  if (updates.emergencyContact !== undefined) emp.emergencyContact = updates.emergencyContact;
-  if (updates.hireDate !== undefined) emp.hireDate = updates.hireDate;
-  if (updates.access_role !== undefined) emp.access_role = updates.access_role;
-  return emp;
-};
 
-export const getEmployeeDocuments = async (employeeId: string) => {
-  const emp = employees.find(e => e.id === employeeId || e.employeeId === employeeId);
-  if (!emp) throw new Error('Employee not found');
-  return emp.documents || [];
-};
-
-export const uploadEmployeeDocument = async (employeeId: string, doc: { name: string; type: string; size?: string }) => {
-  const emp = employees.find(e => e.id === employeeId || e.employeeId === employeeId);
-  if (!emp) throw new Error('Employee not found');
-  if (!doc?.name?.trim() || !doc?.type?.trim()) {
-    throw new Error('Document name and type are required');
-  }
-  if (!emp.documents) emp.documents = [];
-  const newDoc = {
-    id: 'doc_' + crypto.randomBytes(4).toString('hex'),
-    name: doc.name,
-    type: doc.type,
-    size: doc.size || '1.5 MB',
-    uploadedAt: new Date().toISOString()
-  };
-  emp.documents.push(newDoc);
-  return newDoc;
-};
-
-export const deleteEmployeeDocument = async (employeeId: string, docId: string) => {
-  const emp = employees.find(e => e.id === employeeId || e.employeeId === employeeId);
-  if (!emp) throw new Error('Employee not found');
-  emp.documents = (emp.documents || []).filter(d => d.id !== docId);
-  return { success: true };
-};
 // 2. Attendance Settings
 export const getAttendanceSettings = async () => {
   return attendanceSettings;
@@ -533,14 +330,11 @@ export const processBiometricLogs = async () => {
 };
 
 export const submitRemoteClockIn = async (employeeId: string, data: { ip: string; coordinates?: string; isCheckOut?: boolean }) => {
-  if (!employeeId?.trim()) {
-    throw new Error('Employee ID is required for remote clock-in');
-  }
   const dateStr = new Date().toISOString().split('T')[0];
   const nowStr = new Date().toISOString();
-
-  const emp = employees.find(e => e.email === employeeId || e.employeeId === employeeId || e.id === employeeId);
-  if (!emp) throw new Error('Employee not found for clock-in');
+  
+  // Find employee by email or employee_id
+  const emp = employees.find(e => e.email === employeeId || e.employeeId === employeeId || e.id === employeeId) || employees[0];
   
   const existing = attendanceRecords.find(r => r.employee_id === emp.id && r.date === dateStr);
   
@@ -591,9 +385,7 @@ export const getRegularizations = async () => {
 };
 
 export const requestRegularization = async (employeeId: string, data: any) => {
-  if (!employeeId?.trim()) throw new Error('Employee ID is required');
-  const emp = employees.find(e => e.email === employeeId || e.id === employeeId || e.employeeId === employeeId);
-  if (!emp) throw new Error('Employee not found');
+  const emp = employees.find(e => e.email === employeeId || e.id === employeeId) || employees[0];
   const newReg: Regularization = {
     id: 'reg_' + crypto.randomBytes(4).toString('hex'),
     employee_id: emp.id,
@@ -712,124 +504,6 @@ export const assignLeavePlanEmployees = async (planId: string, employeeIds: stri
   return { success: true };
 };
 
-export const getLeaveRequests = async () => {
-  return leaveRequests;
-};
-
-export const applyLeaveRequest = async (employeeId: string, data: any) => {
-  if (!employeeId?.trim()) throw new Error('Employee ID is required');
-  const emp = employees.find(e => e.id === employeeId || e.employeeId === employeeId || e.email === employeeId);
-  if (!emp) throw new Error('Employee not found');
-
-  const lt = leaveTypes.find(t => t.id === data.leaveTypeId);
-  if (!lt) throw new Error('Invalid leave type ID');
-  const newReq: LeaveRequest = {
-    id: 'req_' + crypto.randomBytes(4).toString('hex'),
-    employeeId: emp.id,
-    employeeName: emp.name,
-    leaveTypeId: lt?.id || 'type_1',
-    leaveTypeName: lt?.name || 'Casual Leave',
-    startDate: data.startDate,
-    endDate: data.endDate,
-    reason: data.reason,
-    status: 'PENDING_MANAGER',
-    managerApproval: 'PENDING',
-    hrApproval: 'PENDING',
-    createdAt: new Date().toISOString()
-  };
-  leaveRequests.push(newReq);
-  return newReq;
-};
-
-export const processLeaveApproval = async (id: string, role: 'MANAGER' | 'HR', status: 'APPROVED' | 'REJECTED', remarks?: string) => {
-  const req = leaveRequests.find(r => r.id === id);
-  if (!req) throw new Error('Leave request not found');
-
-  if (role === 'MANAGER') {
-    req.managerApproval = status;
-    req.managerRemarks = remarks || 'Approved by Manager';
-    if (status === 'APPROVED') {
-      req.status = 'PENDING_HR';
-    } else {
-      req.status = 'REJECTED';
-    }
-  } else if (role === 'HR') {
-    req.hrApproval = status;
-    req.hrRemarks = remarks || 'Approved by HR';
-    if (status === 'APPROVED') {
-      req.status = 'APPROVED';
-      // Automatically toggle employee to 'On Leave' if current date is inside start/end range
-      const today = new Date().toISOString().split('T')[0];
-      if (today >= req.startDate && today <= req.endDate) {
-        const emp = employees.find(e => e.id === req.employeeId);
-        if (emp) emp.employmentStatus = 'On Leave';
-      }
-    } else {
-      req.status = 'REJECTED';
-    }
-  }
-  return req;
-};
-
-export const getLeaveBalancesReport = async () => {
-  return employees.map(emp => {
-    const assignments = planAssignments.filter(a => a.employee_id === emp.id);
-    const balances = leaveTypes.map(lt => {
-      const def = leaveDefinitions.find(d => assignments.some(a => a.plan_id === d.plan_id) && d.leave_type_id === lt.id);
-      const allocated = def ? def.annual_quota : 12;
-      
-      // Calculate approved leave request days
-      const approvedReqs = leaveRequests.filter(r => r.employeeId === emp.id && r.leaveTypeId === lt.id && r.status === 'APPROVED');
-      let used = 0;
-      approvedReqs.forEach(r => {
-        const start = new Date(r.startDate);
-        const end = new Date(r.endDate);
-        const diffTime = Math.abs(end.getTime() - start.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        used += diffDays;
-      });
-
-      return {
-        leaveTypeId: lt.id,
-        leaveTypeName: lt.name,
-        leaveTypeCode: lt.code,
-        allocated,
-        used,
-        remaining: Math.max(0, allocated - used)
-      };
-    });
-
-    return {
-      employeeId: emp.employeeId,
-      name: emp.name,
-      department: emp.department,
-      balances
-    };
-  });
-};
-
-export const getCandidates = async () => {
-  return candidates;
-};
-
-export const createCandidate = async (candidate: Omit<Candidate, 'id' | 'appliedDate'>) => {
-  const newCand: Candidate = {
-    id: 'c_' + crypto.randomBytes(4).toString('hex'),
-    ...candidate,
-    appliedDate: new Date().toISOString().split('T')[0]
-  };
-  candidates.push(newCand);
-  return newCand;
-};
-
-export const updateCandidate = async (id: string, updates: Partial<Candidate>) => {
-  const cand = candidates.find(c => c.id === id);
-  if (!cand) throw new Error('Candidate not found');
-  if (updates.currentStage) cand.currentStage = updates.currentStage;
-  if (updates.fields) cand.fields = { ...cand.fields, ...updates.fields };
-  return cand;
-};
-
 // 10. Holidays Management
 export const getHolidays = async () => {
   return holidays;
@@ -896,71 +570,7 @@ export const calculatePayroll = async (month: number, year: number) => {
     // Check if payslip already exists
     const exists = payslips.some(p => p.employeeId === struct.employeeId && p.month === month && p.year === year);
     if (!exists) {
-      // 1. Calculate dynamic performance incentives based on Converted Leads
-      let conversionsCount = 0;
-      try {
-        // Query the prisma database to count converted leads assigned to this employee
-        conversionsCount = await prisma.lead.count({
-          where: {
-            assignedCounsellorId: parseInt(emp.id),
-            status: 'CONVERTED'
-          }
-        });
-      } catch (err) {
-        // Fallback mock logic if prisma table is empty or error occurs
-        conversionsCount = emp.id === '1' ? 4 : emp.id === '3' ? 6 : 0;
-      }
-      
-      const incentivePerConversion = 150; // $150 incentive per conversion
-      const incentive = conversionsCount * incentivePerConversion;
-
-      // 2. Calculate Auto deductions for leave (LOP)
-      let lopDays = 0;
-      const startOfMonth = new Date(year, month - 1, 1);
-      const endOfMonth = new Date(year, month, 0);
-      
-      const leavesInMonth = leaveRequests.filter(r => 
-        r.employeeId === emp.id && 
-        r.status === 'APPROVED' &&
-        new Date(r.startDate) >= startOfMonth &&
-        new Date(r.endDate) <= endOfMonth
-      );
-
-      leavesInMonth.forEach(r => {
-        if (r.leaveTypeName.toLowerCase().includes('unpaid') || r.leaveTypeName.toLowerCase().includes('excess')) {
-          const start = new Date(r.startDate);
-          const end = new Date(r.endDate);
-          const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          lopDays += diffDays;
-        }
-      });
-
-      // Also count attendance ABSENT days
-      const attendanceForMonth = attendanceRecords.filter(r => 
-        r.employee_id === emp.id && 
-        r.status === 'ABSENT' && 
-        new Date(r.date) >= startOfMonth && 
-        new Date(r.date) <= endOfMonth
-      );
-      lopDays += attendanceForMonth.length;
-
-      const dailyRate = struct.basicSalary / 30;
-      const lopDeduction = parseFloat((lopDays * dailyRate).toFixed(2));
-
-      // 3. Progressive Tax Auto Deduction
-      const taxableAmount = struct.basicSalary + struct.allowances + incentive;
-      let taxDeduction = 0;
-      if (taxableAmount > 7000) {
-        taxDeduction += (taxableAmount - 7000) * 0.20 + 2000 * 0.15 + 2000 * 0.10;
-      } else if (taxableAmount > 5000) {
-        taxDeduction += (taxableAmount - 5000) * 0.15 + 2000 * 0.10;
-      } else if (taxableAmount > 3000) {
-        taxDeduction += (taxableAmount - 3000) * 0.10;
-      }
-      taxDeduction = parseFloat(taxDeduction.toFixed(2));
-
-      const netSalary = parseFloat((struct.basicSalary + struct.allowances + incentive - struct.deductions - lopDeduction - taxDeduction).toFixed(2));
-
+      const netSalary = struct.basicSalary + struct.allowances - struct.deductions;
       const newPay: Payslip = {
         id: 'pay_' + crypto.randomBytes(4).toString('hex'),
         employeeId: struct.employeeId,
@@ -968,293 +578,15 @@ export const calculatePayroll = async (month: number, year: number) => {
         month,
         year,
         basicSalary: struct.basicSalary,
-        allowances: struct.allowances + incentive,
-        deductions: struct.deductions + lopDeduction + taxDeduction,
+        allowances: struct.allowances,
+        deductions: struct.deductions,
         netSalary,
-        status: 'PAID',
-        conversionsCount,
-        incentive,
-        lopDays,
-        lopDeductions: lopDeduction,
-        taxDeductions: taxDeduction
+        status: 'PAID'
       };
-
       payslips.push(newPay);
       computedList.push(newPay);
     }
   }
 
   return computedList;
-};
-
-// ----------------------------------------------------
-// 13. HR Groups
-// ----------------------------------------------------
-export interface HrGroup {
-  id: string;
-  name: string;
-  description: string;
-  memberIds: string[];
-  createdAt: string;
-}
-
-let hrGroups: HrGroup[] = [
-  { id: 'grp_1', name: 'Admissions Counselors', description: 'Front-line student counselling team', memberIds: ['1', '3'], createdAt: '2026-01-15T00:00:00.000Z' },
-  { id: 'grp_2', name: 'Payroll Operations', description: 'Finance and payroll processing unit', memberIds: ['4'], createdAt: '2026-02-01T00:00:00.000Z' },
-];
-
-export const getGroups = async () => hrGroups;
-
-export const createGroup = async (data: { name: string; description?: string; memberIds?: string[] }) => {
-  const group: HrGroup = {
-    id: 'grp_' + crypto.randomBytes(4).toString('hex'),
-    name: data.name.trim(),
-    description: data.description?.trim() || '',
-    memberIds: data.memberIds || [],
-    createdAt: new Date().toISOString(),
-  };
-  hrGroups.push(group);
-  return group;
-};
-
-// ----------------------------------------------------
-// 14. Business Goals
-// ----------------------------------------------------
-export interface BusinessGoal {
-  id: string;
-  name: string;
-  description: string;
-  targetMetric: string;
-  linkedModules: string[];
-  createdAt: string;
-}
-
-let businessGoals: BusinessGoal[] = [
-  { id: 'goal_enrol_2026', name: 'Increase Enrolments Q2 2026', description: 'Grow student enrolments by 15%', targetMetric: 'enrolments', linkedModules: [], createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'goal_revenue_2026', name: 'Revenue Target FY26', description: 'Achieve institutional revenue milestones', targetMetric: 'revenue', linkedModules: [], createdAt: '2026-01-01T00:00:00.000Z' },
-];
-
-export const getBusinessGoals = async () => businessGoals;
-
-export const createBusinessGoal = async (data: { name: string; description?: string; targetMetric?: string }) => {
-  const goal: BusinessGoal = {
-    id: 'goal_' + crypto.randomBytes(4).toString('hex'),
-    name: data.name.trim(),
-    description: data.description?.trim() || '',
-    targetMetric: data.targetMetric?.trim() || 'general',
-    linkedModules: [],
-    createdAt: new Date().toISOString(),
-  };
-  businessGoals.push(goal);
-  return goal;
-};
-
-export const linkBusinessGoalToHr = async (goalId: string) => {
-  if (!goalId || !/^[a-zA-Z0-9_-]+$/.test(goalId)) {
-    throw new Error('Invalid business goal ID');
-  }
-  const goal = businessGoals.find(g => g.id === goalId);
-  if (!goal) throw new Error('Business goal not found');
-  if (!goal.linkedModules.includes('HR')) goal.linkedModules.push('HR');
-  return goal;
-};
-
-// ----------------------------------------------------
-// 15. Attendance Process Templates
-// ----------------------------------------------------
-export interface AttendanceProcessTemplate {
-  id: string;
-  name: string;
-  description: string;
-  steps: string[];
-  createdAt: string;
-}
-
-let attendanceTemplates: AttendanceProcessTemplate[] = [
-  {
-    id: 'tpl_att_1',
-    name: 'Standard Daily Attendance',
-    description: 'Biometric check-in, remote fallback, regularization workflow',
-    steps: ['Biometric scan', 'IP validation', 'Manager regularization review', 'HR audit'],
-    createdAt: '2026-01-01T00:00:00.000Z',
-  },
-];
-
-export const getAttendanceTemplates = async () => attendanceTemplates;
-
-export const getAttendanceTemplate = async (id: string) => {
-  const tpl = attendanceTemplates.find(t => t.id === id);
-  if (!tpl) throw new Error('Attendance process template not found');
-  return tpl;
-};
-
-// ----------------------------------------------------
-// 16. Attendance Summary Report
-// ----------------------------------------------------
-export const getAttendanceSummaryReport = async (month?: number, year?: number) => {
-  const m = month ?? new Date().getMonth() + 1;
-  const y = year ?? new Date().getFullYear();
-  const start = new Date(y, m - 1, 1);
-  const end = new Date(y, m, 0);
-
-  return employees.map(emp => {
-    const records = attendanceRecords.filter(r => {
-      if (r.employee_id !== emp.id) return false;
-      const d = new Date(r.date);
-      return d >= start && d <= end;
-    });
-    const present = records.filter(r => r.status === 'PRESENT').length;
-    const late = records.filter(r => r.status === 'LATE').length;
-    const absent = records.filter(r => r.status === 'ABSENT').length;
-    const halfDay = records.filter(r => r.status === 'HALF_DAY').length;
-    return {
-      employeeId: emp.employeeId,
-      name: emp.name,
-      department: emp.department,
-      month: m,
-      year: y,
-      present,
-      late,
-      absent,
-      halfDay,
-      totalDays: records.length,
-    };
-  });
-};
-
-// ----------------------------------------------------
-// 17. Counselor Performance Metrics
-// ----------------------------------------------------
-export const getCounselorMetrics = async (counselorId: string | null | undefined) => {
-  if (!counselorId || counselorId === 'null' || counselorId === 'undefined') {
-    throw new Error('Counselor ID is required');
-  }
-  const emp = employees.find(e => e.id === counselorId || e.employeeId === counselorId || e.email === counselorId);
-  if (!emp) throw new Error('Counselor not found');
-
-  let leadsHandled = 0;
-  let conversions = 0;
-  let applications = 0;
-  try {
-    leadsHandled = await prisma.lead.count({
-      where: { assignedCounsellorId: parseInt(emp.id) || undefined },
-    });
-    conversions = await prisma.lead.count({
-      where: { assignedCounsellorId: parseInt(emp.id) || undefined, status: 'CONVERTED' },
-    });
-    applications = await prisma.lead.count({
-      where: { assignedCounsellorId: parseInt(emp.id) || undefined, status: { in: ['CONVERTED', 'QUALIFIED', 'CONTACTED'] } },
-    });
-  } catch {
-    leadsHandled = emp.id === '1' ? 24 : emp.id === '3' ? 18 : 5;
-    conversions = emp.id === '1' ? 4 : emp.id === '3' ? 6 : 1;
-    applications = emp.id === '1' ? 8 : emp.id === '3' ? 10 : 2;
-  }
-
-  const revenueGenerated = conversions * 2500;
-  return {
-    counselorId: emp.employeeId,
-    name: emp.name,
-    department: emp.department,
-    leadsHandled,
-    applications,
-    conversions,
-    enrolments: conversions,
-    revenueGenerated,
-    conversionRate: leadsHandled > 0 ? parseFloat(((conversions / leadsHandled) * 100).toFixed(1)) : 0,
-  };
-};
-
-// ----------------------------------------------------
-// 18. KPI Definitions & Performance Reviews
-// ----------------------------------------------------
-export interface KpiDefinition {
-  id: string;
-  name: string;
-  description: string;
-  metric: string;
-  roleCategory: 'counsellor' | 'marketing' | 'processing' | 'general';
-  createdAt: string;
-}
-
-export interface PerformanceReviewRecord {
-  id: string;
-  employeeId: string;
-  name: string;
-  department: string;
-  cycle: string;
-  manager: string;
-  rating: number;
-  status: string;
-  date: string;
-  kpiScores?: { kpi1: number; kpi2: number; kpi3: number; feedback?: string };
-}
-
-let kpiDefinitions: KpiDefinition[] = [
-  { id: 'kpi_1', name: 'Lead Conversion Rate', description: 'Rate of converting leads to enrolments', metric: 'percentage', roleCategory: 'counsellor', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'kpi_2', name: 'Leads Generated', description: 'Marketing leads generated per period', metric: 'count', roleCategory: 'marketing', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: 'kpi_3', name: 'Application Processing Time', description: 'Average days to process applications', metric: 'days', roleCategory: 'processing', createdAt: '2026-01-01T00:00:00.000Z' },
-];
-
-let performanceReviews: PerformanceReviewRecord[] = [
-  { id: 'rev_1', name: 'Raju Kalla', employeeId: 'E001', department: 'Engineering', cycle: 'FY26 H1 Review', manager: 'Jane Admin', rating: 4.5, status: 'Completed', date: '2026-05-10' },
-  { id: 'rev_2', name: 'Alice Smith', employeeId: 'E003', department: 'Human Resources', cycle: 'FY26 H1 Review', manager: 'Jane Admin', rating: 4.8, status: 'Completed', date: '2026-05-14' },
-  { id: 'rev_3', name: 'Bob Johnson', employeeId: 'E004', department: 'Finance', cycle: 'FY26 H1 Review', manager: 'Alice Smith', rating: 0, status: 'Manager Review', date: '2026-05-22' },
-];
-
-export const getKpiDefinitions = async () => kpiDefinitions;
-
-export const createKpiDefinition = async (data: { name: string; description?: string; metric: string; roleCategory?: KpiDefinition['roleCategory'] }) => {
-  const kpi: KpiDefinition = {
-    id: 'kpi_' + crypto.randomBytes(4).toString('hex'),
-    name: data.name.trim(),
-    description: data.description?.trim() || '',
-    metric: data.metric.trim(),
-    roleCategory: data.roleCategory || 'general',
-    createdAt: new Date().toISOString(),
-  };
-  kpiDefinitions.push(kpi);
-  return kpi;
-};
-
-export const getPerformanceReviews = async () => performanceReviews;
-
-export const createPerformanceReview = async (data: Partial<PerformanceReviewRecord>) => {
-  if (!data.name?.trim() || !data.employeeId?.trim()) {
-    throw new Error('Employee name and ID are required');
-  }
-  const review: PerformanceReviewRecord = {
-    id: 'rev_' + crypto.randomBytes(4).toString('hex'),
-    name: data.name.trim(),
-    employeeId: data.employeeId.trim(),
-    department: data.department || 'Operations',
-    cycle: data.cycle || 'FY26 H1 Review',
-    manager: data.manager || 'HR Manager',
-    rating: 0,
-    status: data.status || 'Self-Review',
-    date: new Date().toISOString().split('T')[0],
-  };
-  performanceReviews.unshift(review);
-  return review;
-};
-
-export const updatePerformanceReview = async (id: string, updates: Partial<PerformanceReviewRecord>) => {
-  const review = performanceReviews.find(r => r.id === id);
-  if (!review) throw new Error('Performance review not found');
-  if (updates.rating !== undefined) review.rating = updates.rating;
-  if (updates.status !== undefined) review.status = updates.status;
-  if (updates.kpiScores !== undefined) review.kpiScores = updates.kpiScores;
-  if (updates.status === 'Completed') review.date = new Date().toISOString().split('T')[0];
-  return review;
-};
-
-export const getMarketingTeamKpis = async (teamId: string | null | undefined) => {
-  if (!teamId || teamId === 'null') throw new Error('Team ID is required');
-  return {
-    teamId,
-    leadsGenerated: 142,
-    costPerLead: 18.5,
-    campaignRoi: 3.2,
-    kpis: kpiDefinitions.filter(k => k.roleCategory === 'marketing'),
-  };
 };

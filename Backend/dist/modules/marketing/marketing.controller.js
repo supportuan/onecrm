@@ -1,7 +1,6 @@
 import * as marketingService from './marketing.service.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
 import { createLeadSchema, updateLeadSchema, createCampaignSchema, updateCampaignSchema, createAutomationSchema, updateAutomationSchema, createLandingPageSchema, updateLandingPageSchema, submitFormSchema, leadActivitySchema, addCampaignLeadsSchema, createDashboardMetricSchema, updateDashboardMetricSchema, createIntakeTrendSchema, updateIntakeTrendSchema, createStudentFunnelStageSchema, updateStudentFunnelStageSchema, createAgencyFunnelStageSchema, updateAgencyFunnelStageSchema, createMarketingPerformanceSchema, updateMarketingPerformanceSchema, createMarketingChannelAnalyticsSchema, updateMarketingChannelAnalyticsSchema, createAgencyFunnelAnalyticsSchema, updateAgencyFunnelAnalyticsSchema, } from './marketing.validation.js';
-import { bulkUploadLeadsFromExcel } from './lead-upload.service.js';
 // ==========================================
 // 1. Dashboard & General Analytics Controllers
 // ==========================================
@@ -607,67 +606,6 @@ export const updateAgencyFunnelAnalytics = async (req, res, next) => {
         const validatedData = updateAgencyFunnelAnalyticsSchema.parse(req.body);
         const funnel = await marketingService.updateAgencyFunnelAnalytics(id, validatedData);
         return sendSuccess(res, 'Agency funnel analytics updated successfully', funnel);
-    }
-    catch (error) {
-        next(error);
-    }
-};
-export const bulkUploadLeads = async (req, res, next) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: 'Excel file is required',
-            });
-        }
-        const result = await bulkUploadLeadsFromExcel(req.file.buffer);
-        return res.status(200).json({
-            success: true,
-            message: 'Lead bulk upload completed',
-            data: result,
-        });
-    }
-    catch (error) {
-        next(error);
-    }
-};
-// =========================================
-//   Campaign Controllers
-// =========================================
-export const executeCampaign = async (req, res, next) => {
-    try {
-        const id = parseInt(req.params.id);
-        if (isNaN(id)) {
-            return sendError(res, 'Invalid campaign ID', null, 400);
-        }
-        const result = await marketingService.executeCampaign(id);
-        return sendSuccess(res, 'Campaign executed successfully', result);
-    }
-    catch (error) {
-        next(error);
-    }
-};
-export const getCampaignMessages = async (req, res, next) => {
-    try {
-        const id = parseInt(req.params.id);
-        if (isNaN(id)) {
-            return sendError(res, 'Invalid campaign ID', null, 400);
-        }
-        const result = await marketingService.getCampaignMessages(id);
-        return sendSuccess(res, 'Campaign messages retrieved successfully', result);
-    }
-    catch (error) {
-        next(error);
-    }
-};
-export const getCampaignAnalytics = async (req, res, next) => {
-    try {
-        const id = parseInt(req.params.id);
-        if (isNaN(id)) {
-            return sendError(res, 'Invalid campaign ID', null, 400);
-        }
-        const result = await marketingService.getCampaignAnalytics(id);
-        return sendSuccess(res, 'Campaign analytics retrieved successfully', result);
     }
     catch (error) {
         next(error);

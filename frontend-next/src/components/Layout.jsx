@@ -7,11 +7,10 @@ import { WorkspaceProvider, useWorkspace } from '../lib/workspaceContext';
 
 const LayoutContent = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { activeWorkspace } = useWorkspace();
   const pathname = usePathname();
 
-  // If there is no active workspace or we are on the landing page, show full screen portal
-  const isPortal = !activeWorkspace || pathname === '/';
+  // Show full screen portal only for authentication and landing routes
+  const isPortal = pathname === '/' || pathname === '/login' || pathname === '/forgot-password' || pathname === '/reset-password' || pathname === '/change-password';
 
   if (isPortal) {
     return (

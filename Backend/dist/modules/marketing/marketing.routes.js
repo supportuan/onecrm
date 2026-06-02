@@ -1,33 +1,6 @@
 import { Router } from 'express';
 import * as controller from './marketing.controller.js';
-import metaRoutes from './meta.routes.js';
-import { uploadExcel } from '../../middleware/upload.middleware.js';
-import leadActivityRoutes from './routes/lead-activity.routes.js';
 const router = Router();
-router.post('/leads/bulk-upload', uploadExcel.single('file'), controller.bulkUploadLeads);
-router.use('/', leadActivityRoutes);
-/**
- * @swagger
- * /api/marketing/leads/bulk-upload:
- *   post:
- *     summary: Bulk upload leads from Excel file
- *     tags: [Marketing]
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             required:
- *               - file
- *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *     responses:
- *       200:
- *         description: Leads uploaded successfully
- */
 /**
  * @swagger
  * tags:
@@ -1325,67 +1298,5 @@ router.post('/analytics/agency-funnel', controller.upsertAgencyFunnelAnalytics);
  *       200:
  *         description: Successfully updated agency funnel analytics
  */
-/**
- * @swagger
- * /api/marketing/campaigns/{id}/execute:
- *   post:
- *     summary: Execute campaign
- *     description: Executes campaign using Email, SMS, or WhatsApp based on campaign type.
- *     tags: [Marketing]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Campaign ID
- *     responses:
- *       200:
- *         description: Campaign executed successfully
- *       400:
- *         description: Invalid campaign ID
- *       404:
- *         description: Campaign not found
- */
-router.post('/campaigns/:id/execute', controller.executeCampaign);
-/**
- * @swagger
- * /api/marketing/campaigns/{id}/messages:
- *   get:
- *     summary: Get campaign messages
- *     description: Returns campaign lead delivery records and message status.
- *     tags: [Marketing]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Campaign ID
- *     responses:
- *       200:
- *         description: Campaign messages retrieved successfully
- */
-router.get('/campaigns/:id/messages', controller.getCampaignMessages);
-/**
- * @swagger
- * /api/marketing/campaigns/{id}/analytics:
- *   get:
- *     summary: Get campaign analytics
- *     description: Returns delivery, open, click, failure, and conversion analytics for a campaign.
- *     tags: [Marketing]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Campaign ID
- *     responses:
- *       200:
- *         description: Campaign analytics retrieved successfully
- */
-router.get('/campaigns/:id/analytics', controller.getCampaignAnalytics);
 router.put('/analytics/agency-funnel/:id', controller.updateAgencyFunnelAnalytics);
-router.use('/meta', metaRoutes);
 export default router;

@@ -5,13 +5,10 @@ import cors from 'cors';
 import { setupSwagger } from './swagger.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { tenantMiddleware } from './middleware/tenant.js';
-import marketingRouter from './modules/marketing/marketing.routes.js';
+import marketingRouter from './modules/marketing/routes/marketing.routes.js';
 import hrRouter from './modules/hr/hr.routes.js';
-import studentRouter from './modules/student/student.routes.js';
-// Import existing JavaScript routes (NodeNext resolution allows importing relative .js files)
-// @ts-ignore
-import authRouter from './routes/auth.js';
-// @ts-ignore
+import authRouter from './routes/auth.ts';
+import usersRouter from './routes/users.ts';
 import customerRouter from './routes/customers.js';
 const app = express();
 const port = process.env.PORT || 4000;
@@ -21,12 +18,11 @@ app.use(tenantMiddleware);
 // Set up Swagger UI documentation
 setupSwagger(app);
 // Mount Modular API Routes
-app.use('/api/auth', authRouter);
 app.use('/api/marketing', marketingRouter);
 app.use('/api/hr', hrRouter);
-app.use('/api/student', studentRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/customers', customerRouter);
-app.use('/api', hrRouter);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ success: true, status: 'ok', message: 'One CRM TypeScript backend is running' });

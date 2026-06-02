@@ -1,9 +1,11 @@
 'use client';
-import { HelpCircle, Bell, Search, Settings } from 'lucide-react';
+import { HelpCircle, Bell, Search, Settings, LogOut } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 const TopNavbar = ({ onToggleSidebar }) => {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   let breadcrumb = "Dashboard";
   let title = "Welcome back!";
@@ -83,7 +85,16 @@ const TopNavbar = ({ onToggleSidebar }) => {
             <Settings className="h-5 w-5 stroke-[1.5]" />
           </button>
 
-          <div className="h-9 w-9 rounded-full bg-slate-300 shadow-sm flex-none"></div>
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="text-sm text-slate-700 font-semibold">{user.fullName}</div>
+              </div>
+            )}
+            <button className="p-1.5 text-slate-400 hover:text-red-655 hover:bg-red-50 rounded-lg transition" onClick={logout} title="Log out">
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 

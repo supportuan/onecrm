@@ -14,9 +14,7 @@ import {
   X,
   Calendar,
   Search,
-  UserCheck,
-  BarChart3,
-  FileText
+  UserCheck
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/stores/authStore';
 import { mergeDeviceUserBatches } from '../../lib/biometric/enrolled-merge';
@@ -36,9 +34,7 @@ import {
   deleteNetwork,
   getRegularizations,
   requestRegularization,
-  processRegularization,
-  getAttendanceTemplates,
-  getAttendanceSummaryReport
+  processRegularization
 } from '../../services/hrApi';
 
 export default function Attendance() {
@@ -52,9 +48,6 @@ export default function Attendance() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
-  const [attendanceTemplates, setAttendanceTemplates] = useState([]);
-  const [summaryReport, setSummaryReport] = useState([]);
-  const [reportLoading, setReportLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Tab 1: Calendar State
@@ -129,26 +122,6 @@ export default function Attendance() {
       console.error(err);
     }
   };
-
-  const fetchReportsData = async () => {
-    setReportLoading(true);
-    try {
-      const [tplRes, reportRes] = await Promise.all([
-        getAttendanceTemplates(),
-        getAttendanceSummaryReport(selectedMonth, selectedYear),
-      ]);
-      if (tplRes.success) setAttendanceTemplates(tplRes.data || []);
-      if (reportRes.success) setSummaryReport(reportRes.data || []);
-    } catch (err) {
-      console.error('Failed to fetch attendance reports:', err);
-    } finally {
-      setReportLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'reports') fetchReportsData();
-  }, [activeTab, selectedMonth, selectedYear]);
 
   const handleUpdateSettings = async (field, value) => {
     const updated = { ...settings, [field]: value };
@@ -359,8 +332,7 @@ export default function Attendance() {
           { id: 'calendar', label: 'Team Calendar', icon: Calendar },
           { id: 'remote', label: 'Remote Clock-in', icon: MapPin },
           { id: 'biometric', label: 'Hardware Registry', icon: Fingerprint },
-          { id: 'networks', label: 'IP Networks Whitelist', icon: Wifi },
-          { id: 'reports', label: 'Reports & Templates', icon: BarChart3 }
+          { id: 'networks', label: 'IP Networks Whitelist', icon: Wifi }
         ].map(tab => {
           const Icon = tab.icon;
           return (
@@ -760,85 +732,6 @@ export default function Attendance() {
                     Whitelist Net Range
                   </button>
                 </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'reports' && (
-          <div className="space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">Attendance Summary Report</h3>
-                <p className="text-xs text-slate-500">Monthly present, late, absent, and half-day counts per employee.</p>
-              </div>
-              <div className="flex gap-2">
-                <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 outline-none">
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>{new Date(2026, i).toLocaleString('default', { month: 'long' })}</option>
-                  ))}
-                </select>
-                <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 outline-none">
-                  <option value={2026}>2026</option>
-                  <option value={2025}>2025</option>
-                </select>
-              </div>
-            </div>
-
-            {reportLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-indigo-600" size={28} /></div>
-            ) : (
-              <div className="border border-slate-200 rounded-2xl overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[700px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-semibold text-slate-500">
-                      <th className="px-5 py-4">Employee ID</th>
-                      <th className="px-5 py-4">Name</th>
-                      <th className="px-5 py-4">Department</th>
-                      <th className="px-5 py-4 text-center">Present</th>
-                      <th className="px-5 py-4 text-center">Late</th>
-                      <th className="px-5 py-4 text-center">Absent</th>
-                      <th className="px-5 py-4 text-center">Half Day</th>
-                      <th className="px-5 py-4 text-center">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {summaryReport.map((row) => (
-                      <tr key={row.employeeId} className="hover:bg-slate-50/50">
-                        <td className="px-5 py-4 text-xs font-mono font-bold text-indigo-600">{row.employeeId}</td>
-                        <td className="px-5 py-4 text-xs font-semibold text-slate-800">{row.name}</td>
-                        <td className="px-5 py-4 text-xs text-slate-500">{row.department}</td>
-                        <td className="px-5 py-4 text-center text-xs font-bold text-emerald-600">{row.present}</td>
-                        <td className="px-5 py-4 text-center text-xs font-bold text-amber-600">{row.late}</td>
-                        <td className="px-5 py-4 text-center text-xs font-bold text-rose-600">{row.absent}</td>
-                        <td className="px-5 py-4 text-center text-xs font-bold text-slate-600">{row.halfDay}</td>
-                        <td className="px-5 py-4 text-center text-xs font-bold text-slate-800">{row.totalDays}</td>
-                      </tr>
-                    ))}
-                    {summaryReport.length === 0 && (
-                      <tr><td colSpan={8} className="px-5 py-12 text-center text-xs text-slate-400 italic">No attendance records for this period.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2"><FileText size={18} /> Attendance Process Templates</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {attendanceTemplates.map((tpl) => (
-                  <div key={tpl.id} className="p-6 bg-slate-50 border border-slate-200 rounded-2xl">
-                    <h4 className="text-sm font-semibold text-slate-800">{tpl.name}</h4>
-                    <p className="text-xs text-slate-500 mt-1">{tpl.description}</p>
-                    <ol className="mt-4 space-y-1">
-                      {(tpl.steps || []).map((step, i) => (
-                        <li key={i} className="text-[10px] font-semibold text-indigo-600">{i + 1}. {step}</li>
-                      ))}
-                    </ol>
-                  </div>
-                ))}
               </div>
             </div>
           </div>

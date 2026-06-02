@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCandidates, createCandidate, updateCandidate } from '../../services/hrApi';
 import { 
   Briefcase, 
   UserPlus, 
@@ -213,73 +212,129 @@ export default function RecruitmentTracker() {
   };
 
   // State preseeded candidates
-  const [candidates, setCandidates] = useState([]);
-
-  // Fetch candidates from database on mount
-  useEffect(() => {
-    fetchCandidates();
-  }, []);
-
-  const fetchCandidates = async () => {
-    try {
-      const res = await getCandidates();
-      if (res && res.success) {
-        setCandidates(res.data || []);
-      } else {
-        setCandidates([]);
+  const [candidates, setCandidates] = useState([
+    {
+      id: 'c1',
+      name: 'Raju Kalla',
+      email: 'raju.kalla@gmail.com',
+      phone: '+91 98765 43210',
+      role: 'Senior developer',
+      department: 'Engineering',
+      currentStage: 'tech_round',
+      appliedDate: '2026-05-18',
+      fields: {
+        jobId: 'job_101',
+        jobTitle: 'Senior developer',
+        experienceRequired: '5+ years',
+        salaryRange: '₹18,00,000 - ₹24,00,000',
+        jobLocation: 'Chicago office',
+        workMode: 'hybrid',
+        postingChannel: 'LinkedIn',
+        careerPortalUrl: 'https://careers.onecrm.com/jobs/101',
+        recruiterAssigned: 'Alice Smith',
+        expectedSalary: '₹22,00,000',
+        noticePeriod: '30 days',
+        applicationSource: 'LinkedIn referral',
+        screeningStatus: 'shortlisted',
+        skillMatchPct: '92%',
+        resumeScore: '8.8/10',
+        interviewerName: 'Alice Smith',
+        communicationSkillsRating: '4.5/5',
+        hrFeedback: 'Strong cultural fit and communications.',
+        technicalInterviewer: 'Jane Admin',
+        codingScore: '88/100',
+        technicalSkillsRating: '4.6/5',
+        testScore: '90%'
       }
-    } catch (err) {
-      console.error("Failed to load candidates:", err);
-      setCandidates([]);
+    },
+    {
+      id: 'c2',
+      name: 'Jane Admin',
+      email: 'jane.admin@onecrm.com',
+      phone: '+91 99988 87766',
+      role: 'Operations manager',
+      department: 'Operations',
+      currentStage: 'hrms_created',
+      appliedDate: '2026-05-02',
+      fields: {
+        jobId: 'job_102',
+        jobTitle: 'Operations manager',
+        experienceRequired: '8+ years',
+        salaryRange: '₹20,00,000 - ₹26,00,000',
+        jobLocation: 'New York office',
+        workMode: 'onsite',
+        postingChannel: 'Direct career site',
+        careerPortalUrl: 'https://careers.onecrm.com/jobs/102',
+        recruiterAssigned: 'Alice Smith',
+        expectedSalary: '₹24,00,000',
+        noticePeriod: 'immediate',
+        applicationSource: 'organic search',
+        screeningStatus: 'shortlisted',
+        skillMatchPct: '98%',
+        resumeScore: '9.5/10',
+        interviewerName: 'Alice Smith',
+        communicationSkillsRating: '5.0/5',
+        hrFeedback: 'exceptional leader profiles.',
+        technicalInterviewer: 'Bob Johnson',
+        codingScore: 'not applicable',
+        technicalSkillsRating: '4.9/5',
+        testScore: '95%',
+        managerName: 'Jane Admin',
+        leadershipRating: '5.0/5',
+        teamFitRating: '4.8/5',
+        behavioralFeedback: 'highly recommended.',
+        finalSalaryOffered: '₹25,00,000',
+        offerId: 'off_902',
+        offeredSalary: '₹25,00,000',
+        offerStatus: 'accepted',
+        verificationStatus: 'verified',
+        employeeId: 'E002',
+        officialEmail: 'jane.admin@onecrm.com',
+        reportingManager: 'Alice Smith',
+        employeeStatus: 'active'
+      }
     }
-  };
+  ]);
 
   // Create new profile
-  const handleCreateProfile = async (e) => {
+  const handleCreateProfile = (e) => {
     e.preventDefault();
     if (!newProfileForm.name || !newProfileForm.email) return;
 
     const newCandidate = {
+      id: `c_${Date.now()}`,
       name: newProfileForm.name,
       email: newProfileForm.email,
       phone: newProfileForm.phone || '+91 99999 88888',
       role: newProfileForm.role,
       department: newProfileForm.department,
       currentStage: 'requirement', // starts at flow stage 1
+      appliedDate: new Date().toISOString().split('T')[0],
       fields: {
         jobTitle: newProfileForm.role,
         department: newProfileForm.department,
         fullName: newProfileForm.name,
         email: newProfileForm.email,
-        phoneNumber: newProfileForm.phone || '+91 99999 88888'
+        phoneNumber: newProfileForm.phone
       }
     };
 
-    try {
-      const res = await createCandidate(newCandidate);
-      if (res && res.success) {
-        const created = res.data;
-        setCandidates(prev => [created, ...prev]);
-        setSelectedCandidate(created);
-        setShowAddProfileModal(false);
-        setNewProfileForm({
-          name: '',
-          email: '',
-          phone: '',
-          role: 'Senior developer',
-          department: 'Engineering'
-        });
-        setSuccessMessage('new profile created successfully');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      }
-    } catch (err) {
-      alert("Failed to create candidate profile: " + err.message);
-    }
+    setCandidates([newCandidate, ...candidates]);
+    setSelectedCandidate(newCandidate);
+    setShowAddProfileModal(false);
+    setNewProfileForm({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'Senior developer',
+      department: 'Engineering'
+    });
+    setSuccessMessage('new profile created successfully');
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   // Dynamic field update
-  const handleFieldChange = async (candidateId, fieldKey, value) => {
-    let updatedCandidate = null;
+  const handleFieldChange = (candidateId, fieldKey, value) => {
     setCandidates(prev => prev.map(cand => {
       if (cand.id === candidateId) {
         const updated = {
@@ -289,7 +344,6 @@ export default function RecruitmentTracker() {
             [fieldKey]: value
           }
         };
-        updatedCandidate = updated;
         if (selectedCandidate && selectedCandidate.id === candidateId) {
           setSelectedCandidate(updated);
         }
@@ -297,39 +351,30 @@ export default function RecruitmentTracker() {
       }
       return cand;
     }));
-
-    if (updatedCandidate) {
-      try {
-        await updateCandidate(candidateId, { fields: updatedCandidate.fields });
-      } catch (err) {
-        console.error("Failed to sync field to database:", err);
-      }
-    }
   };
 
   // Advance stage
-  const promoteCandidate = async (candidateId) => {
-    const cand = candidates.find(c => c.id === candidateId);
-    if (!cand) return;
-
-    const currentIdx = STAGES.findIndex(s => s.key === cand.currentStage);
-    if (currentIdx !== -1 && currentIdx < STAGES.length - 1) {
-      const nextStage = STAGES[currentIdx + 1].key;
-      
-      try {
-        const res = await updateCandidate(candidateId, { currentStage: nextStage });
-        if (res && res.success) {
-          const updated = res.data;
-          setCandidates(prev => prev.map(c => c.id === candidateId ? updated : c));
-          setSelectedCandidate(updated);
-          setActiveViewStage(nextStage);
+  const promoteCandidate = (candidateId) => {
+    setCandidates(prev => prev.map(cand => {
+      if (cand.id === candidateId) {
+        const currentIdx = STAGES.findIndex(s => s.key === cand.currentStage);
+        if (currentIdx !== -1 && currentIdx < STAGES.length - 1) {
+          const nextStage = STAGES[currentIdx + 1].key;
+          const updated = {
+            ...cand,
+            currentStage: nextStage
+          };
+          if (selectedCandidate && selectedCandidate.id === candidateId) {
+            setSelectedCandidate(updated);
+            setActiveViewStage(nextStage); // Sync viewed fields with active promotion
+          }
           setSuccessMessage('pipeline stage updated successfully');
           setTimeout(() => setSuccessMessage(''), 3000);
+          return updated;
         }
-      } catch (err) {
-        alert("Failed to advance candidate stage: " + err.message);
       }
-    }
+      return cand;
+    }));
   };
 
   const filteredCandidates = candidates.filter(cand => 
@@ -570,154 +615,10 @@ export default function RecruitmentTracker() {
                 })}
               </div>
 
-              {/* Offer Letter Action Button */}
-              {activeViewStage === 'offer_generation' && (
-                <div className="p-5 bg-indigo-50 border border-indigo-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 mt-6">
-                  <div>
-                    <h5 className="text-xs font-bold text-indigo-900">Offer Letter Generation & PDF Actions</h5>
-                    <p className="text-[11px] text-slate-500 mt-1">Generate a highly polished, styled letterhead Offer Letter for print/saving.</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const tenantId = localStorage.getItem('tenantId') || 'default-tenant';
-                      window.open(`/api/hr/recruitment/offer-letter/${selectedCandidate.id}/pdf?tenantId=${tenantId}`, '_blank');
-                    }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 hover:scale-[1.01] active:scale-95 transition-all shadow-md shrink-0"
-                  >
-                    <FileText size={14} />
-                    Download / Print Offer PDF
-                  </button>
-                </div>
-              )}
-
-              {/* Onboarding Checklist Area */}
-              {activeViewStage === 'onboarding' && (
-                <div className="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-3xl space-y-4">
-                  <h5 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <ClipboardList size={16} className="text-indigo-600" />
-                    Onboarding Milestones & IT Checklist
-                  </h5>
-                  <p className="text-[11px] text-slate-500 lowercase leading-relaxed">
-                    Ensure all mandatory pre-onboarding workflows are fully marked as completed prior to synchronizing employee database records.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    {[
-                      { key: 'checklist_it_provisioning', label: 'Slack, Google Workspaces, and email provisioning' },
-                      { key: 'checklist_hardware_assignment', label: 'IT Laptop and peripherals allocation' },
-                      { key: 'checklist_orientation_scheduled', label: 'Orientation schedule and manager coordination' },
-                      { key: 'checklist_compliance_training', label: 'Assigned standard corporate compliance modules' }
-                    ].map((item) => {
-                      const checked = selectedCandidate.fields[item.key] === 'true' || selectedCandidate.fields[item.key] === true;
-                      return (
-                        <label 
-                          key={item.key} 
-                          className={`flex items-center gap-3 p-4 rounded-2xl border transition-all cursor-pointer select-none ${
-                            checked 
-                              ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950 font-semibold' 
-                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => handleFieldChange(selectedCandidate.id, item.key, e.target.checked ? 'true' : 'false')}
-                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-350 accent-emerald-600 cursor-pointer"
-                          />
-                          <span className="text-[11px]">{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* HRMS Synchronization panel */}
-              {activeViewStage === 'hrms_created' && (
-                <div className="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-3xl space-y-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-                    <div>
-                      <h5 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <Fingerprint size={16} className="text-indigo-600" />
-                        HRMS Sync & Employee Profile Registration
-                      </h5>
-                      <p className="text-[11px] text-slate-500 mt-1 lowercase leading-relaxed">
-                        Verify data payloads and synchronize the selected recruit as an Active Employee inside the core Directory database.
-                      </p>
-                    </div>
-                    
-                    {/* HRMS SYNC INDICATOR BADGE */}
-                    <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[9px] uppercase tracking-wider font-extrabold flex items-center gap-1.5 border ${
-                        selectedCandidate.fields.hrmsSynced === 'true'
-                          ? 'bg-emerald-100 border-emerald-300 text-emerald-800 shadow-sm'
-                          : 'bg-amber-100 border-amber-300 text-amber-800'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          selectedCandidate.fields.hrmsSynced === 'true' ? 'bg-emerald-600 animate-pulse' : 'bg-amber-500'
-                        }`} />
-                        {selectedCandidate.fields.hrmsSynced === 'true' ? 'Linked in Sync' : 'Out of Sync'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { key: 'checklist_hrms_user', label: 'Generate standard credentials and active login record' },
-                      { key: 'checklist_hrms_attendance', label: 'Link candidate IP network whitelists for remote clock-in' },
-                      { key: 'checklist_hrms_payroll', label: 'Assign customized salary slab structures' },
-                      { key: 'checklist_hrms_leaves', label: 'Allocate default leave annual quotas and entitlements policy' }
-                    ].map((item) => {
-                      const checked = selectedCandidate.fields[item.key] === 'true' || selectedCandidate.fields[item.key] === true;
-                      return (
-                        <label 
-                          key={item.key} 
-                          className={`flex items-center gap-3 p-4 rounded-2xl border transition-all cursor-pointer select-none ${
-                            checked 
-                              ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950 font-semibold' 
-                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => handleFieldChange(selectedCandidate.id, item.key, e.target.checked ? 'true' : 'false')}
-                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-350 accent-emerald-600 cursor-pointer"
-                          />
-                          <span className="text-[11px]">{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-
-                  {/* Big Action button to sync with HRMS */}
-                  <div className="bg-white border border-slate-200 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <h6 className="text-[11px] font-bold text-slate-800">Ready to initiate full sync?</h6>
-                      <p className="text-[10px] text-slate-500 mt-0.5 lowercase leading-normal">
-                        This registers the employee profile inside Optima HR directory system and provisions accounts automatically.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={selectedCandidate.fields.hrmsSynced === 'true'}
-                      onClick={async () => {
-                        try {
-                          await handleFieldChange(selectedCandidate.id, 'hrmsSynced', 'true');
-                          alert("Success! Candidate records successfully synchronized with HRMS database. employee profile is now live in Directory.");
-                        } catch (err) {
-                          console.error("Failed to sync with HRMS:", err);
-                        }
-                      }}
-                      className={`px-5 py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-md ${
-                        selectedCandidate.fields.hrmsSynced === 'true'
-                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none'
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-[1.01] active:scale-95'
-                      }`}
-                    >
-                      <CheckCircle2 size={14} />
-                      {selectedCandidate.fields.hrmsSynced === 'true' ? 'Database Synchronized' : 'Execute HRMS Sync'}
-                    </button>
-                  </div>
+              {selectedCandidate.currentStage === 'hrms_created' && (
+                <div className="p-4 bg-emerald-50 border border-emerald-250 text-emerald-700 rounded-2xl flex items-center gap-3">
+                  <CheckCircle2 size={16} />
+                  <span className="text-[10px] font-semibold">fully sync\'d & onboarded to hrms portal</span>
                 </div>
               )}
             </div>
