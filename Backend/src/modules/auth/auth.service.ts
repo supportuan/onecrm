@@ -2,6 +2,7 @@ import { prisma } from '../../prisma.js';
 import { UserRole } from '@prisma/client';
 import { hashPassword, comparePasswords } from '../../utils/password.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt.js';
+import { adminAgentNotification, adminStudentNotification, sendCampaignEmail } from '../marketing/services/email.service.js';
 
 interface RegisterData {
   fullName: string;
@@ -9,6 +10,7 @@ interface RegisterData {
   phone?: string | null;
   password: string;
   role: UserRole;
+  agencyDetails?: any;
 }
 
 export const register = async (data: RegisterData) => {
@@ -16,6 +18,7 @@ export const register = async (data: RegisterData) => {
   if (existing) throw new Error('Email already registered');
 
   const passwordHash = await hashPassword(data.password);
+  const isApproved = data.role !== UserRole.AGENT;
 
   const user = await prisma.user.create({
     data: {
@@ -25,8 +28,60 @@ export const register = async (data: RegisterData) => {
       passwordHash,
       role: data.role,
       isActive: true,
+      isApproved,
+      agencyDetails: data.agencyDetails || null,
     },
   });
+
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || 'admin@onecrm.com';
+
+  if (data.role === UserRole.AGENT) {
+    // Notify admin
+    adminAgentNotification({
+      to: adminEmail,
+      agentName: data.fullName,
+      agentEmail: data.email,
+    }).catch(err => console.error('[Admin Agent Notification Error]', err));
+
+    // Send Welcome Email to Agent
+    sendCampaignEmail({
+      to: data.email,
+      subject: 'Agent Registration Received - Awaiting Approval',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+          <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
+          <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
+          <p style="color: #334155; font-size: 14px;">Your agent registration has been received successfully.</p>
+          <p style="color: #334155; font-size: 14px;">Please note that agent accounts require admin approval before you can log in. You will receive an email confirmation once your account has been approved.</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #94a3b8; font-size: 12px; text-align: center;">This is an automated email, please do not reply directly.</p>
+        </div>
+      `,
+    }).catch(err => console.error('[Agent Welcome Email Error]', err));
+  } else if (data.role === UserRole.STUDENT) {
+    // Notify admin
+    adminStudentNotification({
+      to: adminEmail,
+      studentName: data.fullName,
+      studentEmail: data.email,
+    }).catch(err => console.error('[Admin Student Notification Error]', err));
+
+    // Send Welcome Email to Student
+    sendCampaignEmail({
+      to: data.email,
+      subject: 'Welcome to OneCRM - Student Account Registered',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+          <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
+          <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
+          <p style="color: #334155; font-size: 14px;">Your student registration has been created successfully.</p>
+          <p style="color: #334155; font-size: 14px;">An admin will assign a counsellor to assist you shortly. You can log in using your email and password.</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #94a3b8; font-size: 12px; text-align: center;">This is an automated email, please do not reply directly.</p>
+        </div>
+      `,
+    }).catch(err => console.error('[Student Welcome Email Error]', err));
+  }
 
   return user;
 };
@@ -37,6 +92,10 @@ export const login = async (email: string, password: string) => {
 
   const isValid = await comparePasswords(password, user.passwordHash);
   if (!isValid) throw new Error('Invalid credentials');
+
+  if (user.role === UserRole.AGENT && !user.isApproved) {
+    throw new Error('Agent account has not been approved by an administrator yet');
+  }
 
   const isFirstLogin = user.lastLogin === null;
 

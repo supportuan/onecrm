@@ -68,6 +68,7 @@ enum UserRole {
   COUNSELLOR
   STUDENT
   HR
+  AGENT
 }
 
 // -----------------------------------------------------------------------------
@@ -308,10 +309,15 @@ model User {
   passwordHash  String
   role          UserRole
   isActive      Boolean        @default(true)
+  isApproved    Boolean        @default(true)
+  agencyDetails Json?
+  counsellorId  Int?
   lastLogin     DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
+  counsellor           User?               @relation("StudentCounsellor", fields: [counsellorId], references: [id])
+  students             User[]              @relation("StudentCounsellor")
   assignedLeads        Lead[]              @relation("LeadCounsellor")
   refreshTokens        RefreshToken[]
   passwordResetTokens  PasswordResetToken[]

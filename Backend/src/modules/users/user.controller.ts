@@ -19,8 +19,8 @@ const sendError = (res: Response, message: string, status = 400) => {
 };
 
 const canCreateRole = (currentRole: UserRole, newRole: UserRole) => {
-  if (currentRole === UserRole.SUPER_ADMIN && newRole === UserRole.ADMIN) return true;
-  if (currentRole === UserRole.ADMIN && ([UserRole.COUNSELLOR, UserRole.HR, UserRole.STUDENT] as UserRole[]).includes(newRole)) return true;
+  if (currentRole === UserRole.SUPER_ADMIN && (newRole === UserRole.ADMIN || newRole === UserRole.AGENT)) return true;
+  if (currentRole === UserRole.ADMIN && ([UserRole.COUNSELLOR, UserRole.HR, UserRole.STUDENT, UserRole.AGENT] as UserRole[]).includes(newRole)) return true;
   return false;
 };
 
@@ -73,6 +73,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     const user = await userService.createUser({
       ...data,
       phone: data.phone ?? undefined,
+      agencyDetails: (data as any).agencyDetails ?? undefined,
     });
     return sendSuccess(res, 'User created successfully', user, 201);
   } catch (error) {
