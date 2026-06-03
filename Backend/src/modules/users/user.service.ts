@@ -8,6 +8,7 @@ const allowedRoles = [
   UserRole.COUNSELLOR,
   UserRole.STUDENT,
   UserRole.HR,
+  UserRole.AGENT,
 ];
 
 export const getUsers = async (role?: UserRole) => {
@@ -32,6 +33,7 @@ export const getUserById = async (id: number) => {
       phone: true,
       role: true,
       isActive: true,
+      isApproved: true,
       lastLogin: true,
       createdAt: true,
       updatedAt: true,
@@ -45,12 +47,14 @@ export const createUser = async (data: {
   phone?: string;
   password: string;
   role: UserRole;
+  agencyDetails?: any;
 }) => {
   if (!allowedRoles.includes(data.role)) {
     throw new Error('Invalid role selected');
   }
 
   const passwordHash = await hashPassword(data.password);
+  const isApproved = data.role !== UserRole.AGENT;
 
   const user = await prisma.user.create({
     data: {
@@ -60,6 +64,8 @@ export const createUser = async (data: {
       passwordHash,
       role: data.role,
       isActive: true,
+      isApproved,
+      agencyDetails: data.agencyDetails || null,
     },
   });
 
@@ -96,6 +102,8 @@ export const updateUser = async (
     phone?: string;
     role?: UserRole;
     isActive?: boolean;
+    isApproved?: boolean;
+    counsellorId?: number | null;
   }
 ) => {
   return prisma.user.update({

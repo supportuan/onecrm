@@ -9,8 +9,8 @@ const createResetToken = () => crypto.randomBytes(32).toString('hex');
 export const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const data = registerSchema.parse(req.body);
-        if (data.role !== 'STUDENT') {
-            return sendError(res, 'Only student self-registration is allowed via this endpoint', null, 403);
+        if (data.role !== 'STUDENT' && data.role !== 'AGENT') {
+            return sendError(res, 'Only student and agent self-registration is allowed via this endpoint', null, 403);
         }
 
         const user = await authService.register(data);

@@ -41,3 +41,17 @@ export const deleteUser = async (id) => {
   });
   return handleResponse(res);
 };
+
+export const updateUser = async (id, userData) => {
+  const res = await authFetch(`${API_URL}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(userData),
+  });
+  return handleResponse(res);
+};
+
+export const getCounsellors = async () => {
+  const res = await authFetch("/api/counsellors");
+  return handleResponse(res);
+};

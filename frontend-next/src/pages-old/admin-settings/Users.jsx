@@ -11,7 +11,7 @@ import {
   X,
   ShieldCheck,
 } from "lucide-react";
-import { getUsers, createUser, deleteUser } from "../../services/userApi";
+import { getUsers, createUser, deleteUser, updateUser, getCounsellors } from "../../services/userApi";
 
 const roles = [
   "SUPER_ADMIN",
@@ -71,6 +71,9 @@ export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("all"); // "all", "pending-agents", "pending-students"
+  const [counsellors, setCounsellors] = useState([]);
+  const [selectedCounsellors, setSelectedCounsellors] = useState({});
 
   const [form, setForm] = useState({
     firstName: "",
@@ -83,22 +86,28 @@ export default function UserManagementPage() {
     permissions: getPermissionsForModules(roleModuleAccess.ADMIN),
   });
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await getUsers();
-      if (res.success) {
-        setUsers(res.data || []);
+      const [usersRes, counsellorsRes] = await Promise.all([
+        getUsers(),
+        getCounsellors()
+      ]);
+      if (usersRes.success) {
+        setUsers(usersRes.data || []);
+      }
+      if (counsellorsRes.success) {
+        setCounsellors(counsellorsRes.data || []);
       }
     } catch (err) {
-      console.error("Failed to load users:", err);
+      console.error("Failed to load data:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUsers();
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -111,14 +120,86 @@ export default function UserManagementPage() {
     }));
   }, [form.role]);
 
+  const pendingAgents = useMemo(() => {
+    return users.filter((u) => u.role === "AGENT" && !u.isApproved);
+  }, [users]);
+
+  const pendingStudents = useMemo(() => {
+    return users.filter((u) => u.role === "STUDENT" && !u.counsellorId);
+  }, [users]);
+
+  const pendingAgentsCount = pendingAgents.length;
+  const pendingStudentsCount = pendingStudents.length;
+
   const filteredUsers = useMemo(() => {
-    return users.filter(
+    let list = users;
+    if (activeTab === "pending-agents") {
+      list = pendingAgents;
+    } else if (activeTab === "pending-students") {
+      list = pendingStudents;
+    } else {
+      // In the "all" tab, do we show approved users or everyone?
+      // Typically everyone, but we could highlight if they are approved or active
+    }
+
+    return list.filter(
       (u) =>
         (u.fullName || "").toLowerCase().includes(search.toLowerCase()) ||
         u.email.toLowerCase().includes(search.toLowerCase()) ||
         u.role.toLowerCase().includes(search.toLowerCase())
     );
-  }, [users, search]);
+  }, [users, search, activeTab, pendingAgents, pendingStudents]);
+
+  const handleApproveAgent = async (id) => {
+    try {
+      const res = await updateUser(id, { isApproved: true });
+      if (res.success) {
+        loadData();
+        alert("Agent approved successfully.");
+      } else {
+        alert(res.message || "Failed to approve agent");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "An error occurred while approving agent");
+    }
+  };
+
+  const handleRejectAgent = async (id) => {
+    if (!window.confirm("Reject and deactivate this agent?")) return;
+    try {
+      const res = await deleteUser(id);
+      if (res.success) {
+        loadData();
+        alert("Agent rejected and account deactivated.");
+      } else {
+        alert(res.message || "Failed to reject agent");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "An error occurred while rejecting agent");
+    }
+  };
+
+  const handleAssignCounsellor = async (studentId) => {
+    const counsellorId = selectedCounsellors[studentId];
+    if (!counsellorId) {
+      alert("Please select a counsellor");
+      return;
+    }
+    try {
+      const res = await updateUser(studentId, { counsellorId: Number(counsellorId) });
+      if (res.success) {
+        loadData();
+        alert("Counsellor assigned successfully.");
+      } else {
+        alert(res.message || "Failed to assign counsellor");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "An error occurred while assigning counsellor");
+    }
+  };
 
   const resetForm = () => {
     setForm({
@@ -153,7 +234,7 @@ export default function UserManagementPage() {
       if (res.success) {
         setShowCreateModal(false);
         resetForm();
-        loadUsers();
+        loadData();
         alert(
           "User created successfully. Credentials have been dispatched to their email."
         );
@@ -172,7 +253,7 @@ export default function UserManagementPage() {
     try {
       const res = await deleteUser(id);
       if (res.success) {
-        loadUsers();
+        loadData();
       } else {
         alert(res.message || "Failed to deactivate user");
       }
@@ -208,6 +289,50 @@ export default function UserManagementPage() {
       </div>
 
       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        {/* Tabs */}
+        <div className="flex border-b border-slate-100 mb-5">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`px-5 py-3 text-sm font-bold border-b-2 transition ${
+              activeTab === "all"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            All Users
+          </button>
+          <button
+            onClick={() => setActiveTab("pending-agents")}
+            className={`px-5 py-3 text-sm font-bold border-b-2 transition flex items-center gap-2 ${
+              activeTab === "pending-agents"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Pending Agents
+            {pendingAgentsCount > 0 && (
+              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700">
+                {pendingAgentsCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("pending-students")}
+            className={`px-5 py-3 text-sm font-bold border-b-2 transition flex items-center gap-2 ${
+              activeTab === "pending-students"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Pending Students
+            {pendingStudentsCount > 0 && (
+              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700">
+                {pendingStudentsCount}
+              </span>
+            )}
+          </button>
+        </div>
+
         <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 md:max-w-md">
             <Search className="h-4 w-4 text-slate-400" />
@@ -234,14 +359,32 @@ export default function UserManagementPage() {
           ) : (
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                <tr>
-                  <th className="px-5 py-4">Name</th>
-                  <th className="px-5 py-4">Email</th>
-                  <th className="px-5 py-4">Role</th>
-                  <th className="px-5 py-4">Modules</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4 text-right">Actions</th>
-                </tr>
+                {activeTab === "pending-agents" ? (
+                  <tr>
+                    <th className="px-5 py-4">Name</th>
+                    <th className="px-5 py-4">Email</th>
+                    <th className="px-5 py-4">Agency Details</th>
+                    <th className="px-5 py-4">Status</th>
+                    <th className="px-5 py-4 text-right">Actions</th>
+                  </tr>
+                ) : activeTab === "pending-students" ? (
+                  <tr>
+                    <th className="px-5 py-4">Name</th>
+                    <th className="px-5 py-4">Email</th>
+                    <th className="px-5 py-4">Role</th>
+                    <th className="px-5 py-4">Assign Counsellor</th>
+                    <th className="px-5 py-4 text-right">Actions</th>
+                  </tr>
+                ) : (
+                  <tr>
+                    <th className="px-5 py-4">Name</th>
+                    <th className="px-5 py-4">Email</th>
+                    <th className="px-5 py-4">Role</th>
+                    <th className="px-5 py-4">Modules</th>
+                    <th className="px-5 py-4">Status</th>
+                    <th className="px-5 py-4 text-right">Actions</th>
+                  </tr>
+                )}
               </thead>
 
               <tbody className="divide-y divide-slate-100">
@@ -255,51 +398,138 @@ export default function UserManagementPage() {
                       {user.email}
                     </td>
 
-                    <td className="px-5 py-4">
-                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                        {user.role}
-                      </span>
-                    </td>
+                    {activeTab === "pending-agents" ? (
+                      <>
+                        <td className="px-5 py-4">
+                          {user.agencyDetails ? (
+                            <div className="space-y-0.5">
+                              <p className="font-bold text-slate-700 text-xs">
+                                {user.agencyDetails.agencyName}
+                              </p>
+                              <p className="text-[11px] text-slate-500 leading-tight">
+                                Code: {user.agencyDetails.agencyCode || 'N/A'} <br />
+                                {user.agencyDetails.agencyAddress && `${user.agencyDetails.agencyAddress}, `}
+                                {user.agencyDetails.agencyCity} {user.agencyDetails.agencyCountry}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 text-xs italic">No agency details</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                            Awaiting Approval
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleApproveAgent(user.id)}
+                              className="rounded-xl bg-emerald-650 hover:bg-emerald-700 px-3.5 py-1.5 text-xs font-bold text-white transition shadow-sm"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectAgent(user.id)}
+                              className="rounded-xl bg-red-50 hover:bg-red-100 px-3.5 py-1.5 text-xs font-bold text-red-650 transition border border-red-200"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : activeTab === "pending-students" ? (
+                      <>
+                        <td className="px-5 py-4">
+                          <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <select
+                            value={selectedCounsellors[user.id] || ""}
+                            onChange={(e) =>
+                              setSelectedCounsellors((prev) => ({
+                                ...prev,
+                                [user.id]: e.target.value,
+                              }))
+                            }
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-indigo-500 w-full max-w-[200px]"
+                          >
+                            <option value="">Select Counsellor...</option>
+                            {counsellors.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.fullName}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleAssignCounsellor(user.id)}
+                              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 text-xs font-bold text-white transition shadow-sm"
+                            >
+                              Assign
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-5 py-4">
+                          <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                            {user.role}
+                          </span>
+                        </td>
 
-                    <td className="px-5 py-4 text-slate-500">
-                      {user.role === "SUPER_ADMIN"
-                        ? "All Modules"
-                        : (roleModuleAccess[user.role] || []).join(", ")}
-                    </td>
+                        <td className="px-5 py-4 text-slate-500">
+                          {user.role === "SUPER_ADMIN"
+                            ? "All Modules"
+                            : (roleModuleAccess[user.role] || []).join(", ")}
+                        </td>
 
-                    <td className="px-5 py-4">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          user.isActive
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-red-50 text-red-700"
-                        }`}
-                      >
-                        {user.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-bold ${
+                              !user.isActive
+                                ? "bg-red-50 text-red-700"
+                                : user.role === "AGENT" && !user.isApproved
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-emerald-50 text-emerald-700"
+                            }`}
+                          >
+                            {!user.isActive
+                              ? "Inactive"
+                              : user.role === "AGENT" && !user.isApproved
+                              ? "Pending Approval"
+                              : "Active"}
+                          </span>
+                        </td>
 
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
-                        <button className="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
-                          <Edit className="h-4 w-4" />
-                        </button>
+                        <td className="px-5 py-4">
+                          <div className="flex justify-end gap-2">
+                            <button className="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
+                              <Edit className="h-4 w-4" />
+                            </button>
 
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="rounded-xl p-2 text-red-500 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              className="rounded-xl p-2 text-red-500 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
 
                 {filteredUsers.length === 0 && (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan={activeTab === "pending-agents" ? 5 : activeTab === "pending-students" ? 5 : 6}
                       className="px-5 py-10 text-center text-slate-400"
                     >
                       No users found.
