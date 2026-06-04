@@ -285,32 +285,27 @@ export const navMenu = [
     path: "/hr",
     icon: ShieldCheck,
     subItems: [
-      {
-        label: "Employee Directory",
-        path: "/hr/employee-directory",
-        icon: Users,
-      },
-      {
-        label: "Attendance",
-        path: "/hr/attendance",
-        icon: Clock,
-      },
-      {
-        label: "Leave Management",
-        path: "/hr/leave-management",
-        icon: CalendarCheck,
-      },
+      // Recruitment Flow (lifecycle start)
+      { label: "Job Postings", path: "/hr/job-postings", icon: Briefcase },
+      { label: "Recruitment Tracker", path: "/hr/recruitment-tracker", icon: Search },
+      { label: "Interview Scheduling", path: "/hr/interview-scheduling", icon: Calendar },
+      { label: "Offer Letters", path: "/hr/offer-letters", icon: FileText },
+
+      // Onboarding (post-offer)
+      { label: "Onboarding Checklist", path: "/hr/onboarding-checklist", icon: ClipboardList },
+
+      // Core Workforce Operations
+      { label: "Employee Directory", path: "/hr/employee-directory", icon: Users },
+      { label: "Attendance", path: "/hr/attendance", icon: Clock },
+      { label: "Leave Management", path: "/hr/leave-management", icon: CalendarCheck },
+
+      // Performance Management
+      { label: "Performance Reviews", path: "/hr/performance-reviews", icon: Star },
+      { label: "KPI Dashboard", path: "/hr/kpi-dashboard", icon: Target },
+
+      // Compensation & Payroll
       { label: "Payroll Inputs", path: "/hr/payroll-inputs", icon: DollarSign },
-      {
-        label: "Performance Reviews",
-        path: "/hr/performance-reviews",
-        icon: Star,
-      },
-      {
-        label: "Recruitment Tracker",
-        path: "/hr/recruitment-tracker",
-        icon: Search,
-      },
+      { label: "Payroll Deductions", path: "/hr/payroll-deductions", icon: Receipt },
     ],
   },
   {

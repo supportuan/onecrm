@@ -13,6 +13,23 @@ import {
   createHolidaySchema,
   executePayrollSchema,
   createSalaryStructureSchema,
+  createOnboardingChecklistSchema,
+  updateOnboardingItemSchema,
+  createOfferLetterSchema,
+  updateOfferLetterStatusSchema,
+  scheduleInterviewSchema,
+  updateInterviewStatusSchema,
+  submitInterviewFeedbackSchema,
+  createJobPostingSchema,
+  updateJobPostingStatusSchema,
+  addCandidateSchema,
+  updateCandidateStageSchema,
+  addProcessingMetricSchema,
+  createKPIDefinitionSchema,
+  recordKPIMetricSchema,
+  addMarketingPerformanceSchema,
+  addCounsellorPerformanceSchema,
+  upsertPayrollDeductionSchema,
 } from './hr.validation.js';
 
 // ==========================================
@@ -408,6 +425,360 @@ export const calculatePayroll = async (req: Request, res: Response, next: NextFu
     const validatedData = executePayrollSchema.parse(req.body);
     const data = await hrService.calculatePayroll(validatedData.month, validatedData.year);
     return sendSuccess(res, 'Payroll executed successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 12. Onboarding Checklist
+// ==========================================
+
+export const getOnboardingChecklists = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await hrService.getOnboardingChecklists();
+    return sendSuccess(res, 'Onboarding checklists retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOnboardingChecklist = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const data = await hrService.getOnboardingChecklist(id);
+    return sendSuccess(res, 'Onboarding checklist retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createOnboardingChecklist = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = createOnboardingChecklistSchema.parse(req.body);
+    const data = await hrService.createOnboardingChecklist(validatedData);
+    return sendSuccess(res, 'Onboarding checklist created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOnboardingItem = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const checklistId = req.params.checklistId as string;
+    const itemId = req.params.itemId as string;
+    const validatedData = updateOnboardingItemSchema.parse(req.body);
+    const data = await hrService.updateOnboardingItem(checklistId, itemId, validatedData);
+    return sendSuccess(res, 'Onboarding item updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 13. Offer Letters
+// ==========================================
+
+export const getOfferLetters = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await hrService.getOfferLetters();
+    return sendSuccess(res, 'Offer letters retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = createOfferLetterSchema.parse(req.body);
+    const data = await hrService.createOfferLetter(validatedData);
+    return sendSuccess(res, 'Offer letter created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOfferLetterStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { status } = updateOfferLetterStatusSchema.parse(req.body);
+    const data = await hrService.updateOfferLetterStatus(id, status);
+    return sendSuccess(res, 'Offer letter status updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 14. Interview Scheduling & Feedback
+// ==========================================
+
+export const getInterviews = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await hrService.getInterviews();
+    return sendSuccess(res, 'Interviews retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const scheduleInterview = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = scheduleInterviewSchema.parse(req.body);
+    const data = await hrService.scheduleInterview(validatedData);
+    return sendSuccess(res, 'Interview scheduled successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateInterviewStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { status } = updateInterviewStatusSchema.parse(req.body);
+    const data = await hrService.updateInterviewStatus(id, status);
+    return sendSuccess(res, 'Interview status updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const submitInterviewFeedback = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validatedData = submitInterviewFeedbackSchema.parse(req.body);
+    const data = await hrService.submitInterviewFeedback(id, { ...validatedData, submittedAt: new Date().toISOString() });
+    return sendSuccess(res, 'Interview feedback submitted successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 15. Job Postings & Candidate Tracking
+// ==========================================
+
+export const getJobPostings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await hrService.getJobPostings();
+    return sendSuccess(res, 'Job postings retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createJobPosting = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = createJobPostingSchema.parse(req.body);
+    const data = await hrService.createJobPosting(validatedData);
+    return sendSuccess(res, 'Job posting created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateJobPostingStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { status } = updateJobPostingStatusSchema.parse(req.body);
+    const data = await hrService.updateJobPostingStatus(id, status);
+    return sendSuccess(res, 'Job posting status updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCandidates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const jobId = req.query.jobId as string | undefined;
+    const data = await hrService.getCandidates(jobId);
+    return sendSuccess(res, 'Candidates retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addCandidate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = addCandidateSchema.parse(req.body);
+    const data = await hrService.addCandidate(validatedData);
+    return sendSuccess(res, 'Candidate added successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateCandidateStage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validatedData = updateCandidateStageSchema.parse(req.body);
+    const data = await hrService.updateCandidateStage(id, validatedData.stage, validatedData.status);
+    return sendSuccess(res, 'Candidate stage updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 16. Processing Performance Metrics
+// ==========================================
+
+export const getProcessingMetrics = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await hrService.getProcessingMetrics();
+    return sendSuccess(res, 'Processing metrics retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addProcessingMetric = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = addProcessingMetricSchema.parse(req.body);
+    const data = await hrService.addProcessingMetric(validatedData);
+    return sendSuccess(res, 'Processing metric saved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 17. KPI Definitions
+// ==========================================
+
+export const getKPIDefinitions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const role = req.query.role as string | undefined;
+    const data = await hrService.getKPIDefinitions(role);
+    return sendSuccess(res, 'KPI definitions retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createKPIDefinition = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = createKPIDefinitionSchema.parse(req.body);
+    const data = await hrService.createKPIDefinition(validatedData);
+    return sendSuccess(res, 'KPI definition created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateKPIDefinition = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const data = await hrService.updateKPIDefinition(id, req.body);
+    return sendSuccess(res, 'KPI definition updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteKPIDefinition = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const result = await hrService.deleteKPIDefinition(id);
+    return sendSuccess(res, 'KPI definition deleted successfully', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 18. KPI Metrics
+// ==========================================
+
+export const getKPIMetrics = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const role = req.query.role as string | undefined;
+    const period = req.query.period as string | undefined;
+    const data = await hrService.getKPIMetrics(role, period);
+    return sendSuccess(res, 'KPI metrics retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const recordKPIMetric = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = recordKPIMetricSchema.parse(req.body);
+    const data = await hrService.recordKPIMetric(validatedData);
+    return sendSuccess(res, 'KPI metric recorded successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 19. Marketing Performance
+// ==========================================
+
+export const getMarketingPerformance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const period = req.query.period as string | undefined;
+    const data = await hrService.getMarketingPerformance(period);
+    return sendSuccess(res, 'Marketing performance retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addMarketingPerformance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = addMarketingPerformanceSchema.parse(req.body);
+    const data = await hrService.addMarketingPerformance(validatedData);
+    return sendSuccess(res, 'Marketing performance recorded successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 20. Counsellor Performance
+// ==========================================
+
+export const getCounsellorPerformance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const period = req.query.period as string | undefined;
+    const data = await hrService.getCounsellorPerformance(period);
+    return sendSuccess(res, 'Counsellor performance retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addCounsellorPerformance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = addCounsellorPerformanceSchema.parse(req.body);
+    const data = await hrService.addCounsellorPerformance(validatedData);
+    return sendSuccess(res, 'Counsellor performance recorded successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 21. Payroll Deductions
+// ==========================================
+
+export const getPayrollDeductions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const month = req.query.month ? parseInt(req.query.month as string) : undefined;
+    const year = req.query.year ? parseInt(req.query.year as string) : undefined;
+    const data = await hrService.getPayrollDeductions(month, year);
+    return sendSuccess(res, 'Payroll deductions retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const upsertPayrollDeduction = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = upsertPayrollDeductionSchema.parse(req.body);
+    const data = await hrService.upsertPayrollDeduction(validatedData);
+    return sendSuccess(res, 'Payroll deduction saved successfully', data);
   } catch (error) {
     next(error);
   }

@@ -313,3 +313,282 @@ export const calculatePayroll = async (month, year) => {
   });
   return handleResponse(res);
 };
+
+// ==========================================
+// 10. Payroll Deductions
+// ==========================================
+
+export const getPayrollDeductions = async (month, year) => {
+  const params = new URLSearchParams();
+  if (month) params.append("month", month);
+  if (year) params.append("year", year);
+  const res = await tenantFetch(`${API_URL}/payroll/deductions?${params}`);
+  return handleResponse(res);
+};
+
+export const upsertPayrollDeduction = async (data) => {
+  const res = await tenantFetch(`${API_URL}/payroll/deductions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+// ==========================================
+// 11. Onboarding Checklist
+// ==========================================
+
+export const getOnboardingChecklists = async () => {
+  const res = await tenantFetch(`${API_URL}/onboarding`);
+  return handleResponse(res);
+};
+
+export const getOnboardingChecklist = async (id) => {
+  const res = await tenantFetch(`${API_URL}/onboarding/${id}`);
+  return handleResponse(res);
+};
+
+export const createOnboardingChecklist = async (data) => {
+  const res = await tenantFetch(`${API_URL}/onboarding`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateOnboardingItem = async (checklistId, itemId, data) => {
+  const res = await tenantFetch(`${API_URL}/onboarding/${checklistId}/items/${itemId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+// ==========================================
+// 12. Offer Letters
+// ==========================================
+
+export const getOfferLetters = async () => {
+  const res = await tenantFetch(`${API_URL}/offer-letters`);
+  return handleResponse(res);
+};
+
+export const createOfferLetter = async (data) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateOfferLetterStatus = async (id, status) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/${id}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  return handleResponse(res);
+};
+
+// ==========================================
+// 13. Interview Scheduling & Feedback
+// ==========================================
+
+export const getInterviews = async () => {
+  const res = await tenantFetch(`${API_URL}/interviews`);
+  return handleResponse(res);
+};
+
+export const scheduleInterview = async (data) => {
+  const res = await tenantFetch(`${API_URL}/interviews`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateInterviewStatus = async (id, status) => {
+  const res = await tenantFetch(`${API_URL}/interviews/${id}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  return handleResponse(res);
+};
+
+export const submitInterviewFeedback = async (id, feedback) => {
+  const res = await tenantFetch(`${API_URL}/interviews/${id}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(feedback),
+  });
+  return handleResponse(res);
+};
+
+// ==========================================
+// 14. Job Postings & Candidate Tracking
+// ==========================================
+
+export const getJobPostings = async () => {
+  const res = await tenantFetch(`${API_URL}/jobs`);
+  return handleResponse(res);
+};
+
+export const createJobPosting = async (data) => {
+  const res = await tenantFetch(`${API_URL}/jobs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateJobPostingStatus = async (id, status) => {
+  const res = await tenantFetch(`${API_URL}/jobs/${id}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  return handleResponse(res);
+};
+
+export const getCandidates = async (jobId) => {
+  const params = new URLSearchParams();
+  if (jobId) params.append("jobId", jobId);
+  const res = await tenantFetch(`${API_URL}/candidates?${params}`);
+  return handleResponse(res);
+};
+
+export const addCandidate = async (data) => {
+  const res = await tenantFetch(`${API_URL}/candidates`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateCandidateStage = async (id, stage, status) => {
+  const res = await tenantFetch(`${API_URL}/candidates/${id}/stage`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage, status }),
+  });
+  return handleResponse(res);
+};
+
+// ==========================================
+// 15. Processing Performance Metrics
+// ==========================================
+
+export const getProcessingMetrics = async () => {
+  const res = await tenantFetch(`${API_URL}/metrics/processing`);
+  return handleResponse(res);
+};
+
+export const addProcessingMetric = async (data) => {
+  const res = await tenantFetch(`${API_URL}/metrics/processing`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+// ==========================================
+// 16. KPI Definitions & Metrics
+// ==========================================
+
+export const getKPIDefinitions = async (role) => {
+  const params = new URLSearchParams();
+  if (role) params.append("role", role);
+  const res = await tenantFetch(`${API_URL}/kpi/definitions?${params}`);
+  return handleResponse(res);
+};
+
+export const createKPIDefinition = async (data) => {
+  const res = await tenantFetch(`${API_URL}/kpi/definitions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateKPIDefinition = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/kpi/definitions/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const deleteKPIDefinition = async (id) => {
+  const res = await tenantFetch(`${API_URL}/kpi/definitions/${id}`, {
+    method: "DELETE",
+  });
+  return handleResponse(res);
+};
+
+export const getKPIMetrics = async (role, period) => {
+  const params = new URLSearchParams();
+  if (role) params.append("role", role);
+  if (period) params.append("period", period);
+  const res = await tenantFetch(`${API_URL}/kpi/metrics?${params}`);
+  return handleResponse(res);
+};
+
+export const recordKPIMetric = async (data) => {
+  const res = await tenantFetch(`${API_URL}/kpi/metrics`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+// ==========================================
+// 17. Marketing Performance
+// ==========================================
+
+export const getMarketingPerformance = async (period) => {
+  const params = new URLSearchParams();
+  if (period) params.append("period", period);
+  const res = await tenantFetch(`${API_URL}/performance/marketing?${params}`);
+  return handleResponse(res);
+};
+
+export const addMarketingPerformance = async (data) => {
+  const res = await tenantFetch(`${API_URL}/performance/marketing`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+// ==========================================
+// 18. Counsellor Performance
+// ==========================================
+
+export const getCounsellorPerformance = async (period) => {
+  const params = new URLSearchParams();
+  if (period) params.append("period", period);
+  const res = await tenantFetch(`${API_URL}/performance/counsellors?${params}`);
+  return handleResponse(res);
+};
+
+export const addCounsellorPerformance = async (data) => {
+  const res = await tenantFetch(`${API_URL}/performance/counsellors`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};

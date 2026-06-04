@@ -110,4 +110,71 @@ router.get('/payroll/salary-structures', controller.getSalaryStructures);
 router.put('/payroll/salary-structures', controller.updateSalaryStructure);
 router.post('/payroll/calculate', controller.calculatePayroll);
 
+// ==========================================
+// 10. Payroll Deductions (leaves & taxes)
+// ==========================================
+router.get('/payroll/deductions', controller.getPayrollDeductions);
+router.post('/payroll/deductions', controller.upsertPayrollDeduction);
+
+// ==========================================
+// 11. Employee Onboarding Checklist
+// ==========================================
+router.get('/onboarding', controller.getOnboardingChecklists);
+router.post('/onboarding', controller.createOnboardingChecklist);
+router.get('/onboarding/:id', controller.getOnboardingChecklist);
+router.put('/onboarding/:checklistId/items/:itemId', controller.updateOnboardingItem);
+
+// ==========================================
+// 12. Offer Letters
+// ==========================================
+router.get('/offer-letters', controller.getOfferLetters);
+router.post('/offer-letters', controller.createOfferLetter);
+router.put('/offer-letters/:id/status', controller.updateOfferLetterStatus);
+
+// ==========================================
+// 13. Interview Scheduling & Feedback
+// ==========================================
+router.get('/interviews', controller.getInterviews);
+router.post('/interviews', controller.scheduleInterview);
+router.put('/interviews/:id/status', controller.updateInterviewStatus);
+router.post('/interviews/:id/feedback', controller.submitInterviewFeedback);
+
+// ==========================================
+// 14. Job Postings & Candidate Tracking
+// ==========================================
+router.get('/jobs', controller.getJobPostings);
+router.post('/jobs', controller.createJobPosting);
+router.put('/jobs/:id/status', controller.updateJobPostingStatus);
+router.get('/candidates', controller.getCandidates);
+router.post('/candidates', controller.addCandidate);
+router.put('/candidates/:id/stage', controller.updateCandidateStage);
+
+// ==========================================
+// 15. Processing Performance Metrics
+// ==========================================
+router.get('/metrics/processing', controller.getProcessingMetrics);
+router.post('/metrics/processing', controller.addProcessingMetric);
+
+// ==========================================
+// 16. KPI Definitions & Metrics
+// ==========================================
+router.get('/kpi/definitions', controller.getKPIDefinitions);
+router.post('/kpi/definitions', controller.createKPIDefinition);
+router.put('/kpi/definitions/:id', controller.updateKPIDefinition);
+router.delete('/kpi/definitions/:id', controller.deleteKPIDefinition);
+router.get('/kpi/metrics', controller.getKPIMetrics);
+router.post('/kpi/metrics', controller.recordKPIMetric);
+
+// ==========================================
+// 17. Marketing Performance
+// ==========================================
+router.get('/performance/marketing', controller.getMarketingPerformance);
+router.post('/performance/marketing', controller.addMarketingPerformance);
+
+// ==========================================
+// 18. Counsellor Performance
+// ==========================================
+router.get('/performance/counsellors', controller.getCounsellorPerformance);
+router.post('/performance/counsellors', controller.addCounsellorPerformance);
+
 export default router;
