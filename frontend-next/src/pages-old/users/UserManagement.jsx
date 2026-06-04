@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, X, Loader2, Search } from 'lucide-react';
-import { getUsers, createUser, deleteUser } from '../../services/userApi';
+import { getUsers, createUser, deleteUser, getCounsellors } from '../../services/userApi';
+import { convertStudentToLead } from '../../services/marketingApi';
 
 const roles = ['ADMIN', 'COUNSELLOR', 'STUDENT', 'HR'];
 
@@ -12,6 +13,14 @@ const UserManagement = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
+  const [counsellors, setCounsellors] = useState([]);
+  const [isConversionOpen, setIsConversionOpen] = useState(false);
+  const [conversionUserId, setConversionUserId] = useState(null);
+  const [conversionForm, setConversionForm] = useState({
+    assignedCounsellorId: '',
+    preferredCourse: '',
+    preferredCountry: '',
+  });
 
   const [form, setForm] = useState({
     fullName: '',
@@ -50,6 +59,20 @@ const UserManagement = () => {
     loadUsers();
   }, [roleFilter, search]);
 
+  useEffect(() => {
+    const fetchCounsellors = async () => {
+      try {
+        const res = await getCounsellors();
+        if (res.success) {
+          setCounsellors(res.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch counsellors:', err);
+      }
+    };
+    fetchCounsellors();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -78,6 +101,39 @@ const UserManagement = () => {
       loadUsers();
     } else {
       alert(res.message || 'Failed to deactivate user');
+    }
+  };
+
+  const handleConvertToLeadClick = (userId) => {
+    setConversionUserId(userId);
+    setConversionForm({
+      assignedCounsellorId: '',
+      preferredCourse: '',
+      preferredCountry: '',
+    });
+    setIsConversionOpen(true);
+  };
+
+  const handleConversionSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const overrides = {
+        assignedCounsellorId: conversionForm.assignedCounsellorId ? parseInt(conversionForm.assignedCounsellorId, 10) : null,
+        preferredCourse: conversionForm.preferredCourse || null,
+        preferredCountry: conversionForm.preferredCountry || null,
+      };
+      const res = await convertStudentToLead(conversionUserId, overrides);
+      if (res.success) {
+        alert('Student successfully converted to lead!');
+        setIsConversionOpen(false);
+        setConversionUserId(null);
+        loadUsers();
+      } else {
+        alert(res.message || 'Failed to convert student to lead');
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Error occurred while converting student to lead.');
     }
   };
 
@@ -175,12 +231,23 @@ const UserManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(user.id)}
-                      className="text-slate-400 hover:text-red-500"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      {user.role === 'STUDENT' && (
+                        <button
+                          onClick={() => handleConvertToLeadClick(user.id)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all"
+                          title="Convert to Marketing Lead"
+                        >
+                          Convert to Lead
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="text-slate-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -295,6 +362,90 @@ const UserManagement = () => {
                   className="bg-[#0084ff] text-white px-6 py-2.5 rounded-xl text-sm font-semibold"
                 >
                   Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      {isConversionOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Convert Student to Lead</h2>
+                <p className="text-xs text-slate-400 font-semibold mt-1">
+                  Assign counsellor and capture student metadata for follow-up
+                </p>
+              </div>
+
+              <button onClick={() => setIsConversionOpen(false)}>
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConversionSubmit} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-500 font-bold">
+                  Assigned Counsellor (Optional)
+                </label>
+                <select
+                  value={conversionForm.assignedCounsellorId}
+                  onChange={(e) =>
+                    setConversionForm((p) => ({ ...p, assignedCounsellorId: e.target.value }))
+                  }
+                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                >
+                  <option value="">Select counsellor</option>
+                  {counsellors.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.fullName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-500 font-bold">
+                  Preferred Course (Optional)
+                </label>
+                <input
+                  placeholder="e.g. Master of Business Administration"
+                  value={conversionForm.preferredCourse}
+                  onChange={(e) =>
+                    setConversionForm((p) => ({ ...p, preferredCourse: e.target.value }))
+                  }
+                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-500 font-bold">
+                  Preferred Country (Optional)
+                </label>
+                <input
+                  placeholder="e.g. Canada"
+                  value={conversionForm.preferredCountry}
+                  onChange={(e) =>
+                    setConversionForm((p) => ({ ...p, preferredCountry: e.target.value }))
+                  }
+                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsConversionOpen(false)}
+                  className="border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold"
+                >
+                  Convert
                 </button>
               </div>
             </form>
