@@ -112,7 +112,7 @@ export const getLeads = async (filters: {
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  assignedCounsellorId?: number;
 }) => {
   const page = filters.page || 1;
   const limit = filters.limit || 10;

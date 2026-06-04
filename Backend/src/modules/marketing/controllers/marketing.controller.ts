@@ -28,7 +28,7 @@ import {
   createAgencyFunnelAnalyticsSchema,
   updateAgencyFunnelAnalyticsSchema,
 } from '../validations/marketing.validation.js';
-import { LeadStatus, CampaignType, CampaignStatus } from '@prisma/client';
+import { LeadStatus, CampaignType, CampaignStatus, UserRole } from '@prisma/client';
 import { bulkUploadLeadsFromExcel } from '../services/lead-upload.service.js';
 
 
@@ -88,7 +88,13 @@ export const getLeads = async (req: Request, res: Response, next: NextFunction) 
     const sortBy = req.query.sortBy as string;
     const sortOrder = req.query.sortOrder as 'asc' | 'desc';
 
-    const data = await marketingService.getLeads({ search, status, sourceId, page, limit, sortBy, sortOrder });
+    // If counsellor, restrict leads to those assigned to them
+    const filters: any = { search, status, sourceId, page, limit, sortBy, sortOrder };
+    if (req.user && req.user.role === UserRole.COUNSELLOR) {
+      filters.assignedCounsellorId = req.user.id;
+    }
+
+    const data = await marketingService.getLeads(filters);
     return sendSuccess(res, 'Leads fetched successfully', data);
   } catch (error) {
     next(error);
@@ -765,4 +771,4 @@ export const convertStudentToLead = async (
   } catch (error) {
     next(error);
   }
-};
+};
