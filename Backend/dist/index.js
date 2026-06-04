@@ -7,8 +7,9 @@ import { errorHandler } from './middleware/error.middleware.js';
 import { tenantMiddleware } from './middleware/tenant.js';
 import marketingRouter from './modules/marketing/routes/marketing.routes.js';
 import hrRouter from './modules/hr/hr.routes.js';
-import authRouter from './routes/auth.ts';
-import usersRouter from './routes/users.ts';
+import userRouter from './modules/users/user.routes.js';
+import authRouter from './modules/auth/auth.routes.js';
+// @ts-ignore
 import customerRouter from './routes/customers.js';
 const app = express();
 const port = process.env.PORT || 4000;
@@ -18,9 +19,10 @@ app.use(tenantMiddleware);
 // Set up Swagger UI documentation
 setupSwagger(app);
 // Mount Modular API Routes
+app.use('/api', userRouter);
 app.use('/api/marketing', marketingRouter);
 app.use('/api/hr', hrRouter);
-app.use('/api/users', usersRouter);
+app.use('/api', hrRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/customers', customerRouter);
 // Health check endpoint

@@ -376,3 +376,22 @@ export const saveStudentCRMReply = async (payload) => {
 
   return res.json();
 };
+
+export const createStudentLogin = async (leadId, password = null) => {
+  const payload = password ? { password } : {};
+  const res = await authFetch(`${API_URL}/leads/${leadId}/create-student-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+};
+
+export const convertStudentToLead = async (userId, overrides = {}) => {
+  const res = await authFetch(`${API_URL}/students/${userId}/convert-to-lead`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(overrides),
+  });
+  return res.json();
+};

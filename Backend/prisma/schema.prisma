@@ -104,12 +104,15 @@ model Lead {
   utmCampaign          String?
   utmTerm              String?
   utmContent           String?
+  studentUserId        Int?
+  isStudentLoginCreated Boolean    @default(false)
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
   deletedAt            DateTime?
 
   source               LeadSource? @relation(fields: [sourceId], references: [id])
   assignedCounsellor   User?       @relation("LeadCounsellor", fields: [assignedCounsellorId], references: [id])
+  studentUser          User?       @relation("LeadStudentUser", fields: [studentUserId], references: [id])
   activities           LeadActivity[]
   campaigns            CampaignLead[]
 }
@@ -319,6 +322,7 @@ model User {
   counsellor           User?               @relation("StudentCounsellor", fields: [counsellorId], references: [id])
   students             User[]              @relation("StudentCounsellor")
   assignedLeads        Lead[]              @relation("LeadCounsellor")
+  studentLeads        Lead[]              @relation("LeadStudentUser")
   refreshTokens        RefreshToken[]
   passwordResetTokens  PasswordResetToken[]
 }

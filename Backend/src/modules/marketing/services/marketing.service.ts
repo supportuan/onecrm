@@ -1,8 +1,10 @@
 import { prisma } from '../../../prisma.js';
-import { LeadStatus, CampaignType, CampaignStatus, AutomationStatus, LandingPageType, ActivityType } from '@prisma/client';
+import { LeadStatus, CampaignType, CampaignStatus, AutomationStatus, LandingPageType, ActivityType, UserRole, Prisma } from '@prisma/client';
 import { sendCampaignEmail } from './email.service.js';
 import { sendWhatsAppMessage } from './whatsapp.service.js';
 import { sendSMS } from './sms.service.js';
+import { hashPassword } from '../../../utils/password.js';
+import crypto from 'crypto';
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {
@@ -152,7 +154,7 @@ export const getLeads = async (filters: {
   const [leads, total] = await prisma.$transaction([
     prisma.lead.findMany({
       where: whereClause,
-      include: { source: true },
+      include: { source: true, assignedCounsellor: true },
       orderBy,
       skip,
       take: limit,
@@ -160,12 +162,7 @@ export const getLeads = async (filters: {
     prisma.lead.count({ where: whereClause }),
   ]);
 
-  const mapCounsellor = (id: number | null) => {
-    if (id === 1) return { id: 1, name: "Emma Davis" };
-    if (id === 2) return { id: 2, name: "John Smith" };
-    if (id === 3) return { id: 3, name: "Sarah Miller" };
-    return null;
-  };
+
 
   const items = leads.map((lead: any) => {
     let interestedIn = lead.preferredCourse || "";
@@ -187,8 +184,10 @@ export const getLeads = async (filters: {
       interestedIn,
       score: lead.score,
       status: lead.status,
-      assignedCounsellor: mapCounsellor(lead.assignedCounsellorId),
+      assignedCounsellor: lead.assignedCounsellor ? { id: lead.assignedCounsellor.id, name: lead.assignedCounsellor.fullName } : null,
       remark: lead.remark,
+      isStudentLoginCreated: lead.isStudentLoginCreated,
+      studentUserId: lead.studentUserId,
     };
   });
 
@@ -1413,3 +1412,96 @@ export const getCampaignAnalytics = async (campaignId: number) => {
     conversionRate: total ? Number(((converted / total) * 100).toFixed(1)) : 0,
   };
 };
+
+/**
+ * Promote a lead to a student login (User with role STUDENT).
+ */
+export const createStudentLogin = async (leadId: number, suppliedPassword?: string) => {
+  // 1️⃣ Validate lead existence
+  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+  if (!lead) throw new Error('Lead not found');
+  if (lead.isStudentLoginCreated) throw new Error('Student login already created for this lead');
+
+  // 2️⃣ Ensure no existing user with the same email
+  const existingUser = await prisma.user.findUnique({ where: { email: lead.email } });
+  if (existingUser) throw new Error('User with this email already exists');
+
+  // 3️⃣ Generate temporary password
+  const tempPassword = suppliedPassword || crypto.randomBytes(9).toString('base64');
+  const passwordHash = await hashPassword(tempPassword);
+
+  // 4️⃣ Create STUDENT user
+  const user = await prisma.user.create({
+    data: {
+      fullName: lead.fullName,
+      email: lead.email,
+      phone: lead.phone,
+      passwordHash,
+      role: UserRole.STUDENT,
+      isActive: true,
+      isApproved: true,
+    },
+  });
+
+  // 5️⃣ Update lead with reference and flag
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      studentUserId: user.id,
+      isStudentLoginCreated: true,
+    },
+  });
+
+  // 6️⃣ Send welcome email with temporary password
+  try {
+    await sendCampaignEmail({
+      to: user.email,
+      subject: 'Your Student Account – Temporary Password',
+      html: `
+        <p>Hello ${user.fullName},</p>
+        <p>Welcome to OneCRM! Your student account has been created.</p>
+        <p><strong>Temporary password:</strong> ${tempPassword}</p>
+        <p>Please log in and change your password immediately.</p>
+      `,
+    });
+  } catch (err) {
+    console.error('Failed to send welcome email:', err);
+  }
+
+  return user;
+};
+
+/**
+ * Convert an existing student user into a marketing lead.
+ * The student user remains active for login.
+ */
+export const convertStudentToLead = async (userId: number, overrides: any = {}) => {
+  // 1️⃣ Fetch student user
+  const student = await prisma.user.findUnique({ where: { id: userId } });
+  if (!student) throw new Error('Student user not found');
+  if (student.role !== UserRole.STUDENT) throw new Error('User is not a student');
+
+  // 2️⃣ Guard against duplicate lead (by email or studentUserId)
+  const duplicate = await prisma.lead.findFirst({
+    where: {
+      OR: [{ email: student.email }, { studentUserId: student.id }],
+    },
+  });
+  if (duplicate) throw new Error('A lead already exists for this student');
+
+  // 3️⃣ Build lead payload
+  const leadData: Prisma.LeadCreateInput = {
+    fullName: student.fullName,
+    email: student.email,
+    phone: student.phone,
+    studentUserId: student.id,
+    status: overrides.assignedCounsellorId ? 'NEW' : 'NEW', // default to NEW or overrides status
+    ...overrides,
+  };
+
+  // 4️⃣ Create lead
+  const lead = await prisma.lead.create({ data: leadData });
+
+  return lead;
+};
+

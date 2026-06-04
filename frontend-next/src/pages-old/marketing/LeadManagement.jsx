@@ -13,8 +13,10 @@ import {
   sendLeadSMS,
   sendLeadWhatsApp,
   scheduleLeadMeeting,
-  saveStudentCRMReply
+  saveStudentCRMReply,
+  createStudentLogin
 } from '../../services/marketingApi';
+import { getCounsellors } from '../../services/userApi';
 
 import {
   Search,
@@ -91,6 +93,7 @@ const LeadManagement = () => {
   const searchParams = useSearchParams();
   const [leads, setLeads] = useState([]);
   const [sourcesList, setSourcesList] = useState([]);
+  const [counsellorsList, setCounsellorsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -297,6 +300,30 @@ const LeadManagement = () => {
     } catch (err) {
       console.error(err);
       alert('Error occurred while deleting lead.');
+    }
+  };
+
+  // Create student login for a lead
+  const handleCreateStudentLogin = async (leadId) => {
+    try {
+      const response = await createStudentLogin(leadId);
+      if (response.success) {
+        alert('Student login created successfully. A welcome email has been sent with credentials.');
+        fetchLeadsList();
+        // If the active lead in the drawer is this lead, update it
+        if (activeLead && activeLead.id === leadId) {
+          setActiveLead(prev => ({
+            ...prev,
+            isStudentLoginCreated: true,
+            studentUserId: response.data.id
+          }));
+        }
+      } else {
+        alert(response.message || 'Failed to create student login');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error occurred while creating student login.');
     }
   };
 
@@ -669,15 +696,30 @@ const LeadManagement = () => {
                       </span>
                     </td>
 
-                    {/* Column 9: Subtle Delete action */}
+                    {/* Column 9: Actions */}
                     <td className="px-4 py-5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={(e) => handleDeleteLead(e, lead.id)}
-                        className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer opacity-0 group-hover:opacity-100"
-                        title="Delete Lead"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {!lead.isStudentLoginCreated ? (
+                          <button
+                            onClick={() => handleCreateStudentLogin(lead.id)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all"
+                            title="Create Student Login"
+                          >
+                            Create Login
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 text-[11px] font-medium border border-slate-200 bg-slate-50 px-2 py-0.5 rounded-full">
+                            Login Active
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => handleDeleteLead(e, lead.id)}
+                          className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer opacity-0 group-hover:opacity-100"
+                          title="Delete Lead"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -924,6 +966,24 @@ const LeadManagement = () => {
                   {activeLead.score}/100
                 </span>
               </div>
+            </div>
+
+            {/* Student Login Status inside Drawer */}
+            <div className="mt-3 p-3 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between text-xs font-semibold">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">Student Login</span>
+                <span className={activeLead.isStudentLoginCreated ? "text-emerald-600 font-bold" : "text-slate-500"}>
+                  {activeLead.isStudentLoginCreated ? "Login Active" : "No Login Created"}
+                </span>
+              </div>
+              {!activeLead.isStudentLoginCreated && (
+                <button
+                  onClick={() => handleCreateStudentLogin(activeLead.id)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition"
+                >
+                  Create Login
+                </button>
+              )}
             </div>
           </div>
 

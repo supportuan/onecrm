@@ -730,3 +730,39 @@ export const getCampaignAnalytics = async (
     next(error);
   }
 };
+
+export const createStudentLogin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const leadId = parseInt(req.params.leadId as string);
+    if (isNaN(leadId)) {
+      return sendError(res, 'Invalid lead ID', null, 400);
+    }
+    const { password } = req.body;
+    const user = await marketingService.createStudentLogin(leadId, password);
+    return sendSuccess(res, 'Student login created successfully', user, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const convertStudentToLead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = parseInt(req.params.userId as string);
+    if (isNaN(userId)) {
+      return sendError(res, 'Invalid user ID', null, 400);
+    }
+    const overrides = req.body;
+    const lead = await marketingService.convertStudentToLead(userId, overrides);
+    return sendSuccess(res, 'Student converted to lead successfully', lead, 201);
+  } catch (error) {
+    next(error);
+  }
+};

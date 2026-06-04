@@ -4,6 +4,8 @@ import metaRoutes from './meta.routes.js';
 import { uploadExcel } from '../../../middleware/upload.middleware.js';
 import leadActivityRoutes from './lead-activity.routes.js';
 import leadReplyRoutes from './lead-reply.routes.js';
+import { authenticateToken } from '../../../middleware/authenticate.js';
+import { authorizeRole } from '../../../middleware/authorize.js';
 
 
 const router = Router();
@@ -1458,5 +1460,19 @@ router.get('/campaigns/:id/analytics', controller.getCampaignAnalytics);
 
 router.put('/analytics/agency-funnel/:id', controller.updateAgencyFunnelAnalytics);
 router.use('/meta', metaRoutes);
+
+router.post(
+    '/leads/:leadId/create-student-login',
+    authenticateToken,
+    authorizeRole('SUPER_ADMIN', 'ADMIN', 'COUNSELLOR'),
+    controller.createStudentLogin
+);
+
+router.post(
+    '/students/:userId/convert-to-lead',
+    authenticateToken,
+    authorizeRole('SUPER_ADMIN', 'ADMIN', 'COUNSELLOR'),
+    controller.convertStudentToLead
+);
 
 export default router;
