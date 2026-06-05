@@ -1,6 +1,6 @@
 'use client';
-import PerformanceReviews from '@/pages-old/hr/PerformanceReviews';
+import Performance from '@/pages-old/hr/Performance';
 
 export default function Page() {
-  return <PerformanceReviews />;
+  return <Performance />;
 }

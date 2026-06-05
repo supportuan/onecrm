@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { getUsers, createUser, deleteUser, updateUser, getCounsellors } from "../../services/userApi";
+import { useAuth } from "../../lib/auth/AuthContext";
 
 const roles = [
   "SUPER_ADMIN",
@@ -67,6 +68,7 @@ const getPermissionsForModules = (selectedModules) => {
 };
 
 export default function UserManagementPage() {
+  const { accessToken, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -107,8 +109,9 @@ export default function UserManagementPage() {
   };
 
   useEffect(() => {
+    if (authLoading || !accessToken) return;
     loadData();
-  }, []);
+  }, [authLoading, accessToken]);
 
   useEffect(() => {
     const allowedModules = roleModuleAccess[form.role] || [];

@@ -248,7 +248,7 @@ async function seedHrData(hrUserId: number, defaultPassword: string) {
       name: 'Bob Johnson',
       employeeCode: 'E004',
       email: 'bob.johnson@onecrm.com',
-      accessRole: HrAccessRole.PAYROLL_ADMIN,
+      accessRole: HrAccessRole.HR_MANAGER,
       department: 'Finance',
       designation: 'Payroll Admin',
       biometricId: 'E004',

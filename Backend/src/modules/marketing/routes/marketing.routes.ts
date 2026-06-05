@@ -6,7 +6,10 @@ import leadActivityRoutes from './lead-activity.routes.js';
 import leadReplyRoutes from './lead-reply.routes.js';
 import { authenticateToken } from '../../../middleware/authenticate.js';
 import { authorizeRole } from '../../../middleware/authorize.js';
+import { requirePermission } from '../../rbac/rbac.middleware.js';
 
+// Live, DB-backed module guard for the Marketing module.
+const requireMarketing = requirePermission('VIEW_MARKETING', 'MANAGE_MARKETING');
 
 const router = Router();
 
@@ -152,7 +155,7 @@ router.get('/analytics', controller.getAnalytics);
  *       200:
  *         description: Successfully retrieved leads
  */
-router.get('/leads', authenticateToken, controller.getLeads);
+router.get('/leads', authenticateToken, requireMarketing, controller.getLeads);
 
 /**
  * @swagger
@@ -164,7 +167,7 @@ router.get('/leads', authenticateToken, controller.getLeads);
  *       200:
  *         description: Successfully retrieved lead sources
  */
-router.get('/sources', authenticateToken, controller.getSources);
+router.get('/sources', authenticateToken, requireMarketing, controller.getSources);
 
 /**
  * @swagger

@@ -3,6 +3,11 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login as loginRequest, logout as logoutRequest, refreshAuthToken as refreshTokenRequest } from '@/lib/apiService';
+import {
+  setAccessToken as syncAccessToken,
+  registerSessionExpiredHandler,
+  clearStoredSession,
+} from '@/lib/auth/session';
 
 const AuthContext = createContext({
   user: null,
@@ -31,15 +36,31 @@ export const AuthProvider = ({ children }) => {
       setAccessToken(storedAccess);
       setRefreshToken(storedRefresh);
       setUser(JSON.parse(storedUser));
+      syncAccessToken(storedAccess);
     }
 
     setLoading(false);
   }, []);
 
+  // Keep authFetch in sync with React session state.
+  useEffect(() => {
+    syncAccessToken(accessToken);
+  }, [accessToken]);
+
+  useEffect(() => {
+    registerSessionExpiredHandler(() => {
+      setUser(null);
+      setAccessToken(null);
+      setRefreshToken(null);
+      router.push('/login');
+    });
+  }, [router]);
+
   const saveSession = (userData, accessTokenValue, refreshTokenValue) => {
     setUser(userData);
     setAccessToken(accessTokenValue);
     setRefreshToken(refreshTokenValue);
+    syncAccessToken(accessTokenValue);
     localStorage.setItem('currentUser', JSON.stringify(userData));
     localStorage.setItem('accessToken', accessTokenValue);
     localStorage.setItem('refreshToken', refreshTokenValue);
@@ -49,9 +70,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    clearStoredSession();
   };
 
   const login = async ({ email, password }) => {

@@ -181,7 +181,6 @@ import {
   MessageCircle,
   MessageSquare,
   Percent,
-  Receipt,
   RotateCcw,
   Search,
   Settings,
@@ -284,29 +283,20 @@ export const navMenu = [
     label: "HR",
     path: "/hr",
     icon: ShieldCheck,
-    allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"],
     subItems: [
-      // Recruitment Flow (lifecycle start)
-      { label: "Job Postings", path: "/hr/job-postings", icon: Briefcase, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
-      { label: "Recruitment Tracker", path: "/hr/recruitment-tracker", icon: Search, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
-      { label: "Interview Scheduling", path: "/hr/interview-scheduling", icon: Calendar, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
-      { label: "Offer Letters", path: "/hr/offer-letters", icon: FileText, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
-
-      // Onboarding (post-offer)
-      { label: "Onboarding Checklist", path: "/hr/onboarding-checklist", icon: ClipboardList, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      // Recruitment lifecycle (job postings, interviews, offers, onboarding all live inside the tracker)
+      { label: "Recruitment Tracker", path: "/hr/recruitment-tracker", icon: Search, permission: ["MANAGE_EMPLOYEES"] },
 
       // Core Workforce Operations
-      { label: "Employee Directory", path: "/hr/employee-directory", icon: Users, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
-      { label: "Attendance", path: "/hr/attendance", icon: Clock, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
-      { label: "Leave Management", path: "/hr/leave-management", icon: CalendarCheck, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Employee Directory", path: "/hr/employee-directory", icon: Users, permission: ["VIEW_ALL_EMPLOYEES", "MANAGE_EMPLOYEES"] },
+      { label: "Attendance", path: "/hr/attendance", icon: Clock, permission: ["VIEW_ATTENDANCE", "MANAGE_ATTENDANCE"] },
+      { label: "Leave Management", path: "/hr/leave-management", icon: CalendarCheck, permission: ["VIEW_LEAVE", "MANAGE_LEAVE"] },
 
       // Performance Management
-      { label: "Performance Reviews", path: "/hr/performance-reviews", icon: Star, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
-      { label: "KPI Dashboard", path: "/hr/kpi-dashboard", icon: Target, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Performance", path: "/hr/performance-reviews", icon: Star, permission: ["VIEW_REPORTS", "MANAGE_EMPLOYEES"] },
 
       // Compensation & Payroll
-      { label: "Payroll Inputs", path: "/hr/payroll-inputs", icon: DollarSign, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
-      { label: "Payroll Deductions", path: "/hr/payroll-deductions", icon: Receipt, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Payroll", path: "/hr/payroll", icon: DollarSign, permission: ["MANAGE_PAYROLL", "VIEW_OWN_PAYSLIP"] },
     ],
   },
   {
@@ -314,23 +304,26 @@ export const navMenu = [
     path: "/admin-settings",
     icon: SlidersHorizontal,
     subItems: [
-      { label: "Users", path: "/admin-settings/users", icon: Users },
+      { label: "Users", path: "/admin-settings/users", icon: Users, permission: ["MANAGE_EMPLOYEES", "MANAGE_ADMINS"] },
       {
         label: "Roles & Permissions",
         path: "/admin-settings/roles-permissions",
         icon: Key,
+        permission: ["VIEW_ADMIN", "MANAGE_ADMINS"],
       },
       {
         label: "System Settings",
         path: "/admin-settings/system-settings",
         icon: Settings,
+        permission: ["MANAGE_SYSTEM"],
       },
       {
         label: "Content Management",
         path: "/admin-settings/content-management",
         icon: FileText,
+        permission: ["MANAGE_SYSTEM", "VIEW_ADMIN"],
       },
-      { label: "Branding", path: "/admin-settings/branding", icon: Image },
+      { label: "Branding", path: "/admin-settings/branding", icon: Image, permission: ["MANAGE_SYSTEM", "VIEW_ADMIN"] },
     ],
   },
 ];

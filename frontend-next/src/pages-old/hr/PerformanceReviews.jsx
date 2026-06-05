@@ -97,7 +97,7 @@ export default function PerformanceReviews() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-8">
       {/* Title */}
-      <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-indigo-900">
             Performance Reviews & Goals
@@ -116,7 +116,7 @@ export default function PerformanceReviews() {
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="space-y-8">
         {/* Appraisal Cycles Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="p-6 bg-white border border-slate-200 rounded-3xl flex flex-col gap-4 shadow-sm">

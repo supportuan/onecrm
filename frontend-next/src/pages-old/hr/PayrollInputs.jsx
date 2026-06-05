@@ -149,7 +149,7 @@ export default function PayrollInputs() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-8">
       {/* Premium Title */}
-      <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-indigo-900">
             Payroll & Financial Inputs
@@ -197,7 +197,7 @@ export default function PayrollInputs() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="space-y-8">
         {/* Dynamic Alerts */}
         {successMsg && (
           <div className="p-4 bg-emerald-50 border border-emerald-250 text-emerald-700 rounded-2xl flex items-center gap-3 animate-in fade-in duration-200">

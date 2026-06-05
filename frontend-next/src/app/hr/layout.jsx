@@ -1,7 +1,7 @@
 'use client';
 
-import HRPageGuard from '@/components/HRPageGuard';
+import ModuleGuard from '@/components/ModuleGuard';
 
 export default function HrLayout({ children }) {
-  return <HRPageGuard>{children}</HRPageGuard>;
+  return <ModuleGuard permissions={['VIEW_HR']}>{children}</ModuleGuard>;
 }

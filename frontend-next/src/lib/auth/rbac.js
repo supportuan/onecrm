@@ -1,151 +1,172 @@
-export const ROLE_PERMISSIONS = {
-  SUPER_ADMIN: [
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-    'MANAGE_BIOMETRICS', 'MANAGE_NETWORK_SECURITY', 'MANAGE_SCHEDULING',
-    'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-    'MANAGE_ADMINS', 'MANAGE_SUPPORT_REQUESTS', 'MANAGE_SYSTEM', 'VIEW_REPORTS'
-  ],
-  GLOBAL_ADMIN: [
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'VIEW_OWN_PAYSLIP',
-    'MANAGE_BIOMETRICS', 'MANAGE_NETWORK_SECURITY', 'MANAGE_SCHEDULING',
-    'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-    'MANAGE_SUPPORT_REQUESTS', 'MANAGE_SYSTEM', 'VIEW_REPORTS', 'MANAGE_PAYROLL'
-  ],
-  ADMIN: [
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-    'MANAGE_BIOMETRICS', 'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-    'MANAGE_SUPPORT_REQUESTS', 'MANAGE_SYSTEM', 'VIEW_REPORTS'
-  ],
-  HR_MANAGER: [
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-    'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-    'MANAGE_SUPPORT_REQUESTS', 'VIEW_REPORTS', 'MANAGE_SYSTEM'
-  ],
-  HR: [
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-    'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-    'MANAGE_SUPPORT_REQUESTS', 'VIEW_REPORTS', 'MANAGE_SYSTEM'
-  ],
-  HR_EXECUTIVE: [
-    'VIEW_ALL_EMPLOYEES', 'VIEW_OWN_PAYSLIP', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE'
-  ],
-  PAYROLL_ADMIN: [
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_REPORTS'
-  ],
-  IT_ADMIN: [
-    'VIEW_OWN_PAYSLIP', 'MANAGE_BIOMETRICS', 'MANAGE_NETWORK_SECURITY', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'
-  ],
-  LEARNING_ADMIN: [
-    'VIEW_OWN_PAYSLIP', 'MANAGE_SCHEDULING', 'VIEW_ATTENDANCE'
-  ],
-  MANAGER: [
-    'VIEW_OWN_PAYSLIP', 'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE'
-  ],
-  TEAM_LEAD: [
-    'VIEW_OWN_PAYSLIP', 'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'
-  ],
-  HOD: [
-    'VIEW_OWN_PAYSLIP',
-    'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE'
-  ],
-  PRINCIPAL: [
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-    'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-    'VIEW_REPORTS'
-  ],
-  DIRECTOR: [
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-    'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
-    'VIEW_REPORTS'
-  ],
-  FACULTY: [
-    'VIEW_OWN_PAYSLIP', 'VIEW_SCHEDULE', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'
-  ],
-  EMPLOYEE: [
-    'VIEW_OWN_PAYSLIP', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'
-  ],
-  STAFF: [
-    'VIEW_OWN_PAYSLIP', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'
-  ],
-  NON_TEACHING: [
-    'VIEW_OWN_PAYSLIP', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'VIEW_NON_TEACHING_DASHBOARD'
-  ],
-  PENDING: [],
-  EXPENSE_MANAGER: [
-    'VIEW_OWN_PAYSLIP', 'VIEW_TEAM', 'VIEW_ATTENDANCE'
-  ],
-  TEACHING: [
-    'VIEW_OWN_PAYSLIP', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'
-  ],
+// ---------------------------------------------------------------------------
+// RBAC catalog + defaults (frontend).
+//
+// The live source of truth is the backend (GET /api/rbac/permissions), loaded
+// into PermissionsContext. The values below are the fallback defaults used
+// before the live map loads and to render the Roles & Permissions editor.
+// ---------------------------------------------------------------------------
+
+// Permission catalog grouped by module — drives the Roles & Permissions UI.
+export const PERMISSION_CATEGORIES = [
+  {
+    title: 'Marketing',
+    key: 'marketing',
+    permissions: [
+      { key: 'VIEW_MARKETING', name: 'view marketing', desc: 'access the marketing module, leads, campaigns and analytics.' },
+      { key: 'MANAGE_MARKETING', name: 'manage marketing', desc: 'create/edit leads, campaigns, automations and landing pages.' },
+    ],
+  },
+  {
+    title: 'Student CRM',
+    key: 'student_crm',
+    permissions: [
+      { key: 'VIEW_STUDENT_CRM', name: 'view student crm', desc: 'access student management, applications, counselling, visas.' },
+      { key: 'MANAGE_STUDENT_CRM', name: 'manage student crm', desc: 'create/edit students, applications and counselling records.' },
+    ],
+  },
+  {
+    title: 'Agency CRM',
+    key: 'agency_crm',
+    permissions: [
+      { key: 'VIEW_AGENCY_CRM', name: 'view agency crm', desc: 'access agency management, leads, commissions and co-branding.' },
+      { key: 'MANAGE_AGENCY_CRM', name: 'manage agency crm', desc: 'create/edit agencies, commissions and co-branding tools.' },
+    ],
+  },
+  {
+    title: 'HR — module access',
+    key: 'hr_module',
+    permissions: [
+      { key: 'VIEW_HR', name: 'view hr module', desc: 'access the hrms module from the sidebar.' },
+    ],
+  },
+  {
+    title: 'HR — employee directory & org',
+    key: 'hr_directory',
+    permissions: [
+      { key: 'VIEW_ALL_EMPLOYEES', name: 'view all employees', desc: 'see the full personnel directory.' },
+      { key: 'MANAGE_EMPLOYEES', name: 'manage employees', desc: 'create, modify, and archive employee records.' },
+      { key: 'VIEW_TEAM', name: 'view team members', desc: 'see the assigned reporting tree.' },
+      { key: 'MANAGE_TEAM', name: 'manage team org', desc: 'reorganize teams and supervisor relationships.' },
+    ],
+  },
+  {
+    title: 'HR — finance & payroll',
+    key: 'hr_payroll',
+    permissions: [
+      { key: 'MANAGE_PAYROLL', name: 'manage payroll', desc: 'run payroll batches and edit salary structures.' },
+      { key: 'VIEW_OWN_PAYSLIP', name: 'view own payslip', desc: 'download personal monthly payslip.' },
+      { key: 'VIEW_REPORTS', name: 'view financial reports', desc: 'audit ledger distributions and finance analytics.' },
+    ],
+  },
+  {
+    title: 'HR — biometric & attendance',
+    key: 'hr_attendance',
+    permissions: [
+      { key: 'MANAGE_BIOMETRICS', name: 'manage biometrics', desc: 'register hardware and manage enrolled users.' },
+      { key: 'MANAGE_NETWORK_SECURITY', name: 'manage network whitelist', desc: 'configure ip ranges and geofences.' },
+      { key: 'VIEW_ATTENDANCE', name: 'view attendance', desc: 'view daily clocks, calendars, and logs.' },
+      { key: 'MANAGE_ATTENDANCE', name: 'manage attendance', desc: 'approve or reject regularization requests.' },
+    ],
+  },
+  {
+    title: 'HR — leave & system',
+    key: 'hr_system',
+    permissions: [
+      { key: 'VIEW_LEAVE', name: 'view leave balances', desc: 'view leave requests and balances.' },
+      { key: 'MANAGE_LEAVE', name: 'manage leave policies', desc: 'configure entitlement plans and approve leaves.' },
+      { key: 'MANAGE_SCHEDULING', name: 'manage scheduling', desc: 'configure shift and roster scheduling rules.' },
+      { key: 'MANAGE_SUPPORT_REQUESTS', name: 'manage support requests', desc: 'triage and resolve internal support tickets.' },
+    ],
+  },
+  {
+    title: 'Administration',
+    key: 'admin',
+    permissions: [
+      { key: 'VIEW_ADMIN', name: 'view admin settings', desc: 'access the admin & settings module.' },
+      { key: 'MANAGE_SYSTEM', name: 'manage system', desc: 'root configuration: branding, cycles, holidays.' },
+      { key: 'MANAGE_ADMINS', name: 'manage roles & admins', desc: 'edit roles & permissions and administrator accounts.' },
+    ],
+  },
+];
+
+export const ALL_PERMISSIONS = PERMISSION_CATEGORIES.flatMap((c) =>
+  c.permissions.map((p) => p.key)
+);
+
+export const ROLE_DESCRIPTIONS = {
+  SUPER_ADMIN: 'system owner. full access to every module and capability.',
+  ADMIN: 'management / directors. broad access across all modules.',
+  HR: 'hr operators. full hr module access except admin-level system config.',
+  IT: 'application management team. biometric, network, and basic attendance access.',
+  COUNSELLOR: 'counsellor / advisor. marketing + student crm visibility, self-service hr.',
+  MARKETING: 'marketing team. full marketing module access.',
+  STUDENT: 'student. student crm only.',
+  AGENT: 'agency partner. agency crm + student crm visibility.',
 };
 
-export function hasPermission(role, permission, customPermissions) {
+// Maps a top-level module (by sidebar label) to the permission(s) that grant it.
+export const MODULE_PERMISSION_MAP = {
+  Marketing: ['VIEW_MARKETING', 'MANAGE_MARKETING'],
+  'Student CRM': ['VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'],
+  'Agency CRM': ['VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM'],
+  HR: ['VIEW_HR'],
+  HRMS: ['VIEW_HR'],
+  'Admin Settings': ['VIEW_ADMIN', 'MANAGE_SYSTEM', 'MANAGE_ADMINS'],
+  'Admin & Settings': ['VIEW_ADMIN', 'MANAGE_SYSTEM', 'MANAGE_ADMINS'],
+};
+
+// Fallback defaults — mirror Backend/src/modules/rbac/rbac.constants.ts
+export const ROLE_PERMISSIONS = {
+  SUPER_ADMIN: [...ALL_PERMISSIONS],
+  ADMIN: [
+    'VIEW_MARKETING', 'MANAGE_MARKETING',
+    'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
+    'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM',
+    'VIEW_HR', 'VIEW_ADMIN',
+    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
+    'MANAGE_BIOMETRICS', 'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE',
+    'VIEW_LEAVE', 'MANAGE_LEAVE', 'MANAGE_SUPPORT_REQUESTS', 'MANAGE_SYSTEM', 'VIEW_REPORTS',
+  ],
+  HR: [
+    'VIEW_HR',
+    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
+    'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
+    'MANAGE_SUPPORT_REQUESTS', 'VIEW_REPORTS',
+  ],
+  COUNSELLOR: ['VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'],
+  MARKETING: ['VIEW_MARKETING', 'MANAGE_MARKETING', 'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'],
+  AGENT: ['VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM', 'VIEW_STUDENT_CRM'],
+  IT: ['VIEW_HR', 'VIEW_OWN_PAYSLIP', 'MANAGE_BIOMETRICS', 'MANAGE_NETWORK_SECURITY', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'],
+  STUDENT: ['VIEW_STUDENT_CRM'],
+};
+
+const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_');
+
+/**
+ * Check a single permission for a role.
+ * `permissionMap` (the live map from PermissionsContext) takes precedence;
+ * falls back to the static ROLE_PERMISSIONS defaults.
+ */
+export function hasPermission(role, permission, permissionMap) {
   if (!role || !permission) return false;
-  const normalizedRole = role.toUpperCase().replace(/[-\s]/g, '_');
-
-  if (customPermissions && customPermissions[normalizedRole]) {
-    return customPermissions[normalizedRole].includes(permission);
-  }
-
-  const permissions = ROLE_PERMISSIONS[normalizedRole] || [];
-  return permissions.includes(permission);
+  const normalizedRole = normalizeRole(role);
+  const source = permissionMap && permissionMap[normalizedRole]
+    ? permissionMap[normalizedRole]
+    : ROLE_PERMISSIONS[normalizedRole] || [];
+  return source.includes(permission);
 }
 
-export function hasAnyPermission(role, requirement, customPermissions) {
+export function hasAnyPermission(role, requirement, permissionMap) {
   const required = Array.isArray(requirement) ? requirement : [requirement];
-  return required.some((permission) => hasPermission(role, permission, customPermissions));
+  return required.some((permission) => hasPermission(role, permission, permissionMap));
 }
 
 export const ROUTE_PERMISSIONS = [
   { pathPattern: /^\/api\/employees\/me/i, permission: 'VIEW_OWN_PAYSLIP' },
-  {
-    pathPattern: /^\/api\/employees\/[^/]+\/access-role$/i,
-    permission: ['MANAGE_EMPLOYEES', 'MANAGE_SYSTEM'],
-  },
+  { pathPattern: /^\/api\/employees\/[^/]+\/access-role$/i, permission: ['MANAGE_EMPLOYEES', 'MANAGE_SYSTEM'] },
   { pathPattern: /^\/api\/employees/i, permission: ['VIEW_ALL_EMPLOYEES', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'] },
   { pathPattern: /^\/api\/payroll\/admin/i, permission: 'MANAGE_PAYROLL' },
-  { pathPattern: /^\/api\/payroll\/history/i, permission: 'VIEW_OWN_PAYSLIP' },
-  { pathPattern: /^\/api\/payroll\/generate/i, permission: 'MANAGE_PAYROLL' },
-  { pathPattern: /^\/api\/payroll$/i, permission: 'MANAGE_PAYROLL' },
-  { pathPattern: /^\/api\/salary-structure/i, permission: 'MANAGE_PAYROLL' },
   { pathPattern: /^\/api\/reports/i, permission: 'VIEW_REPORTS' },
-  { pathPattern: /^\/api\/admin\/designations/i, permission: ['VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_SYSTEM'] },
-  { pathPattern: /^\/api\/admin\/users/i, permission: 'MANAGE_EMPLOYEES' },
-  { pathPattern: /^\/api\/admin\/scheduling/i, permission: ['MANAGE_SCHEDULING', 'MANAGE_SYSTEM'] },
-  { pathPattern: /^\/admin\/access-control/i, permission: ['MANAGE_EMPLOYEES', 'MANAGE_SYSTEM'] },
-  { pathPattern: /^\/admin\/attendance\/network/i, permission: 'MANAGE_NETWORK_SECURITY' },
-  { pathPattern: /^\/admin\/holidays/i, permission: 'MANAGE_SYSTEM' },
-  { pathPattern: /^\/admin\/requests/i, permission: 'MANAGE_SUPPORT_REQUESTS' },
-  { pathPattern: /^\/admin\/leave/i, permission: 'MANAGE_LEAVE' },
-  { pathPattern: /^\/admin\/scheduling/i, permission: ['MANAGE_SCHEDULING', 'MANAGE_SYSTEM'] },
-  { pathPattern: /^\/faculty\/schedule/i, permission: 'VIEW_SCHEDULE' },
-  { pathPattern: /^\/api\/admin\/devices/i, permission: 'MANAGE_BIOMETRICS' },
-  { pathPattern: /^\/api\/admin\/attendance\/network/i, permission: 'MANAGE_NETWORK_SECURITY' },
-  { pathPattern: /^\/api\/biometric\/users/i, permission: 'MANAGE_BIOMETRICS' },
-  { pathPattern: /^\/api\/leave\/approve/i, permission: 'MANAGE_LEAVE' },
-  { pathPattern: /^\/api\/wfh\/approve/i, permission: 'MANAGE_LEAVE' },
-  { pathPattern: /^\/api\/leave\/requests/i, permission: 'VIEW_LEAVE' },
-  { pathPattern: /^\/api\/wfh\/requests/i, permission: 'VIEW_LEAVE' },
-  { pathPattern: /^\/api\/attendance\/process/i, permission: 'MANAGE_ATTENDANCE' },
-  { pathPattern: /^\/api\/attendance\/refresh/i, permission: 'MANAGE_ATTENDANCE' },
-  { pathPattern: /^\/api\/attendance\/events/i, permission: 'VIEW_ATTENDANCE' },
-  { pathPattern: /^\/api\/attendance/i, permission: 'VIEW_ATTENDANCE' },
-  { pathPattern: /^\/attendance/i, permission: 'VIEW_ATTENDANCE' },
-  { pathPattern: /^\/leave/i, permission: 'VIEW_LEAVE' },
-  { pathPattern: /^\/api\/team\/tree/i, permission: ['VIEW_TEAM', 'VIEW_ALL_EMPLOYEES'] },
-  { pathPattern: /^\/api\/admin\/access-control\/users\/[^/]+$/i, permission: ['MANAGE_EMPLOYEES', 'MANAGE_SYSTEM'] },
-  { pathPattern: /^\/team\/tree/i, permission: ['VIEW_TEAM', 'VIEW_ALL_EMPLOYEES'] },
-  { pathPattern: /^\/team/i, permission: 'VIEW_TEAM' },
-  { pathPattern: /^\/employees/i, permission: ['VIEW_ALL_EMPLOYEES', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'] },
-  { pathPattern: /^\/hire/i, permission: 'MANAGE_EMPLOYEES' },
-  { pathPattern: /^\/payroll/i, permission: 'MANAGE_PAYROLL' },
-  { pathPattern: /^\/salary-structure/i, permission: 'MANAGE_PAYROLL' },
-  { pathPattern: /^\/payslips/i, permission: 'VIEW_OWN_PAYSLIP' },
-  { pathPattern: /^\/reports/i, permission: 'VIEW_REPORTS' },
-  { pathPattern: /^\/biometric/i, permission: 'MANAGE_BIOMETRICS' },
-  { pathPattern: /^\/api\/org\/policies\/[^/]+\/view/i, permission: ['VIEW_ALL_EMPLOYEES', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_EMPLOYEES'] },
-  { pathPattern: /^\/api\/org\/policies/i, permission: ['VIEW_ALL_EMPLOYEES', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_EMPLOYEES'] },
-  { pathPattern: /^\/org\/policies/i, permission: ['VIEW_ALL_EMPLOYEES', 'VIEW_TEAM', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_EMPLOYEES'] },
 ];
 
 export function getRequiredPermissionForPath(pathname) {

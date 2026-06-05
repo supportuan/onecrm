@@ -238,6 +238,8 @@ import MenuItem from "./MenuItem";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from '../lib/workspaceContext';
+import { usePermissions } from "@/lib/auth/PermissionsContext";
+import { MODULE_PERMISSION_MAP } from "@/lib/auth/rbac";
 
 
 const Sidebar = ({ sidebarOpen, onClose }) => {
@@ -246,69 +248,35 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
   const { user, logout } = useAuth();
   const { activeWorkspace, loginToWorkspace, logout: workspaceLogout } = useWorkspace();
   const { logout: authLogout } = useAuth();
+  const { can, permissionMap } = usePermissions();
 
+  // Navigation is filtered by the live, DB-backed permission map. Editing a
+  // role in Admin Settings > Roles & Permissions updates what appears here.
   const filteredNavMenu = useMemo(() => {
     if (!user) return [];
 
-    const role = user.role;
+    // A module is visible if the user has any permission mapped to it.
+    // Items with no mapping (e.g. Dashboard) are visible to all authenticated users.
+    const moduleVisible = (item) => {
+      const required = MODULE_PERMISSION_MAP[item.label];
+      if (!required) return true;
+      return can(required);
+    };
 
-    const canSeeItem = (item) => !item.allowedRoles || item.allowedRoles.includes(role);
+    // A sub-item may declare its own `permission`; otherwise inherits the module.
+    const subVisible = (sub) => {
+      if (sub.permission) return can(sub.permission);
+      return true;
+    };
 
-    const withFilteredSubItems = (items) =>
-      items
-        .filter(canSeeItem)
-        .map((item) => ({
-          ...item,
-          subItems: item.subItems
-            ? item.subItems.filter(
-                (sub) => !sub.allowedRoles || sub.allowedRoles.includes(role)
-              )
-            : undefined,
-        }))
-        .filter((item) => !item.subItems || item.subItems.length > 0);
-
-    if (role === "SUPER_ADMIN") {
-      return withFilteredSubItems(navMenu);
-    }
-
-    if (role === "ADMIN") {
-      return withFilteredSubItems(
-        navMenu.filter((item) =>
-          ["Marketing", "Student CRM", "Agency CRM", "HR", "Admin & Settings"].includes(
-            item.label
-          )
-        )
-      );
-    }
-
-    if (role === "HR") {
-      return withFilteredSubItems(navMenu.filter((item) => item.label === "HR"));
-    }
-
-    if (role === "COUNSELLOR") {
-      return withFilteredSubItems(
-        navMenu.filter((item) =>
-          ["Marketing", "Student CRM"].includes(item.label)
-        )
-      );
-    }
-
-    if (role === "AGENT") {
-      return withFilteredSubItems(
-        navMenu.filter((item) =>
-          ["Agency CRM", "Student CRM"].includes(item.label)
-        )
-      );
-    }
-
-    if (role === "STUDENT") {
-      return withFilteredSubItems(
-        navMenu.filter((item) => item.label === "Student CRM")
-      );
-    }
-
-    return [];
-  }, [user]);
+    return navMenu
+      .filter(moduleVisible)
+      .map((item) => ({
+        ...item,
+        subItems: item.subItems ? item.subItems.filter(subVisible) : undefined,
+      }))
+      .filter((item) => !item.subItems || item.subItems.length > 0);
+  }, [user, can, permissionMap]);
 
   const sectionKeys = useMemo(
     () => filteredNavMenu.map((item) => item.label),

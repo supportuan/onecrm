@@ -76,6 +76,8 @@ enum UserRole {
   STUDENT
   HR
   AGENT
+  MARKETING
+  IT
 }
 
 enum HrAccessRole {
@@ -849,5 +851,16 @@ model HrPerformanceReview {
   updatedAt    DateTime       @updatedAt
 
   employee HrEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+}
+
+// -----------------------------------------------------------------------------
+// RBAC: dynamic role -> permission mapping (editable live from admin settings)
+// -----------------------------------------------------------------------------
+model RolePermission {
+  id          Int      @id @default(autoincrement())
+  role        String   @unique
+  permissions String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
