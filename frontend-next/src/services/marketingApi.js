@@ -1,6 +1,6 @@
 import authFetch from '@/lib/api';
 
-const API_URL = 'http://localhost:4000/api/marketing';
+const API_URL = '/api/marketing';
 
 // ==========================================
 // 1. Dashboard & Reports Service
@@ -403,4 +403,4 @@ export const convertStudentToLead = async (userId, overrides = {}) => {
     body: JSON.stringify(overrides),
   });
   return res.json();
-};
+};

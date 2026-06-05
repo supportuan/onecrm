@@ -152,7 +152,7 @@ router.get('/analytics', controller.getAnalytics);
  *       200:
  *         description: Successfully retrieved leads
  */
-router.get('/leads', controller.getLeads);
+router.get('/leads', authenticateToken, controller.getLeads);
 
 /**
  * @swagger
@@ -164,7 +164,7 @@ router.get('/leads', controller.getLeads);
  *       200:
  *         description: Successfully retrieved lead sources
  */
-router.get('/sources', controller.getSources);
+router.get('/sources', authenticateToken, controller.getSources);
 
 /**
  * @swagger
@@ -184,7 +184,7 @@ router.get('/sources', controller.getSources);
  *       404:
  *         description: Lead not found
  */
-router.get('/leads/:id', controller.getLeadById);
+router.get('/leads/:id', authenticateToken, controller.getLeadById);
 
 /**
  * @swagger
@@ -223,7 +223,7 @@ router.get('/leads/:id', controller.getLeadById);
  *       201:
  *         description: Lead successfully created
  */
-router.post('/leads', controller.createLead);
+router.post('/leads', authenticateToken, controller.createLead);
 
 /**
  * @swagger
@@ -247,7 +247,7 @@ router.post('/leads', controller.createLead);
  *       200:
  *         description: Lead successfully updated
  */
-router.put('/leads/:id', controller.updateLead);
+router.put('/leads/:id', authenticateToken, controller.updateLead);
 
 /**
  * @swagger
@@ -265,7 +265,7 @@ router.put('/leads/:id', controller.updateLead);
  *       200:
  *         description: Lead successfully soft-deleted
  */
-router.delete('/leads/:id', controller.deleteLead);
+router.delete('/leads/:id', authenticateToken, controller.deleteLead);
 
 router.patch('/leads/:leadId/assign-counsellor', authenticateToken, controller.assignCounsellor);
 
@@ -285,7 +285,7 @@ router.patch('/leads/:leadId/assign-counsellor', authenticateToken, controller.a
  *       200:
  *         description: Successfully retrieved lead activities
  */
-router.get('/leads/:id/activities', controller.getLeadActivities);
+router.get('/leads/:id/activities', authenticateToken, controller.getLeadActivities);
 
 /**
  * @swagger
@@ -319,7 +319,7 @@ router.get('/leads/:id/activities', controller.getLeadActivities);
  *       201:
  *         description: Activity successfully logged
  */
-router.post('/leads/:id/activities', controller.createLeadActivity);
+router.post('/leads/:id/activities', authenticateToken, controller.createLeadActivity);
 
 // ==========================================
 // 3. Campaigns

@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import * as controller from './hr.controller.js';
+import { requireHrAuth, requireHrAdmin } from './hr.auth.js';
 
 const router = Router();
+
+// All HR routes require authentication and HR-admin roles (SUPER_ADMIN, ADMIN, HR)
+router.use(requireHrAuth, requireHrAdmin);
 
 // ==========================================
 // 1. Employees & Team Directory
@@ -176,5 +180,12 @@ router.post('/performance/marketing', controller.addMarketingPerformance);
 // ==========================================
 router.get('/performance/counsellors', controller.getCounsellorPerformance);
 router.post('/performance/counsellors', controller.addCounsellorPerformance);
+
+// ==========================================
+// 19. Performance Reviews
+// ==========================================
+router.get('/performance-reviews', controller.getPerformanceReviews);
+router.post('/performance-reviews', controller.createPerformanceReview);
+router.put('/performance-reviews/:id', controller.updatePerformanceReview);
 
 export default router;

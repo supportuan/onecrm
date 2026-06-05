@@ -19,7 +19,14 @@ const RoleGuard = ({ allowedRoles, children }) => {
   }
 
   if (!user || !allowedRoles.includes(user.role)) {
-    return null;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-6 text-center">
+        <h2 className="text-xl font-semibold text-slate-800">Access denied</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Your role does not have permission to view this page.
+        </p>
+      </div>
+    );
   }
 
   return <>{children}</>;

@@ -592,3 +592,33 @@ export const addCounsellorPerformance = async (data) => {
   });
   return handleResponse(res);
 };
+
+// ==========================================
+// 19. Performance Reviews
+// ==========================================
+
+export const getPerformanceReviews = async (search) => {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  const query = params.toString();
+  const res = await tenantFetch(`${API_URL}/performance-reviews${query ? `?${query}` : ""}`);
+  return handleResponse(res);
+};
+
+export const createPerformanceReview = async (data) => {
+  const res = await tenantFetch(`${API_URL}/performance-reviews`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updatePerformanceReview = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/performance-reviews/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};

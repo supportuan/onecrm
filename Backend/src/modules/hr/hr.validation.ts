@@ -217,3 +217,23 @@ export const upsertPayrollDeductionSchema = z.object({
   taxAmount: z.number().default(0),
   otherDeductions: z.number().default(0),
 });
+
+export const createPerformanceReviewSchema = z.object({
+  name: z.string().min(1),
+  employeeId: z.string().min(1),
+  department: z.string().min(1),
+  cycle: z.string().min(1),
+  manager: z.string().min(1),
+  status: z.string().optional(),
+  rating: z.number().optional(),
+  date: z.string().optional(),
+});
+
+export const updatePerformanceReviewSchema = z.object({
+  rating: z.number().optional(),
+  status: z.string().optional(),
+  manager: z.string().optional(),
+  cycle: z.string().optional(),
+  department: z.string().optional(),
+  date: z.string().optional(),
+});

@@ -252,36 +252,59 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
 
     const role = user.role;
 
+    const canSeeItem = (item) => !item.allowedRoles || item.allowedRoles.includes(role);
+
+    const withFilteredSubItems = (items) =>
+      items
+        .filter(canSeeItem)
+        .map((item) => ({
+          ...item,
+          subItems: item.subItems
+            ? item.subItems.filter(
+                (sub) => !sub.allowedRoles || sub.allowedRoles.includes(role)
+              )
+            : undefined,
+        }))
+        .filter((item) => !item.subItems || item.subItems.length > 0);
+
     if (role === "SUPER_ADMIN") {
-      return navMenu;
+      return withFilteredSubItems(navMenu);
     }
 
     if (role === "ADMIN") {
-      return navMenu.filter((item) =>
-        ["Marketing", "Student CRM", "Agency CRM", "HR", "Admin & Settings"].includes(
-          item.label
+      return withFilteredSubItems(
+        navMenu.filter((item) =>
+          ["Marketing", "Student CRM", "Agency CRM", "HR", "Admin & Settings"].includes(
+            item.label
+          )
         )
       );
     }
 
     if (role === "HR") {
-      return navMenu.filter((item) => item.label === "HR");
+      return withFilteredSubItems(navMenu.filter((item) => item.label === "HR"));
     }
 
     if (role === "COUNSELLOR") {
-      return navMenu.filter((item) =>
-        ["Marketing", "Student CRM"].includes(item.label)
+      return withFilteredSubItems(
+        navMenu.filter((item) =>
+          ["Marketing", "Student CRM"].includes(item.label)
+        )
       );
     }
 
     if (role === "AGENT") {
-      return navMenu.filter((item) =>
-        ["Agency CRM", "Student CRM"].includes(item.label)
+      return withFilteredSubItems(
+        navMenu.filter((item) =>
+          ["Agency CRM", "Student CRM"].includes(item.label)
+        )
       );
     }
 
     if (role === "STUDENT") {
-      return navMenu.filter((item) => item.label === "Student CRM");
+      return withFilteredSubItems(
+        navMenu.filter((item) => item.label === "Student CRM")
+      );
     }
 
     return [];

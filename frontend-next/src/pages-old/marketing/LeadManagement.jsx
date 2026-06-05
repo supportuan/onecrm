@@ -108,10 +108,20 @@ const LeadManagement = () => {
   // Filters and Query State
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('');
   const [page, setPage] = useState(1);
   const [limit] = useState(50); // limit set high or standard to show seeded leads cleanly
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
+
+  // Filter leads for counsellor role (UI-side, in addition to backend filtering)
+  const displayedLeads = useMemo(() => {
+    if (!user) return leads;
+    if (user.role === 'COUNSELLOR') {
+      return leads.filter(l => l.assignedCounsellor?.id === user.id);
+    }
+    return leads;
+  }, [leads, user]);
 
   // Pagination metadata
   const [pagination, setPagination] = useState({ page: 1, total: 0, limit: 10, totalPages: 1 });
@@ -124,15 +134,6 @@ const LeadManagement = () => {
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [submittingLead, setSubmittingLead] = useState(false);
   const [sendingAction, setSendingAction] = useState(false);
-
-  // Filter leads for counsellor role
-  const displayedLeads = useMemo(() => {
-    if (!user) return leads;
-    if (user.role === 'COUNSELLOR') {
-      return leads.filter(l => l.assignedCounsellor?.id === user.id);
-    }
-    return leads;
-  }, [leads, user]);
 
   // Form States
   const [intakeForm, setIntakeForm] = useState({
@@ -284,6 +285,7 @@ const LeadManagement = () => {
       const response = await getLeads({
         search,
         status: statusFilter || undefined,
+        sourceId: sourceFilter ? parseInt(sourceFilter, 10) : undefined,
         page,
         limit,
         sortBy,
@@ -312,7 +314,11 @@ const LeadManagement = () => {
   // Re-fetch on filter/sorting changes
   useEffect(() => {
     fetchLeadsList();
-  }, [search, statusFilter, page, sortBy, sortOrder]);
+  }, [search, statusFilter, sourceFilter, page, sortBy, sortOrder]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, sourceFilter]);
 
   // Soft delete a lead
   const handleDeleteLead = async (e, id) => {
@@ -536,6 +542,21 @@ const LeadManagement = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Source Dropdown - loaded from database */}
+          <div className="relative">
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="appearance-none border border-slate-200 bg-slate-50 hover:bg-slate-100/50 pl-5 pr-10 py-2.5 rounded-full text-sm font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm"
+            >
+              <option value="">All sources</option>
+              {sourcesList.map((source) => (
+                <option key={source.id} value={source.id}>{source.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none stroke-[2]" />
+          </div>
+
           {/* Status Dropdown - pill shaped */}
           <div className="relative">
             <select
@@ -614,7 +635,7 @@ const LeadManagement = () => {
                   </th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Contact</th>
                   <th
-                    onClick={() => handleSort('sourceId')}
+                    onClick={() => handleSort('source')}
                     className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
                   >
                     <div className="flex items-center justify-center gap-1">

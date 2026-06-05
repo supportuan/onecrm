@@ -30,6 +30,8 @@ import {
   addMarketingPerformanceSchema,
   addCounsellorPerformanceSchema,
   upsertPayrollDeductionSchema,
+  createPerformanceReviewSchema,
+  updatePerformanceReviewSchema,
 } from './hr.validation.js';
 
 // ==========================================
@@ -779,6 +781,41 @@ export const upsertPayrollDeduction = async (req: Request, res: Response, next: 
     const validatedData = upsertPayrollDeductionSchema.parse(req.body);
     const data = await hrService.upsertPayrollDeduction(validatedData);
     return sendSuccess(res, 'Payroll deduction saved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 22. Performance Reviews
+// ==========================================
+
+export const getPerformanceReviews = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const search = req.query.search as string | undefined;
+    const data = await hrService.getPerformanceReviews(search);
+    return sendSuccess(res, 'Performance reviews retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createPerformanceReview = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = createPerformanceReviewSchema.parse(req.body);
+    const data = await hrService.createPerformanceReview(validatedData);
+    return sendSuccess(res, 'Performance review created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePerformanceReview = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validatedData = updatePerformanceReviewSchema.parse(req.body);
+    const data = await hrService.updatePerformanceReview(id, validatedData);
+    return sendSuccess(res, 'Performance review updated successfully', data);
   } catch (error) {
     next(error);
   }

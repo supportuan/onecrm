@@ -24,19 +24,17 @@ app.use(tenantMiddleware);
 // Set up Swagger UI documentation
 setupSwagger(app);
 
-// Mount Modular API Routes
-app.use('/api', userRouter);
-app.use('/api/marketing', marketingRouter);
-app.use('/api/hr', hrRouter);
-app.use('/api', hrRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/customers', customerRouter);
-
-
-// Health check endpoint
+// Health check endpoint (must be registered before authenticated routers)
 app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'ok', message: 'One CRM TypeScript backend is running' });
 });
+
+// Mount Modular API Routes
+app.use('/api/auth', authRouter);
+app.use('/api', userRouter);
+app.use('/api/marketing', marketingRouter);
+app.use('/api/hr', hrRouter);
+app.use('/api/customers', customerRouter);
 
 // Mount global error handling middleware
 app.use(errorHandler);

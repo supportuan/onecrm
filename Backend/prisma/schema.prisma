@@ -78,6 +78,108 @@ enum UserRole {
   AGENT
 }
 
+enum HrAccessRole {
+  EMPLOYEE
+  SUPER_ADMIN
+  HR_MANAGER
+  PAYROLL_ADMIN
+}
+
+enum HrDeviceStatus {
+  online
+  offline
+}
+
+enum HrAttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+}
+
+enum HrRegularizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum HrPayslipStatus {
+  DRAFT
+  PAID
+}
+
+enum HrOnboardingCategory {
+  DOCUMENTS
+  ACCESS
+  TRAINING
+}
+
+enum HrOnboardingItemStatus {
+  PENDING
+  COMPLETED
+}
+
+enum HrOnboardingChecklistStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum HrOfferLetterStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum HrInterviewType {
+  IN_PERSON
+  VIRTUAL
+  PHONE
+}
+
+enum HrInterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum HrJobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+}
+
+enum HrJobStatus {
+  DRAFT
+  OPEN
+  PAUSED
+  CLOSED
+}
+
+enum HrCandidateStatus {
+  ACTIVE
+  REJECTED
+  HIRED
+  WITHDRAWN
+}
+
+enum HrKpiFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum HrReviewStatus {
+  SELF_REVIEW
+  MANAGER_REVIEW
+  CALIBRATED
+  COMPLETED
+}
+
 // -----------------------------------------------------------------------------
 // Models
 // -----------------------------------------------------------------------------
@@ -335,6 +437,7 @@ model User {
   studentLeads        Lead[]              @relation("LeadStudentUser")
   refreshTokens        RefreshToken[]
   passwordResetTokens  PasswordResetToken[]
+  hrEmployee           HrEmployee?
 }
 
 model RefreshToken {
@@ -355,5 +458,396 @@ model PasswordResetToken {
   createdAt  DateTime @default(now())
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// HR Module
+// -----------------------------------------------------------------------------
+
+model HrEmployee {
+  id           Int          @id @default(autoincrement())
+  name         String
+  employeeCode String       @unique
+  email        String       @unique
+  accessRole   HrAccessRole @default(EMPLOYEE)
+  department   String?
+  designation  String?
+  phone        String?
+  biometricId  String?
+  location     String?
+  userId       Int?         @unique
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user                 User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  attendanceRecords    HrAttendanceRecord[]
+  regularizations      HrRegularization[]
+  leavePlanAssignments HrLeavePlanAssignment[]
+  salaryStructure      HrSalaryStructure?
+  payslips             HrPayslip[]
+  payrollDeductions    HrPayrollDeduction[]
+  onboardingChecklists HrOnboardingChecklist[]
+  performanceReviews   HrPerformanceReview[]
+}
+
+model HrAttendanceDevice {
+  id         Int            @id @default(autoincrement())
+  deviceId   String
+  deviceName String
+  deviceIp   String
+  status     HrDeviceStatus @default(online)
+  lastSync   DateTime       @default(now())
+  settings   Json           @default("{}")
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  attendanceRecords HrAttendanceRecord[]
+}
+
+model HrNetworkWhitelist {
+  id               Int      @id @default(autoincrement())
+  ipAddressOrRange String
+  label            String
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model HrAttendanceSetting {
+  id                 Int      @id @default(1)
+  attendanceMode     String   @default("biometric")
+  enableIpValidation Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+}
+
+model HrAttendanceRecord {
+  id         Int                @id @default(autoincrement())
+  employeeId Int
+  date       String
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     HrAttendanceStatus
+  deviceRef  String?
+  deviceDbId Int?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  employee HrEmployee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  device   HrAttendanceDevice? @relation(fields: [deviceDbId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, date])
+}
+
+model HrRegularization {
+  id              Int                    @id @default(autoincrement())
+  employeeId      Int
+  name            String
+  date            String
+  type            String
+  time            String
+  reason          String
+  status          HrRegularizationStatus @default(PENDING)
+  approverRemarks String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model HrLeavePlan {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  definitions HrLeaveDefinition[]
+  assignments HrLeavePlanAssignment[]
+}
+
+model HrLeaveType {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  definitions HrLeaveDefinition[]
+}
+
+model HrLeaveDefinition {
+  id           Int     @id @default(autoincrement())
+  planId       Int
+  leaveTypeId  Int
+  name         String
+  annualQuota  Int
+  carryForward Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  plan      HrLeavePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  leaveType HrLeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, leaveTypeId])
+}
+
+model HrLeavePlanAssignment {
+  id         Int @id @default(autoincrement())
+  planId     Int
+  employeeId Int
+
+  plan     HrLeavePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  employee HrEmployee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, employeeId])
+}
+
+model HrHoliday {
+  id           Int      @id @default(autoincrement())
+  name         String
+  date         String
+  isRestricted Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model HrSalaryStructure {
+  id          Int   @id @default(autoincrement())
+  employeeId  Int   @unique
+  basicSalary Float
+  allowances  Float
+  deductions  Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model HrPayslip {
+  id          Int             @id @default(autoincrement())
+  employeeId  Int
+  name        String
+  month       Int
+  year        Int
+  basicSalary Float
+  allowances  Float
+  deductions  Float
+  netSalary   Float
+  status      HrPayslipStatus @default(DRAFT)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+}
+
+model HrPayrollDeduction {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int
+  month           Int
+  year            Int
+  leaveDays       Int      @default(0)
+  leaveDeduction  Float    @default(0)
+  taxAmount       Float    @default(0)
+  otherDeductions Float    @default(0)
+  totalDeductions Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+}
+
+model HrOnboardingChecklist {
+  id           Int                         @id @default(autoincrement())
+  employeeId   Int
+  employeeName String
+  startDate    String
+  status       HrOnboardingChecklistStatus @default(PENDING)
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
+
+  employee HrEmployee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  items    HrOnboardingItem[]
+}
+
+model HrOnboardingItem {
+  id          Int                    @id @default(autoincrement())
+  checklistId Int
+  category    HrOnboardingCategory
+  title       String
+  description String?
+  status      HrOnboardingItemStatus @default(PENDING)
+  completedAt DateTime?
+  completedBy String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  checklist HrOnboardingChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+}
+
+model HrJobPosting {
+  id            Int         @id @default(autoincrement())
+  title         String
+  department    String
+  location      String
+  type          HrJobType
+  description   String
+  requirements  String
+  salaryRange   String
+  status        HrJobStatus @default(DRAFT)
+  hiringManager String
+  postedAt      String?
+  closingDate   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  candidates HrCandidate[]
+}
+
+model HrCandidate {
+  id           Int               @id @default(autoincrement())
+  jobId        Int
+  name         String
+  email        String
+  phone        String
+  resumeUrl    String?
+  currentStage String
+  status       HrCandidateStatus @default(ACTIVE)
+  appliedAt    String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  job          HrJobPosting    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  offerLetters HrOfferLetter[]
+  interviews   HrInterview[]
+}
+
+model HrOfferLetter {
+  id             Int                 @id @default(autoincrement())
+  candidateId    Int
+  candidateName  String
+  candidateEmail String
+  jobTitle       String
+  department     String
+  offeredSalary  Float
+  joiningDate    String
+  expiryDate     String
+  status         HrOfferLetterStatus @default(DRAFT)
+  policyTemplate String
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  candidate HrCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+model HrInterview {
+  id            Int               @id @default(autoincrement())
+  candidateId   Int
+  candidateName String
+  jobTitle      String
+  round         String
+  type          HrInterviewType
+  scheduledAt   DateTime
+  duration      Int
+  interviewers  Json
+  meetingLink   String?
+  status        HrInterviewStatus @default(SCHEDULED)
+  feedback      Json?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  candidate HrCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+model HrProcessingMetric {
+  id                    Int      @id @default(autoincrement())
+  period                String   @unique
+  totalApplications     Int
+  processedApplications Int
+  accurateApplications  Int
+  avgTurnaroundDays     Float
+  reviewsCompleted      Int
+  pendingReviews        Int
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model HrKpiDefinition {
+  id          Int            @id @default(autoincrement())
+  role        String
+  name        String
+  description String?
+  target      Float
+  unit        String
+  frequency   HrKpiFrequency @default(MONTHLY)
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  metrics HrKpiMetric[]
+}
+
+model HrKpiMetric {
+  id          Int      @id @default(autoincrement())
+  kpiId       Int
+  userId      String?
+  userRole    String
+  period      String
+  actualValue Float
+  targetValue Float
+  notes       String?
+  recordedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  kpiDefinition HrKpiDefinition @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+
+  @@index([kpiId, period, userId])
+}
+
+model HrMarketingPerformance {
+  id             Int      @id @default(autoincrement())
+  period         String
+  leadsGenerated Int
+  costPerLead    Float
+  totalBudget    Float
+  channel        String
+  conversions    Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model HrCounsellorPerformance {
+  id             Int      @id @default(autoincrement())
+  counsellorId   String
+  counsellorName String
+  period         String
+  leadsHandled   Int
+  conversions    Int
+  revenue        Float
+  conversionRate Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([counsellorId, period])
+}
+
+model HrPerformanceReview {
+  id           Int            @id @default(autoincrement())
+  employeeId   Int?
+  name         String
+  employeeCode String
+  department   String
+  cycle        String
+  manager      String
+  rating       Float          @default(0)
+  status       HrReviewStatus @default(SELF_REVIEW)
+  reviewDate   String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  employee HrEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 }
 

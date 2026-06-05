@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Award, 
   TrendingUp, 
@@ -12,17 +12,16 @@ import {
   CheckCircle2, 
   X, 
   Sliders, 
-  UserCheck 
+  UserCheck,
+  Loader2
 } from 'lucide-react';
+import { getPerformanceReviews, createPerformanceReview } from '../../services/hrApi';
 
 export default function PerformanceReviews() {
-  const [reviews, setReviews] = useState([
-    { id: 'rev_1', name: 'Raju Kalla', employeeId: 'E001', department: 'Engineering', cycle: 'FY26 H1 Review', manager: 'Jane Admin', rating: 4.5, status: 'Completed', date: '2026-05-10' },
-    { id: 'rev_2', name: 'Alice Smith', employeeId: 'E003', department: 'Human Resources', cycle: 'FY26 H1 Review', manager: 'Jane Admin', rating: 4.8, status: 'Completed', date: '2026-05-14' },
-    { id: 'rev_3', name: 'Bob Johnson', employeeId: 'E004', department: 'Finance', cycle: 'FY26 H1 Review', manager: 'Alice Smith', rating: 0, status: 'Manager Review', date: '2026-05-22' },
-    { id: 'rev_4', name: 'Carol Danvers', employeeId: 'E005', department: 'Marketing', cycle: 'FY26 H1 Review', manager: 'Alice Smith', rating: 3.9, status: 'Calibrated', date: '2026-05-18' },
-    { id: 'rev_5', name: 'Peter Parker', employeeId: 'E006', department: 'Engineering', cycle: 'FY26 H1 Review', manager: 'Raju Kalla', rating: 0, status: 'Self-Review', date: '2026-05-24' }
-  ]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -35,34 +34,62 @@ export default function PerformanceReviews() {
     status: 'Self-Review'
   });
 
-  const handleCreateReview = (e) => {
+  const fetchReviews = useCallback(async (search = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getPerformanceReviews(search || undefined);
+      if (res.success) {
+        setReviews(res.data || []);
+      } else {
+        setError(res.message || 'Failed to load performance reviews');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Unable to connect to HR database');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchReviews(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchReviews]);
+
+  const handleCreateReview = async (e) => {
     e.preventDefault();
     if (!newReview.name || !newReview.employeeId) return;
 
-    const created = {
-      id: `rev_${Date.now()}`,
-      ...newReview,
-      rating: 0,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    setReviews([created, ...reviews]);
-    setShowAddModal(false);
-    setNewReview({
-      name: '',
-      employeeId: '',
-      department: 'Engineering',
-      cycle: 'FY26 H1 Review',
-      manager: 'Jane Admin',
-      status: 'Self-Review'
-    });
+    setSubmitting(true);
+    try {
+      const res = await createPerformanceReview({
+        ...newReview,
+        date: new Date().toISOString().split('T')[0],
+      });
+      if (res.success) {
+        setShowAddModal(false);
+        setNewReview({
+          name: '',
+          employeeId: '',
+          department: 'Engineering',
+          cycle: 'FY26 H1 Review',
+          manager: 'Jane Admin',
+          status: 'Self-Review'
+        });
+        await fetchReviews(searchQuery);
+      } else {
+        alert(res.message || 'Failed to create review');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to create performance review');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const filteredReviews = reviews.filter(rev => 
-    (rev.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (rev.employeeId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (rev.department || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredReviews = reviews;
 
   const completedReviews = reviews.filter(r => r.status === 'Completed').length;
   const avgRating = (reviews.filter(r => r.rating > 0).reduce((sum, r) => sum + r.rating, 0) / reviews.filter(r => r.rating > 0).length || 0).toFixed(1);
@@ -162,7 +189,18 @@ export default function PerformanceReviews() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredReviews.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-16 text-center text-sm text-slate-500">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-indigo-600" />
+                        <span className="block mt-3">Loading performance reviews...</span>
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-16 text-center text-sm text-red-500">{error}</td>
+                    </tr>
+                  ) : filteredReviews.length > 0 ? (
                     filteredReviews.map((rev) => (
                       <tr key={rev.id} className="hover:bg-slate-50/50 transition-all duration-200">
                         <td className="px-6 py-5 text-xs font-mono font-bold text-indigo-600 tracking-wider">

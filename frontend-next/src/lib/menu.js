@@ -284,28 +284,29 @@ export const navMenu = [
     label: "HR",
     path: "/hr",
     icon: ShieldCheck,
+    allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"],
     subItems: [
       // Recruitment Flow (lifecycle start)
-      { label: "Job Postings", path: "/hr/job-postings", icon: Briefcase },
-      { label: "Recruitment Tracker", path: "/hr/recruitment-tracker", icon: Search },
-      { label: "Interview Scheduling", path: "/hr/interview-scheduling", icon: Calendar },
-      { label: "Offer Letters", path: "/hr/offer-letters", icon: FileText },
+      { label: "Job Postings", path: "/hr/job-postings", icon: Briefcase, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Recruitment Tracker", path: "/hr/recruitment-tracker", icon: Search, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Interview Scheduling", path: "/hr/interview-scheduling", icon: Calendar, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Offer Letters", path: "/hr/offer-letters", icon: FileText, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
 
       // Onboarding (post-offer)
-      { label: "Onboarding Checklist", path: "/hr/onboarding-checklist", icon: ClipboardList },
+      { label: "Onboarding Checklist", path: "/hr/onboarding-checklist", icon: ClipboardList, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
 
       // Core Workforce Operations
-      { label: "Employee Directory", path: "/hr/employee-directory", icon: Users },
-      { label: "Attendance", path: "/hr/attendance", icon: Clock },
-      { label: "Leave Management", path: "/hr/leave-management", icon: CalendarCheck },
+      { label: "Employee Directory", path: "/hr/employee-directory", icon: Users, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Attendance", path: "/hr/attendance", icon: Clock, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Leave Management", path: "/hr/leave-management", icon: CalendarCheck, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
 
       // Performance Management
-      { label: "Performance Reviews", path: "/hr/performance-reviews", icon: Star },
-      { label: "KPI Dashboard", path: "/hr/kpi-dashboard", icon: Target },
+      { label: "Performance Reviews", path: "/hr/performance-reviews", icon: Star, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "KPI Dashboard", path: "/hr/kpi-dashboard", icon: Target, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
 
       // Compensation & Payroll
-      { label: "Payroll Inputs", path: "/hr/payroll-inputs", icon: DollarSign },
-      { label: "Payroll Deductions", path: "/hr/payroll-deductions", icon: Receipt },
+      { label: "Payroll Inputs", path: "/hr/payroll-inputs", icon: DollarSign, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
+      { label: "Payroll Deductions", path: "/hr/payroll-deductions", icon: Receipt, allowedRoles: ["SUPER_ADMIN", "ADMIN", "HR"] },
     ],
   },
   {
