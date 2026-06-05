@@ -79,6 +79,15 @@ export const deleteLead = async (id) => {
   return res.json();
 };
 
+export const assignLeadCounsellor = async (leadId, counsellorId) => {
+  const res = await authFetch(`${API_URL}/leads/${leadId}/assign-counsellor`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ counsellorId }),
+  });
+  return res.json();
+};
+
 export const getLeadActivities = async (leadId) => {
   const res = await authFetch(`${API_URL}/leads/${leadId}/activities`);
   return res.json();

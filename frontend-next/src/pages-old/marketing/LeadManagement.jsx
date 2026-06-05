@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   getLeads,
@@ -14,9 +14,11 @@ import {
   sendLeadWhatsApp,
   scheduleLeadMeeting,
   saveStudentCRMReply,
-  createStudentLogin
+  createStudentLogin,
+  assignLeadCounsellor
 } from '../../services/marketingApi';
 import { getCounsellors } from '../../services/userApi';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 import {
   Search,
@@ -97,6 +99,12 @@ const LeadManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Auth context
+  const { user } = useAuth();
+  const isAdminOrSuperAdmin = useMemo(() => {
+    return user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN');
+  }, [user]);
+
   // Filters and Query State
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -117,6 +125,15 @@ const LeadManagement = () => {
   const [submittingLead, setSubmittingLead] = useState(false);
   const [sendingAction, setSendingAction] = useState(false);
 
+  // Filter leads for counsellor role
+  const displayedLeads = useMemo(() => {
+    if (!user) return leads;
+    if (user.role === 'COUNSELLOR') {
+      return leads.filter(l => l.assignedCounsellor?.id === user.id);
+    }
+    return leads;
+  }, [leads, user]);
+
   // Form States
   const [intakeForm, setIntakeForm] = useState({
     fullName: '',
@@ -126,7 +143,7 @@ const LeadManagement = () => {
     preferredCountry: '',
     preferredCourse: '',
     sourceId: '',
-    score: 50,
+    rating: 'WARM',
     remark: '',
     status: 'NEW',
     assignedCounsellorId: ''
@@ -233,7 +250,7 @@ const LeadManagement = () => {
     }
   }, [searchParams]);
 
-  // Load Lead Sources from API on mount
+  // Load Lead Sources and Counsellors from API on mount
   useEffect(() => {
     const loadSources = async () => {
       try {
@@ -245,7 +262,18 @@ const LeadManagement = () => {
         console.error('Failed to load sources from database', err);
       }
     };
+    const loadCounsellorsData = async () => {
+      try {
+        const res = await getCounsellors();
+        if (res.success) {
+          setCounsellorsList(res.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to load counsellors from database', err);
+      }
+    };
     loadSources();
+    loadCounsellorsData();
   }, []);
 
   // Fetch Leads dynamically based on search, status, sorting, and pagination
@@ -337,7 +365,6 @@ const LeadManagement = () => {
         ...intakeForm,
         sourceId: intakeForm.sourceId ? parseInt(intakeForm.sourceId, 10) : null,
         assignedCounsellorId: intakeForm.assignedCounsellorId ? parseInt(intakeForm.assignedCounsellorId, 10) : null,
-        score: intakeForm.score !== '' ? parseInt(intakeForm.score, 10) : null
       };
 
       const response = await createLead(payload);
@@ -352,7 +379,7 @@ const LeadManagement = () => {
           preferredCountry: '',
           preferredCourse: '',
           sourceId: '',
-          score: 50,
+          rating: 'WARM',
           remark: '',
           status: 'NEW',
           assignedCounsellorId: ''
@@ -382,9 +409,10 @@ const LeadManagement = () => {
       'Phone',
       'Source',
       'Interested In',
-      'Score',
+      'Lead Status',
       'Status',
-      'Assigned Counsellor',
+      'Assigned By',
+      'Assigned To',
       'Remark',
       'Created At'
     ];
@@ -395,9 +423,10 @@ const LeadManagement = () => {
       lead.phone || '',
       lead.source?.name || '',
       lead.interestedIn || '',
-      lead.score || 0,
+      lead.rating || 'WARM',
       mapStatusLabel(lead.status),
-      lead.assignedCounsellor?.name || '',
+      lead.assignedBy?.name || '-',
+      lead.assignedCounsellor?.name || 'Unassigned',
       lead.remark || '',
       new Date(lead.createdAt).toLocaleString()
     ]);
@@ -457,6 +486,21 @@ const LeadManagement = () => {
     } else {
       setSortBy(field);
       setSortOrder('desc');
+    }
+  };
+
+  // Assign or change counsellor directly from row
+  const handleAssignCounsellor = async (leadId, counsellorId) => {
+    try {
+      const res = await assignLeadCounsellor(leadId, counsellorId ? parseInt(counsellorId, 10) : null);
+      if (res.success) {
+        fetchLeadsList();
+      } else {
+        alert(res.message || 'Failed to assign counsellor');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error occurred while assigning counsellor.');
     }
   };
 
@@ -580,11 +624,11 @@ const LeadManagement = () => {
                   </th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Interested in</th>
                   <th
-                    onClick={() => handleSort('score')}
+                    onClick={() => handleSort('rating')}
                     className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
                   >
                     <div className="flex items-center justify-center gap-1">
-                      Score
+                      Lead Status
                       <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </th>
@@ -597,13 +641,14 @@ const LeadManagement = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </th>
-                  <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Assigned</th>
+                  <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Assigned By</th>
+                  <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Assigned To</th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Remark</th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {leads.map((lead) => (
+                {displayedLeads.map((lead) => (
                   <tr
                     key={lead.id}
                     onClick={() => handleRowClick(lead)}
@@ -621,25 +666,27 @@ const LeadManagement = () => {
                       </div>
                     </td>
 
-                    {/* Column 2: Contact Icons linking to mailto/tel */}
+                    {/* Column 2: Contact Details (Email & Phone Number text display) */}
                     <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-4 text-slate-600">
+                      <div className="flex flex-col gap-1 text-[13px] text-slate-600">
                         {lead.email && (
                           <a
                             href={`mailto:${lead.email}`}
                             title={lead.email}
-                            className="p-2 rounded-lg hover:bg-slate-100 hover:text-[#0084ff] transition cursor-pointer"
+                            className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
                           >
-                            <Mail className="h-[18px] w-[18px] stroke-[1.8]" />
+                            <Mail className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
+                            <span className="truncate max-w-[150px]">{lead.email}</span>
                           </a>
                         )}
                         {lead.phone && (
                           <a
                             href={`tel:${lead.phone}`}
                             title={lead.phone}
-                            className="p-2 rounded-lg hover:bg-slate-100 hover:text-[#0084ff] transition cursor-pointer"
+                            className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
                           >
-                            <Phone className="h-[18px] w-[18px] stroke-[1.8]" />
+                            <Phone className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
+                            <span>{lead.phone}</span>
                           </a>
                         )}
                       </div>
@@ -659,20 +706,16 @@ const LeadManagement = () => {
                       </span>
                     </td>
 
-                    {/* Column 5: Score Indicator with color-coded horizontal progress bar */}
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col items-center mx-auto w-24">
-                        <span className="font-semibold text-slate-700 text-sm mb-1.5">
-                          {lead.score || 0}
-                        </span>
-                        <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${lead.score >= 80 ? 'bg-emerald-500' : lead.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                              }`}
-                            style={{ width: `${lead.score || 0}%` }}
-                          />
-                        </div>
-                      </div>
+                    {/* Column 5: Lead Status badge */}
+                    <td className="px-6 py-5 text-center">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                        lead.rating === 'HOT' ? 'bg-rose-50 text-rose-600 border border-rose-200' :
+                        lead.rating === 'WARM' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                        lead.rating === 'COLD' ? 'bg-slate-50 text-slate-600 border border-slate-200' :
+                        'bg-blue-50 text-blue-600 border border-blue-200'
+                      } shadow-sm`}>
+                        {lead.rating || 'WARM'}
+                      </span>
                     </td>
 
                     {/* Column 6: Custom Badges outline pills mapped to style */}
@@ -682,21 +725,41 @@ const LeadManagement = () => {
                       </span>
                     </td>
 
-                    {/* Column 7: Assigned Counsellor */}
+                    {/* Column 7: Assigned By */}
                     <td className="px-6 py-5 text-center">
-                      <span className="font-semibold text-slate-700 text-sm">
-                        {lead.assignedCounsellor?.name || 'Unassigned'}
+                      <span className="font-semibold text-slate-600 text-sm">
+                        {lead.assignedBy?.name || '-'}
                       </span>
                     </td>
 
-                    {/* Column 8: Remark */}
+                    {/* Column 8: Assigned To (Dropdown for admin, label for others) */}
+                    <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
+                      {isAdminOrSuperAdmin ? (
+                        <select
+                          value={lead.assignedCounsellor?.id || ''}
+                          onChange={(e) => handleAssignCounsellor(lead.id, e.target.value)}
+                          className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm w-36"
+                        >
+                          <option value="">Unassigned</option>
+                          {counsellorsList.map(c => (
+                            <option key={c.id} value={c.id}>{c.fullName}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="font-semibold text-slate-700 text-sm">
+                          {lead.assignedCounsellor?.name || 'Unassigned'}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Column 9: Remark */}
                     <td className="px-6 py-5 text-center max-w-[200px] truncate">
                       <span className="font-semibold text-slate-600 text-sm">
                         {lead.remark || 'No remarks'}
                       </span>
                     </td>
 
-                    {/* Column 9: Actions */}
+                    {/* Column 10: Actions */}
                     <td className="px-4 py-5 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
                         {!lead.isStudentLoginCreated ? (
@@ -725,6 +788,36 @@ const LeadManagement = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-100 text-sm font-medium text-slate-700">
+            <div>
+              Showing <span className="font-bold text-slate-900">{leads.length > 0 ? (page - 1) * pagination.limit + 1 : 0}</span> to{' '}
+              <span className="font-bold text-slate-900">
+                {Math.min(page * pagination.limit, pagination.total)}
+              </span>{' '}
+              of <span className="font-bold text-slate-900">{pagination.total}</span> records
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-slate-600 font-semibold transition cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+              >
+                Previous
+              </button>
+              <span className="font-semibold text-slate-500">
+                Page <span className="text-slate-800 font-bold">{page}</span> of{' '}
+                <span className="text-slate-800 font-bold">{pagination.totalPages || 1}</span>
+              </span>
+              <button
+                disabled={page >= pagination.totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-slate-600 font-semibold transition cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -843,14 +936,14 @@ const LeadManagement = () => {
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-500">Assigned Counsellor</label>
                   <select
-                    value={intakeForm.assignedCounsellorId}
+                    value={intakeForm.assignedCounsellorId || ''}
                     onChange={(e) => setIntakeForm(p => ({ ...p, assignedCounsellorId: e.target.value }))}
                     className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
                   >
                     <option value="">Select counsellor</option>
-                    <option value="1">Emma Davis</option>
-                    <option value="2">John Smith</option>
-                    <option value="3">Sarah Miller</option>
+                    {counsellorsList.map(c => (
+                      <option key={c.id} value={c.id}>{c.fullName}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -871,20 +964,19 @@ const LeadManagement = () => {
                   </select>
                 </div>
 
-                {/* Lead Score Slider */}
+                {/* Lead Rating Selection */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-500">Lead Score</label>
-                    <span className="text-sm font-semibold text-[#0084ff]">{intakeForm.score}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={intakeForm.score}
-                    onChange={(e) => setIntakeForm(p => ({ ...p, score: e.target.value }))}
-                    className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-[#0084ff]"
-                  />
+                  <label className="text-xs font-semibold text-slate-500">Lead Status (Rating)</label>
+                  <select
+                    value={intakeForm.rating || 'WARM'}
+                    onChange={(e) => setIntakeForm(p => ({ ...p, rating: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                  >
+                    <option value="HOT">HOT</option>
+                    <option value="WARM">WARM</option>
+                    <option value="COLD">COLD</option>
+                    <option value="MAYBE">MAYBE</option>
+                  </select>
                 </div>
               </div>
 
@@ -960,10 +1052,14 @@ const LeadManagement = () => {
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-400">
-                <span>Score:</span>
-                <span className={`inline-flex px-2 py-0.5 rounded-full ${activeLead.score >= 80 ? 'bg-emerald-50 text-emerald-600' : activeLead.score >= 50 ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
-                  } text-[10px]`}>
-                  {activeLead.score}/100
+                <span>Rating:</span>
+                <span className={`inline-flex px-2 py-0.5 rounded-full ${
+                  activeLead.rating === 'HOT' ? 'bg-rose-50 text-rose-600 border border-rose-200' :
+                  activeLead.rating === 'WARM' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                  activeLead.rating === 'COLD' ? 'bg-slate-50 text-slate-600 border border-slate-200' :
+                  'bg-blue-50 text-blue-600 border border-blue-200'
+                } text-[10px] font-bold`}>
+                  {activeLead.rating || 'WARM'}
                 </span>
               </div>
             </div>

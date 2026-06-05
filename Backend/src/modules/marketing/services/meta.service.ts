@@ -295,7 +295,7 @@ class MetaService {
                     preferredCourse: mappedLead.preferredCourse || null,
                     sourceId: source.id,
                     status: LeadStatus.NEW,
-                    score: dynamicScore,
+                    rating: dynamicScore >= 80 ? 'HOT' : dynamicScore >= 50 ? 'WARM' : 'COLD',
                     remark: mappedLead.remark,
                     utmSource: 'Meta',
                     utmMedium: 'Paid Social',

@@ -262,7 +262,7 @@ export const bulkUploadLeadsFromExcel = async (fileBuffer: Buffer) => {
             preferredCourse: row.preferredCourse || null,
             sourceId: sourceMap.get(row.source || 'Bulk Excel Upload')!,
             status: LeadStatus.NEW,
-            score: calculateLeadScore(row),
+            rating: calculateLeadScore(row) >= 80 ? 'HOT' : calculateLeadScore(row) >= 50 ? 'WARM' : 'COLD',
             remark: row.remark || 'Lead uploaded through Excel bulk upload',
         });
     }
