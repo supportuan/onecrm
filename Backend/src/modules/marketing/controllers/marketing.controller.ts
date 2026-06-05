@@ -159,6 +159,30 @@ export const deleteLead = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+export const assignCounsellor = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const leadId = parseInt(req.params.leadId as string);
+    if (isNaN(leadId)) return sendError(res, 'Invalid lead ID', null, 400);
+
+    const { counsellorId } = req.body;
+    
+    // Check if current user is admin or super admin
+    if (!req.user || (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN)) {
+      return sendError(res, 'Unauthorized to assign counsellor', null, 403);
+    }
+
+    const adminId = req.user.id;
+    const updatedLead = await marketingService.assignCounsellor(
+      leadId,
+      counsellorId ? parseInt(counsellorId) : null,
+      adminId
+    );
+    return sendSuccess(res, 'Counsellor assigned successfully', updatedLead);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getLeadActivities = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(req.params.id as string);

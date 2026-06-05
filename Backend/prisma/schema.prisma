@@ -19,6 +19,13 @@ enum LeadStatus {
   LOST
 }
 
+enum LeadRating {
+  HOT
+  WARM
+  COLD
+  MAYBE
+}
+
 enum CampaignType {
   EMAIL
   SMS
@@ -96,8 +103,9 @@ model Lead {
   preferredCourse      String?
   sourceId             Int?
   assignedCounsellorId Int?
+  assignedById         Int?
   status               LeadStatus @default(NEW)
-  score                Int?
+  rating               LeadRating @default(WARM)
   remark               String?
   utmSource            String?
   utmMedium            String?
@@ -112,6 +120,7 @@ model Lead {
 
   source               LeadSource? @relation(fields: [sourceId], references: [id])
   assignedCounsellor   User?       @relation("LeadCounsellor", fields: [assignedCounsellorId], references: [id])
+  assignedBy           User?       @relation("LeadAssignor", fields: [assignedById], references: [id])
   studentUser          User?       @relation("LeadStudentUser", fields: [studentUserId], references: [id])
   activities           LeadActivity[]
   campaigns            CampaignLead[]
@@ -322,6 +331,7 @@ model User {
   counsellor           User?               @relation("StudentCounsellor", fields: [counsellorId], references: [id])
   students             User[]              @relation("StudentCounsellor")
   assignedLeads        Lead[]              @relation("LeadCounsellor")
+  assignedByLeads      Lead[]              @relation("LeadAssignor")
   studentLeads        Lead[]              @relation("LeadStudentUser")
   refreshTokens        RefreshToken[]
   passwordResetTokens  PasswordResetToken[]

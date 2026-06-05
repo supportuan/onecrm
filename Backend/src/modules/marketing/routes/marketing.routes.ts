@@ -267,6 +267,8 @@ router.put('/leads/:id', controller.updateLead);
  */
 router.delete('/leads/:id', controller.deleteLead);
 
+router.patch('/leads/:leadId/assign-counsellor', authenticateToken, controller.assignCounsellor);
+
 /**
  * @swagger
  * /api/marketing/leads/{id}/activities:

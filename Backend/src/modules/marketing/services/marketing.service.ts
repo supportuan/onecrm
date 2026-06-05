@@ -112,6 +112,7 @@ export const getLeads = async (filters: {
   page?: number;
   limit?: number;
   sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
   assignedCounsellorId?: number;
 }) => {
   const page = filters.page || 1;
@@ -130,6 +131,10 @@ export const getLeads = async (filters: {
 
   if (filters.sourceId) {
     whereClause.sourceId = filters.sourceId;
+  }
+
+  if (filters.assignedCounsellorId) {
+    whereClause.assignedCounsellorId = filters.assignedCounsellorId;
   }
 
   if (filters.search) {
@@ -154,15 +159,13 @@ export const getLeads = async (filters: {
   const [leads, total] = await prisma.$transaction([
     prisma.lead.findMany({
       where: whereClause,
-      include: { source: true, assignedCounsellor: true },
+      include: { source: true, assignedCounsellor: true, assignedBy: true },
       orderBy,
       skip,
       take: limit,
     }),
     prisma.lead.count({ where: whereClause }),
   ]);
-
-
 
   const items = leads.map((lead: any) => {
     let interestedIn = lead.preferredCourse || "";
@@ -182,9 +185,10 @@ export const getLeads = async (filters: {
       preferredCourse: lead.preferredCourse,
       preferredCountry: lead.preferredCountry,
       interestedIn,
-      score: lead.score,
+      rating: lead.rating,
       status: lead.status,
       assignedCounsellor: lead.assignedCounsellor ? { id: lead.assignedCounsellor.id, name: lead.assignedCounsellor.fullName } : null,
+      assignedBy: lead.assignedBy ? { id: lead.assignedBy.id, name: lead.assignedBy.fullName } : null,
       remark: lead.remark,
       isStudentLoginCreated: lead.isStudentLoginCreated,
       studentUserId: lead.studentUserId,
@@ -204,6 +208,8 @@ export const getLeadById = async (id: number) => {
     where: { id, deletedAt: null },
     include: {
       source: true,
+      assignedCounsellor: true,
+      assignedBy: true,
       activities: {
         orderBy: { createdAt: 'desc' },
       },
@@ -225,7 +231,7 @@ export const getSources = async () => {
 export const createLead = async (data: any) => {
   return await prisma.lead.create({
     data,
-    include: { source: true },
+    include: { source: true, assignedCounsellor: true, assignedBy: true },
   });
 };
 
@@ -233,7 +239,18 @@ export const updateLead = async (id: number, data: any) => {
   return await prisma.lead.update({
     where: { id },
     data,
-    include: { source: true },
+    include: { source: true, assignedCounsellor: true, assignedBy: true },
+  });
+};
+
+export const assignCounsellor = async (leadId: number, counsellorId: number | null, adminId: number) => {
+  return await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      assignedCounsellorId: counsellorId,
+      assignedById: adminId,
+    },
+    include: { source: true, assignedCounsellor: true, assignedBy: true },
   });
 };
 
