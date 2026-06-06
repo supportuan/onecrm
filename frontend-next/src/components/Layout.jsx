@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
+import RouteGuard from './RouteGuard';
 import { WorkspaceProvider, useWorkspace } from '../lib/workspaceContext';
 
 const LayoutContent = ({ children }) => {
@@ -29,7 +30,7 @@ const LayoutContent = ({ children }) => {
           <TopNavbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
         </div>
         <main className="flex-1 overflow-y-auto pt-[108px] px-4 pb-8 sm:px-6 lg:px-8">
-          {children}
+          <RouteGuard>{children}</RouteGuard>
         </main>
       </div>
 
@@ -54,5 +55,3 @@ const Layout = ({ children }) => {
 };
 
 export default Layout;
-
-

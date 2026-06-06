@@ -31,6 +31,25 @@ export const AuthProvider = ({ children }) => {
       setAccessToken(storedAccess);
       setRefreshToken(storedRefresh);
       setUser(JSON.parse(storedUser));
+
+      // Fetch fresh profile from backend to get up-to-date permissions/roles
+      import('@/lib/api')
+        .then(({ authFetch }) => {
+          return authFetch('/api/auth/me');
+        })
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('Failed to fetch profile');
+        })
+        .then((data) => {
+          if (data?.success && data?.data) {
+            setUser(data.data);
+            localStorage.setItem('currentUser', JSON.stringify(data.data));
+          }
+        })
+        .catch((err) => {
+          console.error('[Permissions Sync] Failed to sync permissions on mount:', err);
+        });
     }
 
     setLoading(false);

@@ -13,6 +13,7 @@ export const createUserSchema = z.object({
         agencyCity: z.string().optional().nullable(),
         agencyCountry: z.string().optional().nullable(),
     }).optional().nullable(),
+    moduleAccess: z.record(z.record(z.array(z.enum(['VIEW', 'EDIT'])))).optional().nullable(),
 });
 
 export const updateUserSchema = z.object({
@@ -22,4 +23,5 @@ export const updateUserSchema = z.object({
     isActive: z.boolean().optional(),
     isApproved: z.boolean().optional(),
     counsellorId: z.number().optional().nullable(),
+    moduleAccess: z.record(z.record(z.array(z.enum(['VIEW', 'EDIT'])))).optional().nullable(),
 });

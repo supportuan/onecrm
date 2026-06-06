@@ -5,7 +5,7 @@ import { uploadExcel } from '../../../middleware/upload.middleware.js';
 import leadActivityRoutes from './lead-activity.routes.js';
 import leadReplyRoutes from './lead-reply.routes.js';
 import { authenticateToken } from '../../../middleware/authenticate.js';
-import { authorizeRole } from '../../../middleware/authorize.js';
+import { authorizeRole, authorizePermission } from '../../../middleware/authorize.js';
 
 
 const router = Router();
@@ -152,7 +152,7 @@ router.get('/analytics', controller.getAnalytics);
  *       200:
  *         description: Successfully retrieved leads
  */
-router.get('/leads', controller.getLeads);
+router.get('/leads', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'VIEW'), controller.getLeads);
 
 /**
  * @swagger
@@ -184,7 +184,7 @@ router.get('/sources', controller.getSources);
  *       404:
  *         description: Lead not found
  */
-router.get('/leads/:id', controller.getLeadById);
+router.get('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'VIEW'), controller.getLeadById);
 
 /**
  * @swagger
@@ -223,7 +223,7 @@ router.get('/leads/:id', controller.getLeadById);
  *       201:
  *         description: Lead successfully created
  */
-router.post('/leads', controller.createLead);
+router.post('/leads', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.createLead);
 
 /**
  * @swagger
@@ -247,7 +247,7 @@ router.post('/leads', controller.createLead);
  *       200:
  *         description: Lead successfully updated
  */
-router.put('/leads/:id', controller.updateLead);
+router.put('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.updateLead);
 
 /**
  * @swagger
@@ -265,9 +265,9 @@ router.put('/leads/:id', controller.updateLead);
  *       200:
  *         description: Lead successfully soft-deleted
  */
-router.delete('/leads/:id', controller.deleteLead);
+router.delete('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.deleteLead);
 
-router.patch('/leads/:leadId/assign-counsellor', authenticateToken, controller.assignCounsellor);
+router.patch('/leads/:leadId/assign-counsellor', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.assignCounsellor);
 
 /**
  * @swagger
@@ -350,7 +350,7 @@ router.post('/leads/:id/activities', controller.createLeadActivity);
  *       200:
  *         description: Successfully retrieved campaigns
  */
-router.get('/campaigns', controller.getCampaigns);
+router.get('/campaigns', authenticateToken, authorizePermission('Marketing', 'Campaigns', 'VIEW'), controller.getCampaigns);
 
 /**
  * @swagger
@@ -368,7 +368,7 @@ router.get('/campaigns', controller.getCampaigns);
  *       200:
  *         description: Successfully retrieved campaign details
  */
-router.get('/campaigns/:id', controller.getCampaignById);
+router.get('/campaigns/:id', authenticateToken, authorizePermission('Marketing', 'Campaigns', 'VIEW'), controller.getCampaignById);
 
 /**
  * @swagger
@@ -412,7 +412,7 @@ router.get('/campaigns/:id', controller.getCampaignById);
  *       201:
  *         description: Campaign successfully created
  */
-router.post('/campaigns', controller.createCampaign);
+router.post('/campaigns', authenticateToken, authorizePermission('Marketing', 'Campaigns', 'EDIT'), controller.createCampaign);
 
 /**
  * @swagger
@@ -436,7 +436,7 @@ router.post('/campaigns', controller.createCampaign);
  *       200:
  *         description: Campaign successfully updated
  */
-router.put('/campaigns/:id', controller.updateCampaign);
+router.put('/campaigns/:id', authenticateToken, authorizePermission('Marketing', 'Campaigns', 'EDIT'), controller.updateCampaign);
 
 /**
  * @swagger
@@ -454,7 +454,7 @@ router.put('/campaigns/:id', controller.updateCampaign);
  *       200:
  *         description: Campaign successfully soft-deleted
  */
-router.delete('/campaigns/:id', controller.deleteCampaign);
+router.delete('/campaigns/:id', authenticateToken, authorizePermission('Marketing', 'Campaigns', 'EDIT'), controller.deleteCampaign);
 
 /**
  * @swagger

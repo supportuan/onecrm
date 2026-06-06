@@ -240,6 +240,120 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from '../lib/workspaceContext';
 
 
+const MODULE_ACCESS_OPTIONS = [
+  {
+    module: "Marketing",
+    options: [
+      "Lead Management",
+      "Campaigns",
+      "Automation",
+      "Landing Pages & Forms",
+      "Marketing Analytics",
+    ],
+  },
+  {
+    module: "Student CRM",
+    options: [
+      "Student Management",
+      "Applications",
+      "Visa Management",
+      "Counselling",
+    ],
+  },
+  {
+    module: "Agency CRM",
+    options: [
+      "Agency Management",
+      "Agency Leads",
+      "Co-branding Tools",
+      "Commission Management",
+    ],
+  },
+  {
+    module: "HR",
+    options: [
+      "Employee Directory",
+      "Attendance",
+      "Leave Management",
+      "Payroll Inputs",
+      "Performance Reviews",
+      "Recruitment Tracker",
+    ],
+  },
+  {
+    module: "Admin & Settings",
+    options: ["User Management", "Roles", "Permissions", "Settings"],
+  },
+];
+
+const createEmptyModuleAccess = () => {
+  const access = {};
+  MODULE_ACCESS_OPTIONS.forEach((item) => {
+    access[item.module] = {};
+    item.options.forEach((option) => {
+      access[item.module][option] = [];
+    });
+  });
+  return access;
+};
+
+const setOptionActions = (access, moduleName, optionName, actions) => ({
+  ...access,
+  [moduleName]: {
+    ...(access[moduleName] || {}),
+    [optionName]: actions,
+  },
+});
+
+const getDefaultModuleAccessByRole = (role) => {
+  let access = createEmptyModuleAccess();
+
+  const giveModuleActions = (moduleName, actions = ["VIEW", "EDIT"]) => {
+    const moduleData = MODULE_ACCESS_OPTIONS.find(
+      (item) => item.module === moduleName
+    );
+
+    moduleData?.options.forEach((optionName) => {
+      access = setOptionActions(access, moduleName, optionName, actions);
+    });
+  };
+
+  if (role === "HR") {
+    giveModuleActions("HR", ["VIEW", "EDIT"]);
+  }
+
+  if (role === "STUDENT") {
+    giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
+  }
+
+  if (role === "AGENT") {
+    giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
+  }
+
+  if (role === "COUNSELLOR") {
+    giveModuleActions("Marketing", ["VIEW"]);
+    giveModuleActions("Student CRM", ["VIEW"]);
+  }
+
+  if (role === "ADMIN") {
+    giveModuleActions("Marketing", ["VIEW", "EDIT"]);
+    giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
+    giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
+    giveModuleActions("Admin & Settings", ["VIEW", "EDIT"]);
+  }
+
+  return access;
+};
+
+const getPermissionOptionName = (subLabel) => {
+  if (subLabel === "Users") return "User Management";
+  if (subLabel === "Roles & Permissions") return "Roles";
+  if (subLabel === "System Settings") return "Settings";
+  if (subLabel === "Content Management") return "Settings";
+  if (subLabel === "Branding") return "Settings";
+  return subLabel;
+};
+
 const Sidebar = ({ sidebarOpen, onClose }) => {
   const location = usePathname() || "";
   const router = useRouter();
@@ -256,35 +370,33 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
       return navMenu;
     }
 
-    if (role === "ADMIN") {
-      return navMenu.filter((item) =>
-        ["Marketing", "Student CRM", "Agency CRM", "HR", "Admin & Settings"].includes(
-          item.label
-        )
-      );
-    }
+    // Use user.moduleAccess or fallback to default for their role
+    const access = (user.moduleAccess && Object.keys(user.moduleAccess).length > 0)
+      ? user.moduleAccess
+      : getDefaultModuleAccessByRole(role);
 
-    if (role === "HR") {
-      return navMenu.filter((item) => item.label === "HR");
-    }
+    return navMenu
+      .map((item) => {
+        // Filter subItems based on dynamic permissions
+        const filteredSubItems = item.subItems?.filter((sub) => {
+          const optName = getPermissionOptionName(sub.label);
+          if (optName === "Roles") {
+            const hasRoles = access[item.label]?.["Roles"]?.length > 0;
+            const hasPerms = access[item.label]?.["Permissions"]?.length > 0;
+            return hasRoles || hasPerms;
+          }
+          return access[item.label]?.[optName]?.length > 0;
+        }) || [];
 
-    if (role === "COUNSELLOR") {
-      return navMenu.filter((item) =>
-        ["Marketing", "Student CRM"].includes(item.label)
-      );
-    }
+        // If no subItems are accessible, the module should not be visible
+        if (filteredSubItems.length === 0) return null;
 
-    if (role === "AGENT") {
-      return navMenu.filter((item) =>
-        ["Agency CRM", "Student CRM"].includes(item.label)
-      );
-    }
-
-    if (role === "STUDENT") {
-      return navMenu.filter((item) => item.label === "Student CRM");
-    }
-
-    return [];
+        return {
+          ...item,
+          subItems: filteredSubItems,
+        };
+      })
+      .filter(Boolean);
   }, [user]);
 
   const sectionKeys = useMemo(

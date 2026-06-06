@@ -323,6 +323,7 @@ model User {
   isActive      Boolean        @default(true)
   isApproved    Boolean        @default(true)
   agencyDetails Json?
+  moduleAccess  Json?
   counsellorId  Int?
   lastLogin     DateTime?
   createdAt     DateTime       @default(now())
