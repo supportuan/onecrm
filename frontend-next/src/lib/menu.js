@@ -201,6 +201,11 @@ import {
 
 export const navMenu = [
   {
+    label: "Notifications",
+    path: "/notifications",
+    icon: Bell,
+  },
+  {
     label: "Marketing",
     path: "/marketing",
     icon: Sparkles,

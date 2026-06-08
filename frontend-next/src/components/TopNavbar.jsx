@@ -1,7 +1,8 @@
 'use client';
-import { HelpCircle, Bell, Search, Settings, LogOut } from 'lucide-react';
+import { HelpCircle, Search, Settings, LogOut } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const TopNavbar = ({ onToggleSidebar }) => {
   const pathname = usePathname();
@@ -76,10 +77,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
             <HelpCircle className="h-5 w-5 stroke-[1.5]" />
           </button>
           
-          <button className="relative text-slate-400 hover:text-slate-600 transition">
-            <Bell className="h-5 w-5 stroke-[1.5]" />
-            <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-bold text-slate-950 ring-1 ring-white">5</span>
-          </button>
+          <NotificationBell />
 
           <button className="text-slate-400 hover:text-slate-600 transition">
             <Settings className="h-5 w-5 stroke-[1.5]" />

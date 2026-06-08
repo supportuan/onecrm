@@ -19,6 +19,8 @@ import {
 } from '../../services/marketingApi';
 import { getCounsellors } from '../../services/userApi';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { usePermissions } from '@/lib/auth/PermissionsContext';
+import { convertLeadToApplication } from '@/services/studentCrmApi';
 
 import {
   Search,
@@ -33,7 +35,9 @@ import {
   ChevronDown,
   ArrowUpDown,
   MessageSquare,
-  Send
+  Send,
+  ArrowRightCircle,
+  CheckCircle2
 } from 'lucide-react';
 
 // Helper to format relative time nicely, e.g. "2 hours ago", "5 hours ago", "1 day ago"
@@ -101,9 +105,50 @@ const LeadManagement = () => {
 
   // Auth context
   const { user } = useAuth();
+  const { can } = usePermissions();
+  const canConvertLead = can ? can('MANAGE_STUDENT_CRM') : false;
   const isAdminOrSuperAdmin = useMemo(() => {
     return user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN');
   }, [user]);
+
+  // Lead → Application conversion modal
+  const [convertLead, setConvertLead] = useState(null); // { lead }
+  const [convertForm, setConvertForm] = useState({ university: '', course: '', country: '', intake: '', deadline: '' });
+  const [converting, setConverting] = useState(false);
+  const [convertMsg, setConvertMsg] = useState(null);
+
+  const openConvertModal = (lead) => {
+    setConvertLead(lead);
+    setConvertForm({
+      university: '',
+      course: lead.preferredCourse || '',
+      country: lead.preferredCountry || lead.country || '',
+      intake: '',
+      deadline: '',
+    });
+    setConvertMsg(null);
+  };
+
+  const handleConvert = async (e) => {
+    e.preventDefault();
+    if (!convertLead) return;
+    if (!convertForm.university || !convertForm.course) return;
+    setConverting(true);
+    setConvertMsg(null);
+    try {
+      const res = await convertLeadToApplication(convertLead.id, convertForm);
+      setConvertMsg({ kind: 'ok', text: `application ${res?.data?.application?.applicationCode || ''} created.` });
+      // refresh leads after a beat so the row shows CONVERTED
+      setTimeout(() => {
+        setConvertLead(null);
+        fetchLeadsList();
+      }, 1000);
+    } catch (err) {
+      setConvertMsg({ kind: 'err', text: err?.message || 'conversion failed' });
+    } finally {
+      setConverting(false);
+    }
+  };
 
   // Filters and Query State
   const [search, setSearch] = useState('');
@@ -783,6 +828,20 @@ const LeadManagement = () => {
                     {/* Column 10: Actions */}
                     <td className="px-4 py-5 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
+                        {canConvertLead && lead.status !== 'CONVERTED' && (
+                          <button
+                            onClick={() => openConvertModal(lead)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all flex items-center gap-1"
+                            title="Convert to Student Application"
+                          >
+                            <ArrowRightCircle className="h-3.5 w-3.5" /> Convert
+                          </button>
+                        )}
+                        {lead.status === 'CONVERTED' && (
+                          <span className="text-emerald-700 text-[11px] font-medium border border-emerald-200 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> Converted
+                          </span>
+                        )}
                         {!lead.isStudentLoginCreated ? (
                           <button
                             onClick={() => handleCreateStudentLogin(lead.id)}
@@ -1295,6 +1354,102 @@ const LeadManagement = () => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Lead → Application conversion modal */}
+      {convertLead && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg shadow-2xl">
+            <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+              <div>
+                <h3 className="text-xs font-semibold text-slate-800">convert lead to application</h3>
+                <p className="text-[10px] text-slate-500 mt-0.5">{convertLead.fullName} · <span className="lowercase">{convertLead.email}</span></p>
+              </div>
+              <button onClick={() => setConvertLead(null)} className="text-slate-500 hover:text-slate-700"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleConvert} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[9px] font-semibold text-slate-500 ml-1">country *</label>
+                  <input
+                    required
+                    value={convertForm.country}
+                    onChange={(e) => setConvertForm({ ...convertForm, country: e.target.value })}
+                    placeholder="e.g. US, UK, Canada"
+                    className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-semibold text-slate-500 ml-1">intake</label>
+                  <input
+                    value={convertForm.intake}
+                    onChange={(e) => setConvertForm({ ...convertForm, intake: e.target.value })}
+                    placeholder="e.g. Fall 2026"
+                    className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[9px] font-semibold text-slate-500 ml-1">university *</label>
+                <input
+                  required
+                  value={convertForm.university}
+                  onChange={(e) => setConvertForm({ ...convertForm, university: e.target.value })}
+                  placeholder="e.g. NYU"
+                  className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-semibold text-slate-500 ml-1">course *</label>
+                <input
+                  required
+                  value={convertForm.course}
+                  onChange={(e) => setConvertForm({ ...convertForm, course: e.target.value })}
+                  placeholder="e.g. MS Computer Science"
+                  className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-semibold text-slate-500 ml-1">deadline</label>
+                <input
+                  type="date"
+                  value={convertForm.deadline}
+                  onChange={(e) => setConvertForm({ ...convertForm, deadline: e.target.value })}
+                  className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                />
+              </div>
+
+              {convertMsg && (
+                <div className={`p-3 rounded-xl flex items-center gap-2 text-[11px] font-semibold border ${
+                  convertMsg.kind === 'ok'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-rose-50 text-rose-700 border-rose-200'
+                }`}>
+                  {convertMsg.kind === 'ok' ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
+                  {convertMsg.text}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setConvertLead(null)}
+                  className="flex-1 py-2.5 border border-slate-200 rounded-xl text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={converting || !convertForm.university || !convertForm.course || !convertForm.country}
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1.5"
+                >
+                  {converting && <Loader2 size={11} className="animate-spin" />}
+                  create application
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

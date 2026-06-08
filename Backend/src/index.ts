@@ -11,6 +11,8 @@ import hrRouter from './modules/hr/hr.routes.js';
 import userRouter from './modules/users/user.routes.js';
 import authRouter from './modules/auth/auth.routes.js';
 import rbacRouter from './modules/rbac/rbac.routes.js';
+import notificationsRouter from './modules/notifications/notifications.routes.js';
+import studentCrmRouter from './modules/student-crm/student-crm.routes.js';
 import { ensureDefaults, loadPermissions } from './modules/rbac/rbac.service.js';
 // @ts-ignore
 import customerRouter from './routes/customers.js';
@@ -37,6 +39,8 @@ app.use('/api/rbac', rbacRouter);
 app.use('/api', userRouter);
 app.use('/api/marketing', marketingRouter);
 app.use('/api/hr', hrRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/student-crm', studentCrmRouter);
 app.use('/api/customers', customerRouter);
 
 // Mount global error handling middleware

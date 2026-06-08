@@ -69,6 +69,54 @@ enum ActivityType {
   MEETING
 }
 
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum ApplicationStage {
+  DRAFT
+  DOCUMENTS_PENDING
+  SUBMITTED
+  UNDER_REVIEW
+  OFFER_RECEIVED
+  OFFER_ACCEPTED
+  OFFER_REJECTED
+  VISA_PROCESS
+  ENROLLED
+}
+
+enum DocumentStatus {
+  PENDING
+  UPLOADED
+  VERIFIED
+  REJECTED
+}
+
+enum OfferDecisionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum VisaStatus {
+  NOT_STARTED
+  DOCUMENTS_GATHERING
+  APPLIED
+  INTERVIEW_SCHEDULED
+  APPROVED
+  REJECTED
+}
+
 enum UserRole {
   SUPER_ADMIN
   ADMIN
@@ -228,6 +276,7 @@ model Lead {
   studentUser          User?       @relation("LeadStudentUser", fields: [studentUserId], references: [id])
   activities           LeadActivity[]
   campaigns            CampaignLead[]
+  convertedStudent     Student?    @relation("LeadConvertedStudent")
 }
 
 model LeadActivity {
@@ -440,6 +489,165 @@ model User {
   refreshTokens        RefreshToken[]
   passwordResetTokens  PasswordResetToken[]
   hrEmployee           HrEmployee?
+  notifications        Notification[]       @relation("UserNotifications")
+  studentProfile          Student?               @relation("StudentUser")
+  applicationsAssigned    Application[]          @relation("ApplicationAssignee")
+  applicationStageChanges ApplicationStageEvent[] @relation("StageChangedBy")
+}
+
+model Notification {
+  id            Int                 @id @default(autoincrement())
+  recipientId   Int
+  templateKey   String
+  channel       NotificationChannel
+  status        NotificationStatus  @default(PENDING)
+  title         String
+  body          String
+  link          String?
+  vars          Json?
+  error         String?
+  sentAt        DateTime?
+  readAt        DateTime?
+  createdAt     DateTime            @default(now())
+
+  recipient     User                @relation("UserNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, status])
+  @@index([recipientId, createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// Student CRM — Applications module
+// -----------------------------------------------------------------------------
+
+model Student {
+  id              Int       @id @default(autoincrement())
+  userId          Int?      @unique
+  fullName        String
+  email           String    @unique
+  phone           String?
+  dob             DateTime?
+  nationality     String?
+  preferredCountry String?
+  academicHistory Json?
+  ieltsScore      Float?
+  toeflScore      Float?
+  greScore        Float?
+  gmatScore       Float?
+  source          String?
+  sourceLeadId    Int?      @unique
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User?     @relation("StudentUser", fields: [userId], references: [id])
+  sourceLead      Lead?     @relation("LeadConvertedStudent", fields: [sourceLeadId], references: [id])
+  applications    Application[]
+
+  @@index([email])
+}
+
+model Application {
+  id              Int                @id @default(autoincrement())
+  applicationCode String             @unique
+  studentId       Int
+  country         String
+  university      String
+  course          String
+  intake          String?
+  stage           ApplicationStage   @default(DRAFT)
+  assignedToId    Int?
+  deadline        DateTime?
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  student         Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assignedTo      User?              @relation("ApplicationAssignee", fields: [assignedToId], references: [id])
+  stageEvents     ApplicationStageEvent[]
+  documents       ApplicationDocument[]
+  offerLetter     OfferLetter?
+  visaTracking    VisaTracking?
+
+  @@index([studentId])
+  @@index([stage])
+  @@index([assignedToId])
+}
+
+model ApplicationStageEvent {
+  id              Int                @id @default(autoincrement())
+  applicationId   Int
+  fromStage       ApplicationStage?
+  toStage         ApplicationStage
+  changedById     Int?
+  notes           String?
+  createdAt       DateTime           @default(now())
+
+  application     Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  changedBy       User?              @relation("StageChangedBy", fields: [changedById], references: [id])
+
+  @@index([applicationId, createdAt])
+}
+
+model ApplicationDocument {
+  id              Int                @id @default(autoincrement())
+  applicationId   Int
+  name            String
+  required        Boolean            @default(true)
+  filename        String?
+  fileUrl         String?
+  status          DocumentStatus     @default(PENDING)
+  uploadedAt      DateTime?
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  application     Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, status])
+}
+
+model OfferLetter {
+  id                Int                  @id @default(autoincrement())
+  applicationId     Int                  @unique
+  fileUrl           String?
+  filename          String?
+  receivedAt        DateTime?
+  conditional       Boolean              @default(false)
+  decisionDeadline  DateTime?
+  studentDecision   OfferDecisionStatus  @default(PENDING)
+  decisionAt        DateTime?
+  notes             String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  application       Application          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model VisaTracking {
+  id                Int          @id @default(autoincrement())
+  applicationId     Int          @unique
+  country           String
+  status            VisaStatus   @default(NOT_STARTED)
+  appointmentDate   DateTime?
+  decisionDate      DateTime?
+  documents         Json?
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  application       Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model DocumentChecklistTemplate {
+  id          Int      @id @default(autoincrement())
+  country     String
+  university  String?
+  documents   Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([country, university])
 }
 
 model RefreshToken {
