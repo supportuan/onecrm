@@ -266,7 +266,12 @@ router.put('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Le
  *         description: Lead successfully soft-deleted
  */
 router.delete('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.deleteLead);
-
+router.patch(
+    '/leads/:leadId/rating',
+    authenticateToken,
+    authorizePermission('Marketing', 'Lead Management', 'EDIT'),
+    controller.updateLeadRating
+);
 router.patch('/leads/:leadId/assign-counsellor', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.assignCounsellor);
 
 /**

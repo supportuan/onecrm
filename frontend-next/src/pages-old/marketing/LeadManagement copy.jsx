@@ -61,16 +61,11 @@ const formatRelativeTime = (createdAtString) => {
 
 const getRatingClasses = (rating) => {
   switch (rating) {
-    case 'HOT':
-      return 'bg-rose-50 text-rose-600 border-rose-200';
-    case 'WARM':
-      return 'bg-amber-50 text-amber-600 border-amber-200';
-    case 'COLD':
-      return 'bg-slate-50 text-slate-600 border-slate-200';
-    case 'MAYBE':
-      return 'bg-blue-50 text-blue-600 border-blue-200';
-    default:
-      return 'bg-amber-50 text-amber-600 border-amber-200';
+    case 'HOT': return 'bg-rose-50 text-rose-600 border-rose-200';
+    case 'WARM': return 'bg-amber-50 text-amber-600 border-amber-200';
+    case 'COLD': return 'bg-slate-50 text-slate-600 border-slate-200';
+    case 'MAYBE': return 'bg-blue-50 text-blue-600 border-blue-200';
+    default: return 'bg-amber-50 text-amber-600 border-amber-200';
   }
 };
 
@@ -92,10 +87,7 @@ const LeadManagement = () => {
   const [sortOrder, setSortOrder] = useState('desc');
 
   const [pagination, setPagination] = useState({
-    page: 1,
-    total: 0,
-    limit: 10,
-    totalPages: 1
+    page: 1, total: 0, limit: 10, totalPages: 1
   });
 
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
@@ -114,32 +106,23 @@ const LeadManagement = () => {
 
   const displayedLeads = useMemo(() => {
     if (!user) return leads;
-
     if (user.role === 'COUNSELLOR') {
       return leads.filter((l) => l.assignedCounsellor?.id === user.id);
     }
-
     return leads;
   }, [leads, user]);
 
   const [intakeForm, setIntakeForm] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    country: '',
-    preferredCountry: '',
-    preferredCourse: '',
-    sourceId: '',
-    rating: 'WARM',
-    remark: '',
-    assignedCounsellorId: ''
+    fullName: '', email: '', phone: '', country: '',
+    preferredCountry: '', preferredCourse: '', sourceId: '',
+    rating: 'WARM', remark: '', assignedCounsellorId: ''
   });
 
   const [activityForm, setActivityForm] = useState({
-    activityType: 'NOTE',
-    comment: ''
+    activityType: 'NOTE', comment: ''
   });
 
+  // ... (All your existing useEffect, functions remain the same until return)
   useEffect(() => {
     if (searchParams && searchParams.get('intake') === 'true') {
       setIsIntakeOpen(true);
@@ -509,59 +492,52 @@ One Workspace`
       alert('Error occurred while updating lead status.');
     }
   };
-
   return (
-    <div className="space-y-6 w-full">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-2 py-1 rounded-2xl">
-        <div className="flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 sm:max-w-md shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#0084ff]/20 focus-within:border-[#0084ff]/60">
-          <Search className="h-5 w-5 text-slate-400 flex-shrink-0" />
-
-          <input
-            type="text"
-            placeholder="Search leads..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 font-semibold"
-          />
-
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+    <div className="space-y-6 w-full px-3 sm:px-6">
+      {/* Header Bar */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-white px-4 py-4 rounded-3xl border border-slate-100 shadow-sm">
+        <div className="flex-1 relative">
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:ring-2 focus-within:ring-[#0084ff]/20">
+            <Search className="h-5 w-5 text-slate-400 flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Search leads by name, email or phone..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 font-medium"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="text-slate-400 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleExport}
-            className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+            className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-3 rounded-2xl text-sm font-semibold text-slate-700 flex items-center gap-2 transition active:scale-95"
           >
-            <Download className="h-4 w-4 text-slate-600 stroke-[2.5]" />
-            Export
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Export</span>
           </button>
 
           <button
             onClick={() => setIsIntakeOpen(true)}
-            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
+            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-3 rounded-2xl text-sm font-semibold flex items-center gap-2 transition active:scale-95 shadow-md"
           >
-            <Plus className="h-4 w-4 stroke-[3]" />
+            <Plus className="h-4 w-4" />
             Add Lead
           </button>
         </div>
       </div>
 
+      {/* Loading / Error / Empty States */}
       {loading && leads.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200">
           <Loader2 className="h-10 w-10 text-[#0084ff] animate-spin" />
-          <p className="text-sm text-slate-400 font-semibold mt-4">
-            Loading active leads database...
-          </p>
+          <p className="text-sm text-slate-400 font-semibold mt-4">Loading leads...</p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-red-200/80 shadow-sm">
@@ -584,260 +560,301 @@ One Workspace`
           </p>
         </div>
       ) : (
-        <div className="border border-slate-200 rounded-[24px] overflow-hidden bg-white shadow-sm w-full">
-          <div className="w-full overflow-x-auto">
-            <table className="min-w-[1200px] w-full border-collapse text-left">
-              <thead>
-                <tr className="bg-[#f8fafc] border-b border-slate-100">
-                  <th
-                    onClick={() => handleSort('fullName')}
-                    className="cursor-pointer select-none px-6 py-4 text-sm font-semibold text-[#556987] hover:text-slate-800 transition"
-                  >
-                    <div className="flex items-center gap-1">
-                      Lead
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                    </div>
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Contact
-                  </th>
-
-                  <th
-                    onClick={() => handleSort('sourceId')}
-                    className="cursor-pointer select-none px-6 py-4 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Source
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                    </div>
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Interested In
-                  </th>
-
-                  <th
-                    onClick={() => handleSort('rating')}
-                    className="cursor-pointer select-none px-6 py-4 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Lead Status
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                    </div>
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Assigned By
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Assigned To
-
-                  </th>
-
-                  {/* <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Remark
-                  </th> */}
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {displayedLeads.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    onClick={() => handleRowClick(lead)}
-                    className="group hover:bg-[#f8fafc]/70 transition-all cursor-pointer duration-150"
-                  >
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 text-[14.5px] leading-tight">
-                          {lead.fullName}
-                        </span>
-                        <span className="text-slate-400 text-xs font-semibold mt-1">
-                          {lead.country || 'Unknown'} {formatRelativeTime(lead.createdAt)}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex flex-col gap-1 text-[13px] text-slate-600">
-                        {lead.email && (
-                          <a
-                            href={`mailto:${lead.email}`}
-                            title={lead.email}
-                            className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
-                          >
-                            <Mail className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
-                            <span className="truncate max-w-[150px]">
-                              {lead.email}
-                            </span>
-                          </a>
-                        )}
-
-                        {lead.phone && (
-                          <a
-                            href={`tel:${lead.phone}`}
-                            title={lead.phone}
-                            className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
-                          >
-                            <Phone className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
-                            <span>{lead.phone}</span>
-                          </a>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-5 text-center">
-                      <span className="font-semibold text-slate-700 text-sm">
-                        {lead.source?.name || 'N/A'}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5 text-center">
-                      <span className="font-semibold text-slate-700 text-sm">
-                        {lead.interestedIn || lead.preferredCourse || 'N/A'}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
-                      {isAdminOrSuperAdmin ? (
-                        <div className="relative inline-block">
-                          <select
-                            value={lead.rating || 'WARM'}
-                            onChange={(e) =>
-                              handleLeadRatingChange(lead.id, e.target.value)
-                            }
-                            className={`appearance-none border px-3 pr-8 py-1.5 rounded-xl text-xs font-bold outline-none cursor-pointer transition shadow-sm w-28 ${getRatingClasses(
-                              lead.rating || 'WARM'
-                            )}`}
-                          >
-                            {LEAD_RATING_OPTIONS.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" />
+        <>
+          {/* Desktop Table + Mobile Cards */}
+          <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full w-full border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    {[
+                      { label: 'Lead', field: 'fullName' },
+                      { label: 'Contact', field: null },
+                      { label: 'Source', field: 'sourceId' },
+                      { label: 'Interested In', field: null },
+                      { label: 'Status', field: 'rating' },
+                      { label: 'Assigned By', field: null },
+                      { label: 'Assigned To', field: null },
+                      { label: 'Action', field: null }
+                    ].map(({ label, field }) => (
+                      <th
+                        key={label}
+                        onClick={() => field && handleSort(field)}
+                        className={`px-6 py-4 text-left text-sm font-semibold text-[#556987] ${field ? 'cursor-pointer hover:text-slate-800' : 'text-center'}`}
+                      >
+                        <div className="flex items-center gap-1">
+                          {label}
+                          {field && <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />}
                         </div>
-                      ) : (
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${getRatingClasses(
-                            lead.rating || 'WARM'
-                          )} shadow-sm`}
-                        >
-                          {lead.rating || 'WARM'}
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-5 text-center">
-                      <span className="font-semibold text-slate-600 text-sm">
-                        {lead.assignedBy?.name || '-'}
-                      </span>
-                    </td>
-
-                    {/* <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
-                      {isAdminOrSuperAdmin ? (
-                        <select
-                          value={lead.assignedCounsellor?.id || ''}
-                          onChange={(e) =>
-                            handleAssignCounsellor(lead.id, e.target.value)
-                          }
-                          className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm w-36"
-                        >
-                          <option value="">Unassigned</option>
-                          {counsellorsList.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.fullName}
-                            </option>
-                          ))}
-                          
-                        </select>
-                      ) : (
-                        <span className="font-semibold text-slate-700 text-sm">
-                          {lead.assignedCounsellor?.name || 'Unassigned'}
-                        </span>
-                      )}
-                    </td> */}
-
-                    <td
-                      className="px-6 py-5 text-center"
-                      onClick={(e) => e.stopPropagation()}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {displayedLeads.map((lead) => (
+                    <tr
+                      key={lead.id}
+                      onClick={() => handleRowClick(lead)}
+                      className="group hover:bg-[#f8fafc]/70 transition-all cursor-pointer duration-150"
                     >
-                      {isAdminOrSuperAdmin ? (
-                        <div className="relative inline-block">
-                          <select
-                            value={lead.assignedCounsellor?.id || ""}
-                            onChange={(e) =>
-                              handleAssignCounsellor(lead.id, e.target.value)
-                            }
-                            className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-10 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm min-w-[180px]"
-                          >
-                            <option value="">Unassigned</option>
-
-                            {counsellorsList.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.fullName}
-                              </option>
-                            ))}
-                          </select>
-
-                          <ChevronDown
-                            className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none"
-                          />
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-slate-800 text-[14.5px] leading-tight">
+                            {lead.fullName}
+                          </span>
+                          <span className="text-slate-400 text-xs font-semibold mt-1">
+                            {lead.country || 'Unknown'} {formatRelativeTime(lead.createdAt)}
+                          </span>
                         </div>
-                      ) : (
+                      </td>
+
+                      <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col gap-1 text-[13px] text-slate-600">
+                          {lead.email && (
+                            <a
+                              href={`mailto:${lead.email}`}
+                              title={lead.email}
+                              className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
+                            >
+                              <Mail className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
+                              <span className="truncate max-w-[150px]">
+                                {lead.email}
+                              </span>
+                            </a>
+                          )}
+
+                          {lead.phone && (
+                            <a
+                              href={`tel:${lead.phone}`}
+                              title={lead.phone}
+                              className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
+                            >
+                              <Phone className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
+                              <span>{lead.phone}</span>
+                            </a>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-5 text-center">
                         <span className="font-semibold text-slate-700 text-sm">
-                          {lead.assignedCounsellor?.fullName ||
-                            lead.assignedCounsellor?.name ||
-                            "Unassigned"}
+                          {lead.source?.name || 'N/A'}
                         </span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* <td className="px-6 py-5 text-center max-w-[200px] truncate">
-                      <span className="font-semibold text-slate-600 text-sm">
-                        {lead.remark || 'No remarks'}
-                      </span>
-                    </td> */}
+                      <td className="px-6 py-5 text-center">
+                        <span className="font-semibold text-slate-700 text-sm">
+                          {lead.interestedIn || lead.preferredCourse || 'N/A'}
+                        </span>
+                      </td>
 
-                    <td className="px-4 py-5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-2">
-                        {!lead.isStudentLoginCreated ? (
-                          <button
-                            onClick={() => handleCreateStudentLogin(lead.id)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap"
-                            title="Create Student Login"
-                          >
-                            Create Login
-                          </button>
+                      <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
+                        {isAdminOrSuperAdmin ? (
+                          <div className="relative inline-block">
+                            <select
+                              value={lead.rating || 'WARM'}
+                              onChange={(e) =>
+                                handleLeadRatingChange(lead.id, e.target.value)
+                              }
+                              className={`appearance-none border px-3 pr-8 py-1.5 rounded-xl text-xs font-bold outline-none cursor-pointer transition shadow-sm w-28 ${getRatingClasses(
+                                lead.rating || 'WARM'
+                              )}`}
+                            >
+                              {LEAD_RATING_OPTIONS.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" />
+                          </div>
                         ) : (
-                          <span className="text-slate-400 text-[11px] font-medium border border-slate-200 bg-slate-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                            Login Active
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${getRatingClasses(
+                              lead.rating || 'WARM'
+                            )} shadow-sm`}
+                          >
+                            {lead.rating || 'WARM'}
                           </span>
                         )}
+                      </td>
 
-                        <button
-                          onClick={(e) => handleDeleteLead(e, lead.id)}
-                          className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer opacity-0 group-hover:opacity-100"
-                          title="Delete Lead"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <td className="px-6 py-5 text-center">
+                        <span className="font-semibold text-slate-600 text-sm">
+                          {lead.assignedBy?.name || '-'}
+                        </span>
+                      </td>
+
+                      {/* <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
+                                          {isAdminOrSuperAdmin ? (
+                                            <select
+                                              value={lead.assignedCounsellor?.id || ''}
+                                              onChange={(e) =>
+                                                handleAssignCounsellor(lead.id, e.target.value)
+                                              }
+                                              className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm w-36"
+                                            >
+                                              <option value="">Unassigned</option>
+                                              {counsellorsList.map((c) => (
+                                                <option key={c.id} value={c.id}>
+                                                  {c.fullName}
+                                                </option>
+                                              ))}
+                                              
+                                            </select>
+                                          ) : (
+                                            <span className="font-semibold text-slate-700 text-sm">
+                                              {lead.assignedCounsellor?.name || 'Unassigned'}
+                                            </span>
+                                          )}
+                                        </td> */}
+
+                      <td
+                        className="px-6 py-5 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {isAdminOrSuperAdmin ? (
+                          <div className="relative inline-block">
+                            <select
+                              value={lead.assignedCounsellor?.id || ""}
+                              onChange={(e) =>
+                                handleAssignCounsellor(lead.id, e.target.value)
+                              }
+                              className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-10 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm min-w-[180px]"
+                            >
+                              <option value="">Unassigned</option>
+
+                              {counsellorsList.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.fullName}
+                                </option>
+                              ))}
+                            </select>
+
+                            <ChevronDown
+                              className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none"
+                            />
+                          </div>
+                        ) : (
+                          <span className="font-semibold text-slate-700 text-sm">
+                            {lead.assignedCounsellor?.fullName ||
+                              lead.assignedCounsellor?.name ||
+                              "Unassigned"}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* <td className="px-6 py-5 text-center max-w-[200px] truncate">
+                                          <span className="font-semibold text-slate-600 text-sm">
+                                            {lead.remark || 'No remarks'}
+                                          </span>
+                                        </td> */}
+
+                      <td className="px-4 py-5 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-2">
+                          {!lead.isStudentLoginCreated ? (
+                            <button
+                              onClick={() => handleCreateStudentLogin(lead.id)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap"
+                              title="Create Student Login"
+                            >
+                              Create Login
+                            </button>
+                          ) : (
+                            <span className="text-slate-400 text-[11px] font-medium border border-slate-200 bg-slate-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+                              Login Active
+                            </span>
+                          )}
+
+                          <button
+                            onClick={(e) => handleDeleteLead(e, lead.id)}
+                            className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer opacity-0 group-hover:opacity-100"
+                            title="Delete Lead"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {displayedLeads.map((lead) => (
+                <div
+                  key={lead.id}
+                  onClick={() => handleRowClick(lead)}
+                  className="p-5 hover:bg-slate-50 active:bg-slate-100 transition-all border-l-4 border-transparent hover:border-[#0084ff]"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-semibold text-lg text-slate-900">{lead.fullName}</div>
+                      <div className="text-sm text-slate-500 mt-1">
+                        {lead.country} • {formatRelativeTime(lead.createdAt)}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold border ${getRatingClasses(lead.rating)}`}>
+                      {lead.rating || 'WARM'}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-sm">
+                    {lead.email && (
+                      <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-slate-600 hover:text-[#0084ff]">
+                        <Mail className="h-4 w-4" /> {lead.email}
+                      </a>
+                    )}
+                    {lead.phone && (
+                      <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-slate-600 hover:text-[#0084ff]">
+                        <Phone className="h-4 w-4" /> {lead.phone}
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between text-sm">
+                    <div>
+                      <span className="text-slate-400 text-xs">Source:</span><br />
+                      <span className="font-medium">{lead.source?.name || 'N/A'}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-400 text-xs">Course:</span><br />
+                      <span className="font-medium">{lead.preferredCourse || 'N/A'}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex gap-3" onClick={(e) => e.stopPropagation()}>
+                    {!lead.isStudentLoginCreated ? (
+                      <button
+                        onClick={() => handleCreateStudentLogin(lead.id)}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2.5 rounded-2xl transition"
+                      >
+                        Create Login
+                      </button>
+                    ) : (
+                      <div className="flex-1 text-center py-2.5 text-emerald-600 font-semibold bg-emerald-50 rounded-2xl text-sm">
+                        Login Active
+                      </div>
+                    )}
+
+                    <button
+                      onClick={(e) => handleDeleteLead(e, lead.id)}
+                      className="px-4 text-rose-500 hover:bg-rose-50 rounded-2xl transition"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-6 py-4 bg-slate-50 border-t border-slate-100 text-sm font-medium text-slate-700">
+          {/* Pagination */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-2 text-sm">
             <div>
               Showing{' '}
               <span className="font-bold text-slate-900">
@@ -853,7 +870,6 @@ One Workspace`
               </span>{' '}
               records
             </div>
-
             <div className="flex items-center gap-3">
               <button
                 disabled={page === 1}
@@ -880,12 +896,13 @@ One Workspace`
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
+      {/* Intake Modal - Already responsive, minor tweaks */}
       {isIntakeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-2xl bg-white rounded-3xl max-h-[95vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
               <div>
                 <h3 className="text-xl font-semibold text-slate-900">
@@ -903,7 +920,6 @@ One Workspace`
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             <form onSubmit={handleIntakeSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -1111,6 +1127,7 @@ One Workspace`
         </div>
       )}
 
+      {/* Activity Sidebar - Becomes full screen on mobile */}
       {isActivityOpen && activeLead && (
         <div className="fixed inset-y-0 right-0 z-50 w-[420px] max-w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col h-full transform transition-transform duration-300">
           <div className="px-6 py-5 border-b border-slate-100">

@@ -967,7 +967,7 @@ export default function UserManagementPage() {
                         }}
                         className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700"
                       >
-                        Select / Clear All
+                        Select All / Clear All
                       </button>
                     </div>
 
