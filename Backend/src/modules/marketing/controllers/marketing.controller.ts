@@ -197,25 +197,76 @@ export const deleteLead = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const assignCounsellor = async (req: Request, res: Response, next: NextFunction) => {
+// export const assignCounsellor = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const leadId = parseInt(req.params.leadId as string);
+//     if (isNaN(leadId)) return sendError(res, 'Invalid lead ID', null, 400);
+
+//     const { counsellorId } = req.body;
+
+//     // Check if current user is admin or super admin
+//     if (!req.user || (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN)) {
+//       return sendError(res, 'Unauthorized to assign counsellor', null, 403);
+//     }
+
+//     const adminId = req.user.id;
+//     const updatedLead = await marketingService.assignCounsellor(
+//       leadId,
+//       counsellorId ? parseInt(counsellorId) : null,
+//       adminId
+//     );
+//     return sendSuccess(res, 'Counsellor assigned successfully', updatedLead);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+export const assignCounsellor = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const leadId = parseInt(req.params.leadId as string);
-    if (isNaN(leadId)) return sendError(res, 'Invalid lead ID', null, 400);
+    const leadId = parseInt(req.params.leadId as string, 10);
 
-    const { counsellorId } = req.body;
+    if (isNaN(leadId)) {
+      return sendError(res, 'Invalid lead ID', null, 400);
+    }
 
-    // Check if current user is admin or super admin
-    if (!req.user || (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN)) {
+    if (
+      !req.user ||
+      (req.user.role !== UserRole.ADMIN &&
+        req.user.role !== UserRole.SUPER_ADMIN)
+    ) {
       return sendError(res, 'Unauthorized to assign counsellor', null, 403);
     }
 
+    const counsellorId =
+      req.body.counsellorId === null || req.body.counsellorId === ''
+        ? null
+        : Number(req.body.counsellorId);
+
+    if (
+      req.body.counsellorId !== null &&
+      req.body.counsellorId !== '' &&
+      Number.isNaN(counsellorId)
+    ) {
+      return sendError(res, 'Invalid counsellor ID', null, 400);
+    }
+
     const adminId = req.user.id;
+
     const updatedLead = await marketingService.assignCounsellor(
       leadId,
-      counsellorId ? parseInt(counsellorId) : null,
+      counsellorId,
       adminId
     );
-    return sendSuccess(res, 'Counsellor assigned successfully', updatedLead);
+
+    return sendSuccess(
+      res,
+      'Counsellor assigned successfully',
+      updatedLead
+    );
   } catch (error) {
     next(error);
   }
