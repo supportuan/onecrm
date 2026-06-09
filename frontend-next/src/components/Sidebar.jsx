@@ -345,6 +345,14 @@ const getDefaultModuleAccessByRole = (role) => {
     giveModuleActions("Admin & Settings", ["VIEW", "EDIT"]);
   }
 
+  if (role === "SUPER_ADMIN") {
+    giveModuleActions("Marketing", ["VIEW", "EDIT"]);
+    giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
+    giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
+    giveModuleActions("HR", ["VIEW", "EDIT"]);
+    giveModuleActions("Admin & Settings", ["VIEW", "EDIT"]);
+  }
+
   return access;
 };
 
@@ -354,8 +362,32 @@ const getPermissionOptionName = (subLabel) => {
   if (subLabel === "System Settings") return "Settings";
   if (subLabel === "Content Management") return "Settings";
   if (subLabel === "Branding") return "Settings";
+  if (subLabel === "Recruitment") return "Recruitment Tracker";
+  if (subLabel === "Leave") return "Leave Management";
+  if (subLabel === "Performance") return "Performance Reviews";
+  if (subLabel === "Payroll") return "Payroll Inputs";
+  if (subLabel === "Overview") return "Employee Directory";
+  if (subLabel === "Student Management") return "Student Management";
   return subLabel;
 };
+
+const hasConfiguredModuleAccess = (moduleAccess) => {
+  if (!moduleAccess || typeof moduleAccess !== "object") return false;
+  return Object.values(moduleAccess).some((options) =>
+    Object.values(options || {}).some((actions) => Array.isArray(actions) && actions.length > 0)
+  );
+};
+
+const filterSubItemsByModuleAccess = (item, access) =>
+  item.subItems?.filter((sub) => {
+    const optName = getPermissionOptionName(sub.label);
+    if (optName === "Roles") {
+      const hasRoles = access[item.label]?.["Roles"]?.length > 0;
+      const hasPerms = access[item.label]?.["Permissions"]?.length > 0;
+      return hasRoles || hasPerms;
+    }
+    return access[item.label]?.[optName]?.length > 0;
+  }) || [];
 
 const Sidebar = ({ sidebarOpen, onClose }) => {
   const location = usePathname() || "";
@@ -385,39 +417,31 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
     };
 
     const role = user.role;
-    const access =
-      user.moduleAccess && Object.keys(user.moduleAccess).length > 0
-        ? user.moduleAccess
-        : getDefaultModuleAccessByRole(role);
+
+    // Super admin and RBAC-only users: sidebar follows permission map (can()).
+    if (role === "SUPER_ADMIN" || !hasConfiguredModuleAccess(user.moduleAccess)) {
+      return navMenu
+        .filter(moduleVisible)
+        .map((item) => ({
+          ...item,
+          subItems: item.subItems ? item.subItems.filter(subVisible) : undefined,
+        }))
+        .filter((item) => !item.subItems || item.subItems.length > 0);
+    }
+
+    const access = user.moduleAccess;
 
     return navMenu
       .filter(moduleVisible)
       .map((item) => {
-        const rbacSubItems = item.subItems ? item.subItems.filter(subVisible) : undefined;
-        const moduleAccessSubItems =
-          item.subItems?.filter((sub) => {
-            const optName = getPermissionOptionName(sub.label);
-            if (optName === 'Roles') {
-              const hasRoles = access[item.label]?.['Roles']?.length > 0;
-              const hasPerms = access[item.label]?.['Permissions']?.length > 0;
-              return hasRoles || hasPerms;
-            }
-            return access[item.label]?.[optName]?.length > 0;
-          }) || [];
+        if (!item.subItems) return item;
 
-        const mergedSubItems = rbacSubItems
-          ? rbacSubItems.filter((sub) => moduleAccessSubItems.some((m) => m.path === sub.path))
-          : moduleAccessSubItems.length > 0
-            ? moduleAccessSubItems
-            : undefined;
-
-        if (item.subItems && (!mergedSubItems || mergedSubItems.length === 0)) {
-          return null;
-        }
+        const moduleAccessSubItems = filterSubItemsByModuleAccess(item, access);
+        if (moduleAccessSubItems.length === 0) return null;
 
         return {
           ...item,
-          subItems: mergedSubItems,
+          subItems: moduleAccessSubItems,
         };
       })
       .filter(Boolean);
