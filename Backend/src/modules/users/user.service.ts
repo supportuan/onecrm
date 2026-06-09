@@ -121,7 +121,7 @@ export const getDefaultModuleAccessByRole = (role: string) => {
 export const getUsers = async (role?: UserRole) => {
   return prisma.user.findMany({
     where: {
-      isActive: true,
+      // isActive: true,
       ...(role ? { role } : {}),
     },
     orderBy: {

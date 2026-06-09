@@ -19,21 +19,31 @@ const TopNavbar = ({ onToggleSidebar }) => {
     breadcrumb = "Marketing/Campaigns";
     title = "Campaigns";
     description = "Create and monitor marketing campaigns";
-   } else if (pathname && pathname.startsWith('/marketing/automation')) {
+  } else if (pathname && pathname.startsWith('/marketing/automation')) {
     breadcrumb = "Marketing/automation";
     title = "Automation";
     description = "Automate your marketing workflows";
   }
-   else if (pathname && pathname.startsWith('/marketing/landing-pages-forms')) {
+  else if (pathname && pathname.startsWith('/marketing/landing-pages-forms')) {
     breadcrumb = "Marketing/Landing Pages & Forms";
     title = "Landing Pages & Forms";
     description = "Create and manage your landing pages and forms";
   }
-   else if (pathname && pathname.startsWith('/marketing/marketing-analytics')) {
+  else if (pathname && pathname.startsWith('/marketing/marketing-analytics')) {
     breadcrumb = "Marketing/Marketing Analytics";
     title = "Marketing Analytics";
     description = "Analyze your marketing performance";
-  } 
+  }
+  else if (pathname === "/admin-settings/users") {
+    breadcrumb = "Admin & Settings / User Management";
+    title = "User Management";
+    description = "Create, manage and assign permissions to users.";
+  }
+  else if (pathname === "/admin-settings/roles-permissions") {
+    breadcrumb = "Admin & Settings / Roles & Permissions";
+    title = "Roles & Permissions";
+    description = "Create and manage roles and permissions.";
+  }
   else if (pathname && pathname.startsWith('/marketing')) {
     breadcrumb = "Marketing";
     title = "Dashboard";
@@ -63,27 +73,27 @@ const TopNavbar = ({ onToggleSidebar }) => {
 
         {/* Right Action Icons & Search */}
         <div className="flex items-center gap-5">
-          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 sm:flex">
+          {/* <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 sm:flex">
             <Search className="h-4 w-4 text-slate-400" />
             <input
               type="search"
               placeholder="Search anything..."
               className="w-48 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 font-medium"
             />
-          </div>
+          </div> */}
 
-          <button className="text-slate-400 hover:text-slate-600 transition">
+          {/* <button className="text-slate-400 hover:text-slate-600 transition">
             <HelpCircle className="h-5 w-5 stroke-[1.5]" />
-          </button>
-          
-          <button className="relative text-slate-400 hover:text-slate-600 transition">
+          </button> */}
+
+          {/* <button className="relative text-slate-400 hover:text-slate-600 transition">
             <Bell className="h-5 w-5 stroke-[1.5]" />
             <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-bold text-slate-950 ring-1 ring-white">5</span>
           </button>
 
           <button className="text-slate-400 hover:text-slate-600 transition">
             <Settings className="h-5 w-5 stroke-[1.5]" />
-          </button>
+          </button> */}
 
           <div className="flex items-center gap-3">
             {user && (

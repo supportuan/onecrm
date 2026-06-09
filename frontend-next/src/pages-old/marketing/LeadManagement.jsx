@@ -221,7 +221,7 @@ Thank you for your interest in ${course} in ${country}.
 Our counsellor will contact you shortly and guide you with the next steps.
 
 Regards,
-One Workspace`
+ApplyUniNow`
       };
     }
 
