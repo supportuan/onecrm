@@ -126,6 +126,7 @@ enum UserRole {
   TELECALLER
   AGENCY_FREELANCER
   STUDENT
+  AGENT
 }
 
 enum HrAccessRole {
