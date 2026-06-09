@@ -130,15 +130,15 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-semibold text-indigo-600">
+          <p className="text-sm font-semibold text-neutral-700">
             Admin & Settings
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900">
+          <h1 className="mt-1 text-2xl font-bold text-neutral-900">
             User Management
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-neutral-500">
             Super Admin can create Admin, HR, Counsellor, Agent and Student
             users.
           </p>
@@ -146,17 +146,17 @@ export default function UserManagementPage() {
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sm hover:bg-neutral-800"
         >
           <UserPlus className="h-4 w-4" />
           Create User
         </button>
       </div>
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 md:max-w-md">
-            <Search className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-2 md:max-w-md">
+            <Search className="h-4 w-4 text-neutral-500" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -165,15 +165,15 @@ export default function UserManagementPage() {
             />
           </div>
 
-          <button className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+          <button className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-600 hover:bg-neutral-50">
             <Filter className="h-4 w-4" />
             Filter
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200">
+        <div className="overflow-hidden rounded-lg border border-neutral-200">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+            <thead className="bg-neutral-50 text-xs uppercase text-neutral-500">
               <tr>
                 <th className="px-5 py-4">Name</th>
                 <th className="px-5 py-4">Email</th>
@@ -183,15 +183,15 @@ export default function UserManagementPage() {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-neutral-100">
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-4 font-semibold text-slate-800">
+                <tr key={user.id} className="hover:bg-neutral-50">
+                  <td className="px-5 py-4 font-semibold text-neutral-800">
                     {user.name}
                   </td>
-                  <td className="px-5 py-4 text-slate-500">{user.email}</td>
+                  <td className="px-5 py-4 text-neutral-500">{user.email}</td>
                   <td className="px-5 py-4">
-                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                    <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-900">
                       {user.role}
                     </span>
                   </td>
@@ -207,7 +207,7 @@ export default function UserManagementPage() {
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-2">
-                      <button className="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
+                      <button className="rounded-xl p-2 text-neutral-500 hover:bg-slate-100">
                         <Edit className="h-4 w-4" />
                       </button>
                       <button className="rounded-xl p-2 text-red-500 hover:bg-red-50">
@@ -222,7 +222,7 @@ export default function UserManagementPage() {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-5 py-10 text-center text-slate-400"
+                    className="px-5 py-10 text-center text-neutral-500"
                   >
                     No users found.
                   </td>
@@ -234,30 +234,30 @@ export default function UserManagementPage() {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
-          <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
+          <div className="max-h-[92vh] w-auto overflow-y-auto rounded-lg bg-white shadow-sm">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-5">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-neutral-900">
                   Create User
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-neutral-500">
                   Assign role, modules and permissions.
                 </p>
               </div>
 
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-xl p-2 text-neutral-500 hover:bg-slate-100"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="space-y-6 p-6">
-              <section className="rounded-3xl border border-slate-200 p-5">
-                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-800">
-                  <UserPlus className="h-4 w-4 text-indigo-600" />
+              <section className="rounded-lg border border-neutral-200 p-5">
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-neutral-800">
+                  <UserPlus className="h-4 w-4 text-neutral-700" />
                   Basic Information
                 </h3>
 
@@ -268,7 +268,7 @@ export default function UserManagementPage() {
                     onChange={(e) =>
                       setForm({ ...form, firstName: e.target.value })
                     }
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+                    className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700"
                   />
 
                   <input
@@ -277,7 +277,7 @@ export default function UserManagementPage() {
                     onChange={(e) =>
                       setForm({ ...form, lastName: e.target.value })
                     }
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+                    className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700"
                   />
 
                   <input
@@ -286,7 +286,7 @@ export default function UserManagementPage() {
                     onChange={(e) =>
                       setForm({ ...form, email: e.target.value })
                     }
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+                    className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700"
                   />
 
                   <input
@@ -295,7 +295,7 @@ export default function UserManagementPage() {
                     onChange={(e) =>
                       setForm({ ...form, phone: e.target.value })
                     }
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+                    className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700"
                   />
 
                   <input
@@ -305,7 +305,7 @@ export default function UserManagementPage() {
                     onChange={(e) =>
                       setForm({ ...form, password: e.target.value })
                     }
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+                    className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700"
                   />
 
                   <input
@@ -315,14 +315,14 @@ export default function UserManagementPage() {
                     onChange={(e) =>
                       setForm({ ...form, confirmPassword: e.target.value })
                     }
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+                    className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700"
                   />
                 </div>
               </section>
 
-              <section className="rounded-3xl border border-slate-200 p-5">
-                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-800">
-                  <ShieldCheck className="h-4 w-4 text-indigo-600" />
+              <section className="rounded-lg border border-neutral-200 p-5">
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-neutral-800">
+                  <ShieldCheck className="h-4 w-4 text-neutral-700" />
                   Role & Status
                 </h3>
 
@@ -332,7 +332,7 @@ export default function UserManagementPage() {
                     onChange={(e) =>
                       setForm({ ...form, role: e.target.value })
                     }
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+                    className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700"
                   >
                     {roles.map((role) => (
                       <option key={role} value={role}>
@@ -341,7 +341,7 @@ export default function UserManagementPage() {
                     ))}
                   </select>
 
-                  <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
+                  <label className="flex items-center gap-3 rounded-lg border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-700">
                     <input
                       type="checkbox"
                       checked={form.isActive}
@@ -355,8 +355,8 @@ export default function UserManagementPage() {
                 </div>
               </section>
 
-              <section className="rounded-3xl border border-slate-200 p-5">
-                <h3 className="mb-4 text-sm font-bold text-slate-800">
+              <section className="rounded-lg border border-neutral-200 p-5">
+                <h3 className="mb-4 text-sm font-bold text-neutral-800">
                   Module Access
                 </h3>
 
@@ -364,7 +364,7 @@ export default function UserManagementPage() {
                   {modules.map((moduleName) => (
                     <label
                       key={moduleName}
-                      className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className="flex items-center gap-3 rounded-lg border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
                     >
                       <input
                         type="checkbox"
@@ -378,8 +378,8 @@ export default function UserManagementPage() {
                 </div>
               </section>
 
-              <section className="rounded-3xl border border-slate-200 p-5">
-                <h3 className="mb-4 text-sm font-bold text-slate-800">
+              <section className="rounded-lg border border-neutral-200 p-5">
+                <h3 className="mb-4 text-sm font-bold text-neutral-800">
                   Permissions
                 </h3>
 
@@ -388,9 +388,9 @@ export default function UserManagementPage() {
                     ([moduleName, permissions]) => (
                       <div
                         key={moduleName}
-                        className="rounded-2xl border border-slate-200 p-4"
+                        className="rounded-lg border border-neutral-200 p-4"
                       >
-                        <h4 className="mb-3 text-sm font-bold text-slate-700">
+                        <h4 className="mb-3 text-sm font-bold text-neutral-700">
                           {moduleName}
                         </h4>
 
@@ -398,7 +398,7 @@ export default function UserManagementPage() {
                           {permissions.map((permission) => (
                             <label
                               key={permission}
-                              className="flex items-center gap-3 text-sm text-slate-600"
+                              className="flex items-center gap-3 text-sm text-neutral-600"
                             >
                               <input
                                 type="checkbox"
@@ -417,17 +417,17 @@ export default function UserManagementPage() {
               </section>
             </div>
 
-            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-white px-6 py-5">
+            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-neutral-200 bg-white px-6 py-5">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="rounded-2xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-neutral-200 px-5 py-2.5 text-sm font-bold text-neutral-600 hover:bg-neutral-50"
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleCreateUser}
-                className="rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"
+                className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
               >
                 Create User
               </button>
@@ -593,32 +593,32 @@ export default function UserManagementPage() {
 
 //   return (
 //     <div className="space-y-6">
-//       <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+//       <div className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
 //         <div>
-//           <p className="text-sm font-semibold text-indigo-600">
+//           <p className="text-sm font-semibold text-neutral-700">
 //             Admin & Settings
 //           </p>
-//           <h1 className="mt-1 text-2xl font-bold text-slate-900">
+//           <h1 className="mt-1 text-2xl font-bold text-neutral-900">
 //             User Management
 //           </h1>
-//           <p className="mt-1 text-sm text-slate-500">
+//           <p className="mt-1 text-sm text-neutral-500">
 //             Create users and assign role-based module access automatically.
 //           </p>
 //         </div>
 
 //         <button
 //           onClick={() => setShowCreateModal(true)}
-//           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
+//           className="inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sm hover:bg-neutral-800"
 //         >
 //           <UserPlus className="h-4 w-4" />
 //           Create User
 //         </button>
 //       </div>
 
-//       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+//       <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
 //         <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-//           <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 md:max-w-md">
-//             <Search className="h-4 w-4 text-slate-400" />
+//           <div className="flex w-full items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-2 md:max-w-md">
+//             <Search className="h-4 w-4 text-neutral-500" />
 //             <input
 //               value={search}
 //               onChange={(e) => setSearch(e.target.value)}
@@ -627,15 +627,15 @@ export default function UserManagementPage() {
 //             />
 //           </div>
 
-//           <button className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+//           <button className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-600 hover:bg-neutral-50">
 //             <Filter className="h-4 w-4" />
 //             Filter
 //           </button>
 //         </div>
 
-//         <div className="overflow-hidden rounded-2xl border border-slate-200">
+//         <div className="overflow-hidden rounded-lg border border-neutral-200">
 //           <table className="w-full text-left text-sm">
-//             <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+//             <thead className="bg-neutral-50 text-xs uppercase text-neutral-500">
 //               <tr>
 //                 <th className="px-5 py-4">Name</th>
 //                 <th className="px-5 py-4">Email</th>
@@ -646,19 +646,19 @@ export default function UserManagementPage() {
 //               </tr>
 //             </thead>
 
-//             <tbody className="divide-y divide-slate-100">
+//             <tbody className="divide-y divide-neutral-100">
 //               {filteredUsers.map((user) => (
-//                 <tr key={user.id} className="hover:bg-slate-50">
-//                   <td className="px-5 py-4 font-semibold text-slate-800">
+//                 <tr key={user.id} className="hover:bg-neutral-50">
+//                   <td className="px-5 py-4 font-semibold text-neutral-800">
 //                     {user.name}
 //                   </td>
-//                   <td className="px-5 py-4 text-slate-500">{user.email}</td>
+//                   <td className="px-5 py-4 text-neutral-500">{user.email}</td>
 //                   <td className="px-5 py-4">
-//                     <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+//                     <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-900">
 //                       {user.role}
 //                     </span>
 //                   </td>
-//                   <td className="px-5 py-4 text-slate-500">
+//                   <td className="px-5 py-4 text-neutral-500">
 //                     {user.role === "SUPER_ADMIN"
 //                       ? "All Modules"
 //                       : user.modules?.join(", ")}
@@ -675,7 +675,7 @@ export default function UserManagementPage() {
 //                   </td>
 //                   <td className="px-5 py-4">
 //                     <div className="flex justify-end gap-2">
-//                       <button className="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
+//                       <button className="rounded-xl p-2 text-neutral-500 hover:bg-slate-100">
 //                         <Edit className="h-4 w-4" />
 //                       </button>
 //                       <button className="rounded-xl p-2 text-red-500 hover:bg-red-50">
@@ -688,7 +688,7 @@ export default function UserManagementPage() {
 
 //               {filteredUsers.length === 0 && (
 //                 <tr>
-//                   <td colSpan="6" className="px-5 py-10 text-center text-slate-400">
+//                   <td colSpan="6" className="px-5 py-10 text-center text-neutral-500">
 //                     No users found.
 //                   </td>
 //                 </tr>
@@ -699,46 +699,46 @@ export default function UserManagementPage() {
 //       </div>
 
 //       {showCreateModal && (
-//         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
-//           <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
-//             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+//         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
+//           <div className="max-h-[92vh] w-auto overflow-y-auto rounded-lg bg-white shadow-sm">
+//             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-5">
 //               <div>
-//                 <h2 className="text-xl font-bold text-slate-900">
+//                 <h2 className="text-xl font-bold text-neutral-900">
 //                   Create User
 //                 </h2>
-//                 <p className="text-sm text-slate-500">
+//                 <p className="text-sm text-neutral-500">
 //                   Modules and permissions change automatically based on role.
 //                 </p>
 //               </div>
 
 //               <button
 //                 onClick={() => setShowCreateModal(false)}
-//                 className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+//                 className="rounded-xl p-2 text-neutral-500 hover:bg-slate-100"
 //               >
 //                 <X className="h-5 w-5" />
 //               </button>
 //             </div>
 
 //             <div className="space-y-6 p-6">
-//               <section className="rounded-3xl border border-slate-200 p-5">
-//                 <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-800">
-//                   <UserPlus className="h-4 w-4 text-indigo-600" />
+//               <section className="rounded-lg border border-neutral-200 p-5">
+//                 <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-neutral-800">
+//                   <UserPlus className="h-4 w-4 text-neutral-700" />
 //                   Basic Information
 //                 </h3>
 
 //                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-//                   <input placeholder="First Name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
-//                   <input placeholder="Last Name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
-//                   <input placeholder="Email Address" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
-//                   <input placeholder="Phone Number" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
-//                   <input type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
-//                   <input type="password" placeholder="Confirm Password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500" />
+//                   <input placeholder="First Name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700" />
+//                   <input placeholder="Last Name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700" />
+//                   <input placeholder="Email Address" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700" />
+//                   <input placeholder="Phone Number" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700" />
+//                   <input type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700" />
+//                   <input type="password" placeholder="Confirm Password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700" />
 //                 </div>
 //               </section>
 
-//               <section className="rounded-3xl border border-slate-200 p-5">
-//                 <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-800">
-//                   <ShieldCheck className="h-4 w-4 text-indigo-600" />
+//               <section className="rounded-lg border border-neutral-200 p-5">
+//                 <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-neutral-800">
+//                   <ShieldCheck className="h-4 w-4 text-neutral-700" />
 //                   Role & Status
 //                 </h3>
 
@@ -746,7 +746,7 @@ export default function UserManagementPage() {
 //                   <select
 //                     value={form.role}
 //                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-//                     className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+//                     className="rounded-lg border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-700"
 //                   >
 //                     {roles.map((role) => (
 //                       <option key={role} value={role}>
@@ -755,7 +755,7 @@ export default function UserManagementPage() {
 //                     ))}
 //                   </select>
 
-//                   <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
+//                   <label className="flex items-center gap-3 rounded-lg border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-700">
 //                     <input
 //                       type="checkbox"
 //                       checked={form.isActive}
@@ -767,8 +767,8 @@ export default function UserManagementPage() {
 //                 </div>
 //               </section>
 
-//               <section className="rounded-3xl border border-slate-200 p-5">
-//                 <h3 className="mb-4 text-sm font-bold text-slate-800">
+//               <section className="rounded-lg border border-neutral-200 p-5">
+//                 <h3 className="mb-4 text-sm font-bold text-neutral-800">
 //                   Module Access
 //                 </h3>
 
@@ -779,9 +779,9 @@ export default function UserManagementPage() {
 //                     return (
 //                       <label
 //                         key={moduleName}
-//                         className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold ${allowed
-//                           ? "border-indigo-300 bg-indigo-50 text-indigo-700"
-//                           : "border-slate-200 bg-slate-50 text-slate-400"
+//                         className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-semibold ${allowed
+//                           ? "border-neutral-400 bg-neutral-100 text-neutral-900"
+//                           : "border-neutral-200 bg-neutral-50 text-neutral-500"
 //                           }`}
 //                       >
 //                         <input
@@ -798,8 +798,8 @@ export default function UserManagementPage() {
 //                 </div>
 //               </section>
 
-//               <section className="rounded-3xl border border-slate-200 p-5">
-//                 <h3 className="mb-4 text-sm font-bold text-slate-800">
+//               <section className="rounded-lg border border-neutral-200 p-5">
+//                 <h3 className="mb-4 text-sm font-bold text-neutral-800">
 //                   Permissions
 //                 </h3>
 
@@ -807,9 +807,9 @@ export default function UserManagementPage() {
 //                   {form.modules.map((moduleName) => (
 //                     <div
 //                       key={moduleName}
-//                       className="rounded-2xl border border-slate-200 p-4"
+//                       className="rounded-lg border border-neutral-200 p-4"
 //                     >
-//                       <h4 className="mb-3 text-sm font-bold text-slate-700">
+//                       <h4 className="mb-3 text-sm font-bold text-neutral-700">
 //                         {moduleName}
 //                       </h4>
 
@@ -818,7 +818,7 @@ export default function UserManagementPage() {
 //                           (permission) => (
 //                             <label
 //                               key={permission}
-//                               className="flex items-center gap-3 text-sm text-slate-600"
+//                               className="flex items-center gap-3 text-sm text-neutral-600"
 //                             >
 //                               <input
 //                                 type="checkbox"
@@ -838,17 +838,17 @@ export default function UserManagementPage() {
 //               </section>
 //             </div>
 
-//             <div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-white px-6 py-5">
+//             <div className="sticky bottom-0 flex justify-end gap-3 border-t border-neutral-200 bg-white px-6 py-5">
 //               <button
 //                 onClick={() => setShowCreateModal(false)}
-//                 className="rounded-2xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
+//                 className="rounded-lg border border-neutral-200 px-5 py-2.5 text-sm font-bold text-neutral-600 hover:bg-neutral-50"
 //               >
 //                 Cancel
 //               </button>
 
 //               <button
 //                 onClick={handleCreateUser}
-//                 className="rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"
+//                 className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
 //               >
 //                 Create User
 //               </button>

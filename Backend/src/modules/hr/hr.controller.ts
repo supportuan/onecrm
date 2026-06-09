@@ -32,7 +32,11 @@ import {
   upsertPayrollDeductionSchema,
   createPerformanceReviewSchema,
   updatePerformanceReviewSchema,
+  createLeaveRequestSchema,
+  processLeaveRequestSchema,
 } from './hr.validation.js';
+import { notifyRoles } from '../notifications/recipients.js';
+import { UserRole } from '@prisma/client';
 
 // ==========================================
 // 1. Employees & Admin Roles
@@ -207,12 +211,29 @@ export const processBiometricLogs = async (req: Request, res: Response, next: Ne
 
 export const submitRemoteClockIn = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { employeeId, ip, coordinates, isCheckOut } = req.body;
+    const { ip, coordinates, isCheckOut } = req.body;
+    const employeeId = req.body.employeeId || req.user?.email;
     if (!employeeId) {
-      return sendError(res, 'Employee email/ID is required for remote clock-in', null, 400);
+      return sendError(res, 'Unauthorized', null, 401);
     }
-    const data = await hrService.submitRemoteClockIn(employeeId, { ip, coordinates, isCheckOut });
-    return sendSuccess(res, 'Remote clock-in registered successfully', data);
+    const data = await hrService.submitRemoteClockIn(employeeId, {
+      ip: ip || req.ip || '0.0.0.0',
+      coordinates,
+      isCheckOut: Boolean(isCheckOut),
+    });
+    return sendSuccess(res, isCheckOut ? 'Clocked out successfully' : 'Clocked in successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyAttendanceProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.email) return sendError(res, 'Unauthorized', null, 401);
+    const month = req.query.month ? parseInt(req.query.month as string, 10) : undefined;
+    const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
+    const data = await hrService.getMyAttendance(req.user.email, month, year);
+    return sendSuccess(res, 'My attendance retrieved', data);
   } catch (error) {
     next(error);
   }
@@ -816,6 +837,86 @@ export const updatePerformanceReview = async (req: Request, res: Response, next:
     const validatedData = updatePerformanceReviewSchema.parse(req.body);
     const data = await hrService.updatePerformanceReview(id, validatedData);
     return sendSuccess(res, 'Performance review updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 23. Leave Requests
+// ==========================================
+
+export const getLeaveRequests = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const mine = req.query.mine === 'true';
+    const status = req.query.status as string | undefined;
+    const data = await hrService.getLeaveRequests({
+      ...(mine && req.user?.email ? { mineEmail: req.user.email } : {}),
+      ...(status ? { status } : {}),
+    });
+    return sendSuccess(res, 'Leave requests retrieved', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createLeaveRequest = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.email) return sendError(res, 'Unauthorized', null, 401);
+    const validated = createLeaveRequestSchema.parse(req.body);
+    const data = await hrService.createLeaveRequest(req.user.email, validated);
+    await notifyRoles([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR], 'hr.leave_request', {
+      employeeName: data.employeeName,
+      leaveType: data.leaveTypeName,
+      from: data.fromDate,
+      to: data.toDate,
+    });
+    return sendSuccess(res, 'Leave request submitted', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const processLeaveRequest = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validated = processLeaveRequestSchema.parse(req.body);
+    const data = await hrService.processLeaveRequest(id, validated);
+    return sendSuccess(res, 'Leave request updated', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const cancelLeaveRequest = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.email) return sendError(res, 'Unauthorized', null, 401);
+    const id = req.params.id as string;
+    const data = await hrService.cancelLeaveRequest(id, req.user.email);
+    return sendSuccess(res, 'Leave request cancelled', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 24. Dashboard Summary
+// ==========================================
+
+export const getDashboardSummary = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await hrService.getHrDashboardSummary();
+    return sendSuccess(res, 'HR dashboard summary', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getHrMeProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.email) return sendError(res, 'Unauthorized', null, 401);
+    const data = await hrService.getHrMe(req.user.email);
+    return sendSuccess(res, 'HR self-service profile', data);
   } catch (error) {
     next(error);
   }

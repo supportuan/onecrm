@@ -91,7 +91,7 @@ const getStatusClasses = (status) => {
     case 'LOST':
       return 'border-[#ef4444]/40 bg-[#fef2f2] text-[#dc2626]';
     default:
-      return 'border-slate-200 bg-slate-50 text-slate-600';
+      return 'border-neutral-200 bg-neutral-50 text-neutral-600';
   }
 };
 
@@ -569,18 +569,18 @@ const LeadManagement = () => {
     <div className="space-y-6">
 
       {/* 1. FILTER & ACTION BAR - Pill styled exactly as screenshot */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-2 py-1 rounded-2xl">
-        <div className="flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 sm:max-w-md shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#0084ff]/20 focus-within:border-[#0084ff]/60">
-          <Search className="h-5 w-5 text-slate-400 flex-shrink-0" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-2 py-1 rounded-lg">
+        <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 sm:max-w-md shadow-sm transition-all focus-within:ring-2 focus-within:ring-neutral-900/20 focus-within:border-neutral-900/60">
+          <Search className="h-5 w-5 text-neutral-500 flex-shrink-0" />
           <input
             type="text"
             placeholder="Search leads..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 font-semibold"
+            className="w-full bg-transparent text-sm text-neutral-700 outline-none placeholder:text-neutral-500 font-semibold"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="text-slate-400 hover:text-slate-600">
+            <button onClick={() => setSearch('')} className="text-neutral-500 hover:text-neutral-600">
               <X className="h-4 w-4" />
             </button>
           )}
@@ -592,14 +592,14 @@ const LeadManagement = () => {
             <select
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
-              className="appearance-none border border-slate-200 bg-slate-50 hover:bg-slate-100/50 pl-5 pr-10 py-2.5 rounded-full text-sm font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm"
+              className="appearance-none border border-neutral-200 bg-neutral-50 hover:bg-slate-100/50 pl-5 pr-10 py-2.5 rounded-full text-sm font-semibold text-neutral-700 outline-none cursor-pointer transition shadow-sm"
             >
               <option value="">All sources</option>
               {sourcesList.map((source) => (
                 <option key={source.id} value={source.id}>{source.name}</option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none stroke-[2]" />
+            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 pointer-events-none stroke-[2]" />
           </div>
 
           {/* Status Dropdown - pill shaped */}
@@ -607,7 +607,7 @@ const LeadManagement = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none border border-slate-200 bg-slate-50 hover:bg-slate-100/50 pl-5 pr-10 py-2.5 rounded-full text-sm font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm"
+              className="appearance-none border border-neutral-200 bg-neutral-50 hover:bg-slate-100/50 pl-5 pr-10 py-2.5 rounded-full text-sm font-semibold text-neutral-700 outline-none cursor-pointer transition shadow-sm"
             >
               <option value="">All status</option>
               <option value="NEW">New</option>
@@ -617,22 +617,22 @@ const LeadManagement = () => {
               <option value="CONVERTED">Converted</option>
               <option value="LOST">Lost</option>
             </select>
-            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none stroke-[2]" />
+            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 pointer-events-none stroke-[2]" />
           </div>
 
           {/* Export Button - pill shaped */}
           <button
             onClick={handleExport}
-            className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+            className="border border-neutral-200 bg-white hover:bg-neutral-50 px-5 py-2.5 rounded-full text-sm font-semibold text-neutral-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
           >
-            <Download className="h-4 w-4 text-slate-600 stroke-[2.5]" />
+            <Download className="h-4 w-4 text-neutral-600 stroke-[2.5]" />
             Export
           </button>
 
           {/* Add Lead Button - styled dark blue exactly like screenshot */}
           <button
             onClick={() => setIsIntakeOpen(true)}
-            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
+            className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
           >
             <Plus className="h-4 w-4 stroke-[3]" />
             Add Lead
@@ -642,69 +642,69 @@ const LeadManagement = () => {
 
       {/* 2. MAIN TABLE VIEW OR LOADING/ERROR STATES */}
       {loading && leads.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200 shadow-sm">
-          <Loader2 className="h-10 w-10 text-[#0084ff] animate-spin" />
-          <p className="text-sm text-slate-400 font-semibold mt-4">Loading active leads database...</p>
+        <div className="flex flex-col items-center justify-center py-32 bg-white rounded-lg border border-neutral-200 shadow-sm">
+          <Loader2 className="h-10 w-10 text-neutral-900 animate-spin" />
+          <p className="text-sm text-neutral-500 font-semibold mt-4">Loading active leads database...</p>
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-red-200/80 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-lg border border-red-200/80 shadow-sm">
           <AlertCircle className="h-12 w-12 text-red-500 mb-3" />
           <h3 className="text-lg font-semibold text-red-800">Connection Error</h3>
           <p className="text-sm text-red-500 font-medium mt-1">{error}</p>
-          <button onClick={fetchLeadsList} className="mt-4 px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-sm font-semibold text-slate-700 transition">
+          <button onClick={fetchLeadsList} className="mt-4 px-4 py-2 border border-neutral-200 hover:bg-neutral-50 rounded-xl text-sm font-semibold text-neutral-700 transition">
             Retry Connection
           </button>
         </div>
       ) : leads.length === 0 ? (
         /* Dynamic Empty State Message */
-        <div className="flex flex-col items-center justify-center py-32 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
-          <AlertCircle className="h-12 w-12 text-slate-300 mb-3" />
-          <h3 className="text-lg font-semibold text-slate-800">No leads found</h3>
-          <p className="text-sm text-slate-400 font-medium mt-1">Add a new lead in marketing or adjust filters to begin.</p>
+        <div className="flex flex-col items-center justify-center py-32 text-center bg-white rounded-lg border border-neutral-200 shadow-sm">
+          <AlertCircle className="h-12 w-12 text-neutral-600 mb-3" />
+          <h3 className="text-lg font-semibold text-neutral-800">No leads found</h3>
+          <p className="text-sm text-neutral-500 font-medium mt-1">Add a new lead in marketing or adjust filters to begin.</p>
         </div>
       ) : (
         /* PREMIUM TABLE GRID DESIGN - matching screenshot precisely */
-        <div className="border border-slate-200 rounded-[24px] overflow-hidden bg-white shadow-sm">
+        <div className="border border-neutral-200 rounded-[24px] overflow-hidden bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="bg-[#f8fafc] border-b border-slate-100">
+                <tr className="bg-[#f8fafc] border-b border-neutral-100">
                   <th
                     onClick={() => handleSort('fullName')}
-                    className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 transition"
+                    className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-neutral-800 transition"
                   >
                     <div className="flex items-center gap-1">
                       Lead
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Contact</th>
                   <th
                     onClick={() => handleSort('source')}
-                    className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
+                    className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-neutral-800 text-center transition"
                   >
                     <div className="flex items-center justify-center gap-1">
                       Source
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Interested in</th>
                   <th
                     onClick={() => handleSort('rating')}
-                    className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
+                    className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-neutral-800 text-center transition"
                   >
                     <div className="flex items-center justify-center gap-1">
                       Lead Status
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
                   <th
                     onClick={() => handleSort('status')}
-                    className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
+                    className="cursor-pointer select-none px-6 py-4.5 text-sm font-semibold text-[#556987] hover:text-neutral-800 text-center transition"
                   >
                     <div className="flex items-center justify-center gap-1">
                       Status
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center">Assigned By</th>
@@ -713,7 +713,7 @@ const LeadManagement = () => {
                   <th className="px-6 py-4.5 text-sm font-semibold text-[#556987] text-center"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-neutral-100">
                 {displayedLeads.map((lead) => (
                   <tr
                     key={lead.id}
@@ -723,10 +723,10 @@ const LeadManagement = () => {
                     {/* Column 1: Lead Details (Name + Country/Time) */}
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 text-[14.5px] leading-tight">
+                        <span className="font-semibold text-neutral-800 text-[14.5px] leading-tight">
                           {lead.fullName}
                         </span>
-                        <span className="text-slate-400 text-xs font-semibold mt-1">
+                        <span className="text-neutral-500 text-xs font-semibold mt-1">
                           {lead.country || 'Unknown'} {formatRelativeTime(lead.createdAt)}
                         </span>
                       </div>
@@ -734,14 +734,14 @@ const LeadManagement = () => {
 
                     {/* Column 2: Contact Details (Email & Phone Number text display) */}
                     <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex flex-col gap-1 text-[13px] text-slate-600">
+                      <div className="flex flex-col gap-1 text-[13px] text-neutral-600">
                         {lead.email && (
                           <a
                             href={`mailto:${lead.email}`}
                             title={lead.email}
-                            className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
+                            className="hover:text-neutral-900 flex items-center gap-1.5 transition font-semibold"
                           >
-                            <Mail className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
+                            <Mail className="h-3.5 w-3.5 text-neutral-500 stroke-[2]" />
                             <span className="truncate max-w-[150px]">{lead.email}</span>
                           </a>
                         )}
@@ -749,9 +749,9 @@ const LeadManagement = () => {
                           <a
                             href={`tel:${lead.phone}`}
                             title={lead.phone}
-                            className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
+                            className="hover:text-neutral-900 flex items-center gap-1.5 transition font-semibold"
                           >
-                            <Phone className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
+                            <Phone className="h-3.5 w-3.5 text-neutral-500 stroke-[2]" />
                             <span>{lead.phone}</span>
                           </a>
                         )}
@@ -760,14 +760,14 @@ const LeadManagement = () => {
 
                     {/* Column 3: Source */}
                     <td className="px-6 py-5 text-center">
-                      <span className="font-semibold text-slate-700 text-sm">
+                      <span className="font-semibold text-neutral-700 text-sm">
                         {lead.source?.name || 'N/A'}
                       </span>
                     </td>
 
                     {/* Column 4: Interested in */}
                     <td className="px-6 py-5 text-center">
-                      <span className="font-semibold text-slate-700 text-sm">
+                      <span className="font-semibold text-neutral-700 text-sm">
                         {lead.interestedIn || 'N/A'}
                       </span>
                     </td>
@@ -777,7 +777,7 @@ const LeadManagement = () => {
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
                         lead.rating === 'HOT' ? 'bg-rose-50 text-rose-600 border border-rose-200' :
                         lead.rating === 'WARM' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
-                        lead.rating === 'COLD' ? 'bg-slate-50 text-slate-600 border border-slate-200' :
+                        lead.rating === 'COLD' ? 'bg-neutral-50 text-neutral-600 border border-neutral-200' :
                         'bg-blue-50 text-blue-600 border border-blue-200'
                       } shadow-sm`}>
                         {lead.rating || 'WARM'}
@@ -793,7 +793,7 @@ const LeadManagement = () => {
 
                     {/* Column 7: Assigned By */}
                     <td className="px-6 py-5 text-center">
-                      <span className="font-semibold text-slate-600 text-sm">
+                      <span className="font-semibold text-neutral-600 text-sm">
                         {lead.assignedBy?.name || '-'}
                       </span>
                     </td>
@@ -804,7 +804,7 @@ const LeadManagement = () => {
                         <select
                           value={lead.assignedCounsellor?.id || ''}
                           onChange={(e) => handleAssignCounsellor(lead.id, e.target.value)}
-                          className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm w-36"
+                          className="appearance-none border border-neutral-200 bg-white hover:bg-neutral-50 pl-3 pr-8 py-1.5 rounded-xl text-xs font-semibold text-neutral-700 outline-none cursor-pointer transition shadow-sm w-36"
                         >
                           <option value="">Unassigned</option>
                           {counsellorsList.map(c => (
@@ -812,7 +812,7 @@ const LeadManagement = () => {
                           ))}
                         </select>
                       ) : (
-                        <span className="font-semibold text-slate-700 text-sm">
+                        <span className="font-semibold text-neutral-700 text-sm">
                           {lead.assignedCounsellor?.name || 'Unassigned'}
                         </span>
                       )}
@@ -820,7 +820,7 @@ const LeadManagement = () => {
 
                     {/* Column 9: Remark */}
                     <td className="px-6 py-5 text-center max-w-[200px] truncate">
-                      <span className="font-semibold text-slate-600 text-sm">
+                      <span className="font-semibold text-neutral-600 text-sm">
                         {lead.remark || 'No remarks'}
                       </span>
                     </td>
@@ -831,7 +831,7 @@ const LeadManagement = () => {
                         {canConvertLead && lead.status !== 'CONVERTED' && (
                           <button
                             onClick={() => openConvertModal(lead)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all flex items-center gap-1"
+                            className="bg-neutral-900 hover:bg-neutral-800 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all flex items-center gap-1"
                             title="Convert to Student Application"
                           >
                             <ArrowRightCircle className="h-3.5 w-3.5" /> Convert
@@ -851,13 +851,13 @@ const LeadManagement = () => {
                             Create Login
                           </button>
                         ) : (
-                          <span className="text-slate-400 text-[11px] font-medium border border-slate-200 bg-slate-50 px-2 py-0.5 rounded-full">
+                          <span className="text-neutral-500 text-[11px] font-medium border border-neutral-200 bg-neutral-50 px-2 py-0.5 rounded-full">
                             Login Active
                           </span>
                         )}
                         <button
                           onClick={(e) => handleDeleteLead(e, lead.id)}
-                          className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer opacity-0 group-hover:opacity-100"
+                          className="text-neutral-600 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer opacity-0 group-hover:opacity-100"
                           title="Delete Lead"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -870,30 +870,30 @@ const LeadManagement = () => {
             </table>
           </div>
           {/* Pagination Controls */}
-          <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-100 text-sm font-medium text-slate-700">
+          <div className="flex items-center justify-between px-6 py-4 bg-neutral-50 border-t border-neutral-100 text-sm font-medium text-neutral-700">
             <div>
-              Showing <span className="font-bold text-slate-900">{leads.length > 0 ? (page - 1) * pagination.limit + 1 : 0}</span> to{' '}
-              <span className="font-bold text-slate-900">
+              Showing <span className="font-bold text-neutral-900">{leads.length > 0 ? (page - 1) * pagination.limit + 1 : 0}</span> to{' '}
+              <span className="font-bold text-neutral-900">
                 {Math.min(page * pagination.limit, pagination.total)}
               </span>{' '}
-              of <span className="font-bold text-slate-900">{pagination.total}</span> records
+              of <span className="font-bold text-neutral-900">{pagination.total}</span> records
             </div>
             <div className="flex items-center gap-3">
               <button
                 disabled={page === 1}
                 onClick={() => setPage(p => p - 1)}
-                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-slate-600 font-semibold transition cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+                className="px-4 py-2 border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-neutral-600 font-semibold transition cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
               >
                 Previous
               </button>
-              <span className="font-semibold text-slate-500">
-                Page <span className="text-slate-800 font-bold">{page}</span> of{' '}
-                <span className="text-slate-800 font-bold">{pagination.totalPages || 1}</span>
+              <span className="font-semibold text-neutral-500">
+                Page <span className="text-neutral-800 font-bold">{page}</span> of{' '}
+                <span className="text-neutral-800 font-bold">{pagination.totalPages || 1}</span>
               </span>
               <button
                 disabled={page >= pagination.totalPages}
                 onClick={() => setPage(p => p + 1)}
-                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-slate-600 font-semibold transition cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
+                className="px-4 py-2 border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-neutral-600 font-semibold transition cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
               >
                 Next
               </button>
@@ -904,17 +904,17 @@ const LeadManagement = () => {
 
       {/* 3. ADD LEAD intake modal - elegant, premium forms */}
       {isIntakeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+          <div className="relative w-auto rounded-lg bg-white p-6 shadow-sm border border-neutral-100 flex flex-col max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-4 mb-4">
               <div>
-                <h3 className="text-xl font-semibold text-slate-900">Add New Lead</h3>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Integrate counselor intake logs with CRM automation</p>
+                <h3 className="text-xl font-semibold text-neutral-900">Add New Lead</h3>
+                <p className="text-xs text-neutral-500 font-semibold mt-0.5">Integrate counselor intake logs with CRM automation</p>
               </div>
               <button
                 onClick={() => setIsIntakeOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-neutral-500 hover:text-neutral-600 transition cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -925,85 +925,85 @@ const LeadManagement = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full name */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Full Name *</label>
+                  <label className="text-xs font-semibold text-neutral-500">Full Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="Rahul Sharma"
                     value={intakeForm.fullName}
                     onChange={(e) => setIntakeForm(p => ({ ...p, fullName: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   />
                 </div>
 
                 {/* Email */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Email Address *</label>
+                  <label className="text-xs font-semibold text-neutral-500">Email Address *</label>
                   <input
                     type="email"
                     required
                     placeholder="rahul@example.com"
                     value={intakeForm.email}
                     onChange={(e) => setIntakeForm(p => ({ ...p, email: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   />
                 </div>
 
                 {/* Phone */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Phone Number</label>
+                  <label className="text-xs font-semibold text-neutral-500">Phone Number</label>
                   <input
                     type="text"
                     placeholder="+91 9876543210"
                     value={intakeForm.phone}
                     onChange={(e) => setIntakeForm(p => ({ ...p, phone: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   />
                 </div>
 
                 {/* Country of Origin */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Country of Origin</label>
+                  <label className="text-xs font-semibold text-neutral-500">Country of Origin</label>
                   <input
                     type="text"
                     placeholder="India"
                     value={intakeForm.country}
                     onChange={(e) => setIntakeForm(p => ({ ...p, country: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   />
                 </div>
 
                 {/* Preferred Course */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Preferred Course</label>
+                  <label className="text-xs font-semibold text-neutral-500">Preferred Course</label>
                   <input
                     type="text"
                     placeholder="MBA"
                     value={intakeForm.preferredCourse}
                     onChange={(e) => setIntakeForm(p => ({ ...p, preferredCourse: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   />
                 </div>
 
                 {/* Preferred Country */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Preferred Country</label>
+                  <label className="text-xs font-semibold text-neutral-500">Preferred Country</label>
                   <input
                     type="text"
                     placeholder="Canada"
                     value={intakeForm.preferredCountry}
                     onChange={(e) => setIntakeForm(p => ({ ...p, preferredCountry: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   />
                 </div>
 
                 {/* Lead Source */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Lead Source</label>
+                  <label className="text-xs font-semibold text-neutral-500">Lead Source</label>
                   <select
                     value={intakeForm.sourceId}
                     onChange={(e) => setIntakeForm(p => ({ ...p, sourceId: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   >
                     <option value="">Select source</option>
                     {sourcesList.map(s => (
@@ -1014,11 +1014,11 @@ const LeadManagement = () => {
 
                 {/* Assigned Counsellor */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Assigned Counsellor</label>
+                  <label className="text-xs font-semibold text-neutral-500">Assigned Counsellor</label>
                   <select
                     value={intakeForm.assignedCounsellorId || ''}
                     onChange={(e) => setIntakeForm(p => ({ ...p, assignedCounsellorId: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   >
                     <option value="">Select counsellor</option>
                     {counsellorsList.map(c => (
@@ -1029,11 +1029,11 @@ const LeadManagement = () => {
 
                 {/* Status Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Status</label>
+                  <label className="text-xs font-semibold text-neutral-500">Status</label>
                   <select
                     value={intakeForm.status}
                     onChange={(e) => setIntakeForm(p => ({ ...p, status: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   >
                     <option value="NEW">New</option>
                     <option value="CONTACTED">Contacted</option>
@@ -1046,11 +1046,11 @@ const LeadManagement = () => {
 
                 {/* Lead Rating Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-500">Lead Status (Rating)</label>
+                  <label className="text-xs font-semibold text-neutral-500">Lead Status (Rating)</label>
                   <select
                     value={intakeForm.rating || 'WARM'}
                     onChange={(e) => setIntakeForm(p => ({ ...p, rating: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
+                    className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition"
                   >
                     <option value="HOT">HOT</option>
                     <option value="WARM">WARM</option>
@@ -1062,29 +1062,29 @@ const LeadManagement = () => {
 
               {/* Remarks */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500">Counselor Remarks</label>
+                <label className="text-xs font-semibold text-neutral-500">Counselor Remarks</label>
                 <textarea
                   placeholder="Call after 1 week. Interested in MBA programs."
                   value={intakeForm.remark}
                   onChange={(e) => setIntakeForm(p => ({ ...p, remark: e.target.value }))}
                   rows="3"
-                  className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition resize-none"
+                  className="w-full px-4 py-2.5 border border-neutral-200 bg-neutral-50 text-neutral-800 text-sm font-semibold rounded-xl focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition resize-none"
                 />
               </div>
 
               {/* Actions Footer */}
-              <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+              <div className="flex justify-end gap-3 border-t border-neutral-100 pt-4 mt-2">
                 <button
                   type="button"
                   onClick={() => setIsIntakeOpen(false)}
-                  className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer"
+                  className="border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingLead}
-                  className="bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-[#0084ff]/50 text-white px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md hover:shadow-lg"
+                  className="bg-neutral-900 hover:bg-neutral-800 disabled:bg-neutral-900/50 text-white px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md hover:shadow-lg"
                 >
                   {submittingLead ? (
                     <>
@@ -1103,40 +1103,40 @@ const LeadManagement = () => {
 
       {/* 4. INTERACTIVE SIDE PANEL (DRAWER) - for lead activities & logging */}
       {isActivityOpen && activeLead && (
-        <div className="fixed inset-y-0 right-0 z-50 w-[420px] max-w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col h-full transform transition-transform duration-300">
+        <div className="fixed inset-y-0 right-0 z-50 w-[420px] max-w-full bg-white shadow-sm border-l border-neutral-200 flex flex-col h-full transform transition-transform duration-300">
           {/* Header */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-6 py-5 border-b border-neutral-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-semibold text-slate-700 text-sm shadow-inner">
+                <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-semibold text-neutral-700 text-sm shadow-inner">
                   {activeLead.fullName.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-slate-800 leading-tight">{activeLead.fullName}</h3>
-                  <p className="text-xs text-slate-400 font-semibold mt-0.5">{activeLead.email}</p>
+                  <h3 className="text-base font-semibold text-neutral-800 leading-tight">{activeLead.fullName}</h3>
+                  <p className="text-xs text-neutral-500 font-semibold mt-0.5">{activeLead.email}</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsActivityOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-neutral-50 text-neutral-500 hover:text-neutral-600 transition cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5 text-[11px] font-semibold">
-              <div className="flex items-center gap-1.5 text-slate-400">
+            <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3.5 text-[11px] font-semibold">
+              <div className="flex items-center gap-1.5 text-neutral-500">
                 <span>Milestone:</span>
                 <span className={`inline-flex px-2 py-0.5 rounded-full border ${getStatusClasses(activeLead.status)} text-[10px]`}>
                   {mapStatusLabel(activeLead.status)}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-slate-400">
+              <div className="flex items-center gap-1.5 text-neutral-500">
                 <span>Rating:</span>
                 <span className={`inline-flex px-2 py-0.5 rounded-full ${
                   activeLead.rating === 'HOT' ? 'bg-rose-50 text-rose-600 border border-rose-200' :
                   activeLead.rating === 'WARM' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
-                  activeLead.rating === 'COLD' ? 'bg-slate-50 text-slate-600 border border-slate-200' :
+                  activeLead.rating === 'COLD' ? 'bg-neutral-50 text-neutral-600 border border-neutral-200' :
                   'bg-blue-50 text-blue-600 border border-blue-200'
                 } text-[10px] font-bold`}>
                   {activeLead.rating || 'WARM'}
@@ -1145,10 +1145,10 @@ const LeadManagement = () => {
             </div>
 
             {/* Student Login Status inside Drawer */}
-            <div className="mt-3 p-3 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between text-xs font-semibold">
+            <div className="mt-3 p-3 bg-neutral-50 border border-neutral-200/60 rounded-xl flex items-center justify-between text-xs font-semibold">
               <div className="flex flex-col">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">Student Login</span>
-                <span className={activeLead.isStudentLoginCreated ? "text-emerald-600 font-bold" : "text-slate-500"}>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-extrabold">Student Login</span>
+                <span className={activeLead.isStudentLoginCreated ? "text-emerald-600 font-bold" : "text-neutral-500"}>
                   {activeLead.isStudentLoginCreated ? "Login Active" : "No Login Created"}
                 </span>
               </div>
@@ -1164,33 +1164,33 @@ const LeadManagement = () => {
           </div>
 
           {/* Activities Timeline */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 bg-slate-50/50 space-y-4">
-            <h4 className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+          <div className="flex-1 overflow-y-auto px-6 py-6 bg-neutral-50/50 space-y-4">
+            <h4 className="text-xs font-semibold text-neutral-500 flex items-center gap-1.5">
               <MessageSquare className="h-4 w-4 stroke-[2]" />
               Interaction History
             </h4>
 
             {loadingActivities ? (
               <div className="flex justify-center py-20">
-                <Loader2 className="h-6 w-6 text-[#0084ff] animate-spin" />
+                <Loader2 className="h-6 w-6 text-neutral-900 animate-spin" />
               </div>
             ) : activities.length === 0 ? (
-              <div className="text-center py-20 text-slate-400 text-xs font-semibold">
+              <div className="text-center py-20 text-neutral-500 text-xs font-semibold">
                 No history logs. Log an interaction note below to start the timeline.
               </div>
             ) : (
-              // <div className="relative border-l-2 border-slate-200 ml-3.5 pl-6 space-y-6 py-2">
+              // <div className="relative border-l-2 border-neutral-200 ml-3.5 pl-6 space-y-6 py-2">
               //   {activities.map((act) => (
               //     <div key={act.id} className="relative group">
-              //       <span className="absolute -left-[33px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-4 ring-white shadow-inner group-hover:bg-[#0084ff] group-hover:text-white transition-all">
+              //       <span className="absolute -left-[33px] top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-neutral-500 ring-4 ring-white shadow-inner group-hover:bg-neutral-900 group-hover:text-white transition-all">
               //         <Phone className="h-3 w-3 stroke-[2.5]" />
               //       </span>
               //       <div>
               //         <div className="flex items-center justify-between text-[11px] font-semibold">
-              //           <span className="text-[#0084ff]">{act.activityType}</span>
-              //           <span className="text-slate-400 font-semibold">{new Date(act.createdAt).toLocaleDateString()}</span>
+              //           <span className="text-neutral-900">{act.activityType}</span>
+              //           <span className="text-neutral-500 font-semibold">{new Date(act.createdAt).toLocaleDateString()}</span>
               //         </div>
-              //         <p className="mt-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200/60 p-3 rounded-2xl leading-relaxed shadow-sm">
+              //         <p className="mt-1.5 text-xs font-semibold text-neutral-600 bg-white border border-neutral-200/60 p-3 rounded-lg leading-relaxed shadow-sm">
               //           {act.comment}
               //         </p>
               //       </div>
@@ -1220,9 +1220,9 @@ const LeadManagement = () => {
                       className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm border ${isInbound
-                          ? 'bg-white border-slate-200 text-slate-700 rounded-bl-md'
-                          : 'bg-[#0084ff] border-[#0084ff] text-white rounded-br-md'
+                        className={`max-w-[85%] rounded-lg px-4 py-3 shadow-sm border ${isInbound
+                          ? 'bg-white border-neutral-200 text-neutral-700 rounded-bl-md'
+                          : 'bg-neutral-900 border-neutral-900 text-white rounded-br-md'
                           }`}
                       >
                         {/* Header */}
@@ -1230,7 +1230,7 @@ const LeadManagement = () => {
                           <div className="flex items-center gap-2">
                             <span
                               className={`text-[10px] font-extrabold uppercase tracking-wide ${isInbound
-                                ? 'text-[#0084ff]'
+                                ? 'text-neutral-900'
                                 : 'text-white/90'
                                 }`}
                             >
@@ -1239,7 +1239,7 @@ const LeadManagement = () => {
 
                             <span
                               className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${isInbound
-                                ? 'bg-slate-100 text-slate-500'
+                                ? 'bg-slate-100 text-neutral-500'
                                 : 'bg-white/20 text-white'
                                 }`}
                             >
@@ -1249,7 +1249,7 @@ const LeadManagement = () => {
 
                           <span
                             className={`text-[10px] font-semibold whitespace-nowrap ${isInbound
-                              ? 'text-slate-400'
+                              ? 'text-neutral-500'
                               : 'text-white/70'
                               }`}
                           >
@@ -1266,7 +1266,7 @@ const LeadManagement = () => {
                         {metadata?.from && (
                           <div
                             className={`mt-2 text-[10px] ${isInbound
-                              ? 'text-slate-400'
+                              ? 'text-neutral-500'
                               : 'text-white/70'
                               }`}
                           >
@@ -1281,7 +1281,7 @@ const LeadManagement = () => {
                             target="_blank"
                             rel="noreferrer"
                             className={`mt-2 inline-block text-[11px] font-bold underline ${isInbound
-                              ? 'text-[#0084ff]'
+                              ? 'text-neutral-900'
                               : 'text-white'
                               }`}
                           >
@@ -1299,7 +1299,7 @@ const LeadManagement = () => {
           </div>
 
           {/* Activity Log Form Input */}
-          <form onSubmit={handleActivitySubmit} className="p-4 border-t border-slate-100 bg-white">
+          <form onSubmit={handleActivitySubmit} className="p-4 border-t border-neutral-100 bg-white">
             <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
               {/* {['NOTE', 'CALL', 'EMAIL', 'WHATSAPP', 'MEETING'].map((type) => (
                 <button
@@ -1307,8 +1307,8 @@ const LeadManagement = () => {
                   type="button"
                   onClick={() => setActivityForm(p => ({ ...p, activityType: type }))}
                   className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${activityForm.activityType === type
-                    ? 'bg-slate-900 border-slate-900 text-white shadow-md'
-                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                    ? 'bg-neutral-900 border-neutral-900 text-white shadow-md'
+                    : 'bg-neutral-50 border-neutral-200 text-neutral-500 hover:bg-slate-100 hover:text-neutral-700'
                     }`}
                 >
                   {type}
@@ -1327,8 +1327,8 @@ const LeadManagement = () => {
                     }
                   }}
                   className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${activityForm.activityType === type
-                    ? 'bg-slate-900 border-slate-900 text-white shadow-md'
-                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                    ? 'bg-neutral-900 border-neutral-900 text-white shadow-md'
+                    : 'bg-neutral-50 border-neutral-200 text-neutral-500 hover:bg-slate-100 hover:text-neutral-700'
                     }`}
                 >
                   {sendingAction && ['EMAIL', 'SMS', 'WHATSAPP', 'MEETING'].includes(type)
@@ -1343,12 +1343,12 @@ const LeadManagement = () => {
                 placeholder="Log activity details or counselor notes..."
                 value={activityForm.comment}
                 onChange={(e) => setActivityForm(p => ({ ...p, comment: e.target.value }))}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition bg-slate-50"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 text-xs font-semibold focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 focus:outline-none transition bg-neutral-50"
               />
               <button
                 type="submit"
                 disabled={!activityForm.comment.trim()}
-                className="rounded-xl bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-slate-100 disabled:text-slate-400 text-white p-2.5 shadow-sm transition flex-shrink-0 cursor-pointer"
+                className="rounded-xl bg-neutral-900 hover:bg-neutral-800 disabled:bg-slate-100 disabled:text-neutral-500 text-white p-2.5 shadow-sm transition flex-shrink-0 cursor-pointer"
               >
                 <Send className="h-4 w-4 stroke-[2.5]" />
               </button>
@@ -1360,63 +1360,63 @@ const LeadManagement = () => {
       {/* Lead → Application conversion modal */}
       {convertLead && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg shadow-2xl">
-            <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <div className="bg-white border border-neutral-200 rounded-lg w-auto shadow-sm">
+            <div className="px-5 py-3 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
               <div>
-                <h3 className="text-xs font-semibold text-slate-800">convert lead to application</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">{convertLead.fullName} · <span className="lowercase">{convertLead.email}</span></p>
+                <h3 className="text-xs font-semibold text-neutral-800">convert lead to application</h3>
+                <p className="text-[10px] text-neutral-500 mt-0.5">{convertLead.fullName} · <span className="lowercase">{convertLead.email}</span></p>
               </div>
-              <button onClick={() => setConvertLead(null)} className="text-slate-500 hover:text-slate-700"><X size={18} /></button>
+              <button onClick={() => setConvertLead(null)} className="text-neutral-500 hover:text-neutral-700"><X size={18} /></button>
             </div>
             <form onSubmit={handleConvert} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[9px] font-semibold text-slate-500 ml-1">country *</label>
+                  <label className="text-[9px] font-semibold text-neutral-500 ml-1">country *</label>
                   <input
                     required
                     value={convertForm.country}
                     onChange={(e) => setConvertForm({ ...convertForm, country: e.target.value })}
                     placeholder="e.g. US, UK, Canada"
-                    className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                    className="w-full mt-1.5 px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[11px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[9px] font-semibold text-slate-500 ml-1">intake</label>
+                  <label className="text-[9px] font-semibold text-neutral-500 ml-1">intake</label>
                   <input
                     value={convertForm.intake}
                     onChange={(e) => setConvertForm({ ...convertForm, intake: e.target.value })}
                     placeholder="e.g. Fall 2026"
-                    className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                    className="w-full mt-1.5 px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[11px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-semibold text-slate-500 ml-1">university *</label>
+                <label className="text-[9px] font-semibold text-neutral-500 ml-1">university *</label>
                 <input
                   required
                   value={convertForm.university}
                   onChange={(e) => setConvertForm({ ...convertForm, university: e.target.value })}
                   placeholder="e.g. NYU"
-                  className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                  className="w-full mt-1.5 px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[11px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none"
                 />
               </div>
               <div>
-                <label className="text-[9px] font-semibold text-slate-500 ml-1">course *</label>
+                <label className="text-[9px] font-semibold text-neutral-500 ml-1">course *</label>
                 <input
                   required
                   value={convertForm.course}
                   onChange={(e) => setConvertForm({ ...convertForm, course: e.target.value })}
                   placeholder="e.g. MS Computer Science"
-                  className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                  className="w-full mt-1.5 px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[11px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none"
                 />
               </div>
               <div>
-                <label className="text-[9px] font-semibold text-slate-500 ml-1">deadline</label>
+                <label className="text-[9px] font-semibold text-neutral-500 ml-1">deadline</label>
                 <input
                   type="date"
                   value={convertForm.deadline}
                   onChange={(e) => setConvertForm({ ...convertForm, deadline: e.target.value })}
-                  className="w-full mt-1.5 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none"
+                  className="w-full mt-1.5 px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[11px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none"
                 />
               </div>
 
@@ -1431,18 +1431,18 @@ const LeadManagement = () => {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-3 border-t border-slate-200">
+              <div className="flex gap-3 pt-3 border-t border-neutral-200">
                 <button
                   type="button"
                   onClick={() => setConvertLead(null)}
-                  className="flex-1 py-2.5 border border-slate-200 rounded-xl text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
+                  className="flex-1 py-2.5 border border-neutral-200 rounded-xl text-[10px] font-semibold text-neutral-600 hover:bg-neutral-50"
                 >
                   cancel
                 </button>
                 <button
                   type="submit"
                   disabled={converting || !convertForm.university || !convertForm.course || !convertForm.country}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1.5"
                 >
                   {converting && <Loader2 size={11} className="animate-spin" />}
                   create application

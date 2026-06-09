@@ -563,22 +563,44 @@ export const submitRemoteClockIn = async (
   data: { ip: string; coordinates?: string; isCheckOut?: boolean }
 ) => {
   const dateStr = new Date().toISOString().split('T')[0];
-  const nowStr = new Date();
+  const now = new Date();
 
-  let emp = await resolveEmployeeId(employeeId);
+  const emp = await resolveEmployeeId(employeeId);
   if (!emp) {
-    emp = await prisma.hrEmployee.findFirst({ orderBy: { id: 'asc' } });
+    throw new Error('Employee profile not found. Ask HR to link your account to the employee directory.');
   }
-  if (!emp) throw new Error('No employees found');
 
   const existing = await prisma.hrAttendanceRecord.findFirst({
     where: { employeeId: emp.id, date: dateStr },
   });
 
+  if (data.isCheckOut) {
+    if (!existing?.checkIn) {
+      throw new Error('Clock in before you can clock out.');
+    }
+    if (existing.checkOut) {
+      throw new Error('You have already clocked out today.');
+    }
+    const updated = await prisma.hrAttendanceRecord.update({
+      where: { id: existing.id },
+      data: { checkOut: now },
+    });
+    return mapAttendanceRecord(updated);
+  }
+
+  if (existing?.checkIn && !existing.checkOut) {
+    throw new Error('You are already clocked in.');
+  }
+  if (existing?.checkOut) {
+    throw new Error('Today\'s attendance is already complete.');
+  }
+
+  const status: HrAttendanceStatus = now.getHours() >= 9 ? 'LATE' : 'PRESENT';
+
   if (existing) {
     const updated = await prisma.hrAttendanceRecord.update({
       where: { id: existing.id },
-      data: data.isCheckOut ? { checkOut: nowStr } : { checkIn: nowStr },
+      data: { checkIn: now, checkOut: null, status, deviceRef: 'remote_clockin' },
     });
     return mapAttendanceRecord(updated);
   }
@@ -587,13 +609,72 @@ export const submitRemoteClockIn = async (
     data: {
       employeeId: emp.id,
       date: dateStr,
-      checkIn: data.isCheckOut ? null : nowStr,
-      checkOut: data.isCheckOut ? nowStr : null,
-      status: new Date().getHours() >= 9 ? 'LATE' : 'PRESENT',
+      checkIn: now,
+      status,
       deviceRef: 'remote_clockin',
     },
   });
   return mapAttendanceRecord(newRecord);
+};
+
+export const getMyAttendance = async (
+  userEmail: string,
+  month?: number,
+  year?: number
+) => {
+  const employee = await prisma.hrEmployee.findFirst({ where: { email: userEmail } });
+
+  const m = month ?? new Date().getMonth() + 1;
+  const y = year ?? new Date().getFullYear();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const monthPrefix = `${y}-${String(m).padStart(2, '0')}`;
+
+  if (!employee) {
+    return {
+      employee: null,
+      today: null,
+      clockState: 'not_clocked_in' as const,
+      records: [],
+      summary: { present: 0, late: 0, absent: 0, halfDay: 0, totalDays: 0 },
+    };
+  }
+
+  const [todayRecord, monthRecords] = await Promise.all([
+    prisma.hrAttendanceRecord.findFirst({
+      where: { employeeId: employee.id, date: todayStr },
+    }),
+    prisma.hrAttendanceRecord.findMany({
+      where: { employeeId: employee.id, date: { startsWith: monthPrefix } },
+      orderBy: { date: 'desc' },
+    }),
+  ]);
+
+  const summary = { present: 0, late: 0, absent: 0, halfDay: 0, totalDays: monthRecords.length };
+  for (const r of monthRecords) {
+    if (r.status === 'PRESENT') summary.present += 1;
+    else if (r.status === 'LATE') summary.late += 1;
+    else if (r.status === 'ABSENT') summary.absent += 1;
+    else if (r.status === 'HALF_DAY') summary.halfDay += 1;
+  }
+
+  let clockState: 'not_clocked_in' | 'clocked_in' | 'clocked_out' = 'not_clocked_in';
+  if (todayRecord?.checkOut) clockState = 'clocked_out';
+  else if (todayRecord?.checkIn) clockState = 'clocked_in';
+
+  return {
+    employee: mapEmployee(employee),
+    today: todayRecord
+      ? {
+          date: todayRecord.date,
+          checkIn: todayRecord.checkIn?.toISOString() ?? null,
+          checkOut: todayRecord.checkOut?.toISOString() ?? null,
+          status: todayRecord.status,
+        }
+      : null,
+    clockState,
+    records: monthRecords.map(mapAttendanceRecord),
+    summary,
+  };
 };
 
 // ---------------------------------------------------------------------------
@@ -650,6 +731,15 @@ export const requestRegularization = async (employeeId: string, data: {
       status: 'PENDING',
     },
   });
+
+  const { notifyRoles } = await import('../notifications/recipients.js');
+  const { UserRole } = await import('@prisma/client');
+  await notifyRoles([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR], 'hr.regularization_request', {
+    employeeName: emp.name,
+    date: data.date,
+    type: data.type,
+  });
+
   return mapRegularization(newReg);
 };
 
@@ -1591,4 +1681,233 @@ export const updatePerformanceReview = async (
     },
   });
   return mapPerformanceReview(review);
+};
+
+// ---------------------------------------------------------------------------
+// Leave requests
+// ---------------------------------------------------------------------------
+
+const mapLeaveRequest = (r: {
+  id: number;
+  employeeId: number;
+  leaveTypeName: string;
+  fromDate: string;
+  toDate: string;
+  days: number;
+  reason: string | null;
+  status: string;
+  reviewerNote: string | null;
+  reviewedAt: Date | null;
+  createdAt: Date;
+  employee?: HrEmployee;
+}) => ({
+  id: sid(r.id),
+  employeeId: sid(r.employeeId),
+  employeeName: r.employee?.name || '',
+  employeeEmail: r.employee?.email || '',
+  leaveTypeName: r.leaveTypeName,
+  fromDate: r.fromDate,
+  toDate: r.toDate,
+  days: r.days,
+  reason: r.reason,
+  status: r.status,
+  reviewerNote: r.reviewerNote,
+  reviewedAt: r.reviewedAt?.toISOString() || null,
+  createdAt: r.createdAt.toISOString(),
+});
+
+export const getLeaveRequests = async (opts: {
+  employeeId?: string;
+  status?: string;
+  mineEmail?: string;
+}) => {
+  const where: Record<string, unknown> = {};
+  if (opts.status) where.status = opts.status;
+  if (opts.mineEmail) {
+    const emp = await prisma.hrEmployee.findFirst({ where: { email: opts.mineEmail } });
+    if (!emp) return [];
+    where.employeeId = emp.id;
+  } else if (opts.employeeId) {
+    const emp = await resolveEmployeeId(opts.employeeId);
+    if (emp) where.employeeId = emp.id;
+  }
+  const rows = await prisma.hrLeaveRequest.findMany({
+    where,
+    include: { employee: true },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(mapLeaveRequest);
+};
+
+export const createLeaveRequest = async (
+  userEmail: string,
+  data: { leaveTypeName: string; fromDate: string; toDate: string; days: number; reason?: string }
+) => {
+  let emp = await prisma.hrEmployee.findFirst({ where: { email: userEmail } });
+  if (!emp) {
+    emp = await prisma.hrEmployee.findFirst({ orderBy: { id: 'asc' } });
+  }
+  if (!emp) throw new Error('Employee record not found');
+
+  const row = await prisma.hrLeaveRequest.create({
+    data: {
+      employeeId: emp.id,
+      leaveTypeName: data.leaveTypeName,
+      fromDate: data.fromDate,
+      toDate: data.toDate,
+      days: data.days,
+      reason: data.reason || null,
+      status: 'PENDING',
+    },
+    include: { employee: true },
+  });
+  return mapLeaveRequest(row);
+};
+
+export const processLeaveRequest = async (
+  id: string,
+  data: { status: 'APPROVED' | 'REJECTED'; reviewerNote?: string }
+) => {
+  const numericId = parseInt(id, 10);
+  if (Number.isNaN(numericId)) throw new Error('Leave request not found');
+
+  const row = await prisma.hrLeaveRequest.update({
+    where: { id: numericId },
+    data: {
+      status: data.status,
+      reviewerNote: data.reviewerNote || null,
+      reviewedAt: new Date(),
+    },
+    include: { employee: true },
+  });
+  return mapLeaveRequest(row);
+};
+
+export const cancelLeaveRequest = async (id: string, userEmail: string) => {
+  const numericId = parseInt(id, 10);
+  if (Number.isNaN(numericId)) throw new Error('Leave request not found');
+
+  const existing = await prisma.hrLeaveRequest.findUnique({
+    where: { id: numericId },
+    include: { employee: true },
+  });
+  if (!existing) throw new Error('Leave request not found');
+  if (existing.employee.email !== userEmail) throw new Error('Not authorized to cancel this request');
+  if (existing.status !== 'PENDING') throw new Error('Only pending requests can be cancelled');
+
+  const row = await prisma.hrLeaveRequest.update({
+    where: { id: numericId },
+    data: { status: 'CANCELLED' },
+    include: { employee: true },
+  });
+  return mapLeaveRequest(row);
+};
+
+// ---------------------------------------------------------------------------
+// HR dashboard summary
+// ---------------------------------------------------------------------------
+
+export const getHrMe = async (userEmail: string) => {
+  const employee = await prisma.hrEmployee.findFirst({ where: { email: userEmail } });
+
+  if (!employee) {
+    return {
+      employee: null,
+      leaveBalances: [],
+      recentLeaveRequests: [],
+      recentPayslips: [],
+      pendingRegularizations: 0,
+      todayAttendance: null,
+    };
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const yearStart = `${new Date().getFullYear()}-01-01`;
+
+  const [planAssignment, leaveRequests, payslips, pendingRegs, todayRecord] = await Promise.all([
+    prisma.hrLeavePlanAssignment.findFirst({
+      where: { employeeId: employee.id },
+      include: { plan: { include: { definitions: { include: { leaveType: true } } } } },
+    }),
+    prisma.hrLeaveRequest.findMany({
+      where: { employeeId: employee.id },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }),
+    prisma.hrPayslip.findMany({
+      where: { employeeId: employee.id },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+      take: 6,
+    }),
+    prisma.hrRegularization.count({
+      where: { employeeId: employee.id, status: 'PENDING' },
+    }),
+    prisma.hrAttendanceRecord.findFirst({
+      where: { employeeId: employee.id, date: todayStr },
+    }),
+  ]);
+
+  const approvedThisYear = await prisma.hrLeaveRequest.findMany({
+    where: {
+      employeeId: employee.id,
+      status: 'APPROVED',
+      fromDate: { gte: yearStart },
+    },
+  });
+
+  const usedByType: Record<string, number> = {};
+  for (const req of approvedThisYear) {
+    usedByType[req.leaveTypeName] = (usedByType[req.leaveTypeName] || 0) + req.days;
+  }
+
+  const leaveBalances =
+    planAssignment?.plan.definitions.map((def) => ({
+      leaveType: def.leaveType.name,
+      annualQuota: def.annualQuota,
+      used: usedByType[def.leaveType.name] || 0,
+      remaining: Math.max(0, def.annualQuota - (usedByType[def.leaveType.name] || 0)),
+    })) || [];
+
+  return {
+    employee: mapEmployee(employee),
+    leaveBalances,
+    recentLeaveRequests: leaveRequests.map(mapLeaveRequest),
+    recentPayslips: payslips.map(mapPayslip),
+    pendingRegularizations: pendingRegs,
+    todayAttendance: todayRecord
+      ? {
+          date: todayRecord.date,
+          checkIn: todayRecord.checkIn?.toISOString() || null,
+          checkOut: todayRecord.checkOut?.toISOString() || null,
+          status: todayRecord.status,
+        }
+      : null,
+  };
+};
+
+export const getHrDashboardSummary = async () => {
+  const [
+    openJobs,
+    candidates,
+    pendingLeave,
+    pendingRegularizations,
+    employeeCount,
+    openInterviews,
+  ] = await Promise.all([
+    prisma.hrJobPosting.count({ where: { status: 'OPEN' } }),
+    prisma.hrCandidate.count({ where: { status: 'ACTIVE' } }),
+    prisma.hrLeaveRequest.count({ where: { status: 'PENDING' } }),
+    prisma.hrRegularization.count({ where: { status: 'PENDING' } }),
+    prisma.hrEmployee.count(),
+    prisma.hrInterview.count({ where: { status: 'SCHEDULED' } }),
+  ]);
+
+  return {
+    openPositions: openJobs,
+    candidatesInPipeline: candidates,
+    pendingLeaveRequests: pendingLeave,
+    pendingRegularizations,
+    employeeCount,
+    scheduledInterviews: openInterviews,
+  };
 };

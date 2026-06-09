@@ -120,12 +120,12 @@ enum VisaStatus {
 enum UserRole {
   SUPER_ADMIN
   ADMIN
-  COUNSELLOR
-  STUDENT
   HR
-  AGENT
-  MARKETING
-  IT
+  COUNSELLOR
+  MARKETING_MANAGER
+  TELECALLER
+  AGENCY_FREELANCER
+  STUDENT
 }
 
 enum HrAccessRole {
@@ -151,6 +151,13 @@ enum HrRegularizationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum HrLeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 enum HrPayslipStatus {
@@ -693,6 +700,7 @@ model HrEmployee {
   attendanceRecords    HrAttendanceRecord[]
   regularizations      HrRegularization[]
   leavePlanAssignments HrLeavePlanAssignment[]
+  leaveRequests        HrLeaveRequest[]
   salaryStructure      HrSalaryStructure?
   payslips             HrPayslip[]
   payrollDeductions    HrPayrollDeduction[]
@@ -819,6 +827,26 @@ model HrHoliday {
   isRestricted Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model HrLeaveRequest {
+  id            Int                  @id @default(autoincrement())
+  employeeId    Int
+  leaveTypeName String
+  fromDate      String
+  toDate        String
+  days          Float
+  reason        String?
+  status        HrLeaveRequestStatus @default(PENDING)
+  reviewerNote  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, status])
+  @@index([status, createdAt])
 }
 
 model HrSalaryStructure {

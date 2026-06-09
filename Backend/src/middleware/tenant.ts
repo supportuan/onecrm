@@ -8,8 +8,9 @@ export const tenantMiddleware = (req: TenantRequest, res: Response, next: NextFu
   const tenantId = req.headers['x-tenant-id'] || 'default-tenant';
   req.tenantId = tenantId as string;
   
-  // Log the tenant routing context
-  console.log(`[Tenant Route Context] Request routed to tenant: ${tenantId}`);
-  
+  if (process.env.DEBUG_TENANT === 'true') {
+    console.log(`[Tenant Route Context] Request routed to tenant: ${tenantId}`);
+  }
+
   next();
 };

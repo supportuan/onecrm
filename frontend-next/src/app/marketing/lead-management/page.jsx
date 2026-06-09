@@ -11,7 +11,7 @@ export default function Page() {
       <RoleGuard allowedRoles={["SUPER_ADMIN", "ADMIN", "COUNSELLOR"]}>
         <Suspense
           fallback={
-            <div className="flex h-screen items-center justify-center bg-slate-50">
+            <div className="flex h-screen items-center justify-center bg-neutral-50">
               <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
             </div>
           }

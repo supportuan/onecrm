@@ -16,10 +16,16 @@ export const sendCampaignEmail = async ({
     if (!process.env.SMTP_PASS) throw new Error('SMTP_PASS is not configured');
     if (!process.env.EMAIL_FROM) throw new Error('EMAIL_FROM is not configured');
 
+    const port = Number(process.env.SMTP_PORT || 587);
+    const secure =
+        process.env.SMTP_SECURE !== undefined
+            ? process.env.SMTP_SECURE === 'true'
+            : port === 465;
+
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST.trim(),
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: Number(process.env.SMTP_PORT) === 465,
+        port,
+        secure,
         auth: {
             user: process.env.SMTP_USER.trim(),
             pass: process.env.SMTP_PASS.trim(),

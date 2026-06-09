@@ -1,50 +1,93 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import {
-  Shield,
-  ShieldCheck,
-  Search,
-  Check,
-  Lock,
   ShieldAlert,
-  Save,
-  RotateCcw,
   CheckCircle2,
   Loader2,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  X,
+  Check,
+  RotateCcw,
+  Save,
+  Lock,
 } from 'lucide-react';
 import {
   PERMISSION_CATEGORIES,
   ROLE_DESCRIPTIONS,
+  HIDDEN_ROLES,
 } from '../../lib/auth/rbac';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { usePermissions } from '../../lib/auth/PermissionsContext';
+import { getUsers, updateUser } from '../../services/userApi';
+
+const titleCaseRole = (role) =>
+  (role || '')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 export default function RolesPermissions() {
   const { user } = useAuth();
-  const { permissionMap, can, updateRole, reset, refresh, loading } = usePermissions();
+  const { permissionMap, can, updateRole, reset, loading } = usePermissions();
 
   const canView = can(['VIEW_ADMIN', 'MANAGE_SYSTEM', 'MANAGE_ADMINS']);
   const canEdit = can('MANAGE_ADMINS');
 
-  const roles = useMemo(() => Object.keys(permissionMap || {}), [permissionMap]);
+  const roles = useMemo(
+    () => Object.keys(permissionMap || {}).filter((r) => !HIDDEN_ROLES.has(r)),
+    [permissionMap]
+  );
 
-  const [selectedRole, setSelectedRole] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [draft, setDraft] = useState({});
-  const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [dirtyRoles, setDirtyRoles] = useState(new Set());
+  const [savingRole, setSavingRole] = useState('');
   const [toast, setToast] = useState('');
+  const [expandedRole, setExpandedRole] = useState(null);
+  const [openAssignRole, setOpenAssignRole] = useState(null);
+  const [assignSearch, setAssignSearch] = useState('');
+  const [movingUser, setMovingUser] = useState(null);
 
-  // Sync local draft from the live map whenever it changes (and not mid-edit).
+  const assignRef = useRef(null);
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
   useEffect(() => {
-    if (!dirty) {
-      setDraft(JSON.parse(JSON.stringify(permissionMap || {})));
+    setDraft(JSON.parse(JSON.stringify(permissionMap || {})));
+    setDirtyRoles(new Set());
+  }, [permissionMap]);
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await getUsers();
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res?.users) ? res.users : [];
+      setUsers(list);
+    } catch (_) {
+      setUsers([]);
+    } finally {
+      setUsersLoading(false);
     }
-    if (!selectedRole && roles.length) {
-      setSelectedRole(roles[0]);
-    }
-  }, [permissionMap, roles, dirty, selectedRole]);
+  };
+
+  useEffect(() => {
+    if (canView) fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canView]);
+
+  useEffect(() => {
+    const onDown = (e) => {
+      if (assignRef.current && !assignRef.current.contains(e.target)) {
+        setOpenAssignRole(null);
+        setAssignSearch('');
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
 
   const flash = (msg) => {
     setToast(msg);
@@ -53,259 +96,442 @@ export default function RolesPermissions() {
 
   if (user && !canView) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-800 p-8 font-sans flex items-center justify-center">
-        <div className="bg-white border border-slate-200 rounded-3xl p-10 shadow-sm max-w-md text-center space-y-3">
+      <div className="ui-page text-neutral-800 font-sans flex items-center justify-center">
+        <div className="ui-card w-auto text-center space-y-3">
           <ShieldAlert size={36} className="text-rose-500 mx-auto" />
-          <h2 className="text-sm font-semibold text-slate-800">access denied</h2>
-          <p className="text-[10px] text-slate-500">
-            this page is restricted to administrators. signed in as{' '}
-            <span className="font-semibold lowercase">{user?.role || 'unknown'}</span>.
+          <h2 className="text-base font-semibold text-neutral-900">Access denied</h2>
+          <p className="text-sm text-neutral-500">
+            This page is restricted to administrators. Signed in as{' '}
+            <span className="font-medium">{user?.role || 'unknown'}</span>.
           </p>
         </div>
       </div>
     );
   }
 
-  const filteredRoles = roles.filter((r) => r.toLowerCase().includes(searchQuery.toLowerCase()));
-  const activePerms = draft[selectedRole] || [];
+  const filteredRoles = roles.filter((r) => {
+    const q = searchQuery.toLowerCase();
+    return r.toLowerCase().includes(q) || titleCaseRole(r).toLowerCase().includes(q);
+  });
 
-  const togglePerm = (permKey) => {
+  const togglePerm = (role, permKey) => {
     if (!canEdit) return;
     setDraft((prev) => {
-      const current = prev[selectedRole] || [];
+      const current = prev[role] || [];
       const next = current.includes(permKey)
         ? current.filter((p) => p !== permKey)
         : [...current, permKey];
-      return { ...prev, [selectedRole]: next };
+      return { ...prev, [role]: next };
     });
-    setDirty(true);
+    setDirtyRoles((prev) => new Set(prev).add(role));
   };
 
-  const handleSave = async () => {
-    if (!canEdit || !selectedRole) return;
-    setSaving(true);
+  const handleSaveRole = async (role) => {
+    if (!canEdit || !role) return;
+    setSavingRole(role);
     try {
-      await updateRole(selectedRole, draft[selectedRole] || []);
-      setDirty(false);
-      flash(`saved. ${selectedRole.toLowerCase()} access is now live across the app.`);
+      await updateRole(role, draft[role] || []);
+      setDirtyRoles((prev) => {
+        const next = new Set(prev);
+        next.delete(role);
+        return next;
+      });
+      flash(`${titleCaseRole(role)} permissions saved.`);
     } catch (err) {
-      flash(err?.message || 'failed to save permissions.');
+      flash(err?.message || 'Failed to save permissions.');
     } finally {
-      setSaving(false);
+      setSavingRole('');
     }
   };
 
-  const handleReset = async () => {
+  const handleResetAll = async () => {
     if (!canEdit) return;
-    setSaving(true);
+    setSavingRole('__all__');
     try {
       await reset();
-      setDirty(false);
-      flash('all roles reverted to defaults.');
+      setDirtyRoles(new Set());
+      flash('All roles reverted to defaults.');
     } catch (err) {
-      flash(err?.message || 'failed to reset.');
+      flash(err?.message || 'Failed to reset.');
     } finally {
-      setSaving(false);
+      setSavingRole('');
     }
+  };
+
+  const handleAssignUser = async (role, userId) => {
+    if (!canEdit) return;
+    try {
+      await updateUser(userId, { role });
+      flash(`User assigned to ${titleCaseRole(role)}.`);
+      setOpenAssignRole(null);
+      setAssignSearch('');
+      fetchUsers();
+    } catch (err) {
+      flash(err?.message || 'Failed to assign user.');
+    }
+  };
+
+  const handleReassignUser = async (userId, newRole) => {
+    if (!canEdit || !newRole) return;
+    try {
+      await updateUser(userId, { role: newRole });
+      flash('User role updated.');
+      setMovingUser(null);
+      fetchUsers();
+    } catch (err) {
+      flash(err?.message || 'Failed to update role.');
+    }
+  };
+
+  const usersForRole = (role) => users.filter((u) => u.role === role && u.isActive !== false);
+
+  const assignCandidates = (role) => {
+    const q = assignSearch.toLowerCase();
+    return users
+      .filter((u) => u.isActive !== false && u.role !== role)
+      .filter((u) => {
+        if (!q) return true;
+        return (
+          (u.fullName || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q)
+        );
+      });
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-8 font-sans">
+    <div className="ui-page text-neutral-800 font-sans">
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold">
-          <CheckCircle2 size={14} /> {toast}
+        <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium">
+          <CheckCircle2 size={16} /> {toast}
         </div>
       )}
 
-      <div className="mb-8 flex items-center justify-between gap-4">
+      {/* Header */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-indigo-900">roles & permissions</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            control access to marketing, student crm, agency crm, hr and admin across the platform.{' '}
-            {canEdit ? 'changes apply live to all users.' : 'read-only view.'}
+          <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">Roles & Permissions</h1>
+          <p className="text-neutral-500 text-sm mt-1">
+            Manage role responsibilities, member assignments, and access permissions.
+            {!canEdit && ' Read-only view.'}
           </p>
         </div>
-        {loading && <Loader2 size={18} className="text-indigo-500 animate-spin" />}
+        <div className="flex items-center gap-2 shrink-0">
+          {loading && <Loader2 size={18} className="text-neutral-500 animate-spin" />}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={handleResetAll}
+              disabled={savingRole === '__all__'}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-700 border border-neutral-200 rounded-md hover:bg-neutral-50 transition disabled:opacity-50"
+            >
+              <RotateCcw size={14} />
+              Reset all
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-6">
-        {canEdit ? (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3">
-            <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-emerald-900">live enforcement enabled</p>
-              <p className="text-[10px] text-emerald-800 mt-0.5 leading-relaxed">
-                saving a role updates the database immediately. sidebars, page guards and api
-                access for every user with that role reflect the change on their next load.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-start gap-3">
-            <Lock size={16} className="text-indigo-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-indigo-900">read-only view</p>
-              <p className="text-[10px] text-indigo-700 mt-0.5 leading-relaxed">
-                editing requires the manage roles & admins permission (super admin by default).
-              </p>
-            </div>
-          </div>
-        )}
+      {/* Search */}
+      <div className="mb-4 max-w-sm relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
+        <input
+          type="text"
+          placeholder="Search roles..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 text-sm border border-neutral-200 rounded-md text-neutral-800 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-700"
+        />
+      </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 min-h-[600px]">
-          {/* Roles sidebar */}
-          <div className="w-full lg:w-80 bg-white border border-slate-200 rounded-3xl flex flex-col overflow-hidden shadow-sm shrink-0">
-            <div className="p-6 border-b border-slate-200 bg-slate-50">
-              <h4 className="text-[10px] font-semibold text-slate-500 mb-3">active roles ({roles.length})</h4>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                <input
-                  type="text"
-                  placeholder="search roles..."
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-600 outline-none transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              {filteredRoles.length > 0 ? (
+      {/* Table */}
+      <div className="border border-neutral-200 rounded-lg overflow-hidden bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px] border-collapse">
+            <thead>
+              <tr className="border-b border-neutral-200 bg-neutral-50/80">
+                <th className="text-left px-6 py-3.5 text-xs font-semibold text-neutral-500 tracking-wide w-[22%]">
+                  Role Level
+                </th>
+                <th className="text-left px-6 py-3.5 text-xs font-semibold text-neutral-500 tracking-wide w-[28%]">
+                  Responsibilities
+                </th>
+                <th className="text-left px-6 py-3.5 text-xs font-semibold text-neutral-500 tracking-wide w-[32%]">
+                  Assigned Members
+                </th>
+                <th className="text-left px-6 py-3.5 text-xs font-semibold text-neutral-500 tracking-wide w-[18%]">
+                  Assignment
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRoles.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-neutral-500">
+                    No roles match your search.
+                  </td>
+                </tr>
+              ) : (
                 filteredRoles.map((role) => {
-                  const isActive = selectedRole === role;
-                  const count = (draft[role] || []).length;
+                  const members = usersForRole(role);
+                  const isExpanded = expandedRole === role;
+                  const isDirty = dirtyRoles.has(role);
+                  const activePerms = draft[role] || [];
+                  const isAssignOpen = openAssignRole === role;
+
                   return (
-                    <button
-                      key={role}
-                      onClick={() => setSelectedRole(role)}
-                      className={`w-full p-5 text-left border-b border-slate-100 transition-all flex items-center justify-between group ${
-                        isActive ? 'bg-indigo-50/40 border-l-4 border-l-indigo-600' : 'hover:bg-slate-50/50'
-                      }`}
-                    >
-                      <div>
-                        <p className={`text-xs font-semibold lowercase ${isActive ? 'text-indigo-700' : 'text-slate-800'}`}>
-                          {role.replace(/_/g, ' ').toLowerCase()}
-                        </p>
-                        <p className="text-[9px] font-semibold text-slate-400 mt-1">
-                          {count === 0 ? 'no permissions' : `${count} permission${count === 1 ? '' : 's'}`}
-                        </p>
-                      </div>
-                      <Shield
-                        size={12}
-                        className={`transition-transform ${isActive ? 'text-indigo-600 scale-110' : 'text-slate-300'}`}
-                      />
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="p-8 text-center text-xs text-slate-400">no roles match.</div>
-              )}
-            </div>
-          </div>
-
-          {/* Permission detail */}
-          <div className="flex-1 bg-white border border-slate-200 rounded-3xl flex flex-col overflow-hidden shadow-sm">
-            <header className="px-8 py-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-slate-50">
-              <div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={18} className="text-indigo-600" />
-                  <h3 className="text-lg font-semibold text-slate-900 lowercase">
-                    {selectedRole.replace(/_/g, ' ').toLowerCase() || '—'}
-                  </h3>
-                </div>
-                <p className="text-[10px] font-medium text-slate-500 mt-1">
-                  {ROLE_DESCRIPTIONS[selectedRole] || 'custom role.'}
-                </p>
-              </div>
-
-              {canEdit ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleReset}
-                    disabled={saving}
-                    className="px-4 py-2 border border-slate-200 hover:border-slate-300 rounded-xl text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition-all flex items-center gap-1.5 disabled:opacity-40"
-                  >
-                    <RotateCcw size={12} />
-                    reset all to defaults
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={!dirty || saving}
-                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-semibold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                    save changes
-                  </button>
-                </div>
-              ) : (
-                <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[10px] font-semibold text-slate-600 flex items-center gap-1.5">
-                  <Lock size={11} /> read-only
-                </span>
-              )}
-            </header>
-
-            <div className="flex-1 p-8 overflow-y-auto space-y-8">
-              {activePerms.length === 0 && (
-                <div className="p-8 bg-slate-50 border border-slate-200 rounded-2xl text-center">
-                  <p className="text-xs font-semibold text-slate-700">no permissions assigned to this role.</p>
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    {canEdit
-                      ? 'tick any permission below to grant it.'
-                      : 'users with this role cannot access any module.'}
-                  </p>
-                </div>
-              )}
-
-              {PERMISSION_CATEGORIES.map((category) => {
-                const grantedHere = category.permissions.filter((p) => activePerms.includes(p.key));
-                return (
-                  <div key={category.key} className="space-y-4">
-                    <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                      <h4 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">{category.title}</h4>
-                      <span className="ml-auto text-[10px] font-semibold text-slate-400">
-                        {grantedHere.length} of {category.permissions.length} granted
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {category.permissions.map((perm) => {
-                        const granted = activePerms.includes(perm.key);
-                        const Tag = canEdit ? 'button' : 'div';
-                        return (
-                          <Tag
-                            key={perm.key}
-                            type={canEdit ? 'button' : undefined}
-                            onClick={canEdit ? () => togglePerm(perm.key) : undefined}
-                            className={`text-left p-4 rounded-2xl border select-none transition-all flex items-start gap-3 w-full ${
-                              granted
-                                ? 'bg-indigo-50/40 border-indigo-200'
-                                : 'bg-slate-50 border-slate-200 opacity-60'
-                            } ${canEdit ? 'cursor-pointer hover:border-indigo-300 hover:opacity-100' : ''}`}
+                    <Fragment key={role}>
+                      <tr className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors">
+                        {/* Role Level */}
+                        <td className="px-6 py-5 align-top">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedRole(isExpanded ? null : role)}
+                            className="flex items-start gap-2 text-left group"
                           >
-                            <div className="mt-0.5">
-                              {granted ? (
-                                <div className="w-5 h-5 bg-indigo-600 rounded-lg flex items-center justify-center">
-                                  <Check size={11} className="text-white stroke-[3]" />
-                                </div>
-                              ) : (
-                                <div className="w-5 h-5 border border-slate-300 rounded-lg bg-white" />
+                            <span className="mt-0.5 text-neutral-500 group-hover:text-neutral-600">
+                              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            </span>
+                            <div>
+                              <p className="text-sm font-semibold text-neutral-900">{titleCaseRole(role)}</p>
+                              <p className="text-xs text-neutral-500 font-mono mt-0.5 tracking-wide">{role}</p>
+                              {isDirty && (
+                                <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                                  unsaved
+                                </span>
                               )}
                             </div>
-                            <div>
-                              <p className={`text-xs font-semibold ${granted ? 'text-indigo-900' : 'text-slate-600'}`}>
-                                {perm.name}
-                              </p>
-                              <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{perm.desc}</p>
+                          </button>
+                        </td>
+
+                        {/* Responsibilities */}
+                        <td className="px-6 py-5 align-top">
+                          <p className="text-sm text-neutral-600 leading-relaxed">
+                            {ROLE_DESCRIPTIONS[role] || 'Custom role with configurable permissions.'}
+                          </p>
+                          <p className="text-xs text-neutral-500 mt-1.5">
+                            {activePerms.length} permission{activePerms.length !== 1 ? 's' : ''} granted
+                          </p>
+                        </td>
+
+                        {/* Assigned Members */}
+                        <td className="px-6 py-5 align-top">
+                          {usersLoading ? (
+                            <span className="text-sm text-neutral-500">Loading...</span>
+                          ) : members.length === 0 ? (
+                            <span className="text-sm text-neutral-500">None</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {members.map((u) => (
+                                <span
+                                  key={u.id}
+                                  className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 bg-slate-100 border border-neutral-200 rounded-md text-sm text-neutral-700"
+                                >
+                                  {movingUser?.userId === u.id ? (
+                                    <select
+                                      autoFocus
+                                      defaultValue=""
+                                      onChange={(e) => {
+                                        if (e.target.value) handleReassignUser(u.id, e.target.value);
+                                      }}
+                                      onBlur={() => setMovingUser(null)}
+                                      className="text-xs border border-neutral-200 rounded px-1 py-0.5 bg-white focus:outline-none focus:border-neutral-700"
+                                    >
+                                      <option value="">Move to...</option>
+                                      {roles
+                                        .filter((r) => r !== role)
+                                        .map((r) => (
+                                          <option key={r} value={r}>
+                                            {titleCaseRole(r)}
+                                          </option>
+                                        ))}
+                                    </select>
+                                  ) : (
+                                    <>
+                                      <span className="max-w-[140px] truncate">{u.fullName || u.email}</span>
+                                      {canEdit && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setMovingUser({ userId: u.id, fromRole: role })}
+                                          className="p-0.5 rounded hover:bg-slate-200 text-neutral-500 hover:text-neutral-700 transition"
+                                          title="Reassign to another role"
+                                          aria-label={`Reassign ${u.fullName}`}
+                                        >
+                                          <X size={14} />
+                                        </button>
+                                      )}
+                                    </>
+                                  )}
+                                </span>
+                              ))}
                             </div>
-                          </Tag>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                          )}
+                        </td>
+
+                        {/* Assignment */}
+                        <td className="px-6 py-5 align-top">
+                          {canEdit ? (
+                            <div className="relative" ref={isAssignOpen ? assignRef : null}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenAssignRole(isAssignOpen ? null : role);
+                                  setAssignSearch('');
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-700 border border-neutral-200 rounded-md hover:bg-neutral-50 transition min-w-[110px] justify-between"
+                              >
+                                <span>+ Assign</span>
+                                <ChevronDown size={14} className="text-neutral-500" />
+                              </button>
+
+                              {isAssignOpen && (
+                                <div className="absolute left-0 top-full mt-1 z-30 w-72 bg-white border border-neutral-200 rounded-lg shadow-lg overflow-hidden">
+                                  <div className="p-2 border-b border-neutral-100">
+                                    <div className="relative">
+                                      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                      <input
+                                        type="text"
+                                        value={assignSearch}
+                                        onChange={(e) => setAssignSearch(e.target.value)}
+                                        placeholder="Search employees..."
+                                        className="w-full pl-8 pr-3 py-1.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:border-neutral-700"
+                                        autoFocus
+                                      />
+                                    </div>
+                                  </div>
+                                  <ul className="max-h-52 overflow-y-auto">
+                                    {assignCandidates(role).length === 0 ? (
+                                      <li className="px-3 py-4 text-xs text-neutral-500 text-center">
+                                        No employees available
+                                      </li>
+                                    ) : (
+                                      assignCandidates(role).map((u) => (
+                                        <li key={u.id}>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleAssignUser(role, u.id)}
+                                            className="w-full text-left px-3 py-2.5 hover:bg-neutral-50 transition flex flex-col"
+                                          >
+                                            <span className="text-sm font-medium text-neutral-800 truncate">
+                                              {u.fullName || '—'}
+                                            </span>
+                                            <span className="text-xs text-neutral-500 truncate">{u.email}</span>
+                                          </button>
+                                        </li>
+                                      ))
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-neutral-500">
+                              <Lock size={12} /> Read-only
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Expandable permissions panel */}
+                      {isExpanded && (
+                        <tr className="bg-neutral-50/60 border-b border-neutral-200">
+                          <td colSpan={4} className="px-6 py-5">
+                            <div className="flex items-center justify-between gap-4 mb-4">
+                              <div>
+                                <h3 className="text-sm font-semibold text-neutral-900">
+                                  Permissions — {titleCaseRole(role)}
+                                </h3>
+                                <p className="text-xs text-neutral-500 mt-0.5">
+                                  Toggle access rights for this role. Changes apply on save.
+                                </p>
+                              </div>
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveRole(role)}
+                                  disabled={!isDirty || savingRole === role}
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-neutral-900 rounded-md hover:bg-neutral-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  {savingRole === role ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                  ) : (
+                                    <Save size={14} />
+                                  )}
+                                  Save permissions
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                              {PERMISSION_CATEGORIES.map((category) => {
+                                const grantedHere = category.permissions.filter((p) =>
+                                  activePerms.includes(p.key)
+                                );
+                                return (
+                                  <div
+                                    key={category.key}
+                                    className="bg-white border border-neutral-200 rounded-lg p-4"
+                                  >
+                                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-neutral-100">
+                                      <h4 className="text-xs font-semibold text-neutral-500 tracking-wide">
+                                        {category.title}
+                                      </h4>
+                                      <span className="text-xs text-neutral-500">
+                                        {grantedHere.length}/{category.permissions.length}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {category.permissions.map((perm) => {
+                                        const granted = activePerms.includes(perm.key);
+                                        const Tag = canEdit ? 'button' : 'div';
+                                        return (
+                                          <Tag
+                                            key={perm.key}
+                                            type={canEdit ? 'button' : undefined}
+                                            onClick={canEdit ? () => togglePerm(role, perm.key) : undefined}
+                                            className={`w-full text-left flex items-start gap-2.5 p-2 rounded-md transition ${
+                                              granted
+                                                ? 'bg-neutral-100/70'
+                                                : 'hover:bg-neutral-50 opacity-80'
+                                            } ${canEdit ? 'cursor-pointer' : ''}`}
+                                          >
+                                            <div className="mt-0.5 shrink-0">
+                                              {granted ? (
+                                                <div className="w-4 h-4 bg-neutral-900 rounded flex items-center justify-center">
+                                                  <Check size={10} className="text-white stroke-[3]" />
+                                                </div>
+                                              ) : (
+                                                <div className="w-4 h-4 border border-slate-300 rounded bg-white" />
+                                              )}
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p
+                                                className={`text-xs font-medium ${
+                                                  granted ? 'text-neutral-900' : 'text-neutral-600'
+                                                }`}
+                                              >
+                                                {perm.name}
+                                              </p>
+                                              <p className="text-[11px] text-neutral-500 mt-0.5 leading-snug">
+                                                {perm.desc}
+                                              </p>
+                                            </div>
+                                          </Tag>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

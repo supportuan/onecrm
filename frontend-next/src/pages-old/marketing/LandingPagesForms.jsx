@@ -185,7 +185,7 @@ const LandingPagesForms = () => {
       case 'APPLICATION':
         return 'inline-flex items-center px-3 py-0.5 rounded-[6px] text-xs font-semibold bg-[#fff7ed] text-[#ea580c] border border-[#fed7aa]';
       default:
-        return 'inline-flex items-center px-3 py-0.5 rounded-[6px] text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200';
+        return 'inline-flex items-center px-3 py-0.5 rounded-[6px] text-xs font-semibold bg-slate-100 text-neutral-700 border border-neutral-200';
     }
   };
 
@@ -203,20 +203,20 @@ const LandingPagesForms = () => {
     <div className="w-full bg-[#f8fafc] min-h-screen px-8 py-6">
       {/* Action Bar */}
       <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="relative flex-1 max-w-3xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+        <div className="relative flex-1 w-auto">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
           <input
             type="text"
             placeholder="Search page..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:border-slate-400 text-slate-700 placeholder-slate-400 transition"
+            className="w-full pl-11 pr-4 py-2.5 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:border-slate-400 text-neutral-700 placeholder-slate-400 transition"
           />
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="flex items-center justify-center gap-2 rounded-lg bg-[#0f172a] hover:bg-[#1e293b] text-white px-5 py-2.5 text-sm font-semibold shadow-sm transition"
+          className="flex items-center justify-center gap-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 text-sm font-semibold shadow-sm transition"
         >
           <Plus className="h-4.5 w-4.5 stroke-[2.5]" />
           Add page
@@ -232,23 +232,23 @@ const LandingPagesForms = () => {
 
       {/* Main Content Layout Grid */}
       {loading && pages.length === 0 ? (
-        <div className="text-center py-24 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-          <Loader2 className="h-8 w-8 text-[#0f172a] animate-spin mb-3" />
-          <span className="text-sm text-slate-500 font-medium">Fetching analytics performance...</span>
+        <div className="text-center py-24 bg-white rounded-xl border border-neutral-200 shadow-sm flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 text-neutral-900 animate-spin mb-3" />
+          <span className="text-sm text-neutral-500 font-medium">Fetching analytics performance...</span>
         </div>
       ) : (
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-5">
           {/* Left Column: Landing Pages Performance Card (3/5) */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
               {/* Card Header */}
-              <div className="px-6 py-5 flex items-center justify-between border-b border-slate-100">
-                <h2 className="text-lg font-semibold text-slate-900">
+              <div className="px-6 py-5 flex items-center justify-between border-b border-neutral-100">
+                <h2 className="text-lg font-semibold text-neutral-900">
                   Landing pages performance
                 </h2>
                 <button
                   onClick={loadData}
-                  className="px-4 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition"
+                  className="px-4 py-1.5 rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-600 text-xs font-semibold transition"
                 >
                   View All
                 </button>
@@ -257,29 +257,29 @@ const LandingPagesForms = () => {
               {/* Table Body */}
               <div className="overflow-x-auto">
                 {pages.length === 0 ? (
-                  <div className="text-center py-16 text-slate-500 font-semibold text-sm bg-white">
+                  <div className="text-center py-16 text-neutral-500 font-semibold text-sm bg-white">
                     No landing pages found
                   </div>
                 ) : (
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-white border-b border-slate-100 text-xs font-semibold text-slate-500">
-                        <th className="px-6 py-4 font-semibold text-slate-400">Landing Page Name</th>
-                        <th className="px-6 py-4 font-semibold text-slate-400">Type</th>
-                        <th className="px-6 py-4 font-semibold text-slate-400 text-right">Visits</th>
-                        <th className="px-6 py-4 font-semibold text-slate-400 text-right">Leads</th>
-                        <th className="px-6 py-4 font-semibold text-slate-400 text-right">Conversion</th>
-                        <th className="px-6 py-4 font-semibold text-slate-400 text-center">Actions</th>
+                      <tr className="bg-white border-b border-neutral-100 text-xs font-semibold text-neutral-500">
+                        <th className="px-6 py-4 font-semibold text-neutral-500">Landing Page Name</th>
+                        <th className="px-6 py-4 font-semibold text-neutral-500">Type</th>
+                        <th className="px-6 py-4 font-semibold text-neutral-500 text-right">Visits</th>
+                        <th className="px-6 py-4 font-semibold text-neutral-500 text-right">Leads</th>
+                        <th className="px-6 py-4 font-semibold text-neutral-500 text-right">Conversion</th>
+                        <th className="px-6 py-4 font-semibold text-neutral-500 text-center">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
+                    <tbody className="divide-y divide-neutral-100 text-sm font-medium text-neutral-700">
                       {pages.map((page) => (
-                        <tr key={page.id} className="hover:bg-slate-50/55 transition duration-150">
+                        <tr key={page.id} className="hover:bg-neutral-50/55 transition duration-150">
                           <td className="px-6 py-4">
-                            <div className="font-semibold text-slate-900 leading-tight">
+                            <div className="font-semibold text-neutral-900 leading-tight">
                               {page.title}
                             </div>
-                            <div className="text-xs text-slate-400 mt-0.5">
+                            <div className="text-xs text-neutral-500 mt-0.5">
                               /{page.slug}
                             </div>
                           </td>
@@ -288,20 +288,20 @@ const LandingPagesForms = () => {
                               {getTypeLabel(page.type)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right font-semibold text-slate-900">
+                          <td className="px-6 py-4 text-right font-semibold text-neutral-900">
                             {page.visits?.toLocaleString() || 0}
                           </td>
-                          <td className="px-6 py-4 text-right font-semibold text-slate-900">
+                          <td className="px-6 py-4 text-right font-semibold text-neutral-900">
                             {page.leads?.toLocaleString() || 0}
                           </td>
-                          <td className="px-6 py-4 text-right font-semibold text-slate-900">
+                          <td className="px-6 py-4 text-right font-semibold text-neutral-900">
                             {page.conversionRate ? `${page.conversionRate.toFixed(1)}%` : '0.0%'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => handleOpenEdit(page)}
-                                className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition"
+                                className="p-1 rounded hover:bg-slate-100 text-neutral-500 hover:text-neutral-700 transition"
                                 title="Edit page"
                               >
                                 <Edit className="h-4 w-4" />
@@ -326,49 +326,49 @@ const LandingPagesForms = () => {
 
           {/* Right Column: Forms Performance Summary (2/5) */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
               {/* Card Header */}
-              <div className="px-6 py-5 border-b border-slate-100">
-                <h2 className="text-lg font-semibold text-slate-900">
+              <div className="px-6 py-5 border-b border-neutral-100">
+                <h2 className="text-lg font-semibold text-neutral-900">
                   Forms Performance Summary
                 </h2>
               </div>
 
               {/* Summary Items List */}
-              <div className="divide-y divide-slate-100 text-sm font-medium text-slate-600">
-                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-slate-50/30 transition">
+              <div className="divide-y divide-neutral-100 text-sm font-medium text-neutral-600">
+                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Total Forms Published</span>
-                  <span className="text-slate-900 font-semibold text-base">
+                  <span className="text-neutral-900 font-semibold text-base">
                     {summary.totalFormsPublished || 0}
                   </span>
                 </div>
-                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-slate-50/30 transition">
+                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Total Leads Captured</span>
-                  <span className="text-slate-900 font-semibold text-base">
+                  <span className="text-neutral-900 font-semibold text-base">
                     {summary.totalLeadsCaptured?.toLocaleString() || 0}
                   </span>
                 </div>
-                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-slate-50/30 transition">
+                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Avg. Conversion Rate</span>
-                  <span className="text-slate-900 font-semibold text-base">
+                  <span className="text-neutral-900 font-semibold text-base">
                     {summary.averageConversionRate ? `${summary.averageConversionRate.toFixed(1)}%` : '0.0%'}
                   </span>
                 </div>
-                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-slate-50/30 transition">
+                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Visits (30 days)</span>
-                  <span className="text-slate-900 font-semibold text-base">
+                  <span className="text-neutral-900 font-semibold text-base">
                     {summary.visits30Days?.toLocaleString() || 0}
                   </span>
                 </div>
-                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-slate-50/30 transition">
+                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Leads (30 days)</span>
-                  <span className="text-slate-900 font-semibold text-base">
+                  <span className="text-neutral-900 font-semibold text-base">
                     {summary.leads30Days?.toLocaleString() || 0}
                   </span>
                 </div>
-                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-slate-50/30 transition">
+                <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Average Engagement Rate</span>
-                  <span className="text-slate-900 font-semibold text-base">
+                  <span className="text-neutral-900 font-semibold text-base">
                     {summary.averageEngagementRate ? `${summary.averageEngagementRate.toFixed(1)}%` : '0.0%'}
                   </span>
                 </div>
@@ -380,16 +380,16 @@ const LandingPagesForms = () => {
 
       {/* Modal Dialog for Create/Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto border border-slate-200 flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-auto max-h-[90vh] overflow-y-auto border border-neutral-200 flex flex-col">
             {/* Modal Header */}
-            <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="text-lg font-semibold text-slate-900">
+            <div className="px-6 py-4.5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+              <h3 className="text-lg font-semibold text-neutral-900">
                 {isEditing ? 'Edit Landing Page' : 'Add New Landing Page'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition"
+                className="p-1 rounded-lg hover:bg-slate-200 text-neutral-500 hover:text-neutral-700 transition"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -398,36 +398,36 @@ const LandingPagesForms = () => {
             {/* Modal Form Body */}
             <form onSubmit={handleFormSubmit} className="flex-1 p-6 space-y-4">
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-500">Landing Page Name *</label>
+                <label className="block text-xs font-semibold text-neutral-500">Landing Page Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Study Abroad Guide"
                   value={pageForm.title}
                   onChange={(e) => setPageForm({ ...pageForm, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-700 placeholder-slate-400"
+                  className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-700 placeholder-slate-400"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-500">Slug Handle Route * (Letters/Numbers/Hyphens)</label>
+                <label className="block text-xs font-semibold text-neutral-500">Slug Handle Route * (Letters/Numbers/Hyphens)</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. study-abroad-guide"
                   value={pageForm.slug}
                   onChange={(e) => setPageForm({ ...pageForm, slug: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-700 placeholder-slate-400"
+                  className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-700 placeholder-slate-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-500">Type *</label>
+                  <label className="block text-xs font-semibold text-neutral-500">Type *</label>
                   <select
                     value={pageForm.type}
                     onChange={(e) => setPageForm({ ...pageForm, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-600"
+                    className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-600"
                   >
                     <option value="GUIDE">Guide</option>
                     <option value="EVENT">Event</option>
@@ -436,115 +436,115 @@ const LandingPagesForms = () => {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-500">Form ID Reference</label>
+                  <label className="block text-xs font-semibold text-neutral-500">Form ID Reference</label>
                   <input
                     type="text"
                     placeholder="e.g. lead-capture-form"
                     value={pageForm.formId}
                     onChange={(e) => setPageForm({ ...pageForm, formId: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-700 placeholder-slate-400"
+                    className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-700 placeholder-slate-400"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-500">Target Country</label>
+                  <label className="block text-xs font-semibold text-neutral-500">Target Country</label>
                   <input
                     type="text"
                     placeholder="e.g. Canada"
                     value={pageForm.country}
                     onChange={(e) => setPageForm({ ...pageForm, country: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-700 placeholder-slate-400"
+                    className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-700 placeholder-slate-400"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-500">Target Course</label>
+                  <label className="block text-xs font-semibold text-neutral-500">Target Course</label>
                   <input
                     type="text"
                     placeholder="e.g. Business Administration"
                     value={pageForm.course}
                     onChange={(e) => setPageForm({ ...pageForm, course: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-700 placeholder-slate-400"
+                    className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-700 placeholder-slate-400"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-500">Visits</label>
+                  <label className="block text-xs font-semibold text-neutral-500">Visits</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="0"
                     value={pageForm.visits}
                     onChange={(e) => setPageForm({ ...pageForm, visits: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-700"
+                    className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-700"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-500">Leads</label>
+                  <label className="block text-xs font-semibold text-neutral-500">Leads</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="0"
                     value={pageForm.leads}
                     onChange={(e) => setPageForm({ ...pageForm, leads: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-700"
+                    className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-700"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-500">Page Content / Intro Copy</label>
+                <label className="block text-xs font-semibold text-neutral-500">Page Content / Intro Copy</label>
                 <textarea
                   rows={2}
                   placeholder="Introductory text displayed to the visitor."
                   value={pageForm.content}
                   onChange={(e) => setPageForm({ ...pageForm, content: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500 font-semibold text-slate-700 placeholder-slate-400"
+                  className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:border-neutral-700 font-semibold text-neutral-700 placeholder-slate-400"
                 />
               </div>
 
-              <div className="border-t border-slate-100 pt-3 space-y-3">
-                <h4 className="text-xs font-semibold text-slate-400">SEO Meta Setup</h4>
+              <div className="border-t border-neutral-100 pt-3 space-y-3">
+                <h4 className="text-xs font-semibold text-neutral-500">SEO Meta Setup</h4>
                 <div className="grid grid-cols-1 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-[10px] font-semibold text-slate-500">SEO Title Tag</label>
+                    <label className="block text-[10px] font-semibold text-neutral-500">SEO Title Tag</label>
                     <input
                       type="text"
                       placeholder="e.g. Study Abroad Roadmap & Free Counseling Session"
                       value={pageForm.seoTitle}
                       onChange={(e) => setPageForm({ ...pageForm, seoTitle: e.target.value })}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-indigo-500 text-slate-700"
+                      className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-neutral-700 text-neutral-700"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-[10px] font-semibold text-slate-500 font-semibold">SEO Meta Description</label>
+                    <label className="block text-[10px] font-semibold text-neutral-500 font-semibold">SEO Meta Description</label>
                     <textarea
                       rows={2}
                       placeholder="e.g. Download the official guide and connect with admissions counsel experts."
                       value={pageForm.seoDescription}
                       onChange={(e) => setPageForm({ ...pageForm, seoDescription: e.target.value })}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-indigo-500 text-slate-700"
+                      className="w-full px-3 py-1.5 border border-neutral-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-neutral-700 text-neutral-700"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Footer Actions */}
-              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+              <div className="pt-4 border-t border-neutral-100 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-semibold transition"
+                  className="px-4 py-2 rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-600 text-sm font-semibold transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-[#0f172a] hover:bg-[#1e293b] text-white text-sm font-semibold transition flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-semibold transition flex items-center gap-1.5"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {isEditing ? 'Save changes' : 'Add page'}

@@ -93,7 +93,7 @@ const MarketingDashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-8 animate-pulse bg-slate-50 min-h-screen">
+      <div className="p-8 space-y-8 animate-pulse ui-page">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <div className="h-8 w-64 bg-slate-200 rounded-lg" />
@@ -105,7 +105,7 @@ const MarketingDashboard = () => {
         {/* Shimmer Metrics Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="h-32 bg-slate-200 rounded-[24px] border border-slate-100" />
+            <div key={n} className="h-32 bg-slate-200 rounded-[24px] border border-neutral-100" />
           ))}
         </div>
 
@@ -157,23 +157,24 @@ const MarketingDashboard = () => {
   const revPath = getCurvePath(revPoints);
 
   return (
-    <div className="space-y-6 p-6 bg-slate-50/50 min-h-screen text-slate-800 antialiased font-sans">
+    <div className="ui-page text-neutral-800 antialiased font-sans">
+      <div className="ui-container">
       {/* Top Navigation Row matching screenshot */}
       
 
       {/* KPI Cards Ribbon matching screenshot values */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {/* Card 1: Total Students */}
-        <div className="group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
-          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-slate-50 opacity-80 group-hover:scale-110 transition-transform duration-300" />
+        <div className="group relative overflow-hidden rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-neutral-50 opacity-80 group-hover:scale-110 transition-transform duration-300" />
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold tracking-normal text-slate-500">Total Students</span>
-            <div className="text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:scale-110 transition-transform duration-200">
+            <span className="text-[13px] font-bold tracking-normal text-neutral-500">Total Students</span>
+            <div className="text-neutral-700 bg-neutral-50 p-2 rounded-xl border border-neutral-100 group-hover:scale-110 transition-transform duration-200">
               <GraduationCap className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-[28px] font-extrabold text-slate-900 tracking-tight">
+            <h3 className="text-[28px] font-extrabold text-neutral-900 tracking-tight">
               {formatNumber(data?.kpis?.totalStudents?.value)}
             </h3>
             <div className="mt-3 flex items-center gap-1 text-[13px] text-emerald-500 font-extrabold">
@@ -183,16 +184,16 @@ const MarketingDashboard = () => {
         </div>
 
         {/* Card 2: Active Applications */}
-        <div className="group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
-          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-slate-50 opacity-80 group-hover:scale-110 transition-transform duration-300" />
+        <div className="group relative overflow-hidden rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-neutral-50 opacity-80 group-hover:scale-110 transition-transform duration-300" />
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold tracking-normal text-slate-500">Active Applications</span>
-            <div className="text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:scale-110 transition-transform duration-200">
+            <span className="text-[13px] font-bold tracking-normal text-neutral-500">Active Applications</span>
+            <div className="text-neutral-700 bg-neutral-50 p-2 rounded-xl border border-neutral-100 group-hover:scale-110 transition-transform duration-200">
               <FileText className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-[28px] font-extrabold text-slate-900 tracking-tight">
+            <h3 className="text-[28px] font-extrabold text-neutral-900 tracking-tight">
               {formatNumber(data?.kpis?.activeApplications?.value)}
             </h3>
             <div className="mt-3 flex items-center gap-1 text-[13px] text-emerald-500 font-extrabold">
@@ -202,16 +203,16 @@ const MarketingDashboard = () => {
         </div>
 
         {/* Card 3: Partner Agencies */}
-        <div className="group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
-          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-slate-50 opacity-80 group-hover:scale-110 transition-transform duration-300" />
+        <div className="group relative overflow-hidden rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-neutral-50 opacity-80 group-hover:scale-110 transition-transform duration-300" />
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold tracking-normal text-slate-500">Partner Agencies</span>
-            <div className="text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:scale-110 transition-transform duration-200">
+            <span className="text-[13px] font-bold tracking-normal text-neutral-500">Partner Agencies</span>
+            <div className="text-neutral-700 bg-neutral-50 p-2 rounded-xl border border-neutral-100 group-hover:scale-110 transition-transform duration-200">
               <FileText className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-[28px] font-extrabold text-slate-900 tracking-tight">
+            <h3 className="text-[28px] font-extrabold text-neutral-900 tracking-tight">
               {formatNumber(data?.kpis?.partnerAgencies?.value)}
             </h3>
             <div className="mt-3 flex items-center gap-1 text-[13px] text-emerald-500 font-extrabold">
@@ -221,16 +222,16 @@ const MarketingDashboard = () => {
         </div>
 
         {/* Card 4: Revenue (MTD) */}
-        <div className="group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
-          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-slate-50 opacity-80 group-hover:scale-110 transition-transform duration-300" />
+        <div className="group relative overflow-hidden rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-neutral-50 opacity-80 group-hover:scale-110 transition-transform duration-300" />
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold tracking-normal text-slate-500">Revenue (MTD)</span>
-            <div className="text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:scale-110 transition-transform duration-200">
+            <span className="text-[13px] font-bold tracking-normal text-neutral-500">Revenue (MTD)</span>
+            <div className="text-neutral-700 bg-neutral-50 p-2 rounded-xl border border-neutral-100 group-hover:scale-110 transition-transform duration-200">
               <DollarSign className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-[28px] font-extrabold text-slate-900 tracking-tight">
+            <h3 className="text-[28px] font-extrabold text-neutral-900 tracking-tight">
               {formatCurrency(data?.kpis?.revenueMtd?.value)}
             </h3>
             <div className="mt-3 flex items-center gap-1 text-[13px] text-emerald-500 font-extrabold">
@@ -243,16 +244,16 @@ const MarketingDashboard = () => {
       {/* Main Charts & Visual Layout */}
       <div className="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
         {/* Intake Trends SVG Multi-line Chart */}
-        <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-[17px] font-extrabold text-slate-900">
+              <h2 className="text-[17px] font-extrabold text-neutral-900">
                 Intake Trends
               </h2>
-              <p className="text-[12px] text-slate-400 mt-1 font-medium">Applications and enrollments over time</p>
+              <p className="text-[12px] text-neutral-500 mt-1 font-medium">Applications and enrollments over time</p>
             </div>
             {/* Color-coded Legend */}
-            <div className="flex items-center gap-4 text-xs font-bold text-slate-600">
+            <div className="flex items-center gap-4 text-xs font-bold text-neutral-600">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#1e3a8a]" />
                 <span>Applications</span>
@@ -371,14 +372,14 @@ const MarketingDashboard = () => {
             {/* Custom Interactive Tooltip overlay */}
             {hoveredTrendIndex !== null && (
               <div 
-                className="absolute z-10 bg-slate-900/95 backdrop-blur text-white rounded-xl p-3 shadow-xl text-xs space-y-1.5 border border-slate-700"
+                className="absolute z-10 bg-white text-neutral-900 rounded-xl p-3 shadow-xl text-xs space-y-1.5 border border-neutral-200"
                 style={{
                   left: `${(hoveredTrendIndex / (trends.length - 1)) * 80 + 10}%`,
                   bottom: '75px',
                   transform: 'translateX(-50%)'
                 }}
               >
-                <p className="font-extrabold text-slate-300 border-b border-slate-700 pb-1 mb-1">
+                <p className="font-extrabold text-neutral-600 border-b border-neutral-200 pb-1 mb-1">
                   {trends[hoveredTrendIndex].month} Metrics
                 </p>
                 <p className="flex justify-between gap-4 font-semibold">
@@ -399,9 +400,9 @@ const MarketingDashboard = () => {
         </div>
 
         {/* Quick Actions Panel matching screenshot 2x3 grid and exact colors */}
-        <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+        <div className="rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm flex flex-col justify-between">
           <div>
-            <h2 className="text-[17px] font-extrabold text-slate-900">
+            <h2 className="text-[17px] font-extrabold text-neutral-900">
               Quick Actions
             </h2>
             
@@ -446,25 +447,25 @@ const MarketingDashboard = () => {
               {/* Button 5: Upload Documents */}
               <button
                 onClick={() => router.push('/marketing/landing-pages-forms')}
-                className="flex flex-col items-center justify-center rounded-[14px] bg-slate-100 hover:bg-slate-200 text-slate-800 p-4 font-semibold text-xs transition duration-200 active:scale-95 border border-slate-200/50 min-h-[92px]"
+                className="flex flex-col items-center justify-center rounded-[14px] bg-slate-100 hover:bg-slate-200 text-neutral-800 p-4 font-semibold text-xs transition duration-200 active:scale-95 border border-neutral-200/50 min-h-[92px]"
               >
-                <Upload className="h-5 w-5 mb-1.5 text-slate-700" />
+                <Upload className="h-5 w-5 mb-1.5 text-neutral-700" />
                 <span className="text-[10px] sm:text-xs font-bold leading-tight">Upload Documents</span>
               </button>
 
               {/* Button 6: Send SMS */}
               <button
                 onClick={() => router.push('/marketing/campaigns?sms=true')}
-                className="flex flex-col items-center justify-center rounded-[14px] bg-slate-200 hover:bg-slate-300 text-slate-800 p-4 font-semibold text-xs transition duration-200 active:scale-95 border border-slate-300/50 min-h-[92px]"
+                className="flex flex-col items-center justify-center rounded-[14px] bg-slate-200 hover:bg-slate-300 text-neutral-800 p-4 font-semibold text-xs transition duration-200 active:scale-95 border border-slate-300/50 min-h-[92px]"
               >
-                <MessageSquare className="h-5 w-5 mb-1.5 text-slate-700" />
+                <MessageSquare className="h-5 w-5 mb-1.5 text-neutral-700" />
                 <span className="text-[10px] sm:text-xs font-bold leading-tight">Send SMS</span>
               </button>
             </div>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-slate-100 hidden xl:block">
-            <div className="rounded-xl bg-slate-50 p-3 text-slate-500 text-[11px] leading-relaxed font-medium">
+          <div className="mt-5 pt-4 border-t border-neutral-100 hidden xl:block">
+            <div className="rounded-xl bg-neutral-50 p-3 text-neutral-500 text-[11px] leading-relaxed font-medium">
               <strong>Tip:</strong> You can speed up operations by creating targeted automation flows for newly submitted student applications.
             </div>
           </div>
@@ -474,16 +475,16 @@ const MarketingDashboard = () => {
       {/* Funnels section matching the screenshot repeated stage layout */}
       {/* <div className="grid gap-6 md:grid-cols-2">
         //  Student Funnel Card 
-        <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-[17px] font-extrabold text-slate-900">Student Funnel</h2>
+        <div className="rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm">
+          <h2 className="text-[17px] font-extrabold text-neutral-900">Student Funnel</h2>
 
           <div className="mt-6 space-y-5">
             {funnels?.studentFunnel?.map((item, idx) => (
               <div key={idx} className="space-y-1.5">
-                <div className="flex justify-between text-xs font-bold text-slate-500">
+                <div className="flex justify-between text-xs font-bold text-neutral-500">
                   <span>{item.stage}</span>
-                  <span className="text-slate-950 font-extrabold">
-                    {formatNumber(item.count)} <span className="text-slate-400 font-medium ml-1">({item.conversion})</span>
+                  <span className="text-neutral-900 font-extrabold">
+                    {formatNumber(item.count)} <span className="text-neutral-500 font-medium ml-1">({item.conversion})</span>
                   </span>
                 </div>
                 <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -498,16 +499,16 @@ const MarketingDashboard = () => {
         </div>
 
         //  Agency Funnel Card
-        <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-[17px] font-extrabold text-slate-900">Agency Funnel</h2>
+        <div className="rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm">
+          <h2 className="text-[17px] font-extrabold text-neutral-900">Agency Funnel</h2>
 
           <div className="mt-6 space-y-5">
             {funnels?.agencyFunnel?.map((item, idx) => (
               <div key={idx} className="space-y-1.5">
-                <div className="flex justify-between text-xs font-bold text-slate-500">
+                <div className="flex justify-between text-xs font-bold text-neutral-500">
                   <span>{item.stage}</span>
-                  <span className="text-slate-950 font-extrabold">
-                    {formatNumber(item.count)} <span className="text-slate-400 font-medium ml-1">({item.conversion})</span>
+                  <span className="text-neutral-900 font-extrabold">
+                    {formatNumber(item.count)} <span className="text-neutral-500 font-medium ml-1">({item.conversion})</span>
                   </span>
                 </div>
                 <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -521,6 +522,7 @@ const MarketingDashboard = () => {
           </div>
         </div>
       </div> */}
+      </div>
     </div>
   );
 };

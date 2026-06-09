@@ -1,6 +1,7 @@
 'use client';
-import HR from '@/pages-old/HR';
+
+import { HrDashboard } from '@/features/hr';
 
 export default function Page() {
-  return <HR />;
+  return <HrDashboard />;
 }

@@ -244,7 +244,7 @@ export const updateLead = async (id: number, data: any) => {
 };
 
 export const assignCounsellor = async (leadId: number, counsellorId: number | null, adminId: number) => {
-  return await prisma.lead.update({
+  const updated = await prisma.lead.update({
     where: { id: leadId },
     data: {
       assignedCounsellorId: counsellorId,
@@ -252,6 +252,21 @@ export const assignCounsellor = async (leadId: number, counsellorId: number | nu
     },
     include: { source: true, assignedCounsellor: true, assignedBy: true },
   });
+
+  if (counsellorId) {
+    const { safeNotify } = await import('../../notifications/recipients.js');
+    await safeNotify({
+      recipientId: counsellorId,
+      templateKey: 'lead.assigned',
+      vars: {
+        leadName: updated.fullName,
+        source: updated.source?.name,
+        leadId,
+      },
+    });
+  }
+
+  return updated;
 };
 
 export const deleteLead = async (id: number) => {

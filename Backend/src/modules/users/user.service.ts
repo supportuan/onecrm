@@ -2,6 +2,7 @@ import { prisma } from '../../prisma.js';
 import { UserRole } from '@prisma/client';
 import { hashPassword } from '../../utils/password.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
+import { safeNotify } from '../notifications/recipients.js';
 
 const allowedRoles = [
   UserRole.ADMIN,
@@ -92,6 +93,14 @@ export const createUser = async (data: {
     console.error('[Welcome Email Error] Failed to send email to:', data.email, err);
   });
 
+  if (isApproved) {
+    await safeNotify({
+      recipientId: user.id,
+      templateKey: 'welcome.user',
+      vars: { name: user.fullName, role: user.role },
+    });
+  }
+
   return user;
 };
 
@@ -106,10 +115,24 @@ export const updateUser = async (
     counsellorId?: number | null;
   }
 ) => {
-  return prisma.user.update({
+  const existing = data.isApproved !== undefined
+    ? await prisma.user.findUnique({ where: { id } })
+    : null;
+
+  const updated = await prisma.user.update({
     where: { id },
     data,
   });
+
+  if (existing && data.isApproved === true && !existing.isApproved) {
+    await safeNotify({
+      recipientId: id,
+      templateKey: 'welcome.user',
+      vars: { name: updated.fullName, role: updated.role },
+    });
+  }
+
+  return updated;
 };
 
 export const deactivateUser = async (id: number) => {

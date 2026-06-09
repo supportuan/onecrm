@@ -341,4 +341,11 @@ export {
   getPerformanceReviews,
   createPerformanceReview,
   updatePerformanceReview,
+  getLeaveRequests,
+  createLeaveRequest,
+  processLeaveRequest,
+  cancelLeaveRequest,
+  getHrDashboardSummary,
+  getHrMe,
+  getMyAttendance,
 } from './hr.prisma.service.js';

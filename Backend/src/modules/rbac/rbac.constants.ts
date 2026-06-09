@@ -60,18 +60,29 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'MANAGE_SUPPORT_REQUESTS', 'VIEW_REPORTS',
   ],
   COUNSELLOR: [
-    'VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
+    'VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
+    'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
-  MARKETING: [
-    'VIEW_MARKETING', 'MANAGE_MARKETING', 'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
+  MARKETING_MANAGER: [
+    'VIEW_MARKETING', 'MANAGE_MARKETING',
+    'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'VIEW_REPORTS',
   ],
-  AGENT: [
-    'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM', 'VIEW_STUDENT_CRM',
+  TELECALLER: [
+    'VIEW_MARKETING', 'VIEW_STUDENT_CRM',
+    'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
-  IT: [
-    'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'MANAGE_BIOMETRICS', 'MANAGE_NETWORK_SECURITY', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
+  AGENCY_FREELANCER: [
+    'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM',
+    'VIEW_STUDENT_CRM',
   ],
   STUDENT: [
     'VIEW_STUDENT_CRM',
   ],
 };
+
+/**
+ * Roles that should be hidden from the Admin > Roles & Permissions editor UI.
+ * They still exist and can be assigned via /admin-settings/users, but admins
+ * don't need to manage their permissions interactively.
+ */
+export const HIDDEN_ROLES = new Set(['STUDENT']);

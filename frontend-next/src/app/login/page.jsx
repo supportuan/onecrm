@@ -48,48 +48,48 @@
 //   };
 
 //   return (
-//     <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 px-4 py-12">
-//       <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/95 p-8 shadow-2xl shadow-slate-950/40">
+//     <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 px-4 py-12">
+//       <div className="w-auto rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
 //         <div className="mb-6 text-center">
-//           <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">OneCRM Secure Login</p>
-//           <h1 className="mt-4 text-3xl font-bold text-white">Sign in to your account</h1>
+//           <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">OneCRM Secure Login</p>
+//           <h1 className="mt-4 text-2xl font-semibold text-neutral-900">Sign in to your account</h1>
 //         </div>
 
 //         <form className="space-y-5" onSubmit={handleSubmit}>
 //           <div>
-//             <label className="mb-2 block text-sm font-medium text-slate-300">Email</label>
+//             <label className="mb-2 block text-sm font-medium text-neutral-600">Email</label>
 //             <input
 //               type="email"
 //               value={email}
 //               onChange={(e) => setEmail(e.target.value)}
-//               className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+//               className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
 //               required
 //             />
 //           </div>
 
 //           <div>
-//             <label className="mb-2 block text-sm font-medium text-slate-300">Password</label>
+//             <label className="mb-2 block text-sm font-medium text-neutral-600">Password</label>
 //             <input
 //               type="password"
 //               value={password}
 //               onChange={(e) => setPassword(e.target.value)}
-//               className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+//               className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
 //               required
 //             />
 //           </div>
 
-//           {error && <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-200">{error}</div>}
+//           {error && <div className="rounded-lg bg-red-50 border border-red-500/20 p-3 text-sm text-red-700">{error}</div>}
 
 //           <button
 //             type="submit"
 //             disabled={loading}
-//             className="inline-flex w-full justify-center rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
+//             className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
 //           >
 //             {loading ? 'Signing in...' : 'Sign in'}
 //           </button>
 
-//           <div className="text-center text-sm text-slate-400">
-//             <button type="button" className="text-cyan-300 hover:text-cyan-100" onClick={() => router.push('/forgot-password')}>
+//           <div className="text-center text-sm text-neutral-500">
+//             <button type="button" className="text-neutral-700 hover:text-neutral-900" onClick={() => router.push('/forgot-password')}>
 //               Forgot your password?
 //             </button>
 //           </div>
@@ -105,6 +105,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { getDefaultHrRoute } from '@/features/hr/routing';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -147,13 +148,13 @@ export default function LoginPage() {
       if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
         targetRoute = '/marketing';
       } else if (role === 'HR') {
-        targetRoute = '/hr/employee-directory';
+        targetRoute = getDefaultHrRoute(role) || '/hr';
       } else if (role === 'COUNSELLOR') {
         targetRoute = '/marketing';
-      } else if (role === 'AGENT') {
-        targetRoute = '/agency-crm/agency-management';
+      } else if (role === 'AGENT' || role === 'AGENCY_FREELANCER') {
+        targetRoute = '/student-crm/applications';
       } else if (role === 'STUDENT') {
-        targetRoute = '/student-crm/student-management';
+        targetRoute = '/student-crm/applications';
       }
 
       if (data.isFirstLogin) {
@@ -250,17 +251,16 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 px-4 py-8">
+    <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 px-4 py-8">
       <div
-        className={`w-full ${isRegister ? 'max-w-6xl' : 'max-w-md'
-          } rounded-3xl border border-slate-800 bg-slate-900/95 p-8 shadow-2xl shadow-slate-950/40`}
+        className="ui-card w-auto"
       >
         <div className="mb-6 text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">
+          <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
             OneCRM Secure Login
           </p>
 
-          <h1 className="mt-4 text-3xl font-bold text-white">
+          <h1 className="mt-4 text-2xl font-semibold text-neutral-900">
             {isRegister ? 'Create your account' : 'Sign in to your account'}
           </h1>
         </div>
@@ -268,39 +268,39 @@ export default function LoginPage() {
         {!isRegister ? (
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">
+              <label className="mb-2 block text-sm font-medium text-neutral-600">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                 required
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">
+              <label className="mb-2 block text-sm font-medium text-neutral-600">
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                 required
               />
             </div>
 
             {error && (
-              <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-200">
+              <div className="rounded-lg bg-red-50 border border-red-500/20 p-3 text-sm text-red-700">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-sm text-emerald-200">
+              <div className="rounded-lg bg-emerald-50 border border-emerald-500/20 p-3 text-sm text-emerald-700">
                 {success}
               </div>
             )}
@@ -308,26 +308,26 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex w-full justify-center rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
 
-            <div className="text-center text-sm text-slate-400">
+            <div className="text-center text-sm text-neutral-500">
               <button
                 type="button"
-                className="text-cyan-300 hover:text-cyan-100"
+                className="text-neutral-700 hover:text-neutral-900"
                 onClick={() => router.push('/forgot-password')}
               >
                 Forgot your password?
               </button>
             </div>
 
-            <div className="text-center text-sm text-slate-400">
+            <div className="text-center text-sm text-neutral-500">
               Don&apos;t have an account?{' '}
               <button
                 type="button"
-                className="text-cyan-300 hover:text-cyan-100 font-semibold"
+                className="text-neutral-700 hover:text-neutral-900 font-semibold"
                 onClick={() => {
                   setError('');
                   setSuccess('');
@@ -343,20 +343,20 @@ export default function LoginPage() {
             className="grid grid-cols-1 gap-6 lg:grid-cols-2"
             onSubmit={handleRegisterSubmit}
           >
-            <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
-              <h2 className="text-lg font-bold text-cyan-300">
+            <section className="space-y-4 rounded-lg border border-neutral-200 bg-neutral-50 p-5">
+              <h2 className="text-lg font-bold text-neutral-700">
                 Personal Details
               </h2>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label className="mb-2 block text-sm font-medium text-neutral-600">
                   Register As
                 </label>
                 <select
                   name="role"
                   value={registerForm.role}
                   onChange={handleRegisterChange}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                 >
                   <option value="STUDENT">Student</option>
                   <option value="AGENT">Agent</option>
@@ -365,33 +365,33 @@ export default function LoginPage() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                  <label className="mb-2 block text-sm font-medium text-neutral-600">
                     Full Name
                   </label>
                   <input
                     name="fullName"
                     value={registerForm.fullName}
                     onChange={handleRegisterChange}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                  <label className="mb-2 block text-sm font-medium text-neutral-600">
                     Phone
                   </label>
                   <input
                     name="phone"
                     value={registerForm.phone}
                     onChange={handleRegisterChange}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label className="mb-2 block text-sm font-medium text-neutral-600">
                   Email
                 </label>
                 <input
@@ -399,14 +399,14 @@ export default function LoginPage() {
                   name="email"
                   value={registerForm.email}
                   onChange={handleRegisterChange}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                  <label className="mb-2 block text-sm font-medium text-neutral-600">
                     Password
                   </label>
                   <input
@@ -414,13 +414,13 @@ export default function LoginPage() {
                     name="password"
                     value={registerForm.password}
                     onChange={handleRegisterChange}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                  <label className="mb-2 block text-sm font-medium text-neutral-600">
                     Confirm Password
                   </label>
                   <input
@@ -428,15 +428,15 @@ export default function LoginPage() {
                     name="confirmPassword"
                     value={registerForm.confirmPassword}
                     onChange={handleRegisterChange}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                     required
                   />
                 </div>
               </div>
             </section>
 
-            <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
-              <h2 className="text-lg font-bold text-cyan-300">
+            <section className="space-y-4 rounded-lg border border-neutral-200 bg-neutral-50 p-5">
+              <h2 className="text-lg font-bold text-neutral-700">
                 {registerForm.role === 'AGENT'
                   ? 'Agency Details'
                   : 'Student Registration'}
@@ -445,71 +445,71 @@ export default function LoginPage() {
               {registerForm.role === 'AGENT' ? (
                 <>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-neutral-600">
                       Agency Name
                     </label>
                     <input
                       name="agencyName"
                       value={registerForm.agencyName}
                       onChange={handleRegisterChange}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
+                      className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-neutral-600">
                       Agency Code
                     </label>
                     <input
                       name="agencyCode"
                       value={registerForm.agencyCode}
                       onChange={handleRegisterChange}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
+                      className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                    <label className="mb-2 block text-sm font-medium text-neutral-600">
                       Agency Address
                     </label>
                     <input
                       name="agencyAddress"
                       value={registerForm.agencyAddress}
                       onChange={handleRegisterChange}
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
+                      className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                      <label className="mb-2 block text-sm font-medium text-neutral-600">
                         City
                       </label>
                       <input
                         name="agencyCity"
                         value={registerForm.agencyCity}
                         onChange={handleRegisterChange}
-                        className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
+                        className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">
+                      <label className="mb-2 block text-sm font-medium text-neutral-600">
                         Country
                       </label>
                       <input
                         name="agencyCountry"
                         value={registerForm.agencyCountry}
                         onChange={handleRegisterChange}
-                        className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
+                        className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
                       />
                     </div>
                   </div>
                 </>
               ) : (
-                <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-5 text-sm leading-6 text-slate-300">
-                  <p className="font-semibold text-cyan-200">
+                <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-5 text-sm leading-6 text-neutral-600">
+                  <p className="font-semibold text-neutral-800">
                     Student account registration
                   </p>
                   <p className="mt-2">
@@ -523,13 +523,13 @@ export default function LoginPage() {
 
             <div className="lg:col-span-2">
               {error && (
-                <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+                <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-700">
                   {error}
                 </div>
               )}
 
               {success && (
-                <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+                <div className="mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-700">
                   {success}
                 </div>
               )}
@@ -537,16 +537,16 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex w-full justify-center rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? 'Creating account...' : 'Register'}
               </button>
 
-              <div className="mt-4 text-center text-sm text-slate-400">
+              <div className="mt-4 text-center text-sm text-neutral-500">
                 Already have an account?{' '}
                 <button
                   type="button"
-                  className="font-semibold text-cyan-300 hover:text-cyan-100"
+                  className="font-semibold text-neutral-700 hover:text-neutral-900"
                   onClick={() => {
                     setError('');
                     setSuccess('');

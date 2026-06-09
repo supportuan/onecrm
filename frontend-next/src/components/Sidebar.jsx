@@ -100,19 +100,19 @@
 
 //   return (
 //     <aside
-//       className={`fixed inset-y-0 left-0 z-30 w-[288px] min-w-[288px] max-w-[288px] flex-none transform flex-col border-r border-slate-200 bg-white text-slate-800 transition-transform duration-300 h-screen flex ${
+//       className={`fixed inset-y-0 left-0 z-30 w-[288px] min-w-[288px] max-w-[288px] flex-none transform flex-col border-r border-neutral-200 bg-white text-neutral-800 transition-transform duration-300 h-screen flex ${
 //         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
 //       } lg:translate-x-0`}
 //     >
 //       {/* Brand Header */}
 //       <div className="flex-none p-5 pb-3">
-//         <div className="flex items-center gap-3 border-b border-slate-150 pb-4">
-//           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/10">
+//         <div className="flex items-center gap-3 border-b border-neutral-200 pb-4">
+//           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-900 text-white shadow-md ">
 //             <Command className="h-5 w-5" />
 //           </div>
 //           <div>
-//             <p className="text-base font-bold text-slate-900">ONECRM</p>
-//             <p className="text-xs font-medium text-slate-400">SSO integrated portal</p>
+//             <p className="text-base font-bold text-neutral-900">ONECRM</p>
+//             <p className="text-xs font-medium text-neutral-500">SSO integrated portal</p>
 //           </div>
 //         </div>
 //       </div>
@@ -121,45 +121,45 @@
 //       <div className="px-5 py-2 flex-none relative">
 //         <button
 //           onClick={() => setSwitcherOpen(!switcherOpen)}
-//           className="flex w-full items-center justify-between rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 px-3.5 py-2.5 transition text-left"
+//           className="flex w-full items-center justify-between rounded-xl bg-neutral-50 border border-neutral-200 hover:bg-slate-100 hover:border-slate-300 px-3.5 py-2.5 transition text-left"
 //         >
 //           <div className="flex items-center gap-2.5">
-//             <span className={`h-2 w-2 rounded-full animate-pulse ${activeWorkspace === 'hr' ? 'bg-indigo-600' : 'bg-violet-600'}`} />
+//             <span className={`h-2 w-2 rounded-full animate-pulse ${activeWorkspace === 'hr' ? 'bg-neutral-900' : 'bg-neutral-700'}`} />
 //             <div>
-//               <p className="text-xs font-semibold text-slate-500">Active workspace</p>
+//               <p className="text-xs font-semibold text-neutral-500">Active workspace</p>
 //               <p className="text-sm font-semibold text-slate-805 mt-0.5">
 //                 {activeWorkspace === 'hr' ? 'HR Operations' : 'Marketing Suite'}
 //               </p>
 //             </div>
 //           </div>
-//           <ChevronDown className={`h-4 w-4 text-slate-450 transition-transform ${switcherOpen ? 'rotate-180' : ''}`} />
+//           <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform ${switcherOpen ? 'rotate-180' : ''}`} />
 //         </button>
 
 //         {switcherOpen && (
-//           <div className="absolute left-5 right-5 mt-2 z-50 rounded-xl bg-white border border-slate-200 shadow-xl p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
+//           <div className="absolute left-5 right-5 mt-2 z-50 rounded-xl bg-white border border-neutral-200 shadow-xl p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
 //             <button
 //               onClick={() => handleWorkspaceSwitch('hr')}
 //               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-semibold transition ${
 //                 activeWorkspace === 'hr'
-//                   ? 'bg-indigo-50 text-indigo-700 font-bold'
-//                   : 'text-slate-600 hover:bg-slate-50'
+//                   ? 'bg-neutral-100 text-neutral-900 font-bold'
+//                   : 'text-neutral-600 hover:bg-neutral-50'
 //               }`}
 //             >
-//               <span className="h-2 w-2 rounded-full bg-indigo-600" />
+//               <span className="h-2 w-2 rounded-full bg-neutral-900" />
 //               <span>HR Operations</span>
 //             </button>
 //             <button
 //               onClick={() => handleWorkspaceSwitch('marketing')}
 //               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-semibold transition ${
 //                 activeWorkspace === 'marketing'
-//                   ? 'bg-violet-50 text-violet-700 font-bold'
-//                   : 'text-slate-600 hover:bg-slate-50'
+//                   ? 'bg-neutral-100 text-neutral-700 font-bold'
+//                   : 'text-neutral-600 hover:bg-neutral-50'
 //               }`}
 //             >
-//               <span className="h-2 w-2 rounded-full bg-violet-600" />
+//               <span className="h-2 w-2 rounded-full bg-neutral-700" />
 //               <span>Marketing Suite</span>
 //             </button>
-//             <div className="border-t border-slate-150 my-1" />
+//             <div className="border-t border-neutral-200 my-1" />
 //             <button
 //               onClick={() => {
 //                 try { authLogout(); } catch (e) {}
@@ -180,18 +180,18 @@
 //           <div key={item.label} className="space-y-1">
 //             <button
 //               type="button"
-//               className={`flex w-full justify-between gap-3 rounded-2xl px-4 py-3 text-xs font-semibold transition ${
+//               className={`flex w-full justify-between gap-3 rounded-lg px-4 py-3 text-xs font-semibold transition ${
 //                 isSectionActive(item)
-//                   ? 'bg-indigo-50 text-indigo-700 border border-indigo-150 font-bold'
-//                   : 'text-slate-600 hover:bg-slate-50'
+//                   ? 'bg-neutral-100 text-neutral-900 border border-neutral-200 font-bold'
+//                   : 'text-neutral-600 hover:bg-neutral-50'
 //               }`}
 //               onClick={() => toggleSection(item.label, item.path)}
 //             >
-//               <span className="flex gap-3 font-semibold text-slate-800 items-center">
-//                 <item.icon className="h-4 w-4 text-slate-500" />
+//               <span className="flex gap-3 font-semibold text-neutral-800 items-center">
+//                 <item.icon className="h-4 w-4 text-neutral-500" />
 //                 {item.label}
 //               </span>
-//               <ChevronDown className={`h-4 w-4 text-slate-450 transition-transform ${openSections[item.label] ? 'rotate-180' : 'rotate-0'}`} />
+//               <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform ${openSections[item.label] ? 'rotate-180' : 'rotate-0'}`} />
 //             </button>
 
 //             <div className={`${openSections[item.label] ? 'block' : 'hidden'} space-y-1 pt-2`}>
@@ -204,8 +204,8 @@
 //       </div>
 
 //       {/* Footer SSO info */}
-//       <div className="flex-none p-5 border-t border-slate-150 bg-slate-50">
-//         <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-slate-200">
+//       <div className="flex-none p-5 border-t border-neutral-200 bg-neutral-50">
+//         <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-neutral-200">
 //           <div className="flex items-center gap-2">
 //             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
 //             <span className="text-xs font-semibold text-emerald-600">SSO secured</span>
@@ -215,7 +215,7 @@
 //               try { authLogout(); } catch (e) {}
 //               try { workspaceLogout(); } catch (e) {}
 //             }}
-//             className="p-1.5 text-slate-400 hover:text-red-655 hover:bg-red-50 rounded-lg transition"
+//             className="p-1.5 text-neutral-500 hover:text-red-655 hover:bg-red-50 rounded-lg transition"
 //             title="Log Out of SSO"
 //           >
 //             <LogOut className="h-4 w-4" />
@@ -235,6 +235,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, Command, LogOut } from "lucide-react";
 import MenuItem from "./MenuItem";
+import NotificationBell from "./NotificationBell";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from '../lib/workspaceContext';
@@ -326,32 +327,32 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-30 w-[288px] min-w-[288px] max-w-[288px] flex-none transform flex-col border-r border-slate-200 bg-white text-slate-800 transition-transform duration-300 h-screen flex ${
+      className={`fixed inset-y-0 left-0 z-30 w-[288px] min-w-[288px] max-w-[288px] flex-none transform flex-col border-r border-neutral-200 bg-white text-neutral-800 transition-transform duration-300 h-screen flex ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       } lg:translate-x-0`}
     >
       <div className="flex-none p-5 pb-3">
-        <div className="flex items-center gap-3 border-b border-slate-150 pb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/10">
-            <Command className="h-5 w-5" />
+        <div className="flex items-center justify-between gap-3 border-b border-neutral-200 pb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-900">
+              <Command className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-neutral-900">ONECRM</p>
+              <p className="text-xs text-neutral-500 truncate">Role based access</p>
+            </div>
           </div>
-
-          <div>
-            <p className="text-base font-bold text-slate-900">ONECRM</p>
-            <p className="text-xs font-medium text-slate-400">
-              Role Based Access Portal
-            </p>
-          </div>
+          <NotificationBell />
         </div>
       </div>
 
       <div className="px-5 py-2 flex-none">
-        <div className="rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5">
-          <p className="text-xs font-semibold text-slate-500">Logged in as</p>
-          <p className="text-sm font-bold text-slate-800 mt-0.5">
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+          <p className="text-xs text-neutral-500">Logged in as</p>
+          <p className="text-sm font-medium text-neutral-900 mt-0.5">
             {user?.role || "User"}
           </p>
-          <p className="text-xs text-slate-400 mt-1 truncate">
+          <p className="text-xs text-neutral-500 mt-1 truncate">
             {user?.fullName || user?.email}
           </p>
         </div>
@@ -362,20 +363,20 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
           <div key={item.label} className="space-y-1">
             <button
               type="button"
-              className={`flex w-full justify-between gap-3 rounded-2xl px-4 py-3 text-xs font-semibold transition ${
+              className={`flex w-full justify-between gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition ${
                 isSectionActive(item)
-                  ? "bg-indigo-50 text-indigo-700 border border-indigo-150 font-bold"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "bg-neutral-100 text-neutral-900"
+                  : "text-neutral-600 hover:bg-neutral-50"
               }`}
               onClick={() => toggleSection(item.label, item.path)}
             >
-              <span className="flex gap-3 font-semibold text-slate-800 items-center">
-                <item.icon className="h-4 w-4 text-slate-500" />
+              <span className="flex gap-3 text-neutral-800 items-center">
+                <item.icon className="h-4 w-4 text-neutral-500" />
                 {item.label}
               </span>
 
               <ChevronDown
-                className={`h-4 w-4 text-slate-450 transition-transform ${
+                className={`h-4 w-4 text-neutral-400 transition-transform ${
                   openSections[item.label] ? "rotate-180" : "rotate-0"
                 }`}
               />
@@ -401,14 +402,14 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
         ))}
       </div>
 
-      <div className="flex-none p-5 border-t border-slate-150 bg-slate-50">
+      <div className="flex-none p-5 border-t border-neutral-200 bg-neutral-50">
         <button
            onClick={() => {
               handleLogout();
               try { authLogout(); } catch (e) {}
               try { workspaceLogout(); } catch (e) {}
             }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white p-3 border border-slate-200 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-white p-3 border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition"
         >
           <LogOut className="h-4 w-4" />
           Logout

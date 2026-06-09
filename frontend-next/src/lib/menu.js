@@ -231,55 +231,13 @@ export const navMenu = [
   },
   {
     label: "Student CRM",
-    path: "/student-crm",
+    path: "/student-crm/applications",
     icon: Users,
     subItems: [
-      {
-        label: "Student Management",
-        path: "/student-crm/student-management",
-        icon: GraduationCap,
-      },
       {
         label: "Applications",
         path: "/student-crm/applications",
         icon: ClipboardList,
-      },
-      {
-        label: "Visa Management",
-        path: "/student-crm/visa-management",
-        icon: Globe,
-      },
-      {
-        label: "Counselling",
-        path: "/student-crm/counselling",
-        icon: MessageCircle,
-      },
-    ],
-  },
-  {
-    label: "Agency CRM",
-    path: "/agency-crm",
-    icon: Folder,
-    subItems: [
-      {
-        label: "Agency Management",
-        path: "/agency-crm/agency-management",
-        icon: Users,
-      },
-      {
-        label: "Agency Leads",
-        path: "/agency-crm/agency-leads",
-        icon: ClipboardList,
-      },
-      {
-        label: "Co-branding Tools",
-        path: "/agency-crm/co-branding-tools",
-        icon: Layers,
-      },
-      {
-        label: "Commission Management",
-        path: "/agency-crm/commission-management",
-        icon: Percent,
       },
     ],
   },
@@ -289,18 +247,13 @@ export const navMenu = [
     path: "/hr",
     icon: ShieldCheck,
     subItems: [
-      // Recruitment lifecycle (job postings, interviews, offers, onboarding all live inside the tracker)
-      { label: "Recruitment Tracker", path: "/hr/recruitment-tracker", icon: Search, permission: ["MANAGE_EMPLOYEES"] },
-
-      // Core Workforce Operations
+      { label: "Overview", path: "/hr", icon: LayoutDashboard, permission: ["MANAGE_EMPLOYEES", "VIEW_ALL_EMPLOYEES"] },
+      { label: "My HR", path: "/hr/me", icon: Clock, permission: ["VIEW_HR"] },
       { label: "Employee Directory", path: "/hr/employee-directory", icon: Users, permission: ["VIEW_ALL_EMPLOYEES", "MANAGE_EMPLOYEES"] },
+      { label: "Recruitment", path: "/hr/recruitment-tracker", icon: Search, permission: ["MANAGE_EMPLOYEES"] },
       { label: "Attendance", path: "/hr/attendance", icon: Clock, permission: ["VIEW_ATTENDANCE", "MANAGE_ATTENDANCE"] },
-      { label: "Leave Management", path: "/hr/leave-management", icon: CalendarCheck, permission: ["VIEW_LEAVE", "MANAGE_LEAVE"] },
-
-      // Performance Management
+      { label: "Leave", path: "/hr/leave-management", icon: CalendarCheck, permission: ["VIEW_LEAVE", "MANAGE_LEAVE"] },
       { label: "Performance", path: "/hr/performance-reviews", icon: Star, permission: ["VIEW_REPORTS", "MANAGE_EMPLOYEES"] },
-
-      // Compensation & Payroll
       { label: "Payroll", path: "/hr/payroll", icon: DollarSign, permission: ["MANAGE_PAYROLL", "VIEW_OWN_PAYSLIP"] },
     ],
   },
@@ -316,19 +269,6 @@ export const navMenu = [
         icon: Key,
         permission: ["VIEW_ADMIN", "MANAGE_ADMINS"],
       },
-      {
-        label: "System Settings",
-        path: "/admin-settings/system-settings",
-        icon: Settings,
-        permission: ["MANAGE_SYSTEM"],
-      },
-      {
-        label: "Content Management",
-        path: "/admin-settings/content-management",
-        icon: FileText,
-        permission: ["MANAGE_SYSTEM", "VIEW_ADMIN"],
-      },
-      { label: "Branding", path: "/admin-settings/branding", icon: Image, permission: ["MANAGE_SYSTEM", "VIEW_ADMIN"] },
     ],
   },
 ];

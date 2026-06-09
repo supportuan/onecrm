@@ -159,16 +159,18 @@ export const submitRemoteClockIn = async (data) => {
   return handleResponse(res);
 };
 
-// ==========================================
-// 6. Attendance Calendar & Regularization
-// ==========================================
-
-export const getTeamCalendar = async (month, year) => {
-  const res = await tenantFetch(
-    `${API_URL}/attendance/team-calendar?month=${month}&year=${year}`,
-  );
+export const getMyAttendance = async (month, year) => {
+  const params = new URLSearchParams();
+  if (month) params.set("month", String(month));
+  if (year) params.set("year", String(year));
+  const q = params.toString();
+  const res = await tenantFetch(`${API_URL}/attendance/me${q ? `?${q}` : ""}`);
   return handleResponse(res);
 };
+
+// ==========================================
+// 6. Attendance regularization
+// ==========================================
 
 export const getRegularizations = async () => {
   const res = await tenantFetch(`${API_URL}/attendance/regularizations`);
@@ -196,6 +198,51 @@ export const processRegularization = async (id, status, approverRemarks) => {
 // ==========================================
 // 7. Leave Policies & Plans
 // ==========================================
+
+export const getHrDashboardSummary = async () => {
+  const res = await tenantFetch(`${API_URL}/dashboard/summary`);
+  return handleResponse(res);
+};
+
+export const getHrMe = async () => {
+  const res = await tenantFetch(`${API_URL}/me`);
+  return handleResponse(res);
+};
+
+export const getMyLeaveRequests = async () => {
+  const res = await tenantFetch(`${API_URL}/leave/requests?mine=true`);
+  return handleResponse(res);
+};
+
+export const getPendingLeaveRequests = async () => {
+  const res = await tenantFetch(`${API_URL}/leave/requests?status=PENDING`);
+  return handleResponse(res);
+};
+
+export const createLeaveRequest = async (data) => {
+  const res = await tenantFetch(`${API_URL}/leave/requests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const processLeaveRequest = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/leave/requests/${id}/process`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const cancelLeaveRequest = async (id) => {
+  const res = await tenantFetch(`${API_URL}/leave/requests/${id}/cancel`, {
+    method: "PUT",
+  });
+  return handleResponse(res);
+};
 
 export const getLeavePlans = async () => {
   const res = await tenantFetch(`${API_URL}/leave/plans`);

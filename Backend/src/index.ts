@@ -14,8 +14,7 @@ import rbacRouter from './modules/rbac/rbac.routes.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
 import studentCrmRouter from './modules/student-crm/student-crm.routes.js';
 import { ensureDefaults, loadPermissions } from './modules/rbac/rbac.service.js';
-// @ts-ignore
-import customerRouter from './routes/customers.js';
+import { startNotificationScheduler } from './modules/notifications/scheduler.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -41,7 +40,6 @@ app.use('/api/marketing', marketingRouter);
 app.use('/api/hr', hrRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/student-crm', studentCrmRouter);
-app.use('/api/customers', customerRouter);
 
 // Mount global error handling middleware
 app.use(errorHandler);
@@ -53,6 +51,8 @@ app.listen(port, async () => {
     await ensureDefaults();
     await loadPermissions();
     console.log('[One CRM] RBAC permission map loaded');
+    startNotificationScheduler();
+    console.log('[One CRM] Notification scheduler started');
   } catch (err) {
     console.error('[One CRM] Failed to initialize RBAC permissions', err);
   }

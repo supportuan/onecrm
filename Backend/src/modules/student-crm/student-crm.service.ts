@@ -1,6 +1,7 @@
 import { prisma } from '../../prisma.js';
 import { getDefaultChecklist, type ChecklistItem } from './checklists.js';
 import { notify } from '../notifications/notifications.service.js';
+import { safeNotify } from '../notifications/recipients.js';
 
 /** Generate a human-readable application code like APP-2026-0007. */
 const generateApplicationCode = async (): Promise<string> => {
@@ -202,6 +203,20 @@ export const createApplication = async (data: {
     data: { applicationId: app.id, fromStage: null, toStage: 'DRAFT', notes: 'application created' },
   });
   await seedChecklistFor(app.id, data.country, data.university);
+
+  if (data.assignedToId) {
+    const student = await prisma.student.findUnique({ where: { id: data.studentId } });
+    await safeNotify({
+      recipientId: data.assignedToId,
+      templateKey: 'application.task_assigned',
+      vars: {
+        taskTitle: 'New application assignment',
+        studentName: student?.fullName,
+        applicationId: app.id,
+      },
+    });
+  }
+
   return getApplication(app.id);
 };
 
@@ -213,7 +228,33 @@ export const updateApplication = async (id: number, data: Record<string, any>) =
       payload[k] = k === 'deadline' && data.deadline ? new Date(data.deadline) : data[k];
     }
   }
+
+  const previous =
+    'assignedToId' in data
+      ? await prisma.application.findUnique({
+          where: { id },
+          include: { student: true },
+        })
+      : null;
+
   await prisma.application.update({ where: { id }, data: payload });
+
+  if (
+    previous &&
+    data.assignedToId &&
+    data.assignedToId !== previous.assignedToId
+  ) {
+    await safeNotify({
+      recipientId: data.assignedToId,
+      templateKey: 'application.task_assigned',
+      vars: {
+        taskTitle: 'Application reassigned to you',
+        studentName: previous.student.fullName,
+        applicationId: id,
+      },
+    });
+  }
+
   return getApplication(id);
 };
 
@@ -250,28 +291,9 @@ export const setStage = async (
     },
   });
 
-  // Notify the counsellor assigned to this application.
   if (current.assignedToId) {
-    try {
-      await notify({
-        recipientId: current.assignedToId,
-        templateKey: 'application.stage_changed',
-        vars: {
-          studentName: current.student.fullName,
-          university: current.university,
-          stage: toStage.replace(/_/g, ' ').toLowerCase(),
-          applicationId,
-        },
-      });
-    } catch (_) {
-      /* swallow — stage advance shouldn't fail because of a notification */
-    }
-  }
-
-  // On OFFER_RECEIVED, fire the offer notification too.
-  if (toStage === 'OFFER_RECEIVED' && current.assignedToId) {
-    try {
-      await notify({
+    if (toStage === 'OFFER_RECEIVED') {
+      await safeNotify({
         recipientId: current.assignedToId,
         templateKey: 'application.offer_received',
         vars: {
@@ -281,7 +303,18 @@ export const setStage = async (
           applicationId,
         },
       });
-    } catch (_) {}
+    } else {
+      await safeNotify({
+        recipientId: current.assignedToId,
+        templateKey: 'application.stage_changed',
+        vars: {
+          studentName: current.student.fullName,
+          university: current.university,
+          stage: toStage.replace(/_/g, ' ').toLowerCase(),
+          applicationId,
+        },
+      });
+    }
   }
 
   return getApplication(applicationId);
@@ -332,17 +365,15 @@ export const notifyMissingDocs = async (applicationId: number) => {
   if (!app) return;
   const missing = app.documents.filter((d) => d.required && d.status === 'PENDING').map((d) => d.name);
   if (missing.length === 0 || !app.assignedToId) return;
-  try {
-    await notify({
-      recipientId: app.assignedToId,
-      templateKey: 'application.document_missing',
-      vars: {
-        applicationCode: app.applicationCode,
-        missing,
-        applicationId,
-      },
-    });
-  } catch (_) {}
+  await safeNotify({
+    recipientId: app.assignedToId,
+    templateKey: 'application.document_missing',
+    vars: {
+      applicationCode: app.applicationCode,
+      missing,
+      applicationId,
+    },
+  });
 };
 
 // -------------------- Offer / Visa --------------------
@@ -397,13 +428,36 @@ export const upsertVisaTracking = async (
     ...(data.documents !== undefined && { documents: data.documents }),
     ...(data.notes !== undefined && { notes: data.notes }),
   };
-  if (existing) {
-    return prisma.visaTracking.update({ where: { applicationId }, data: payload });
-  }
-  const app = await prisma.application.findUnique({ where: { id: applicationId } });
-  return prisma.visaTracking.create({
-    data: { applicationId, country: data.country || app?.country || 'UNKNOWN', ...payload },
+  const app = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: { student: true },
   });
+  if (!app) throw new Error('application not found');
+
+  const prevStatus = existing?.status;
+  const result = existing
+    ? await prisma.visaTracking.update({ where: { applicationId }, data: payload })
+    : await prisma.visaTracking.create({
+        data: { applicationId, country: data.country || app.country || 'UNKNOWN', ...payload },
+      });
+
+  if (
+    app.assignedToId &&
+    data.status &&
+    data.status !== prevStatus
+  ) {
+    await safeNotify({
+      recipientId: app.assignedToId,
+      templateKey: 'application.visa_update',
+      vars: {
+        studentName: app.student.fullName,
+        status: String(data.status).replace(/_/g, ' ').toLowerCase(),
+        applicationId,
+      },
+    });
+  }
+
+  return result;
 };
 
 // -------------------- Lead → Application conversion (Phase 2) --------------------
@@ -473,17 +527,15 @@ export const createApplicationFromLead = async (
   if (assignedToId) recipients.add(assignedToId);
   if (actingUserId && actingUserId !== assignedToId) recipients.add(actingUserId);
   for (const recipientId of recipients) {
-    try {
-      await notify({
-        recipientId,
-        templateKey: 'lead.converted',
-        vars: {
-          studentName: student.fullName,
-          country,
-          applicationId: application?.id,
-        },
-      });
-    } catch (_) {}
+    await safeNotify({
+      recipientId,
+      templateKey: 'lead.converted',
+      vars: {
+        studentName: student.fullName,
+        country,
+        applicationId: application?.id,
+      },
+    });
   }
 
   return { student, application };

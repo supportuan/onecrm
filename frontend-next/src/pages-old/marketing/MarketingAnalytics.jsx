@@ -442,7 +442,7 @@ const MarketingAnalytics = () => {
                     className="h-[50px] border-b border-gray-200"
                   >
                     {/* Metric Name */}
-                    <td className="pl-8 pr-4 align-middle text-[12px] font-semibold text-[#1e293b]">
+                    <td className="pl-8 pr-4 align-middle text-[12px] font-semibold text-neutral-800">
                       {m.metricKey}
                     </td>
 
@@ -574,7 +574,7 @@ const MarketingAnalytics = () => {
   //                   setPeriod(p.value);
   //                   setShowPeriodDropdown(false);
   //                 }}
-  //                 className="block w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-slate-50"
+  //                 className="block w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-neutral-50"
   //                 style={{
   //                   color: period === p.value ? '#7c3aed' : '#475569',
   //                   fontWeight: period === p.value ? 700 : 500,
@@ -591,7 +591,7 @@ const MarketingAnalytics = () => {
   //     {/* Error banner */}
   //     {error && (
   //       <div
-  //         className="flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-semibold"
+  //         className="flex items-center gap-3 px-5 py-4 rounded-lg text-sm font-semibold"
   //         style={{
   //           background: '#fef3c7',
   //           border: '1px solid #fde68a',
@@ -606,7 +606,7 @@ const MarketingAnalytics = () => {
   //     {/* Loading state */}
   //     {loading ? (
   //       <div
-  //         className="text-center py-24 rounded-2xl"
+  //         className="text-center py-24 rounded-lg"
   //         style={{ background: '#fff', border: '1px solid #e2e8f0' }}
   //       >
   //         <Loader2
@@ -622,7 +622,7 @@ const MarketingAnalytics = () => {
   //       </div>
   //     ) : !data ? (
   //       <div
-  //         className="text-center py-24 rounded-2xl"
+  //         className="text-center py-24 rounded-lg"
   //         style={{ background: '#fff', border: '1px solid #e2e8f0' }}
   //       >
   //         <AlertCircle
@@ -640,7 +640,7 @@ const MarketingAnalytics = () => {
   //       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
   //         {/* ─── TOP LEFT: Key Marketing Metrics Table ─── */}
   //         <div
-  //           className="rounded-2xl p-5"
+  //           className="rounded-lg p-5"
   //           style={{
   //             background: '#fff',
   //             border: '1px solid #e2e8f0',
@@ -666,7 +666,7 @@ const MarketingAnalytics = () => {
   //               </span>
   //             </div>
   //             <button
-  //               className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:bg-slate-50"
+  //               className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:bg-neutral-50"
   //               style={{ color: '#3b82f6' }}
   //             >
   //               <Eye className="h-3.5 w-3.5" />
@@ -710,7 +710,7 @@ const MarketingAnalytics = () => {
   //                             ? '1px solid #f8fafc'
   //                             : 'none',
   //                       }}
-  //                       className="hover:bg-slate-50/50 transition-colors"
+  //                       className="hover:bg-neutral-50/50 transition-colors"
   //                     >
   //                       <td
   //                         className="py-3 px-3 font-medium"
@@ -758,7 +758,7 @@ const MarketingAnalytics = () => {
 
   //         {/* ─── TOP RIGHT: Marketing Performance Overview Area Chart ─── */}
   //         <div
-  //           className="rounded-2xl p-5"
+  //           className="rounded-lg p-5"
   //           style={{
   //             background: '#fff',
   //             border: '1px solid #e2e8f0',
@@ -829,7 +829,7 @@ const MarketingAnalytics = () => {
 
   //         {/* ─── BOTTOM LEFT: Marketing Performance Overview Pie Chart ─── */}
   //         <div
-  //           className="rounded-2xl p-5"
+  //           className="rounded-lg p-5"
   //           style={{
   //             background: '#fff',
   //             border: '1px solid #e2e8f0',
@@ -879,7 +879,7 @@ const MarketingAnalytics = () => {
 
   //         {/* ─── BOTTOM RIGHT: Agency Funnel Bar Chart ─── */}
   //         <div
-  //           className="rounded-2xl p-5"
+  //           className="rounded-lg p-5"
   //           style={{
   //             background: '#fff',
   //             border: '1px solid #e2e8f0',

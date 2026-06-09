@@ -1,6 +1,12 @@
 'use client';
-import AdminSettings from '@/pages-old/AdminSettings';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
-  return <AdminSettings />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/admin-settings/users');
+  }, [router]);
+  return null;
 }

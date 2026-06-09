@@ -1,6 +1,15 @@
 'use client';
-import LeaveManagement from '@/pages-old/hr/LeaveManagement';
+
+import { Suspense } from 'react';
+import PageGuard from '@/components/PageGuard';
+import { LeaveManagement } from '@/features/hr';
 
 export default function Page() {
-  return <LeaveManagement />;
+  return (
+    <PageGuard permissions={['VIEW_LEAVE', 'MANAGE_LEAVE']}>
+      <Suspense fallback={<div className="p-8 text-sm text-neutral-500">Loading leave…</div>}>
+        <LeaveManagement />
+      </Suspense>
+    </PageGuard>
+  );
 }

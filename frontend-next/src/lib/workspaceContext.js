@@ -1,6 +1,8 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuthStore } from '@/lib/stores/authStore';
+import { getDefaultHrRoute } from '@/features/hr/routing';
 
 const WorkspaceContext = createContext({
   activeWorkspace: null,
@@ -31,7 +33,8 @@ export const WorkspaceProvider = ({ children }) => {
     localStorage.setItem('activeWorkspace', workspace);
     
     if (workspace === 'hr') {
-      router.push('/hr/employee-directory');
+      const role = useAuthStore.getState().user?.role;
+      router.push(getDefaultHrRoute(role) || '/hr');
     } else if (workspace === 'marketing') {
       router.push('/marketing/lead-management');
     }

@@ -37,14 +37,14 @@ import { usePermissions } from '@/lib/auth/PermissionsContext';
  *  → Offer Accepted / Rejected → Visa Process → Enrolled
  */
 const STAGES = [
-  { key: 'DRAFT', label: 'draft' },
-  { key: 'DOCUMENTS_PENDING', label: 'documents pending' },
-  { key: 'SUBMITTED', label: 'submitted' },
-  { key: 'UNDER_REVIEW', label: 'under review' },
-  { key: 'OFFER_RECEIVED', label: 'offer received' },
-  { key: 'OFFER_ACCEPTED', label: 'offer accepted' },
-  { key: 'VISA_PROCESS', label: 'visa process' },
-  { key: 'ENROLLED', label: 'enrolled' },
+  { key: 'DRAFT', label: 'Draft' },
+  { key: 'DOCUMENTS_PENDING', label: 'Documents pending' },
+  { key: 'SUBMITTED', label: 'Submitted' },
+  { key: 'UNDER_REVIEW', label: 'Under review' },
+  { key: 'OFFER_RECEIVED', label: 'Offer received' },
+  { key: 'OFFER_ACCEPTED', label: 'Offer accepted' },
+  { key: 'VISA_PROCESS', label: 'Visa process' },
+  { key: 'ENROLLED', label: 'Enrolled' },
 ];
 
 const STAGE_INDEX = Object.fromEntries(STAGES.map((s, i) => [s.key, i]));
@@ -54,13 +54,13 @@ const VISA_STATUSES = ['NOT_STARTED', 'DOCUMENTS_GATHERING', 'APPLIED', 'INTERVI
 const OFFER_DECISION = ['PENDING', 'ACCEPTED', 'REJECTED'];
 
 const INPUT_CLS =
-  'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-800 focus:border-indigo-600 outline-none transition-all disabled:opacity-70';
+  'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[11px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all disabled:opacity-70';
 
 const stageBadge = (stageKey) => {
   if (stageKey === 'ENROLLED') return 'bg-emerald-50 border-emerald-200 text-emerald-700';
   if (stageKey === 'OFFER_REJECTED') return 'bg-rose-50 border-rose-200 text-rose-700';
   if (stageKey?.startsWith('OFFER')) return 'bg-amber-50 border-amber-200 text-amber-700';
-  return 'bg-indigo-50 border-indigo-200 text-indigo-700';
+  return 'bg-neutral-100 border-neutral-200 text-neutral-900';
 };
 
 const formatDate = (d) => {
@@ -299,10 +299,10 @@ const Applications = () => {
   const isFinal = appDetail?.stage === 'ENROLLED';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-8 font-sans">
+    <div className="ui-page text-neutral-800 font-sans">
       {toast.msg && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold text-white ${
+          className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 text-xs font-semibold text-white ${
             toast.kind === 'ok' ? 'bg-emerald-500' : 'bg-rose-500'
           }`}
         >
@@ -313,8 +313,8 @@ const Applications = () => {
 
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-indigo-900">applications</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">applications</h1>
+          <p className="text-neutral-500 text-sm mt-1">
             track student applications from initiation through enrolment.{' '}
             {can('VIEW_MARKETING') && 'leads from marketing can be converted into applications here.'}
           </p>
@@ -323,7 +323,7 @@ const Applications = () => {
           {canManage && (
             <button
               onClick={() => setShowNewStudent(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-semibold bg-white border border-slate-200 text-slate-700 hover:border-indigo-300 hover:text-indigo-700 transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-neutral-900 transition-all"
             >
               <GraduationCap size={13} /> new student
             </button>
@@ -331,7 +331,7 @@ const Applications = () => {
           {canManage && selectedStudent && (
             <button
               onClick={() => setShowNewApp(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[11px] font-semibold bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm transition-all"
             >
               <Plus size={13} /> new application
             </button>
@@ -341,27 +341,27 @@ const Applications = () => {
 
       <div className="grid grid-cols-12 gap-5">
         {/* Students column */}
-        <div className="col-span-12 lg:col-span-3 bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden max-h-[calc(100vh-180px)]">
-          <div className="p-4 border-b border-slate-200 bg-slate-50 space-y-3">
+        <div className="col-span-12 lg:col-span-3 ui-panel flex flex-col overflow-hidden max-h-[calc(100vh-180px)]">
+          <div className="p-4 border-b border-neutral-200 bg-neutral-50 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-slate-700">students</h3>
-              <span className="text-[10px] font-semibold text-slate-500">{students.length}</span>
+              <h3 className="text-xs font-semibold text-neutral-700">students</h3>
+              <span className="text-[10px] font-semibold text-neutral-500">{students.length}</span>
             </div>
             <div className="relative">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
               <input
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
                 placeholder="search by name or email..."
-                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-medium text-slate-700 focus:border-indigo-600 outline-none"
+                className="w-full pl-9 pr-3 py-2 bg-white border border-neutral-200 rounded-xl text-[11px] font-medium text-neutral-700 focus:border-neutral-900 outline-none"
               />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+          <div className="flex-1 overflow-y-auto divide-y divide-neutral-100">
             {loadingStudents ? (
-              <div className="p-8 text-center text-[10px] text-slate-400">loading...</div>
+              <div className="p-8 text-center text-[10px] text-neutral-500">Loading...</div>
             ) : students.length === 0 ? (
-              <div className="p-8 text-center text-[10px] text-slate-400">no students yet.</div>
+              <div className="p-8 text-center text-[10px] text-neutral-500">no students yet.</div>
             ) : (
               students.map((s) => {
                 const active = selectedStudent?.id === s.id;
@@ -370,12 +370,12 @@ const Applications = () => {
                     key={s.id}
                     onClick={() => setSelectedStudent(s)}
                     className={`w-full text-left px-4 py-3 transition ${
-                      active ? 'bg-indigo-50/50 border-l-4 border-l-indigo-600' : 'hover:bg-slate-50/60'
+                      active ? 'bg-neutral-100/50 border-l-4 border-l-neutral-900' : 'hover:bg-neutral-50/60'
                     }`}
                   >
-                    <p className={`text-[11px] font-semibold ${active ? 'text-indigo-800' : 'text-slate-800'}`}>{s.fullName}</p>
-                    <p className="text-[9px] text-slate-500 truncate mt-0.5 lowercase">{s.email}</p>
-                    <p className="text-[9px] text-slate-400 mt-1">
+                    <p className={`text-[11px] font-semibold ${active ? 'text-neutral-800' : 'text-neutral-800'}`}>{s.fullName}</p>
+                    <p className="text-[9px] text-neutral-500 truncate mt-0.5">{s.email}</p>
+                    <p className="text-[9px] text-neutral-500 mt-1">
                       {s.applications?.length || 0} application{(s.applications?.length || 0) === 1 ? '' : 's'}
                     </p>
                   </button>
@@ -386,20 +386,20 @@ const Applications = () => {
         </div>
 
         {/* Applications column */}
-        <div className="col-span-12 lg:col-span-3 bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden max-h-[calc(100vh-180px)]">
-          <div className="p-4 border-b border-slate-200 bg-slate-50">
-            <h3 className="text-xs font-semibold text-slate-700">
+        <div className="col-span-12 lg:col-span-3 ui-panel flex flex-col overflow-hidden max-h-[calc(100vh-180px)]">
+          <div className="p-4 border-b border-neutral-200 bg-neutral-50">
+            <h3 className="text-xs font-semibold text-neutral-700">
               {selectedStudent ? `applications · ${selectedStudent.fullName}` : 'applications'}
             </h3>
-            <p className="text-[10px] text-slate-500 mt-0.5">{apps.length} total</p>
+            <p className="text-[10px] text-neutral-500 mt-0.5">{apps.length} total</p>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+          <div className="flex-1 overflow-y-auto divide-y divide-neutral-100">
             {loadingApps ? (
-              <div className="p-8 text-center text-[10px] text-slate-400">loading...</div>
+              <div className="p-8 text-center text-[10px] text-neutral-500">Loading...</div>
             ) : !selectedStudent ? (
-              <div className="p-8 text-center text-[10px] text-slate-400">select a student first.</div>
+              <div className="p-8 text-center text-[10px] text-neutral-500">select a student first.</div>
             ) : apps.length === 0 ? (
-              <div className="p-8 text-center text-[10px] text-slate-400">no applications yet.</div>
+              <div className="p-8 text-center text-[10px] text-neutral-500">no applications yet.</div>
             ) : (
               apps.map((a) => {
                 const active = selectedAppId === a.id;
@@ -408,12 +408,12 @@ const Applications = () => {
                     key={a.id}
                     onClick={() => setSelectedAppId(a.id)}
                     className={`w-full text-left px-4 py-3 transition ${
-                      active ? 'bg-indigo-50/50 border-l-4 border-l-indigo-600' : 'hover:bg-slate-50/60'
+                      active ? 'bg-neutral-100/50 border-l-4 border-l-neutral-900' : 'hover:bg-neutral-50/60'
                     }`}
                   >
-                    <p className="text-[10px] font-mono font-semibold text-indigo-600">{a.applicationCode}</p>
-                    <p className={`text-[11px] font-semibold mt-1 ${active ? 'text-indigo-800' : 'text-slate-800'}`}>{a.university}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
+                    <p className="text-[10px] font-mono font-semibold text-neutral-700">{a.applicationCode}</p>
+                    <p className={`text-[11px] font-semibold mt-1 ${active ? 'text-neutral-800' : 'text-neutral-800'}`}>{a.university}</p>
+                    <p className="text-[10px] text-neutral-500 mt-0.5">
                       {a.course} · {a.country}
                     </p>
                     <span
@@ -433,14 +433,14 @@ const Applications = () => {
         {/* Detail column */}
         <div className="col-span-12 lg:col-span-6 space-y-5">
           {loadingDetail ? (
-            <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-16 text-center text-[11px] text-slate-400">
+            <div className="ui-panel p-16 text-center text-[11px] text-neutral-500">
               loading application...
             </div>
           ) : !appDetail ? (
-            <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-16 text-center space-y-2">
-              <FileText size={28} className="text-indigo-600 mx-auto opacity-70" />
-              <p className="text-xs font-semibold text-slate-800">no application selected</p>
-              <p className="text-[10px] text-slate-500">create or select one to see its 8-stage workflow.</p>
+            <div className="ui-panel p-16 text-center space-y-2">
+              <FileText size={28} className="text-neutral-700 mx-auto opacity-70" />
+              <p className="text-xs font-semibold text-neutral-800">no application selected</p>
+              <p className="text-[10px] text-neutral-500">create or select one to see its 8-stage workflow.</p>
             </div>
           ) : (
             <>
@@ -474,13 +474,13 @@ const Applications = () => {
 /* -------------------- sub-components -------------------- */
 
 const ApplicationHeader = ({ app, canManage, onAdvance, isFinal }) => (
-  <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <div className="ui-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
-      <p className="text-[10px] font-mono font-semibold text-indigo-600">{app.applicationCode}</p>
-      <h2 className="text-base font-semibold text-slate-900 mt-1">
-        {app.university} · <span className="text-slate-600">{app.course}</span>
+      <p className="text-[10px] font-mono font-semibold text-neutral-700">{app.applicationCode}</p>
+      <h2 className="text-base font-semibold text-neutral-900 mt-1">
+        {app.university} · <span className="text-neutral-600">{app.course}</span>
       </h2>
-      <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] text-slate-500">
+      <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] text-neutral-500">
         <span className="flex items-center gap-1">
           <Globe size={11} /> {app.country}
         </span>
@@ -496,7 +496,7 @@ const ApplicationHeader = ({ app, canManage, onAdvance, isFinal }) => (
     {canManage && !isFinal && (
       <button
         onClick={onAdvance}
-        className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-semibold shadow-sm flex items-center gap-1.5"
+        className="px-5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-semibold shadow-sm flex items-center gap-1.5"
       >
         advance stage <ArrowRight size={13} />
       </button>
@@ -505,10 +505,10 @@ const ApplicationHeader = ({ app, canManage, onAdvance, isFinal }) => (
 );
 
 const StageStepper = ({ app, currentIdx, onJump }) => (
-  <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 space-y-3">
+  <div className="ui-panel p-6 space-y-3">
     <div className="flex items-center justify-between">
-      <h4 className="text-[10px] font-semibold text-slate-500">8-stage workflow</h4>
-      {onJump && <span className="text-[9px] text-slate-400">click a stage to jump</span>}
+      <h4 className="text-[10px] font-semibold text-neutral-500">8-stage workflow</h4>
+      {onJump && <span className="text-[9px] text-neutral-500">click a stage to jump</span>}
     </div>
     <div className="flex gap-2 overflow-x-auto pb-2">
       {STAGES.map((s, i) => {
@@ -521,11 +521,11 @@ const StageStepper = ({ app, currentIdx, onJump }) => (
             disabled={!onJump}
             className={`shrink-0 px-3 py-2.5 rounded-xl border text-[9px] uppercase font-extrabold tracking-wider transition ${
               active
-                ? 'bg-indigo-600 border-indigo-600 text-white shadow-md ring-2 ring-indigo-200 ring-offset-1'
+                ? 'bg-neutral-900 border-neutral-900 text-white shadow-md ring-2 ring-neutral-200 ring-offset-1'
                 : passed
-                ? 'bg-indigo-50/60 border-indigo-200 text-indigo-700'
-                : 'bg-slate-50 border-slate-200 text-slate-400'
-            } ${onJump ? 'cursor-pointer hover:border-indigo-400' : 'cursor-default'}`}
+                ? 'bg-neutral-100/60 border-neutral-200 text-neutral-900'
+                : 'bg-neutral-50 border-neutral-200 text-neutral-500'
+            } ${onJump ? 'cursor-pointer hover:border-neutral-500' : 'cursor-default'}`}
           >
             {i + 1}. {s.label}
           </button>
@@ -538,11 +538,11 @@ const StageStepper = ({ app, currentIdx, onJump }) => (
 const DocumentChecklist = ({ app, canManage, onStatus, onDelete, onAdd, missingCount, onNotifyMissing }) => {
   const [addName, setAddName] = useState('');
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 space-y-4">
+    <div className="ui-panel p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-xs font-semibold text-slate-700">document checklist</h4>
-          <p className="text-[10px] text-slate-500 mt-0.5">
+          <h4 className="text-xs font-semibold text-neutral-700">document checklist</h4>
+          <p className="text-[10px] text-neutral-500 mt-0.5">
             {app.documents?.length || 0} items · {missingCount} required missing
           </p>
         </div>
@@ -555,19 +555,19 @@ const DocumentChecklist = ({ app, canManage, onStatus, onDelete, onAdd, missingC
           </button>
         )}
       </div>
-      <div className="border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100">
+      <div className="border border-neutral-100 rounded-lg overflow-hidden divide-y divide-neutral-100">
         {(app.documents || []).length === 0 ? (
-          <div className="p-6 text-center text-[10px] text-slate-400">no documents listed.</div>
+          <div className="p-6 text-center text-[10px] text-neutral-500">no documents listed.</div>
         ) : (
           (app.documents || []).map((d) => (
-            <div key={d.id} className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-slate-50/60 transition">
+            <div key={d.id} className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-neutral-50/60 transition">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-[11px] font-semibold text-slate-800">{d.name}</p>
+                  <p className="text-[11px] font-semibold text-neutral-800">{d.name}</p>
                   {d.required && <span className="text-[8px] font-semibold text-rose-600">required</span>}
                 </div>
-                {d.notes && <p className="text-[9px] text-slate-500 mt-0.5">{d.notes}</p>}
-                {d.filename && <p className="text-[9px] text-slate-400 mt-0.5 font-mono">{d.filename}</p>}
+                {d.notes && <p className="text-[9px] text-neutral-500 mt-0.5">{d.notes}</p>}
+                {d.filename && <p className="text-[9px] text-neutral-500 mt-0.5 font-mono">{d.filename}</p>}
               </div>
               <div className="flex items-center gap-2">
                 {canManage ? (
@@ -591,14 +591,14 @@ const DocumentChecklist = ({ app, canManage, onStatus, onDelete, onAdd, missingC
                     ))}
                   </select>
                 ) : (
-                  <span className="px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border bg-slate-50 border-slate-200 text-slate-600">
+                  <span className="px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border bg-neutral-50 border-neutral-200 text-neutral-600">
                     {d.status}
                   </span>
                 )}
                 {canManage && (
                   <button
                     onClick={() => onDelete(d.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                    className="p-1.5 text-neutral-500 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -614,7 +614,7 @@ const DocumentChecklist = ({ app, canManage, onStatus, onDelete, onAdd, missingC
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
             placeholder="add document to checklist..."
-            className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-medium text-slate-700 focus:border-indigo-600 outline-none"
+            className="flex-1 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-[10px] font-medium text-neutral-700 focus:border-neutral-900 outline-none"
           />
           <button
             onClick={() => {
@@ -623,7 +623,7 @@ const DocumentChecklist = ({ app, canManage, onStatus, onDelete, onAdd, missingC
                 setAddName('');
               }
             }}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-semibold flex items-center gap-1"
+            className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[10px] font-semibold flex items-center gap-1"
           >
             <Plus size={11} /> add
           </button>
@@ -656,10 +656,10 @@ const OfferLetterPanel = ({ app, canManage, onSave }) => {
   }, [app.id, app.offerLetter]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 space-y-4">
+    <div className="ui-panel p-6 space-y-4">
       <div>
-        <h4 className="text-xs font-semibold text-slate-700">offer letter</h4>
-        <p className="text-[10px] text-slate-500 mt-0.5">track offer details and the student's decision.</p>
+        <h4 className="text-xs font-semibold text-neutral-700">offer letter</h4>
+        <p className="text-[10px] text-neutral-500 mt-0.5">track offer details and the student's decision.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="received date">
@@ -715,15 +715,15 @@ const OfferLetterPanel = ({ app, canManage, onSave }) => {
           </select>
         </Field>
         <Field label="conditional?">
-          <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+          <label className="flex items-center gap-2 px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl">
             <input
               type="checkbox"
               disabled={!canManage}
               checked={form.conditional}
               onChange={(e) => setForm({ ...form, conditional: e.target.checked })}
-              className="accent-indigo-600"
+              className="accent-neutral-900"
             />
-            <span className="text-[10px] font-semibold text-slate-700">conditional offer</span>
+            <span className="text-[10px] font-semibold text-neutral-700">conditional offer</span>
           </label>
         </Field>
       </div>
@@ -740,7 +740,7 @@ const OfferLetterPanel = ({ app, canManage, onSave }) => {
         <div className="flex justify-end">
           <button
             onClick={() => onSave(form)}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-[10px] font-semibold"
+            className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[10px] font-semibold"
           >
             save offer details
           </button>
@@ -769,10 +769,10 @@ const VisaPanel = ({ app, canManage, onSave }) => {
   }, [app.id, app.visaTracking]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 space-y-4">
+    <div className="ui-panel p-6 space-y-4">
       <div>
-        <h4 className="text-xs font-semibold text-slate-700">visa tracking</h4>
-        <p className="text-[10px] text-slate-500 mt-0.5">monitor the visa process and outcome.</p>
+        <h4 className="text-xs font-semibold text-neutral-700">visa tracking</h4>
+        <p className="text-[10px] text-neutral-500 mt-0.5">monitor the Visa process and outcome.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="visa country">
@@ -829,7 +829,7 @@ const VisaPanel = ({ app, canManage, onSave }) => {
         <div className="flex justify-end">
           <button
             onClick={() => onSave(form)}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-[10px] font-semibold"
+            className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[10px] font-semibold"
           >
             save visa tracking
           </button>
@@ -840,25 +840,25 @@ const VisaPanel = ({ app, canManage, onSave }) => {
 };
 
 const AuditTimeline = ({ app }) => (
-  <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 space-y-4">
+  <div className="ui-panel p-6 space-y-4">
     <div className="flex items-center gap-2">
-      <History size={13} className="text-slate-500" />
-      <h4 className="text-xs font-semibold text-slate-700">audit trail</h4>
+      <History size={13} className="text-neutral-500" />
+      <h4 className="text-xs font-semibold text-neutral-700">audit trail</h4>
     </div>
-    <ol className="relative border-l border-slate-200 pl-6 space-y-3 ml-2">
+    <ol className="relative border-l border-neutral-200 pl-6 space-y-3 ml-2">
       {(app.stageEvents || []).map((e) => (
         <li key={e.id} className="relative">
-          <span className="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-indigo-500 border-2 border-white" />
-          <p className="text-[11px] font-semibold text-slate-800">
+          <span className="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-neutral-900 border-2 border-white" />
+          <p className="text-[11px] font-semibold text-neutral-800">
             {e.fromStage ? `${e.fromStage} → ${e.toStage}` : `started at ${e.toStage}`}
           </p>
-          <p className="text-[9px] text-slate-500 mt-0.5">
+          <p className="text-[9px] text-neutral-500 mt-0.5">
             {new Date(e.createdAt).toLocaleString()} {e.notes ? `· ${e.notes}` : ''}
           </p>
         </li>
       ))}
       {(!app.stageEvents || app.stageEvents.length === 0) && (
-        <p className="text-[10px] text-slate-400">no events yet.</p>
+        <p className="text-[10px] text-neutral-500">no events yet.</p>
       )}
     </ol>
   </div>
@@ -866,7 +866,7 @@ const AuditTimeline = ({ app }) => (
 
 const Field = ({ label, children }) => (
   <div className="space-y-1.5">
-    <label className="text-[9px] font-semibold text-slate-500 ml-1">{label}</label>
+    <label className="text-[9px] font-semibold text-neutral-500 ml-1">{label}</label>
     {children}
   </div>
 );
@@ -993,10 +993,10 @@ const NewApplicationModal = ({ onClose, onSave, student }) => {
 
 const Modal = ({ title, onClose, children }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl">
-      <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <h3 className="text-xs font-semibold text-slate-800">{title}</h3>
-        <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
+    <div className="bg-white border border-neutral-200 rounded-lg w-auto shadow-sm">
+      <div className="px-5 py-3 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
+        <h3 className="text-xs font-semibold text-neutral-800">{title}</h3>
+        <button onClick={onClose} className="text-neutral-500 hover:text-neutral-700">
           <X size={18} />
         </button>
       </div>
@@ -1006,17 +1006,17 @@ const Modal = ({ title, onClose, children }) => (
 );
 
 const ModalFooter = ({ onClose, submitLabel }) => (
-  <div className="flex gap-3 pt-4 border-t border-slate-200">
+  <div className="flex gap-3 pt-4 border-t border-neutral-200">
     <button
       type="button"
       onClick={onClose}
-      className="flex-1 py-3 border border-slate-200 rounded-2xl text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
+      className="flex-1 py-3 border border-neutral-200 rounded-lg text-[10px] font-semibold text-neutral-600 hover:bg-neutral-50"
     >
       discard
     </button>
     <button
       type="submit"
-      className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-[10px] font-semibold"
+      className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[10px] font-semibold"
     >
       {submitLabel}
     </button>

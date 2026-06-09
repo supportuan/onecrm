@@ -20,9 +20,9 @@ const RoleGuard = ({ allowedRoles, children }) => {
 
   if (!user || !allowedRoles.includes(user.role)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-6 text-center">
-        <h2 className="text-xl font-semibold text-slate-800">Access denied</h2>
-        <p className="mt-2 text-sm text-slate-500">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50 px-6 text-center">
+        <h2 className="text-xl font-semibold text-neutral-800">Access denied</h2>
+        <p className="mt-2 text-sm text-neutral-500">
           Your role does not have permission to view this page.
         </p>
       </div>

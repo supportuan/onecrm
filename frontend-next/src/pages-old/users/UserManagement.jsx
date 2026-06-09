@@ -139,18 +139,18 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-slate-200 rounded-2xl p-5">
+      <div className="bg-white border border-neutral-200 rounded-lg p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">User Management</h1>
-            <p className="text-sm text-slate-400 font-semibold mt-1">
+            <h1 className="text-xl font-bold text-neutral-900">User Management</h1>
+            <p className="text-sm text-neutral-500 font-semibold mt-1">
               Create Admin, Counsellor, Student and HR users
             </p>
           </div>
 
           <button
             onClick={() => setIsOpen(true)}
-            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+            className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             Add User
@@ -158,21 +158,21 @@ const UserManagement = () => {
         </div>
 
         <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5">
-            <Search className="h-4 w-4 text-slate-400" />
+          <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2.5">
+            <Search className="h-4 w-4 text-neutral-500" />
             <input
               type="text"
               placeholder="Search users..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-transparent text-sm font-semibold outline-none text-slate-700"
+              className="w-full bg-transparent text-sm font-semibold outline-none text-neutral-700"
             />
           </div>
 
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700"
+            className="border border-neutral-200 bg-neutral-50 rounded-xl px-4 py-2.5 text-sm font-semibold text-neutral-700"
           >
             <option value="">All Roles</option>
             {roles.map((role) => (
@@ -184,38 +184,38 @@ const UserManagement = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-[#0084ff]" />
+            <Loader2 className="h-8 w-8 animate-spin text-neutral-900" />
           </div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-neutral-50 border-b border-neutral-100">
               <tr>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500">Name</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500">Email</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500">Phone</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500">Role</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500">Status</th>
-                <th className="px-6 py-4 text-sm font-bold text-slate-500 text-right">
+                <th className="px-6 py-4 text-sm font-bold text-neutral-500">Name</th>
+                <th className="px-6 py-4 text-sm font-bold text-neutral-500">Email</th>
+                <th className="px-6 py-4 text-sm font-bold text-neutral-500">Phone</th>
+                <th className="px-6 py-4 text-sm font-bold text-neutral-500">Role</th>
+                <th className="px-6 py-4 text-sm font-bold text-neutral-500">Status</th>
+                <th className="px-6 py-4 text-sm font-bold text-neutral-500 text-right">
                   Action
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-neutral-100">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-4 font-semibold text-slate-800">
+                <tr key={user.id} className="hover:bg-neutral-50">
+                  <td className="px-6 py-4 font-semibold text-neutral-800">
                     {user.fullName}
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">
+                  <td className="px-6 py-4 text-sm text-neutral-600">{user.email}</td>
+                  <td className="px-6 py-4 text-sm text-neutral-600">
                     {user.phone || '-'}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+                    <span className="px-3 py-1 rounded-full bg-slate-100 text-neutral-700 text-xs font-bold">
                       {user.role}
                     </span>
                   </td>
@@ -243,7 +243,7 @@ const UserManagement = () => {
                       )}
                       <button
                         onClick={() => handleDelete(user.id)}
-                        className="text-slate-400 hover:text-red-500"
+                        className="text-neutral-500 hover:text-red-500"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -256,7 +256,7 @@ const UserManagement = () => {
                 <tr>
                   <td
                     colSpan="6"
-                    className="text-center py-16 text-slate-400 font-semibold"
+                    className="text-center py-16 text-neutral-500 font-semibold"
                   >
                     No users found
                   </td>
@@ -268,24 +268,24 @@ const UserManagement = () => {
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-auto shadow-sm">
+            <div className="flex justify-between items-center border-b border-neutral-100 pb-4 mb-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Create User</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-1">
+                <h2 className="text-lg font-bold text-neutral-900">Create User</h2>
+                <p className="text-xs text-neutral-500 font-semibold mt-1">
                   Add user with role-based access
                 </p>
               </div>
 
               <button onClick={() => setIsOpen(false)}>
-                <X className="h-5 w-5 text-slate-400" />
+                <X className="h-5 w-5 text-neutral-500" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-500">
+                <label className="text-xs font-semibold text-neutral-500">
                   Full Name *
                 </label>
                 <input
@@ -295,12 +295,12 @@ const UserManagement = () => {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, fullName: e.target.value }))
                   }
-                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                  className="w-full mt-1 border border-neutral-200 bg-neutral-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500">
+                <label className="text-xs font-semibold text-neutral-500">
                   Email *
                 </label>
                 <input
@@ -311,12 +311,12 @@ const UserManagement = () => {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, email: e.target.value }))
                   }
-                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                  className="w-full mt-1 border border-neutral-200 bg-neutral-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500">
+                <label className="text-xs font-semibold text-neutral-500">
                   Phone
                 </label>
                 <input
@@ -325,12 +325,12 @@ const UserManagement = () => {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, phone: e.target.value }))
                   }
-                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                  className="w-full mt-1 border border-neutral-200 bg-neutral-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500">
+                <label className="text-xs font-semibold text-neutral-500">
                   Role *
                 </label>
                 <select
@@ -338,7 +338,7 @@ const UserManagement = () => {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, role: e.target.value }))
                   }
-                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                  className="w-full mt-1 border border-neutral-200 bg-neutral-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
                 >
                   {roles.map((role) => (
                     <option key={role} value={role}>
@@ -348,18 +348,18 @@ const UserManagement = () => {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold"
+                  className="border border-neutral-200 px-5 py-2.5 rounded-xl text-sm font-semibold"
                 >
                   Cancel
                 </button>
 
                 <button
                   type="submit"
-                  className="bg-[#0084ff] text-white px-6 py-2.5 rounded-xl text-sm font-semibold"
+                  className="bg-neutral-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold"
                 >
                   Create
                 </button>
@@ -368,24 +368,24 @@ const UserManagement = () => {
           </div>
         </div>
       {isConversionOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-auto shadow-sm">
+            <div className="flex justify-between items-center border-b border-neutral-100 pb-4 mb-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Convert Student to Lead</h2>
-                <p className="text-xs text-slate-400 font-semibold mt-1">
+                <h2 className="text-lg font-bold text-neutral-900">Convert Student to Lead</h2>
+                <p className="text-xs text-neutral-500 font-semibold mt-1">
                   Assign counsellor and capture student metadata for follow-up
                 </p>
               </div>
 
               <button onClick={() => setIsConversionOpen(false)}>
-                <X className="h-5 w-5 text-slate-400" />
+                <X className="h-5 w-5 text-neutral-500" />
               </button>
             </div>
 
             <form onSubmit={handleConversionSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-500 font-bold">
+                <label className="text-xs font-semibold text-neutral-500 font-bold">
                   Assigned Counsellor (Optional)
                 </label>
                 <select
@@ -393,7 +393,7 @@ const UserManagement = () => {
                   onChange={(e) =>
                     setConversionForm((p) => ({ ...p, assignedCounsellorId: e.target.value }))
                   }
-                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                  className="w-full mt-1 border border-neutral-200 bg-neutral-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
                 >
                   <option value="">Select counsellor</option>
                   {counsellors.map((c) => (
@@ -405,7 +405,7 @@ const UserManagement = () => {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 font-bold">
+                <label className="text-xs font-semibold text-neutral-500 font-bold">
                   Preferred Course (Optional)
                 </label>
                 <input
@@ -414,12 +414,12 @@ const UserManagement = () => {
                   onChange={(e) =>
                     setConversionForm((p) => ({ ...p, preferredCourse: e.target.value }))
                   }
-                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                  className="w-full mt-1 border border-neutral-200 bg-neutral-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 font-bold">
+                <label className="text-xs font-semibold text-neutral-500 font-bold">
                   Preferred Country (Optional)
                 </label>
                 <input
@@ -428,15 +428,15 @@ const UserManagement = () => {
                   onChange={(e) =>
                     setConversionForm((p) => ({ ...p, preferredCountry: e.target.value }))
                   }
-                  className="w-full mt-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
+                  className="w-full mt-1 border border-neutral-200 bg-neutral-50 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
                 <button
                   type="button"
                   onClick={() => setIsConversionOpen(false)}
-                  className="border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold"
+                  className="border border-neutral-200 px-5 py-2.5 rounded-xl text-sm font-semibold"
                 >
                   Cancel
                 </button>

@@ -1,6 +1,12 @@
 'use client';
-import EmployeeDirectory from '@/pages-old/hr/EmployeeDirectory';
+
+import PageGuard from '@/components/PageGuard';
+import { EmployeeDirectory } from '@/features/hr';
 
 export default function Page() {
-  return <EmployeeDirectory />;
+  return (
+    <PageGuard permissions={['VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES']}>
+      <EmployeeDirectory />
+    </PageGuard>
+  );
 }

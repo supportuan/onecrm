@@ -43,6 +43,19 @@ export const createLeavePlanSchema = z.object({
   description: z.string().optional(),
 });
 
+export const createLeaveRequestSchema = z.object({
+  leaveTypeName: z.string().min(1),
+  fromDate: z.string().min(1),
+  toDate: z.string().min(1),
+  days: z.number().positive(),
+  reason: z.string().optional(),
+});
+
+export const processLeaveRequestSchema = z.object({
+  status: z.enum(['APPROVED', 'REJECTED']),
+  reviewerNote: z.string().optional(),
+});
+
 export const createLeaveDefinitionSchema = z.object({
   leaveTypeId: z.string(),
   annual_quota: z.number().int().optional(),

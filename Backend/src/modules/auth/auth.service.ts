@@ -3,6 +3,7 @@ import { UserRole } from '@prisma/client';
 import { hashPassword, comparePasswords } from '../../utils/password.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt.js';
 import { adminAgentNotification, adminStudentNotification, sendCampaignEmail } from '../marketing/services/email.service.js';
+import { safeNotify } from '../notifications/recipients.js';
 
 interface RegisterData {
   fullName: string;
@@ -81,6 +82,14 @@ export const register = async (data: RegisterData) => {
         </div>
       `,
     }).catch(err => console.error('[Student Welcome Email Error]', err));
+  }
+
+  if (isApproved) {
+    await safeNotify({
+      recipientId: user.id,
+      templateKey: 'welcome.user',
+      vars: { name: user.fullName, role: user.role },
+    });
   }
 
   return user;

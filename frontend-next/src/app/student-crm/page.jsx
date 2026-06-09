@@ -1,6 +1,12 @@
 'use client';
-import StudentCRM from '@/pages-old/StudentCRM';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
-  return <StudentCRM />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/student-crm/applications');
+  }, [router]);
+  return null;
 }

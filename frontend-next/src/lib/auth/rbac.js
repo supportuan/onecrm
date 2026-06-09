@@ -97,12 +97,15 @@ export const ROLE_DESCRIPTIONS = {
   SUPER_ADMIN: 'system owner. full access to every module and capability.',
   ADMIN: 'management / directors. broad access across all modules.',
   HR: 'hr operators. full hr module access except admin-level system config.',
-  IT: 'application management team. biometric, network, and basic attendance access.',
-  COUNSELLOR: 'counsellor / advisor. marketing + student crm visibility, self-service hr.',
-  MARKETING: 'marketing team. full marketing module access.',
+  MARKETING_MANAGER: 'marketing manager. owns leads, campaigns, automations and landing pages.',
+  COUNSELLOR: 'counsellor / advisor. marketing + student crm management, self-service hr.',
+  TELECALLER: 'telecaller. view-only on marketing and student crm; self-service hr.',
+  AGENCY_FREELANCER: 'agency partner / freelancer. agency crm + student crm visibility.',
   STUDENT: 'student. student crm only.',
-  AGENT: 'agency partner. agency crm + student crm visibility.',
 };
+
+/** Roles hidden from the Admin > Roles & Permissions editor UI. */
+export const HIDDEN_ROLES = new Set(['STUDENT']);
 
 // Maps a top-level module (by sidebar label) to the permission(s) that grant it.
 export const MODULE_PERMISSION_MAP = {
@@ -133,10 +136,22 @@ export const ROLE_PERMISSIONS = {
     'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
     'MANAGE_SUPPORT_REQUESTS', 'VIEW_REPORTS',
   ],
-  COUNSELLOR: ['VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'],
-  MARKETING: ['VIEW_MARKETING', 'MANAGE_MARKETING', 'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'],
-  AGENT: ['VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM', 'VIEW_STUDENT_CRM'],
-  IT: ['VIEW_HR', 'VIEW_OWN_PAYSLIP', 'MANAGE_BIOMETRICS', 'MANAGE_NETWORK_SECURITY', 'VIEW_ATTENDANCE', 'VIEW_LEAVE'],
+  COUNSELLOR: [
+    'VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
+    'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
+  ],
+  MARKETING_MANAGER: [
+    'VIEW_MARKETING', 'MANAGE_MARKETING',
+    'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'VIEW_REPORTS',
+  ],
+  TELECALLER: [
+    'VIEW_MARKETING', 'VIEW_STUDENT_CRM',
+    'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
+  ],
+  AGENCY_FREELANCER: [
+    'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM',
+    'VIEW_STUDENT_CRM',
+  ],
   STUDENT: ['VIEW_STUDENT_CRM'],
 };
 
