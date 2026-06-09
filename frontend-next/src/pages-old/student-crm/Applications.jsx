@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Plus,
   Search,
@@ -18,6 +20,8 @@ import {
   History,
   User,
   ExternalLink,
+  User,
+  ExternalLink,
 } from 'lucide-react';
 import {
   listStudents,
@@ -25,6 +29,7 @@ import {
   getApplication,
   createStudent,
   createApplication,
+  updateApplication,
   updateApplication,
   advanceApplicationStage,
   addDocument,
@@ -34,9 +39,6 @@ import {
   upsertOffer,
   upsertVisa,
   listCounsellors,
-  listPromotableLeads,
-  promoteLead,
-  promoteAllLeads,
 } from '@/services/studentCrmApi';
 import { getFormOptions, listUniversities, listCourses } from '@/services/crmSettingsApi';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -50,10 +52,35 @@ import {
   getStageLabel,
   stageBadgeClass,
 } from '@/features/student-crm/constants';
+import {
+  APPLICATION_STAGES,
+  DOC_STATUSES,
+  VISA_STATUSES,
+  OFFER_DECISION,
+  getNextStage,
+  getStageLabel,
+  stageBadgeClass,
+} from '@/features/student-crm/constants';
 
 const INPUT_CLS =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[11px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all disabled:opacity-70';
 
+const stageBadge = stageBadgeClass;
+
+const stepState = (stageKey, currentStage) => {
+  if (currentStage === stageKey) return 'active';
+  if (currentStage === 'OFFER_REJECTED') {
+    if (['DRAFT', 'DOCUMENTS_PENDING', 'SUBMITTED', 'UNDER_REVIEW', 'OFFER_RECEIVED'].includes(stageKey)) {
+      return 'passed';
+    }
+    if (stageKey === 'OFFER_REJECTED') return 'active';
+    return 'future';
+  }
+  const order = APPLICATION_STAGES.find((s) => s.key === stageKey)?.order ?? 0;
+  const currentOrder = APPLICATION_STAGES.find((s) => s.key === currentStage)?.order ?? 0;
+  if (stageKey === 'OFFER_REJECTED') return 'branch';
+  if (order < currentOrder) return 'passed';
+  return 'future';
 const stageBadge = stageBadgeClass;
 
 const stepState = (stageKey, currentStage) => {
@@ -85,6 +112,9 @@ const Applications = () => {
   const searchParams = useSearchParams();
   const studentParam = searchParams.get('student');
   const appParam = searchParams.get('app');
+  const searchParams = useSearchParams();
+  const studentParam = searchParams.get('student');
+  const appParam = searchParams.get('app');
   const { user } = useAuth();
   const { can } = usePermissions();
   const canManage = can('MANAGE_STUDENT_CRM');
@@ -96,6 +126,7 @@ const Applications = () => {
   const [apps, setApps] = useState([]);
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [appDetail, setAppDetail] = useState(null);
+  const [counsellors, setCounsellors] = useState([]);
   const [counsellors, setCounsellors] = useState([]);
 
   const [loadingStudents, setLoadingStudents] = useState(false);
@@ -170,6 +201,11 @@ const Applications = () => {
         const found = list.find((s) => s.id === id);
         if (found) setSelectedStudent(found);
       } else if (list.length && !selectedStudent) {
+      if (studentParam) {
+        const id = Number(studentParam);
+        const found = list.find((s) => s.id === id);
+        if (found) setSelectedStudent(found);
+      } else if (list.length && !selectedStudent) {
         setSelectedStudent(list[0]);
       }
     } catch (e) {
@@ -179,10 +215,17 @@ const Applications = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentSearch, studentParam]);
+  }, [studentSearch, studentParam]);
 
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  useEffect(() => {
+    listCounsellors()
+      .then((res) => setCounsellors(Array.isArray(res?.data) ? res.data : []))
+      .catch(() => setCounsellors([]));
+  }, []);
 
   useEffect(() => {
     listCounsellors()
@@ -206,6 +249,11 @@ const Applications = () => {
         if (list.some((a) => a.id === id)) setSelectedAppId(id);
         else if (list.length) setSelectedAppId(list[0].id);
       } else if (list.length) setSelectedAppId(list[0].id);
+      if (appParam) {
+        const id = Number(appParam);
+        if (list.some((a) => a.id === id)) setSelectedAppId(id);
+        else if (list.length) setSelectedAppId(list[0].id);
+      } else if (list.length) setSelectedAppId(list[0].id);
       else {
         setSelectedAppId(null);
         setAppDetail(null);
@@ -215,6 +263,7 @@ const Applications = () => {
     } finally {
       setLoadingApps(false);
     }
+  }, [selectedStudent, appParam]);
   }, [selectedStudent, appParam]);
 
   useEffect(() => {
@@ -250,13 +299,31 @@ const Applications = () => {
     const next =
       current === 'OFFER_RECEIVED' ? 'OFFER_ACCEPTED' : getNextStage(current);
     if (!next) return;
+    const current = appDetail.stage;
+    if (current === 'ENROLLED' || current === 'OFFER_REJECTED') return;
+    const next =
+      current === 'OFFER_RECEIVED' ? 'OFFER_ACCEPTED' : getNextStage(current);
+    if (!next) return;
     try {
       await advanceApplicationStage(appDetail.id, { stage: next });
+      flash('ok', `Advanced to ${getStageLabel(next)}`);
       flash('ok', `Advanced to ${getStageLabel(next)}`);
       await fetchDetail();
       await fetchApps();
     } catch (e) {
       flash('err', e?.message || 'failed to advance stage');
+    }
+  };
+
+  const handleUpdateMeta = async (payload) => {
+    if (!appDetail) return;
+    try {
+      await updateApplication(appDetail.id, payload);
+      flash('ok', 'Application updated');
+      await fetchDetail();
+      await fetchApps();
+    } catch (e) {
+      flash('err', e?.message || 'failed to update application');
     }
   };
 
@@ -383,6 +450,11 @@ const Applications = () => {
     return appDetail.documents.filter((d) => d.required && d.status === 'PENDING').length;
   }, [appDetail]);
 
+  const isFinal = appDetail?.stage === 'ENROLLED' || appDetail?.stage === 'OFFER_REJECTED';
+  const isOverdue =
+    appDetail?.deadline &&
+    new Date(appDetail.deadline) < new Date() &&
+    !['ENROLLED', 'OFFER_REJECTED'].includes(appDetail.stage);
   const isFinal = appDetail?.stage === 'ENROLLED' || appDetail?.stage === 'OFFER_REJECTED';
   const isOverdue =
     appDetail?.deadline &&
@@ -555,6 +627,7 @@ const Applications = () => {
                       )}`}
                     >
                       {getStageLabel(a.stage)}
+                      {getStageLabel(a.stage)}
                     </span>
                   </button>
                 );
@@ -577,6 +650,21 @@ const Applications = () => {
             </div>
           ) : (
             <>
+              <ApplicationHeader
+                app={appDetail}
+                student={selectedStudent}
+                canManage={canManage}
+                onAdvance={handleAdvance}
+                isFinal={isFinal}
+                isOverdue={isOverdue}
+              />
+              <ApplicationMetaEditor
+                app={appDetail}
+                counsellors={counsellors}
+                canManage={canManage}
+                onSave={handleUpdateMeta}
+              />
+              <StageStepper app={appDetail} onJump={canManage ? handleJumpStage : null} />
               <ApplicationHeader
                 app={appDetail}
                 student={selectedStudent}
@@ -616,7 +704,6 @@ const Applications = () => {
           onSave={handleNewApp}
           student={selectedStudent}
           counsellors={counsellors}
-          formOptions={formOptions}
         />
       )}
     </div>
@@ -625,6 +712,7 @@ const Applications = () => {
 
 /* -------------------- sub-components -------------------- */
 
+const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal, isOverdue }) => (
 const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal, isOverdue }) => (
   <div className="ui-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
@@ -637,7 +725,14 @@ const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal, isOver
           <Globe size={11} /> {app.country}
         </span>
         {app.intake && <span>· Intake {app.intake}</span>}
+        {app.intake && <span>· Intake {app.intake}</span>}
         {app.deadline && (
+          <span className={`flex items-center gap-1 ${isOverdue ? 'text-rose-600 font-semibold' : ''}`}>
+            <Clock size={11} /> Deadline {formatDate(app.deadline)}
+            {isOverdue && ' · Overdue'}
+          </span>
+        )}
+        {app.assignedTo && (
           <span className={`flex items-center gap-1 ${isOverdue ? 'text-rose-600 font-semibold' : ''}`}>
             <Clock size={11} /> Deadline {formatDate(app.deadline)}
             {isOverdue && ' · Overdue'}
@@ -646,7 +741,16 @@ const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal, isOver
         {app.assignedTo && (
           <span className="flex items-center gap-1">
             <User size={11} /> {app.assignedTo.fullName}
+            <User size={11} /> {app.assignedTo.fullName}
           </span>
+        )}
+        {student && (
+          <Link
+            href={`/student-crm/student-management?student=${student.id}`}
+            className="flex items-center gap-1 text-neutral-700 hover:text-neutral-900 font-semibold"
+          >
+            <ExternalLink size={11} /> View student profile
+          </Link>
         )}
         {student && (
           <Link
@@ -664,12 +768,20 @@ const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal, isOver
       >
         {getStageLabel(app.stage)}
       </span>
+      <span
+        className={`mt-3 inline-block px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-md border ${stageBadge(
+          app.stage
+        )}`}
+      >
+        {getStageLabel(app.stage)}
+      </span>
     </div>
     {canManage && !isFinal && (
       <button
         onClick={onAdvance}
         className="px-5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-semibold shadow-sm flex items-center gap-1.5"
       >
+        Advance stage <ArrowRight size={13} />
         Advance stage <ArrowRight size={13} />
       </button>
     )}
@@ -728,11 +840,68 @@ const ApplicationMetaEditor = ({ app, counsellors, canManage, onSave }) => {
 };
 
 const StageStepper = ({ app, onJump }) => (
+const ApplicationMetaEditor = ({ app, counsellors, canManage, onSave }) => {
+  const [deadline, setDeadline] = useState(app.deadline?.slice(0, 10) || '');
+  const [assignedToId, setAssignedToId] = useState(app.assignedToId ? String(app.assignedToId) : '');
+
+  useEffect(() => {
+    setDeadline(app.deadline?.slice(0, 10) || '');
+    setAssignedToId(app.assignedToId ? String(app.assignedToId) : '');
+  }, [app.id, app.deadline, app.assignedToId]);
+
+  if (!canManage) return null;
+
+  return (
+    <div className="ui-panel p-4 flex flex-col sm:flex-row sm:items-end gap-3">
+      <Field label="Application deadline">
+        <input
+          type="date"
+          value={deadline}
+          onChange={(e) => setDeadline(e.target.value)}
+          className={INPUT_CLS}
+        />
+      </Field>
+      <Field label="Assigned counsellor">
+        <select
+          value={assignedToId}
+          onChange={(e) => setAssignedToId(e.target.value)}
+          className={INPUT_CLS}
+        >
+          <option value="">Unassigned</option>
+          {counsellors.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.fullName}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <button
+        type="button"
+        onClick={() =>
+          onSave({
+            deadline: deadline || null,
+            assignedToId: assignedToId ? Number(assignedToId) : null,
+          })
+        }
+        className="px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[10px] font-semibold shrink-0"
+      >
+        Save assignment
+      </button>
+    </div>
+  );
+};
+
+const StageStepper = ({ app, onJump }) => (
   <div className="ui-panel p-6 space-y-3">
     <div className="flex items-center justify-between">
       <h4 className="text-[10px] font-semibold text-neutral-500">Application workflow</h4>
       {onJump && <span className="text-[9px] text-neutral-500">Click a stage to jump</span>}
+      <h4 className="text-[10px] font-semibold text-neutral-500">Application workflow</h4>
+      {onJump && <span className="text-[9px] text-neutral-500">Click a stage to jump</span>}
     </div>
+    <div className="flex flex-wrap gap-2 pb-2">
+      {APPLICATION_STAGES.map((s) => {
+        const state = stepState(s.key, app.stage);
     <div className="flex flex-wrap gap-2 pb-2">
       {APPLICATION_STAGES.map((s) => {
         const state = stepState(s.key, app.stage);
@@ -743,19 +912,29 @@ const StageStepper = ({ app, onJump }) => (
             disabled={!onJump}
             className={`shrink-0 px-3 py-2.5 rounded-xl border text-[9px] uppercase font-extrabold tracking-wider transition ${
               state === 'active'
+              state === 'active'
                 ? 'bg-neutral-900 border-neutral-900 text-white shadow-md ring-2 ring-neutral-200 ring-offset-1'
                 : state === 'passed'
+                : state === 'passed'
                 ? 'bg-neutral-100/60 border-neutral-200 text-neutral-900'
+                : state === 'branch'
+                ? 'bg-rose-50/50 border-rose-200 text-rose-600 border-dashed'
                 : state === 'branch'
                 ? 'bg-rose-50/50 border-rose-200 text-rose-600 border-dashed'
                 : 'bg-neutral-50 border-neutral-200 text-neutral-500'
             } ${onJump ? 'cursor-pointer hover:border-neutral-500' : 'cursor-default'}`}
           >
             {s.order}. {s.label}
+            {s.order}. {s.label}
           </button>
         );
       })}
     </div>
+    {app.stage === 'OFFER_RECEIVED' && onJump && (
+      <p className="text-[10px] text-neutral-500">
+        At offer received, advance defaults to offer accepted — or jump to offer rejected.
+      </p>
+    )}
     {app.stage === 'OFFER_RECEIVED' && onJump && (
       <p className="text-[10px] text-neutral-500">
         At offer received, advance defaults to offer accepted — or jump to offer rejected.
@@ -1082,8 +1261,14 @@ const AuditTimeline = ({ app }) => (
             {e.fromStage
               ? `${getStageLabel(e.fromStage)} → ${getStageLabel(e.toStage)}`
               : `Started at ${getStageLabel(e.toStage)}`}
+            {e.fromStage
+              ? `${getStageLabel(e.fromStage)} → ${getStageLabel(e.toStage)}`
+              : `Started at ${getStageLabel(e.toStage)}`}
           </p>
           <p className="text-[9px] text-neutral-500 mt-0.5">
+            {new Date(e.createdAt).toLocaleString()}
+            {e.changedBy?.fullName ? ` · ${e.changedBy.fullName}` : ''}
+            {e.notes ? ` · ${e.notes}` : ''}
             {new Date(e.createdAt).toLocaleString()}
             {e.changedBy?.fullName ? ` · ${e.changedBy.fullName}` : ''}
             {e.notes ? ` · ${e.notes}` : ''}
@@ -1149,13 +1334,7 @@ const NewStudentModal = ({ onClose, onSave }) => {
   );
 };
 
-const NewApplicationModal = ({ onClose, onSave, student, counsellors = [], formOptions = {} }) => {
-  const countries = formOptions.countries || [];
-  const [countryUniversities, setCountryUniversities] = useState([]);
-  const [universityCourses, setUniversityCourses] = useState([]);
-  const [loadingUnis, setLoadingUnis] = useState(false);
-  const [loadingCourses, setLoadingCourses] = useState(false);
-
+const NewApplicationModal = ({ onClose, onSave, student, counsellors = [] }) => {
   const [form, setForm] = useState({
     country: student?.preferredCountry || '',
     countryId: student?.countryId || '',
@@ -1165,6 +1344,7 @@ const NewApplicationModal = ({ onClose, onSave, student, counsellors = [], formO
     courseId: '',
     intake: '',
     deadline: '',
+    assignedToId: '',
     assignedToId: '',
     notes: '',
   });
@@ -1230,10 +1410,15 @@ const NewApplicationModal = ({ onClose, onSave, student, counsellors = [], formO
 
   return (
     <Modal title={`New application · ${student?.fullName}`} onClose={onClose}>
+    <Modal title={`New application · ${student?.fullName}`} onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (!form.country || !form.university || !form.course) return;
+          onSave({
+            ...form,
+            assignedToId: form.assignedToId ? Number(form.assignedToId) : undefined,
+          });
           onSave({
             ...form,
             assignedToId: form.assignedToId ? Number(form.assignedToId) : undefined,
@@ -1339,6 +1524,20 @@ const NewApplicationModal = ({ onClose, onSave, student, counsellors = [], formO
             onChange={(e) => setForm({ ...form, deadline: e.target.value })}
             className={INPUT_CLS}
           />
+        </Field>
+        <Field label="assigned counsellor">
+          <select
+            value={form.assignedToId}
+            onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}
+            className={INPUT_CLS}
+          >
+            <option value="">Unassigned</option>
+            {counsellors.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.fullName}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="assigned counsellor">
           <select

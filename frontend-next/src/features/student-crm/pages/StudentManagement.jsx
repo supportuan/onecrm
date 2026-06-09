@@ -14,7 +14,6 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertCircle,
-  Globe,
 } from 'lucide-react';
 import {
   listStudents,
@@ -23,10 +22,7 @@ import {
   updateStudent,
   createApplication,
   listCounsellors,
-  setStudentEnrolled,
-  updateChecklistValue,
 } from '@/services/studentCrmApi';
-import { getFormOptions } from '@/services/crmSettingsApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { getStageLabel, stageBadgeClass } from '../constants';
 
@@ -34,34 +30,6 @@ const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
 
 const emptyAcademic = () => ({ degree: '', institution: '', year: '', grade: '' });
-const emptyEducation = () => ({
-  type: 'UG',
-  label: '',
-  passing_year: '',
-  grade: '',
-  medium: 'English',
-});
-const emptyExam = () => ({
-  type: 'IELTS',
-  label: '',
-  overall_score: '',
-  reading: '',
-  writing: '',
-  speaking: '',
-  listening: '',
-});
-
-const PROCESS_STAGE_LABELS = {
-  GATHERING_CHECKLIST: 'Gathering checklist',
-  UNIVERSITY_APPLICATION: 'University application',
-  FINANCIAL_EVIDENCE: 'Financial evidence',
-  AFTER_I20: 'After I-20',
-  PRE_CAS_PROCESS: 'Pre-CAS',
-  VISA_APPLICATION: 'Visa application',
-  PRE_DEPARTURE: 'Pre-departure',
-  ON_ARRIVAL: 'On arrival',
-  PRE_REQUISITE: 'Pre-requisite',
-};
 
 export default function StudentManagement() {
   const searchParams = useSearchParams();
@@ -76,7 +44,6 @@ export default function StudentManagement() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [counsellors, setCounsellors] = useState([]);
-  const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
   const [showNew, setShowNew] = useState(false);
   const [showNewApp, setShowNewApp] = useState(false);
   const [toast, setToast] = useState('');
@@ -134,9 +101,6 @@ export default function StudentManagement() {
     listCounsellors()
       .then((r) => setCounsellors(Array.isArray(r?.data) ? r.data : []))
       .catch(() => setCounsellors([]));
-    getFormOptions()
-      .then((r) => setFormOptions(r?.data || { countries: [], industries: [] }))
-      .catch(() => setFormOptions({ countries: [], industries: [] }));
   }, []);
 
   const [form, setForm] = useState(null);
@@ -151,51 +115,19 @@ export default function StudentManagement() {
       : profile.academicHistory
         ? [profile.academicHistory]
         : [emptyAcademic()];
-    const education = Array.isArray(profile.educationDetails)
-      ? profile.educationDetails
-      : profile.educationDetails
-        ? [profile.educationDetails]
-        : [emptyEducation()];
-    const exams = Array.isArray(profile.asstExamSections)
-      ? profile.asstExamSections
-      : profile.asstExamSections
-        ? [profile.asstExamSections]
-        : [emptyExam()];
-
     setForm({
-      firstName: profile.firstName || '',
-      lastName: profile.lastName || '',
       fullName: profile.fullName || '',
       email: profile.email || '',
       phone: profile.phone || '',
       dob: profile.dob ? profile.dob.slice(0, 10) : '',
       nationality: profile.nationality || '',
       preferredCountry: profile.preferredCountry || '',
-      level: profile.level || '',
-      countryId: profile.countryId ?? '',
-      industryId: profile.industryId ?? '',
-      subIndustryId: profile.subIndustryId ?? '',
-      studyAreaId: profile.studyAreaId ?? '',
-      intakeMonth: profile.intakeMonth || '',
-      intakeYear: profile.intakeYear || '',
-      studyMode: profile.studyMode || '',
-      studyDuration: profile.studyDuration || '',
-      studyBudget: profile.studyBudget || '',
-      studyAttendanceType: profile.studyAttendanceType || '',
-      typeOfDegree: profile.typeOfDegree || '',
-      workExperience: profile.workExperience || '',
-      recLevelAcademic: profile.recLevelAcademic || '',
-      recGradeAchieved: profile.recGradeAchieved || '',
-      preStudyLoc: profile.preStudyLoc || '',
-      contactId: profile.contactId ?? '',
       notes: profile.notes || '',
       ieltsScore: profile.ieltsScore ?? '',
       toeflScore: profile.toeflScore ?? '',
       greScore: profile.greScore ?? '',
       gmatScore: profile.gmatScore ?? '',
       academicHistory: history.length ? history : [emptyAcademic()],
-      educationDetails: education.length ? education : [emptyEducation()],
-      asstExamSections: exams.length ? exams : [emptyExam()],
     });
   }, [profile]);
 
@@ -204,30 +136,11 @@ export default function StudentManagement() {
     setSaving(true);
     try {
       const payload = {
-        firstName: form.firstName || null,
-        lastName: form.lastName || null,
         fullName: form.fullName,
         phone: form.phone || null,
         dob: form.dob || null,
         nationality: form.nationality || null,
         preferredCountry: form.preferredCountry || null,
-        level: form.level || null,
-        countryId: form.countryId === '' ? null : Number(form.countryId),
-        industryId: form.industryId === '' ? null : Number(form.industryId),
-        subIndustryId: form.subIndustryId === '' ? null : Number(form.subIndustryId),
-        studyAreaId: form.studyAreaId === '' ? null : Number(form.studyAreaId),
-        intakeMonth: form.intakeMonth || null,
-        intakeYear: form.intakeYear || null,
-        studyMode: form.studyMode || null,
-        studyDuration: form.studyDuration || null,
-        studyBudget: form.studyBudget || null,
-        studyAttendanceType: form.studyAttendanceType || null,
-        typeOfDegree: form.typeOfDegree || null,
-        workExperience: form.workExperience || null,
-        recLevelAcademic: form.recLevelAcademic || null,
-        recGradeAchieved: form.recGradeAchieved || null,
-        preStudyLoc: form.preStudyLoc || null,
-        contactId: form.contactId === '' ? null : Number(form.contactId),
         notes: form.notes || null,
         ieltsScore: form.ieltsScore === '' ? null : Number(form.ieltsScore),
         toeflScore: form.toeflScore === '' ? null : Number(form.toeflScore),
@@ -236,8 +149,6 @@ export default function StudentManagement() {
         academicHistory: form.academicHistory.filter(
           (r) => r.degree || r.institution || r.year || r.grade
         ),
-        educationDetails: form.educationDetails.filter((r) => r.label || r.passing_year || r.grade),
-        asstExamSections: form.asstExamSections.filter((r) => r.type || r.overall_score || r.label),
       };
       await updateStudent(selectedId, payload);
       flash('Profile saved');
@@ -250,36 +161,10 @@ export default function StudentManagement() {
     }
   };
 
-  const selectedIndustry = formOptions.industries?.find((i) => i.id === Number(form?.industryId));
-  const subIndustries = selectedIndustry?.subIndustries || [];
-  const studyAreas = selectedIndustry?.studyAreas || [];
-
-  const markEnrolled = async (value) => {
-    if (!selectedId) return;
-    try {
-      await setStudentEnrolled(selectedId, value);
-      flash(value ? 'Marked as enrolled' : 'Enrollment removed');
-      await loadProfile();
-    } catch (e) {
-      flash(e?.message || 'Failed', false);
-    }
-  };
-
-  const toggleChecklist = async (checkListId, completed) => {
-    try {
-      await updateChecklistValue(selectedId, checkListId, { completed });
-      await loadProfile();
-    } catch (e) {
-      flash(e?.message || 'Checklist update failed', false);
-    }
-  };
-
   const tabs = [
     { id: 'personal', label: 'Personal', icon: User },
-    { id: 'study', label: 'Study plan', icon: Globe },
-    { id: 'education', label: 'Education', icon: BookOpen },
-    { id: 'tests', label: 'Exams', icon: GraduationCap },
-    { id: 'process', label: 'Checklist', icon: CheckCircle2 },
+    { id: 'academic', label: 'Academic', icon: BookOpen },
+    { id: 'tests', label: 'Test scores', icon: GraduationCap },
     { id: 'applications', label: 'Applications', icon: FileText },
   ];
 
@@ -363,38 +248,11 @@ export default function StudentManagement() {
               <>
                 <div className="ui-panel p-5 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-lg font-semibold text-neutral-900">{form.fullName}</h2>
-                      {profile.isEnrolled && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                          Enrolled
-                        </span>
-                      )}
-                      {profile.processStage && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-neutral-100 text-neutral-700">
-                          {PROCESS_STAGE_LABELS[profile.processStage] || profile.processStage}
-                        </span>
-                      )}
-                    </div>
+                    <h2 className="text-lg font-semibold text-neutral-900">{form.fullName}</h2>
                     <p className="text-sm text-neutral-500">{form.email}</p>
-                    {profile.totalCheckList > 0 && (
-                      <p className="text-xs text-neutral-400 mt-1">
-                        Checklist: {profile.completedCheckList}/{profile.totalCheckList} complete
-                      </p>
-                    )}
                   </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {canManage && !profile.isEnrolled && (
-                      <button type="button" onClick={() => markEnrolled(true)} className="ui-btn-secondary text-xs">
-                        Mark enrolled
-                      </button>
-                    )}
-                    {canManage && profile.isEnrolled && (
-                      <button type="button" onClick={() => markEnrolled(false)} className="ui-btn-secondary text-xs">
-                        Unlock profile
-                      </button>
-                    )}
-                    {canManage && tab !== 'applications' && tab !== 'process' && !profile.isEnrolled && (
+                  <div className="flex gap-2">
+                    {canManage && tab !== 'applications' && (
                       <button
                         type="button"
                         onClick={saveProfile}
@@ -438,27 +296,11 @@ export default function StudentManagement() {
 
                 {tab === 'personal' && (
                   <div className="ui-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="First name">
-                      <input
-                        className={INPUT}
-                        value={form.firstName}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Last name">
-                      <input
-                        className={INPUT}
-                        value={form.lastName}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                      />
-                    </Field>
                     <Field label="Full name">
                       <input
                         className={INPUT}
                         value={form.fullName}
-                        disabled={!canManage || profile.isEnrolled}
+                        disabled={!canManage}
                         onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                       />
                     </Field>
@@ -490,20 +332,13 @@ export default function StudentManagement() {
                         onChange={(e) => setForm({ ...form, nationality: e.target.value })}
                       />
                     </Field>
-                    <Field label="Assigned counsellor">
-                      <select
+                    <Field label="Preferred country">
+                      <input
                         className={INPUT}
-                        value={form.contactId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, contactId: e.target.value })}
-                      >
-                        <option value="">Unassigned</option>
-                        {counsellors.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.fullName}
-                          </option>
-                        ))}
-                      </select>
+                        value={form.preferredCountry}
+                        disabled={!canManage}
+                        onChange={(e) => setForm({ ...form, preferredCountry: e.target.value })}
+                      />
                     </Field>
                     <div className="md:col-span-2">
                       <Field label="Notes">
@@ -519,209 +354,72 @@ export default function StudentManagement() {
                   </div>
                 )}
 
-                {tab === 'study' && (
-                  <div className="ui-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Study level">
-                      <select
-                        className={INPUT}
-                        value={form.level}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, level: e.target.value })}
-                      >
-                        <option value="">Select</option>
-                        {['UG', 'PG', 'PhD', 'Diploma'].map((l) => (
-                          <option key={l} value={l}>
-                            {l}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Destination country">
-                      <select
-                        className={INPUT}
-                        value={form.countryId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, countryId: e.target.value })}
-                      >
-                        <option value="">Select country</option>
-                        {formOptions.countries?.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Industry">
-                      <select
-                        className={INPUT}
-                        value={form.industryId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) =>
-                          setForm({ ...form, industryId: e.target.value, subIndustryId: '', studyAreaId: '' })
-                        }
-                      >
-                        <option value="">Select</option>
-                        {formOptions.industries?.map((i) => (
-                          <option key={i.id} value={i.id}>
-                            {i.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Sub-industry">
-                      <select
-                        className={INPUT}
-                        value={form.subIndustryId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, subIndustryId: e.target.value })}
-                      >
-                        <option value="">Select</option>
-                        {subIndustries.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Study area">
-                      <select
-                        className={INPUT}
-                        value={form.studyAreaId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, studyAreaId: e.target.value })}
-                      >
-                        <option value="">Select</option>
-                        {studyAreas.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Intake month">
-                      <input
-                        className={INPUT}
-                        value={form.intakeMonth}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, intakeMonth: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Intake year">
-                      <input
-                        className={INPUT}
-                        value={form.intakeYear}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, intakeYear: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Study mode">
-                      <input
-                        className={INPUT}
-                        value={form.studyMode}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, studyMode: e.target.value })}
-                        placeholder="On-campus / Online"
-                      />
-                    </Field>
-                    <Field label="Duration">
-                      <input
-                        className={INPUT}
-                        value={form.studyDuration}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, studyDuration: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Budget">
-                      <input
-                        className={INPUT}
-                        value={form.studyBudget}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, studyBudget: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Work experience">
-                      <input
-                        className={INPUT}
-                        value={form.workExperience}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, workExperience: e.target.value })}
-                      />
-                    </Field>
-                  </div>
-                )}
-
-                {tab === 'education' && (
+                {tab === 'academic' && (
                   <div className="ui-panel p-6 space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-semibold text-neutral-800">Education details</h3>
-                      {canManage && !profile.isEnrolled && (
+                      <h3 className="text-sm font-semibold text-neutral-800">Academic history</h3>
+                      {canManage && (
                         <button
                           type="button"
-                          className="text-xs font-medium text-neutral-700"
+                          className="text-xs font-medium text-neutral-700 hover:text-neutral-900"
                           onClick={() =>
                             setForm({
                               ...form,
-                              educationDetails: [...form.educationDetails, emptyEducation()],
+                              academicHistory: [...form.academicHistory, emptyAcademic()],
                             })
                           }
                         >
-                          + Add qualification
+                          + Add row
                         </button>
                       )}
                     </div>
-                    {form.educationDetails.map((row, idx) => (
-                      <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-neutral-50 rounded-lg">
-                        <Field label="Type">
-                          <select
-                            className={INPUT}
-                            value={row.type}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) => {
-                              const next = [...form.educationDetails];
-                              next[idx] = { ...next[idx], type: e.target.value };
-                              setForm({ ...form, educationDetails: next });
-                            }}
-                          >
-                            {['SSC', 'HSC', 'UG', 'PG'].map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="Qualification">
+                    {form.academicHistory.map((row, idx) => (
+                      <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-neutral-50 rounded-lg border border-neutral-100">
+                        <Field label="Degree">
                           <input
                             className={INPUT}
-                            value={row.label}
-                            disabled={!canManage || profile.isEnrolled}
+                            value={row.degree}
+                            disabled={!canManage}
                             onChange={(e) => {
-                              const next = [...form.educationDetails];
-                              next[idx] = { ...next[idx], label: e.target.value };
-                              setForm({ ...form, educationDetails: next });
+                              const next = [...form.academicHistory];
+                              next[idx] = { ...next[idx], degree: e.target.value };
+                              setForm({ ...form, academicHistory: next });
                             }}
                           />
                         </Field>
-                        <Field label="Passing year">
+                        <Field label="Institution">
                           <input
                             className={INPUT}
-                            value={row.passing_year}
-                            disabled={!canManage || profile.isEnrolled}
+                            value={row.institution}
+                            disabled={!canManage}
                             onChange={(e) => {
-                              const next = [...form.educationDetails];
-                              next[idx] = { ...next[idx], passing_year: e.target.value };
-                              setForm({ ...form, educationDetails: next });
+                              const next = [...form.academicHistory];
+                              next[idx] = { ...next[idx], institution: e.target.value };
+                              setForm({ ...form, academicHistory: next });
                             }}
                           />
                         </Field>
-                        <Field label="Grade">
+                        <Field label="Year">
+                          <input
+                            className={INPUT}
+                            value={row.year}
+                            disabled={!canManage}
+                            onChange={(e) => {
+                              const next = [...form.academicHistory];
+                              next[idx] = { ...next[idx], year: e.target.value };
+                              setForm({ ...form, academicHistory: next });
+                            }}
+                          />
+                        </Field>
+                        <Field label="Grade / GPA">
                           <input
                             className={INPUT}
                             value={row.grade}
-                            disabled={!canManage || profile.isEnrolled}
+                            disabled={!canManage}
                             onChange={(e) => {
-                              const next = [...form.educationDetails];
+                              const next = [...form.academicHistory];
                               next[idx] = { ...next[idx], grade: e.target.value };
-                              setForm({ ...form, educationDetails: next });
+                              setForm({ ...form, academicHistory: next });
                             }}
                           />
                         </Field>
@@ -731,128 +429,25 @@ export default function StudentManagement() {
                 )}
 
                 {tab === 'tests' && (
-                  <div className="space-y-4">
-                    <div className="ui-panel p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[
-                        ['ieltsScore', 'IELTS (summary)'],
-                        ['toeflScore', 'TOEFL (summary)'],
-                        ['greScore', 'GRE (summary)'],
-                        ['gmatScore', 'GMAT (summary)'],
-                      ].map(([key, label]) => (
-                        <Field key={key} label={label}>
-                          <input
-                            type="number"
-                            step="0.5"
-                            className={INPUT}
-                            value={form[key]}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                            placeholder="Score"
-                          />
-                        </Field>
-                      ))}
-                    </div>
-                    <div className="ui-panel p-6 space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-sm font-semibold text-neutral-800">Exam sections</h3>
-                        {canManage && !profile.isEnrolled && (
-                          <button
-                            type="button"
-                            className="text-xs font-medium text-neutral-700"
-                            onClick={() =>
-                              setForm({
-                                ...form,
-                                asstExamSections: [...form.asstExamSections, emptyExam()],
-                              })
-                            }
-                          >
-                            + Add exam
-                          </button>
-                        )}
-                      </div>
-                      {form.asstExamSections.map((row, idx) => (
-                        <div key={idx} className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-neutral-50 rounded-lg">
-                          <Field label="Exam">
-                            <input
-                              className={INPUT}
-                              value={row.type}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => {
-                                const next = [...form.asstExamSections];
-                                next[idx] = { ...next[idx], type: e.target.value };
-                                setForm({ ...form, asstExamSections: next });
-                              }}
-                            />
-                          </Field>
-                          <Field label="Overall">
-                            <input
-                              className={INPUT}
-                              value={row.overall_score}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => {
-                                const next = [...form.asstExamSections];
-                                next[idx] = { ...next[idx], overall_score: e.target.value };
-                                setForm({ ...form, asstExamSections: next });
-                              }}
-                            />
-                          </Field>
-                          <Field label="Reading">
-                            <input
-                              className={INPUT}
-                              value={row.reading}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => {
-                                const next = [...form.asstExamSections];
-                                next[idx] = { ...next[idx], reading: e.target.value };
-                                setForm({ ...form, asstExamSections: next });
-                              }}
-                            />
-                          </Field>
-                          <Field label="Writing">
-                            <input
-                              className={INPUT}
-                              value={row.writing}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => {
-                                const next = [...form.asstExamSections];
-                                next[idx] = { ...next[idx], writing: e.target.value };
-                                setForm({ ...form, asstExamSections: next });
-                              }}
-                            />
-                          </Field>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {tab === 'process' && (
-                  <div className="ui-panel p-6 space-y-3">
-                    <h3 className="text-sm font-semibold text-neutral-800">Application checklist</h3>
-                    {!profile.checklists?.length ? (
-                      <p className="text-sm text-neutral-500">Select a destination country in Study plan to load checklist items.</p>
-                    ) : (
-                      profile.checklists.map((item) => (
-                        <label
-                          key={item.id}
-                          className="flex items-start gap-3 p-3 rounded-lg border border-neutral-100 hover:bg-neutral-50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={item.completed}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) => toggleChecklist(item.checkListId, e.target.checked)}
-                            className="mt-1"
-                          />
-                          <div>
-                            <p className="text-sm font-medium text-neutral-900">{item.checkList?.name}</p>
-                            <p className="text-xs text-neutral-500">
-                              {PROCESS_STAGE_LABELS[item.checkList?.stage] || item.checkList?.stage}
-                            </p>
-                          </div>
-                        </label>
-                      ))
-                    )}
+                  <div className="ui-panel p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      ['ieltsScore', 'IELTS'],
+                      ['toeflScore', 'TOEFL'],
+                      ['greScore', 'GRE'],
+                      ['gmatScore', 'GMAT'],
+                    ].map(([key, label]) => (
+                      <Field key={key} label={label}>
+                        <input
+                          type="number"
+                          step="0.5"
+                          className={INPUT}
+                          value={form[key]}
+                          disabled={!canManage}
+                          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                          placeholder="Score"
+                        />
+                      </Field>
+                    ))}
                   </div>
                 )}
 
