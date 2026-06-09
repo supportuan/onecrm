@@ -195,6 +195,16 @@ export const createAutomation = async (automationData) => {
   return res.json();
 };
 
+export const updateLeadRating = async (leadId, rating) => {
+  const res = await authFetch(`${API_URL}/leads/${leadId}/rating`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating }),
+  });
+
+  return res.json();
+};
+
 export const updateAutomation = async (id, automationData) => {
   const res = await authFetch(`${API_URL}/automations/${id}`, {
     method: 'PUT',

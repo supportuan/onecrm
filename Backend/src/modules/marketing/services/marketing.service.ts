@@ -269,6 +269,18 @@ export const assignCounsellor = async (leadId: number, counsellorId: number | nu
   return updated;
 };
 
+export const updateLeadRating = async (leadId: number, rating: string) => {
+  return await prisma.lead.update({
+    where: { id: leadId },
+    data: { rating },
+    include: {
+      source: true,
+      assignedCounsellor: true,
+      assignedBy: true,
+    },
+  });
+};
+
 export const deleteLead = async (id: number) => {
   // Soft delete
   return await prisma.lead.update({

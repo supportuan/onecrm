@@ -21,6 +21,10 @@ export const register = async (data: RegisterData) => {
   const passwordHash = await hashPassword(data.password);
   const isApproved = data.role !== UserRole.AGENT;
 
+  // Import default permissions for the role
+  const { getDefaultModuleAccessByRole } = await import('../users/user.service.js');
+  const moduleAccess = getDefaultModuleAccessByRole(data.role);
+
   const user = await prisma.user.create({
     data: {
       fullName: data.fullName,
@@ -31,6 +35,7 @@ export const register = async (data: RegisterData) => {
       isActive: true,
       isApproved,
       agencyDetails: data.agencyDetails || null,
+      moduleAccess: moduleAccess || null,
     },
   });
 
@@ -175,10 +180,11 @@ export const getUserProfile = async (id: number) => {
       email: true,
       phone: true,
       role: true,
-          isActive: true,
+      isActive: true,
       lastLogin: true,
       createdAt: true,
       updatedAt: true,
+      moduleAccess: true,
     },
   });
 };

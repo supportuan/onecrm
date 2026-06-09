@@ -74,6 +74,44 @@ export const getAnalytics = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const updateLeadRating = async (req, res) => {
+  try {
+    const leadId = Number(req.params.leadId);
+    const { rating } = req.body;
+
+    const allowedRatings = ['HOT', 'WARM', 'COLD', 'MAYBE'];
+
+    if (!leadId || Number.isNaN(leadId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid lead ID',
+      });
+    }
+
+    if (!allowedRatings.includes(rating)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid lead status',
+      });
+    }
+
+    const lead = await marketingService.updateLeadRating(leadId, rating);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Lead status updated successfully',
+      data: lead,
+    });
+  } catch (error) {
+    console.error('Update lead rating error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update lead status',
+    });
+  }
+};
+
 // ==========================================
 // 2. Lead Controllers
 // ==========================================
@@ -165,7 +203,7 @@ export const assignCounsellor = async (req: Request, res: Response, next: NextFu
     if (isNaN(leadId)) return sendError(res, 'Invalid lead ID', null, 400);
 
     const { counsellorId } = req.body;
-    
+
     // Check if current user is admin or super admin
     if (!req.user || (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN)) {
       return sendError(res, 'Unauthorized to assign counsellor', null, 403);

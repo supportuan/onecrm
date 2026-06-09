@@ -243,6 +243,120 @@ import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP } from "@/lib/auth/rbac";
 
 
+const MODULE_ACCESS_OPTIONS = [
+  {
+    module: "Marketing",
+    options: [
+      "Lead Management",
+      "Campaigns",
+      "Automation",
+      "Landing Pages & Forms",
+      "Marketing Analytics",
+    ],
+  },
+  {
+    module: "Student CRM",
+    options: [
+      "Student Management",
+      "Applications",
+      "Visa Management",
+      "Counselling",
+    ],
+  },
+  {
+    module: "Agency CRM",
+    options: [
+      "Agency Management",
+      "Agency Leads",
+      "Co-branding Tools",
+      "Commission Management",
+    ],
+  },
+  {
+    module: "HR",
+    options: [
+      "Employee Directory",
+      "Attendance",
+      "Leave Management",
+      "Payroll Inputs",
+      "Performance Reviews",
+      "Recruitment Tracker",
+    ],
+  },
+  {
+    module: "Admin & Settings",
+    options: ["User Management", "Roles", "Permissions", "Settings"],
+  },
+];
+
+const createEmptyModuleAccess = () => {
+  const access = {};
+  MODULE_ACCESS_OPTIONS.forEach((item) => {
+    access[item.module] = {};
+    item.options.forEach((option) => {
+      access[item.module][option] = [];
+    });
+  });
+  return access;
+};
+
+const setOptionActions = (access, moduleName, optionName, actions) => ({
+  ...access,
+  [moduleName]: {
+    ...(access[moduleName] || {}),
+    [optionName]: actions,
+  },
+});
+
+const getDefaultModuleAccessByRole = (role) => {
+  let access = createEmptyModuleAccess();
+
+  const giveModuleActions = (moduleName, actions = ["VIEW", "EDIT"]) => {
+    const moduleData = MODULE_ACCESS_OPTIONS.find(
+      (item) => item.module === moduleName
+    );
+
+    moduleData?.options.forEach((optionName) => {
+      access = setOptionActions(access, moduleName, optionName, actions);
+    });
+  };
+
+  if (role === "HR") {
+    giveModuleActions("HR", ["VIEW", "EDIT"]);
+  }
+
+  if (role === "STUDENT") {
+    giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
+  }
+
+  if (role === "AGENT") {
+    giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
+  }
+
+  if (role === "COUNSELLOR") {
+    giveModuleActions("Marketing", ["VIEW"]);
+    giveModuleActions("Student CRM", ["VIEW"]);
+  }
+
+  if (role === "ADMIN") {
+    giveModuleActions("Marketing", ["VIEW", "EDIT"]);
+    giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
+    giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
+    giveModuleActions("Admin & Settings", ["VIEW", "EDIT"]);
+  }
+
+  return access;
+};
+
+const getPermissionOptionName = (subLabel) => {
+  if (subLabel === "Users") return "User Management";
+  if (subLabel === "Roles & Permissions") return "Roles";
+  if (subLabel === "System Settings") return "Settings";
+  if (subLabel === "Content Management") return "Settings";
+  if (subLabel === "Branding") return "Settings";
+  return subLabel;
+};
+
 const Sidebar = ({ sidebarOpen, onClose }) => {
   const location = usePathname() || "";
   const router = useRouter();
@@ -270,13 +384,43 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
       return true;
     };
 
+    const role = user.role;
+    const access =
+      user.moduleAccess && Object.keys(user.moduleAccess).length > 0
+        ? user.moduleAccess
+        : getDefaultModuleAccessByRole(role);
+
     return navMenu
       .filter(moduleVisible)
-      .map((item) => ({
-        ...item,
-        subItems: item.subItems ? item.subItems.filter(subVisible) : undefined,
-      }))
-      .filter((item) => !item.subItems || item.subItems.length > 0);
+      .map((item) => {
+        const rbacSubItems = item.subItems ? item.subItems.filter(subVisible) : undefined;
+        const moduleAccessSubItems =
+          item.subItems?.filter((sub) => {
+            const optName = getPermissionOptionName(sub.label);
+            if (optName === 'Roles') {
+              const hasRoles = access[item.label]?.['Roles']?.length > 0;
+              const hasPerms = access[item.label]?.['Permissions']?.length > 0;
+              return hasRoles || hasPerms;
+            }
+            return access[item.label]?.[optName]?.length > 0;
+          }) || [];
+
+        const mergedSubItems = rbacSubItems
+          ? rbacSubItems.filter((sub) => moduleAccessSubItems.some((m) => m.path === sub.path))
+          : moduleAccessSubItems.length > 0
+            ? moduleAccessSubItems
+            : undefined;
+
+        if (item.subItems && (!mergedSubItems || mergedSubItems.length === 0)) {
+          return null;
+        }
+
+        return {
+          ...item,
+          subItems: mergedSubItems,
+        };
+      })
+      .filter(Boolean);
   }, [user, can, permissionMap]);
 
   const sectionKeys = useMemo(

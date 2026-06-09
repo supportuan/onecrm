@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
+import RouteGuard from './RouteGuard';
 import { WorkspaceProvider } from '../lib/workspaceContext';
 import { Menu } from 'lucide-react';
 
@@ -40,7 +41,9 @@ const LayoutContent = ({ children }) => {
 
       <div className="flex flex-1 min-h-0 w-auto flex-col lg:ml-72">
         <main className="flex-1 w-auto overflow-y-auto px-4 pb-8 pt-4 sm:px-6 lg:px-8 lg:pt-8">
-          <div className="w-auto">{children}</div>
+          <div className="w-auto">
+            <RouteGuard>{children}</RouteGuard>
+          </div>
         </main>
       </div>
 
