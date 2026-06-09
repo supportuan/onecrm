@@ -77,3 +77,5 @@ export const getChecklist = async (country) =>
 // -------------------- Lead → Application --------------------
 export const convertLeadToApplication = async (leadId, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/from-lead/${leadId}`, json(payload)));
+
+export const listCounsellors = async () => handleResponse(await tenantFetch('/api/counsellors'));

@@ -20,6 +20,8 @@ import {
   HrCandidateStatus,
   HrKpiFrequency,
   HrReviewStatus,
+  ApplicationStage,
+  DocumentStatus,
 } from '@prisma/client';
 import { hashPassword, comparePasswords } from '../src/utils/password.js';
 
@@ -207,7 +209,213 @@ async function main() {
   );
 
   await seedHrData(hrUser.id, defaultPassword);
+  await seedStudentCrmData(counsellor.id);
   console.log(`Default password for seeded users: ${defaultPassword}`);
+}
+
+async function seedStudentCrmData(counsellorId: number) {
+  console.log('Seeding Student CRM data...');
+
+  const studentSpecs = [
+    {
+      leadEmail: 'rahul.verma@example.com',
+      fullName: 'Rahul Verma',
+      email: 'rahul.verma@example.com',
+      phone: '+919811223344',
+      dob: new Date('1998-03-15'),
+      nationality: 'India',
+      preferredCountry: 'Canada',
+      ieltsScore: 7.5,
+      greScore: 315,
+      academicHistory: [
+        { degree: 'B.Com', institution: 'Delhi University', year: '2020', grade: '8.2 CGPA' },
+        { degree: 'MBA prep', institution: 'Career Launcher', year: '2024', grade: 'Completed' },
+      ],
+      applications: [
+        {
+          country: 'Canada',
+          university: 'University of Toronto',
+          course: 'MBA',
+          intake: 'Fall 2026',
+          stage: ApplicationStage.UNDER_REVIEW,
+          deadline: new Date('2026-08-15'),
+        },
+        {
+          country: 'UK',
+          university: 'London Business School',
+          course: 'MBA',
+          intake: 'Sep 2026',
+          stage: ApplicationStage.DOCUMENTS_PENDING,
+          deadline: new Date('2026-07-01'),
+        },
+      ],
+    },
+    {
+      leadEmail: 'ananya.patel@example.com',
+      fullName: 'Ananya Patel',
+      email: 'ananya.patel@example.com',
+      phone: '+919900112233',
+      dob: new Date('1999-07-22'),
+      nationality: 'India',
+      preferredCountry: 'UK',
+      ieltsScore: 8.0,
+      toeflScore: 108,
+      academicHistory: [
+        { degree: 'B.Tech CSE', institution: 'IIT Bombay', year: '2021', grade: '9.1 CGPA' },
+      ],
+      applications: [
+        {
+          country: 'UK',
+          university: 'Imperial College London',
+          course: 'MSc Data Science',
+          intake: 'Sep 2026',
+          stage: ApplicationStage.OFFER_RECEIVED,
+          deadline: new Date('2026-06-30'),
+        },
+        {
+          country: 'USA',
+          university: 'Carnegie Mellon University',
+          course: 'MS Machine Learning',
+          intake: 'Aug 2026',
+          stage: ApplicationStage.SUBMITTED,
+          deadline: new Date('2026-05-15'),
+        },
+      ],
+    },
+    {
+      leadEmail: 'sneha.iyer@example.com',
+      fullName: 'Sneha Iyer',
+      email: 'sneha.iyer@example.com',
+      phone: '+919777665544',
+      dob: new Date('1997-11-08'),
+      nationality: 'India',
+      preferredCountry: 'Germany',
+      ieltsScore: 7.0,
+      gmatScore: 680,
+      academicHistory: [
+        { degree: 'B.E. Mechanical', institution: 'Anna University', year: '2019', grade: '8.5 CGPA' },
+        { degree: 'M.Tech', institution: 'BITS Pilani', year: '2021', grade: '8.8 CGPA' },
+      ],
+      applications: [
+        {
+          country: 'Germany',
+          university: 'TU Munich',
+          course: 'Masters Engineering',
+          intake: 'Winter 2026',
+          stage: ApplicationStage.VISA_PROCESS,
+          deadline: new Date('2026-04-01'),
+        },
+        {
+          country: 'Canada',
+          university: 'University of British Columbia',
+          course: 'MEng Mechanical',
+          intake: 'Jan 2027',
+          stage: ApplicationStage.ENROLLED,
+          deadline: new Date('2025-12-01'),
+        },
+        {
+          country: 'Australia',
+          university: 'University of Melbourne',
+          course: 'Master of Engineering',
+          intake: 'Feb 2027',
+          stage: ApplicationStage.DRAFT,
+          deadline: new Date('2026-09-01'),
+        },
+      ],
+    },
+  ];
+
+  let year = new Date().getFullYear();
+  let appSeq = await prisma.application.count({ where: { applicationCode: { startsWith: `APP-${year}-` } } });
+
+  for (const spec of studentSpecs) {
+    const lead = await prisma.lead.findFirst({
+      where: { email: spec.leadEmail, deletedAt: null },
+    });
+
+    let student = await prisma.student.findUnique({ where: { email: spec.email } });
+    if (!student) {
+      student = await prisma.student.create({
+        data: {
+          fullName: spec.fullName,
+          email: spec.email,
+          phone: spec.phone,
+          dob: spec.dob,
+          nationality: spec.nationality,
+          preferredCountry: spec.preferredCountry,
+          academicHistory: spec.academicHistory,
+          ieltsScore: spec.ieltsScore,
+          toeflScore: spec.toeflScore ?? null,
+          greScore: spec.greScore ?? null,
+          gmatScore: spec.gmatScore ?? null,
+          source: 'lead_conversion',
+          sourceLeadId: lead?.id ?? null,
+        },
+      });
+    }
+
+    if (lead) {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { status: LeadStatus.CONVERTED },
+      });
+    }
+
+    for (const appSpec of spec.applications) {
+      const exists = await prisma.application.findFirst({
+        where: { studentId: student.id, university: appSpec.university, course: appSpec.course },
+      });
+      if (exists) continue;
+
+      appSeq += 1;
+      const code = `APP-${year}-${String(appSeq).padStart(4, '0')}`;
+      const app = await prisma.application.create({
+        data: {
+          applicationCode: code,
+          studentId: student.id,
+          country: appSpec.country,
+          university: appSpec.university,
+          course: appSpec.course,
+          intake: appSpec.intake,
+          stage: appSpec.stage,
+          assignedToId: counsellorId,
+          deadline: appSpec.deadline,
+        },
+      });
+
+      await prisma.applicationStageEvent.create({
+        data: {
+          applicationId: app.id,
+          fromStage: null,
+          toStage: ApplicationStage.DRAFT,
+          notes: 'Application created from seed',
+        },
+      });
+
+      if (appSpec.stage !== ApplicationStage.DRAFT) {
+        await prisma.applicationStageEvent.create({
+          data: {
+            applicationId: app.id,
+            fromStage: ApplicationStage.DRAFT,
+            toStage: appSpec.stage,
+            notes: 'Seeded workflow position',
+          },
+        });
+      }
+
+      await prisma.applicationDocument.createMany({
+        data: [
+          { applicationId: app.id, name: 'Passport copy', required: true, status: DocumentStatus.UPLOADED },
+          { applicationId: app.id, name: 'Academic transcripts', required: true, status: DocumentStatus.PENDING },
+          { applicationId: app.id, name: 'Statement of purpose', required: true, status: DocumentStatus.PENDING },
+        ],
+      });
+    }
+  }
+
+  const studentCount = await prisma.student.count();
+  const appCount = await prisma.application.count();
+  console.log(`✅ Student CRM ready (${studentCount} students, ${appCount} applications)`);
 }
 
 async function seedHrData(hrUserId: number, defaultPassword: string) {

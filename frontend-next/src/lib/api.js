@@ -1,6 +1,17 @@
 import { refreshAuthToken as refreshTokenRequest } from "./apiService";
 import { getAccessToken, expireSession, setAccessToken } from "./auth/session";
 
+let refreshInFlight = null;
+
+async function refreshSession(refreshToken) {
+  if (!refreshInFlight) {
+    refreshInFlight = refreshTokenRequest(refreshToken).finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 // authFetch: attaches access token and attempts a refresh on 401 responses
 export async function authFetch(input, init = {}) {
   // on server, just proxy through
@@ -27,7 +38,7 @@ export async function authFetch(input, init = {}) {
   }
 
   try {
-    const json = await refreshTokenRequest(refreshToken);
+    const json = await refreshSession(refreshToken);
     const newAccess = json?.data?.accessToken;
     const newRefresh = json?.data?.refreshToken;
     if (newAccess) {

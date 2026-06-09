@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Plus,
   Search,
@@ -14,6 +16,8 @@ import {
   Globe,
   Clock,
   History,
+  User,
+  ExternalLink,
 } from 'lucide-react';
 import {
   listStudents,
@@ -21,6 +25,7 @@ import {
   getApplication,
   createStudent,
   createApplication,
+  updateApplication,
   advanceApplicationStage,
   addDocument,
   updateDocument,
@@ -28,39 +33,39 @@ import {
   notifyMissingDocs,
   upsertOffer,
   upsertVisa,
+  listCounsellors,
 } from '@/services/studentCrmApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
-
-/* 8-stage workflow per spec.
- * Draft → Documents Pending → Submitted → Under Review → Offer Received
- *  → Offer Accepted / Rejected → Visa Process → Enrolled
- */
-const STAGES = [
-  { key: 'DRAFT', label: 'Draft' },
-  { key: 'DOCUMENTS_PENDING', label: 'Documents pending' },
-  { key: 'SUBMITTED', label: 'Submitted' },
-  { key: 'UNDER_REVIEW', label: 'Under review' },
-  { key: 'OFFER_RECEIVED', label: 'Offer received' },
-  { key: 'OFFER_ACCEPTED', label: 'Offer accepted' },
-  { key: 'VISA_PROCESS', label: 'Visa process' },
-  { key: 'ENROLLED', label: 'Enrolled' },
-];
-
-const STAGE_INDEX = Object.fromEntries(STAGES.map((s, i) => [s.key, i]));
-
-const DOC_STATUSES = ['PENDING', 'UPLOADED', 'VERIFIED', 'REJECTED'];
-const VISA_STATUSES = ['NOT_STARTED', 'DOCUMENTS_GATHERING', 'APPLIED', 'INTERVIEW_SCHEDULED', 'APPROVED', 'REJECTED'];
-const OFFER_DECISION = ['PENDING', 'ACCEPTED', 'REJECTED'];
+import {
+  APPLICATION_STAGES,
+  DOC_STATUSES,
+  VISA_STATUSES,
+  OFFER_DECISION,
+  getNextStage,
+  getStageLabel,
+  stageBadgeClass,
+} from '@/features/student-crm/constants';
 
 const INPUT_CLS =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[11px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all disabled:opacity-70';
 
-const stageBadge = (stageKey) => {
-  if (stageKey === 'ENROLLED') return 'bg-emerald-50 border-emerald-200 text-emerald-700';
-  if (stageKey === 'OFFER_REJECTED') return 'bg-rose-50 border-rose-200 text-rose-700';
-  if (stageKey?.startsWith('OFFER')) return 'bg-amber-50 border-amber-200 text-amber-700';
-  return 'bg-neutral-100 border-neutral-200 text-neutral-900';
+const stageBadge = stageBadgeClass;
+
+const stepState = (stageKey, currentStage) => {
+  if (currentStage === stageKey) return 'active';
+  if (currentStage === 'OFFER_REJECTED') {
+    if (['DRAFT', 'DOCUMENTS_PENDING', 'SUBMITTED', 'UNDER_REVIEW', 'OFFER_RECEIVED'].includes(stageKey)) {
+      return 'passed';
+    }
+    if (stageKey === 'OFFER_REJECTED') return 'active';
+    return 'future';
+  }
+  const order = APPLICATION_STAGES.find((s) => s.key === stageKey)?.order ?? 0;
+  const currentOrder = APPLICATION_STAGES.find((s) => s.key === currentStage)?.order ?? 0;
+  if (stageKey === 'OFFER_REJECTED') return 'branch';
+  if (order < currentOrder) return 'passed';
+  return 'future';
 };
 
 const formatDate = (d) => {
@@ -73,6 +78,9 @@ const formatDate = (d) => {
 };
 
 const Applications = () => {
+  const searchParams = useSearchParams();
+  const studentParam = searchParams.get('student');
+  const appParam = searchParams.get('app');
   const { user } = useAuth();
   const { can } = usePermissions();
   const canManage = can('MANAGE_STUDENT_CRM');
@@ -84,6 +92,7 @@ const Applications = () => {
   const [apps, setApps] = useState([]);
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [appDetail, setAppDetail] = useState(null);
+  const [counsellors, setCounsellors] = useState([]);
 
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingApps, setLoadingApps] = useState(false);
@@ -105,7 +114,11 @@ const Applications = () => {
       const res = await listStudents({ search: studentSearch, limit: 200 });
       const list = Array.isArray(res?.data) ? res.data : [];
       setStudents(list);
-      if (list.length && !selectedStudent) {
+      if (studentParam) {
+        const id = Number(studentParam);
+        const found = list.find((s) => s.id === id);
+        if (found) setSelectedStudent(found);
+      } else if (list.length && !selectedStudent) {
         setSelectedStudent(list[0]);
       }
     } catch (e) {
@@ -114,11 +127,17 @@ const Applications = () => {
       setLoadingStudents(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentSearch]);
+  }, [studentSearch, studentParam]);
 
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  useEffect(() => {
+    listCounsellors()
+      .then((res) => setCounsellors(Array.isArray(res?.data) ? res.data : []))
+      .catch(() => setCounsellors([]));
+  }, []);
 
   // -------- fetch apps for selected student --------
   const fetchApps = useCallback(async () => {
@@ -131,7 +150,11 @@ const Applications = () => {
       const res = await listApplications({ studentId: selectedStudent.id, limit: 100 });
       const list = Array.isArray(res?.data) ? res.data : [];
       setApps(list);
-      if (list.length) setSelectedAppId(list[0].id);
+      if (appParam) {
+        const id = Number(appParam);
+        if (list.some((a) => a.id === id)) setSelectedAppId(id);
+        else if (list.length) setSelectedAppId(list[0].id);
+      } else if (list.length) setSelectedAppId(list[0].id);
       else {
         setSelectedAppId(null);
         setAppDetail(null);
@@ -141,7 +164,7 @@ const Applications = () => {
     } finally {
       setLoadingApps(false);
     }
-  }, [selectedStudent]);
+  }, [selectedStudent, appParam]);
 
   useEffect(() => {
     fetchApps();
@@ -171,16 +194,30 @@ const Applications = () => {
   // -------- stage actions --------
   const handleAdvance = async () => {
     if (!appDetail) return;
-    const idx = STAGE_INDEX[appDetail.stage];
-    if (idx === undefined || idx >= STAGES.length - 1) return;
-    const next = STAGES[idx + 1].key;
+    const current = appDetail.stage;
+    if (current === 'ENROLLED' || current === 'OFFER_REJECTED') return;
+    const next =
+      current === 'OFFER_RECEIVED' ? 'OFFER_ACCEPTED' : getNextStage(current);
+    if (!next) return;
     try {
       await advanceApplicationStage(appDetail.id, { stage: next });
-      flash('ok', `advanced to ${STAGES[idx + 1].label}`);
+      flash('ok', `Advanced to ${getStageLabel(next)}`);
       await fetchDetail();
       await fetchApps();
     } catch (e) {
       flash('err', e?.message || 'failed to advance stage');
+    }
+  };
+
+  const handleUpdateMeta = async (payload) => {
+    if (!appDetail) return;
+    try {
+      await updateApplication(appDetail.id, payload);
+      flash('ok', 'Application updated');
+      await fetchDetail();
+      await fetchApps();
+    } catch (e) {
+      flash('err', e?.message || 'failed to update application');
     }
   };
 
@@ -295,8 +332,11 @@ const Applications = () => {
     return appDetail.documents.filter((d) => d.required && d.status === 'PENDING').length;
   }, [appDetail]);
 
-  const currentStageIdx = appDetail ? STAGE_INDEX[appDetail.stage] : -1;
-  const isFinal = appDetail?.stage === 'ENROLLED';
+  const isFinal = appDetail?.stage === 'ENROLLED' || appDetail?.stage === 'OFFER_REJECTED';
+  const isOverdue =
+    appDetail?.deadline &&
+    new Date(appDetail.deadline) < new Date() &&
+    !['ENROLLED', 'OFFER_REJECTED'].includes(appDetail.stage);
 
   return (
     <div className="ui-page text-neutral-800 font-sans">
@@ -421,7 +461,7 @@ const Applications = () => {
                         a.stage
                       )}`}
                     >
-                      {STAGES.find((s) => s.key === a.stage)?.label || a.stage}
+                      {getStageLabel(a.stage)}
                     </span>
                   </button>
                 );
@@ -444,8 +484,21 @@ const Applications = () => {
             </div>
           ) : (
             <>
-              <ApplicationHeader app={appDetail} canManage={canManage} onAdvance={handleAdvance} isFinal={isFinal} />
-              <StageStepper app={appDetail} onJump={canManage ? handleJumpStage : null} currentIdx={currentStageIdx} />
+              <ApplicationHeader
+                app={appDetail}
+                student={selectedStudent}
+                canManage={canManage}
+                onAdvance={handleAdvance}
+                isFinal={isFinal}
+                isOverdue={isOverdue}
+              />
+              <ApplicationMetaEditor
+                app={appDetail}
+                counsellors={counsellors}
+                canManage={canManage}
+                onSave={handleUpdateMeta}
+              />
+              <StageStepper app={appDetail} onJump={canManage ? handleJumpStage : null} />
               <DocumentChecklist
                 app={appDetail}
                 canManage={canManage}
@@ -465,7 +518,12 @@ const Applications = () => {
 
       {showNewStudent && <NewStudentModal onClose={() => setShowNewStudent(false)} onSave={handleNewStudent} />}
       {showNewApp && selectedStudent && (
-        <NewApplicationModal onClose={() => setShowNewApp(false)} onSave={handleNewApp} student={selectedStudent} />
+        <NewApplicationModal
+          onClose={() => setShowNewApp(false)}
+          onSave={handleNewApp}
+          student={selectedStudent}
+          counsellors={counsellors}
+        />
       )}
     </div>
   );
@@ -473,7 +531,7 @@ const Applications = () => {
 
 /* -------------------- sub-components -------------------- */
 
-const ApplicationHeader = ({ app, canManage, onAdvance, isFinal }) => (
+const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal, isOverdue }) => (
   <div className="ui-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
       <p className="text-[10px] font-mono font-semibold text-neutral-700">{app.applicationCode}</p>
@@ -484,54 +542,131 @@ const ApplicationHeader = ({ app, canManage, onAdvance, isFinal }) => (
         <span className="flex items-center gap-1">
           <Globe size={11} /> {app.country}
         </span>
-        {app.intake && <span>· intake {app.intake}</span>}
+        {app.intake && <span>· Intake {app.intake}</span>}
         {app.deadline && (
-          <span className="flex items-center gap-1">
-            <Clock size={11} /> deadline {formatDate(app.deadline)}
+          <span className={`flex items-center gap-1 ${isOverdue ? 'text-rose-600 font-semibold' : ''}`}>
+            <Clock size={11} /> Deadline {formatDate(app.deadline)}
+            {isOverdue && ' · Overdue'}
           </span>
         )}
-        {app.assignedTo && <span>· assigned to {app.assignedTo.fullName}</span>}
+        {app.assignedTo && (
+          <span className="flex items-center gap-1">
+            <User size={11} /> {app.assignedTo.fullName}
+          </span>
+        )}
+        {student && (
+          <Link
+            href={`/student-crm/student-management?student=${student.id}`}
+            className="flex items-center gap-1 text-neutral-700 hover:text-neutral-900 font-semibold"
+          >
+            <ExternalLink size={11} /> View student profile
+          </Link>
+        )}
       </div>
+      <span
+        className={`mt-3 inline-block px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-md border ${stageBadge(
+          app.stage
+        )}`}
+      >
+        {getStageLabel(app.stage)}
+      </span>
     </div>
     {canManage && !isFinal && (
       <button
         onClick={onAdvance}
         className="px-5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-semibold shadow-sm flex items-center gap-1.5"
       >
-        advance stage <ArrowRight size={13} />
+        Advance stage <ArrowRight size={13} />
       </button>
     )}
   </div>
 );
 
-const StageStepper = ({ app, currentIdx, onJump }) => (
+const ApplicationMetaEditor = ({ app, counsellors, canManage, onSave }) => {
+  const [deadline, setDeadline] = useState(app.deadline?.slice(0, 10) || '');
+  const [assignedToId, setAssignedToId] = useState(app.assignedToId ? String(app.assignedToId) : '');
+
+  useEffect(() => {
+    setDeadline(app.deadline?.slice(0, 10) || '');
+    setAssignedToId(app.assignedToId ? String(app.assignedToId) : '');
+  }, [app.id, app.deadline, app.assignedToId]);
+
+  if (!canManage) return null;
+
+  return (
+    <div className="ui-panel p-4 flex flex-col sm:flex-row sm:items-end gap-3">
+      <Field label="Application deadline">
+        <input
+          type="date"
+          value={deadline}
+          onChange={(e) => setDeadline(e.target.value)}
+          className={INPUT_CLS}
+        />
+      </Field>
+      <Field label="Assigned counsellor">
+        <select
+          value={assignedToId}
+          onChange={(e) => setAssignedToId(e.target.value)}
+          className={INPUT_CLS}
+        >
+          <option value="">Unassigned</option>
+          {counsellors.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.fullName}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <button
+        type="button"
+        onClick={() =>
+          onSave({
+            deadline: deadline || null,
+            assignedToId: assignedToId ? Number(assignedToId) : null,
+          })
+        }
+        className="px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[10px] font-semibold shrink-0"
+      >
+        Save assignment
+      </button>
+    </div>
+  );
+};
+
+const StageStepper = ({ app, onJump }) => (
   <div className="ui-panel p-6 space-y-3">
     <div className="flex items-center justify-between">
-      <h4 className="text-[10px] font-semibold text-neutral-500">8-stage workflow</h4>
-      {onJump && <span className="text-[9px] text-neutral-500">click a stage to jump</span>}
+      <h4 className="text-[10px] font-semibold text-neutral-500">Application workflow</h4>
+      {onJump && <span className="text-[9px] text-neutral-500">Click a stage to jump</span>}
     </div>
-    <div className="flex gap-2 overflow-x-auto pb-2">
-      {STAGES.map((s, i) => {
-        const passed = currentIdx >= i;
-        const active = app.stage === s.key;
+    <div className="flex flex-wrap gap-2 pb-2">
+      {APPLICATION_STAGES.map((s) => {
+        const state = stepState(s.key, app.stage);
         return (
           <button
             key={s.key}
             onClick={onJump ? () => onJump(s.key) : undefined}
             disabled={!onJump}
             className={`shrink-0 px-3 py-2.5 rounded-xl border text-[9px] uppercase font-extrabold tracking-wider transition ${
-              active
+              state === 'active'
                 ? 'bg-neutral-900 border-neutral-900 text-white shadow-md ring-2 ring-neutral-200 ring-offset-1'
-                : passed
+                : state === 'passed'
                 ? 'bg-neutral-100/60 border-neutral-200 text-neutral-900'
+                : state === 'branch'
+                ? 'bg-rose-50/50 border-rose-200 text-rose-600 border-dashed'
                 : 'bg-neutral-50 border-neutral-200 text-neutral-500'
             } ${onJump ? 'cursor-pointer hover:border-neutral-500' : 'cursor-default'}`}
           >
-            {i + 1}. {s.label}
+            {s.order}. {s.label}
           </button>
         );
       })}
     </div>
+    {app.stage === 'OFFER_RECEIVED' && onJump && (
+      <p className="text-[10px] text-neutral-500">
+        At offer received, advance defaults to offer accepted — or jump to offer rejected.
+      </p>
+    )}
   </div>
 );
 
@@ -850,10 +985,14 @@ const AuditTimeline = ({ app }) => (
         <li key={e.id} className="relative">
           <span className="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-neutral-900 border-2 border-white" />
           <p className="text-[11px] font-semibold text-neutral-800">
-            {e.fromStage ? `${e.fromStage} → ${e.toStage}` : `started at ${e.toStage}`}
+            {e.fromStage
+              ? `${getStageLabel(e.fromStage)} → ${getStageLabel(e.toStage)}`
+              : `Started at ${getStageLabel(e.toStage)}`}
           </p>
           <p className="text-[9px] text-neutral-500 mt-0.5">
-            {new Date(e.createdAt).toLocaleString()} {e.notes ? `· ${e.notes}` : ''}
+            {new Date(e.createdAt).toLocaleString()}
+            {e.changedBy?.fullName ? ` · ${e.changedBy.fullName}` : ''}
+            {e.notes ? ` · ${e.notes}` : ''}
           </p>
         </li>
       ))}
@@ -916,22 +1055,26 @@ const NewStudentModal = ({ onClose, onSave }) => {
   );
 };
 
-const NewApplicationModal = ({ onClose, onSave, student }) => {
+const NewApplicationModal = ({ onClose, onSave, student, counsellors = [] }) => {
   const [form, setForm] = useState({
     country: student?.preferredCountry || '',
     university: '',
     course: '',
     intake: '',
     deadline: '',
+    assignedToId: '',
     notes: '',
   });
   return (
-    <Modal title={`new application · ${student?.fullName}`} onClose={onClose}>
+    <Modal title={`New application · ${student?.fullName}`} onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (!form.country || !form.university || !form.course) return;
-          onSave(form);
+          onSave({
+            ...form,
+            assignedToId: form.assignedToId ? Number(form.assignedToId) : undefined,
+          });
         }}
         className="space-y-4 p-6"
       >
@@ -976,6 +1119,20 @@ const NewApplicationModal = ({ onClose, onSave, student }) => {
             onChange={(e) => setForm({ ...form, deadline: e.target.value })}
             className={INPUT_CLS}
           />
+        </Field>
+        <Field label="assigned counsellor">
+          <select
+            value={form.assignedToId}
+            onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}
+            className={INPUT_CLS}
+          >
+            <option value="">Unassigned</option>
+            {counsellors.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.fullName}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="notes">
           <textarea

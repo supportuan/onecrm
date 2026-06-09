@@ -109,7 +109,11 @@ const APPLICATION_INCLUDE = {
   documents: { orderBy: { id: 'asc' as const } },
   offerLetter: true,
   visaTracking: true,
-  stageEvents: { orderBy: { createdAt: 'desc' as const }, take: 50 },
+  stageEvents: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 50,
+    include: { changedBy: { select: { id: true, fullName: true } } },
+  },
 };
 
 export const listApplications = async (opts: {
