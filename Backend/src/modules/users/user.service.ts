@@ -150,11 +150,68 @@ export const getUserById = async (id: number) => {
   });
 };
 
+// export const createUser = async (data: {
+//   fullName: string;
+//   email: string;
+//   phone?: string;
+//   password: string;
+//   role: UserRole;
+//   agencyDetails?: any;
+//   moduleAccess?: any;
+// }) => {
+//   if (!allowedRoles.includes(data.role)) {
+//     throw new Error('Invalid role selected');
+//   }
+
+//   const passwordHash = await hashPassword(data.password);
+//   const isApproved = data.role !== UserRole.AGENT;
+//   const moduleAccess = data.moduleAccess || getDefaultModuleAccessByRole(data.role);
+
+//   const user = await prisma.user.create({
+//     data: {
+//       fullName: data.fullName,
+//       email: data.email,
+//       phone: data.phone || null,
+//       passwordHash,
+//       role: data.role,
+//       isActive: true,
+//       isApproved,
+//       agencyDetails: data.agencyDetails || null,
+//       moduleAccess: moduleAccess || null,
+//     },
+//   });
+
+//   // Dispatch Welcome Email asynchronously so it does not block the response
+//   sendCampaignEmail({
+//     to: data.email,
+//     subject: 'Welcome to OneCRM - Your Account Details',
+//     html: `
+//       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+//         <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
+//         <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
+//         <p style="color: #334155; font-size: 14px;">Your account has been created successfully with the role of <strong>${data.role}</strong>.</p>
+//         <p style="color: #334155; font-size: 14px;">Here are your temporary login credentials:</p>
+//         <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+//           <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Username (Email):</strong> ${data.email}</p>
+//           <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Temporary Password:</strong> ${data.password}</p>
+//         </div>
+//         <p style="color: #64748b; font-size: 13px;">Please note that you will be prompted to change this temporary password upon your first login for security reasons.</p>
+//         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+//         <p style="color: #94a3b8; font-size: 12px; text-align: center;">This is an automated email, please do not reply directly.</p>
+//       </div>
+//     `,
+//   }).catch((err) => {
+//     console.error('[Welcome Email Error] Failed to send email to:', data.email, err);
+//   });
+
+//   return user;
+// };
+
 export const createUser = async (data: {
   fullName: string;
   email: string;
-  phone?: string;
-  password: string;
+  phone?: string | null;
+  password?: string;
   role: UserRole;
   agencyDetails?: any;
   moduleAccess?: any;
@@ -163,42 +220,53 @@ export const createUser = async (data: {
     throw new Error('Invalid role selected');
   }
 
-  const passwordHash = await hashPassword(data.password);
+  const temporaryPassword =
+    data.password || Math.random().toString(36).slice(-8) + 'A@1';
+
+  const passwordHash = await hashPassword(temporaryPassword);
   const isApproved = data.role !== UserRole.AGENT;
   const moduleAccess = data.moduleAccess || getDefaultModuleAccessByRole(data.role);
 
-  const user = await prisma.user.create({
-    data: {
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone || null,
-      passwordHash,
-      role: data.role,
-      isActive: true,
-      isApproved,
-      agencyDetails: data.agencyDetails || null,
-      moduleAccess: moduleAccess || null,
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone || null,
+        passwordHash,
+        role: data.role,
+        isActive: true,
+        isApproved,
+        agencyDetails: data.agencyDetails || null,
+        moduleAccess: moduleAccess || null,
+      },
+    });
+
+    if (data.role === UserRole.STUDENT) {
+      await tx.lead.create({
+        data: {
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          studentUserId: user.id,
+          isStudentLoginCreated: true,
+          status: 'NEW',
+          rating: 'WARM',
+        },
+      });
+    }
+
+    return user;
   });
 
-  // Dispatch Welcome Email asynchronously so it does not block the response
   sendCampaignEmail({
     to: data.email,
     subject: 'Welcome to OneCRM - Your Account Details',
     html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
-        <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
-        <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
-        <p style="color: #334155; font-size: 14px;">Your account has been created successfully with the role of <strong>${data.role}</strong>.</p>
-        <p style="color: #334155; font-size: 14px;">Here are your temporary login credentials:</p>
-        <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-          <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Username (Email):</strong> ${data.email}</p>
-          <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Temporary Password:</strong> ${data.password}</p>
-        </div>
-        <p style="color: #64748b; font-size: 13px;">Please note that you will be prompted to change this temporary password upon your first login for security reasons.</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p style="color: #94a3b8; font-size: 12px; text-align: center;">This is an automated email, please do not reply directly.</p>
-      </div>
+      <p>Hello <b>${data.fullName}</b>,</p>
+      <p>Your account has been created successfully.</p>
+      <p><b>Email:</b> ${data.email}</p>
+      <p><b>Temporary Password:</b> ${temporaryPassword}</p>
     `,
   }).catch((err) => {
     console.error('[Welcome Email Error] Failed to send email to:', data.email, err);
@@ -219,7 +287,8 @@ export const updateUser = async (
   id: number,
   data: {
     fullName?: string;
-    phone?: string;
+    email?: string;
+    phone?: string | null;
     role?: UserRole;
     isActive?: boolean;
     isApproved?: boolean;
