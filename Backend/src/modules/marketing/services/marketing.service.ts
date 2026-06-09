@@ -5,6 +5,11 @@ import { sendWhatsAppMessage } from './whatsapp.service.js';
 import { sendSMS } from './sms.service.js';
 import { hashPassword } from '../../../utils/password.js';
 import crypto from 'crypto';
+import {
+  validateDuplicateLead,
+  validateDuplicateUser,
+  normalizeValue,
+} from "../../../utils/validation.js";
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {
@@ -228,45 +233,183 @@ export const getSources = async () => {
   });
 };
 
+// export const createLead = async (data: any) => {
+//   return await prisma.lead.create({
+//     data,
+//     include: { source: true, assignedCounsellor: true, assignedBy: true },
+//   });
+// };
+
 export const createLead = async (data: any) => {
+  await validateDuplicateLead(data.email, data.phone);
+
   return await prisma.lead.create({
-    data,
-    include: { source: true, assignedCounsellor: true, assignedBy: true },
+    data: {
+      ...data,
+      email: normalizeValue(data.email),
+      phone: normalizeValue(data.phone),
+    },
+    include: {
+      source: true,
+      assignedCounsellor: true,
+      assignedBy: true,
+    },
   });
 };
+
+// export const updateLead = async (id: number, data: any) => {
+//   return await prisma.lead.update({
+//     where: { id },
+//     data,
+//     include: { source: true, assignedCounsellor: true, assignedBy: true },
+//   });
+// };
+
+// export const updateLead = async (id: number, data: any) => {
+//     return await prisma.$transaction(async (tx) => {
+//     const updatedLead = await tx.lead.update({
+//       where: { id },
+//       data,
+//       include: { source: true, assignedCounsellor: true, assignedBy: true },
+//     });
+
+//     if (
+//       data.assignedCounsellorId !== undefined &&
+//       updatedLead.studentUserId
+//     ) {
+//       await tx.user.update({
+//         where: { id: updatedLead.studentUserId },
+//         data: {
+//           counsellorId: data.assignedCounsellorId,
+//         },
+//       });
+//     }
+
+//     return updatedLead;
+//   });
+// };
 
 export const updateLead = async (id: number, data: any) => {
-  return await prisma.lead.update({
-    where: { id },
-    data,
-    include: { source: true, assignedCounsellor: true, assignedBy: true },
+  return await prisma.$transaction(async (tx) => {
+    const existingLead = await tx.lead.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+    });
+
+    if (!existingLead) {
+      throw new Error("Lead not found");
+    }
+
+    await validateDuplicateLead(
+      data.email ?? existingLead.email,
+      data.phone ?? existingLead.phone,
+      id
+    );
+
+    const updatedLead = await tx.lead.update({
+      where: { id },
+      data: {
+        ...data,
+        email: data.email !== undefined ? normalizeValue(data.email) : undefined,
+        phone: data.phone !== undefined ? normalizeValue(data.phone) : undefined,
+      },
+      include: {
+        source: true,
+        assignedCounsellor: true,
+        assignedBy: true,
+      },
+    });
+
+    if (
+      data.assignedCounsellorId !== undefined &&
+      updatedLead.studentUserId
+    ) {
+      await tx.user.update({
+        where: { id: updatedLead.studentUserId },
+        data: {
+          counsellorId: data.assignedCounsellorId,
+        },
+      });
+    }
+
+    return updatedLead;
   });
 };
 
-export const assignCounsellor = async (leadId: number, counsellorId: number | null, adminId: number) => {
-  const updated = await prisma.lead.update({
-    where: { id: leadId },
-    data: {
-      assignedCounsellorId: counsellorId,
-      assignedById: adminId,
-    },
-    include: { source: true, assignedCounsellor: true, assignedBy: true },
-  });
+// export const assignCounsellor = async (leadId: number, counsellorId: number | null, adminId: number) => {
+//   const updated = await prisma.lead.update({
+//     where: { id: leadId },
+//     data: {
+//       assignedCounsellorId: counsellorId,
+//       assignedById: adminId,
+//     },
+//     include: { source: true, assignedCounsellor: true, assignedBy: true },
+//   });
 
-  if (counsellorId) {
-    const { safeNotify } = await import('../../notifications/recipients.js');
-    await safeNotify({
-      recipientId: counsellorId,
-      templateKey: 'lead.assigned',
-      vars: {
-        leadName: updated.fullName,
-        source: updated.source?.name,
-        leadId,
+//   if (counsellorId) {
+//     const { safeNotify } = await import('../../notifications/recipients.js');
+//     await safeNotify({
+//       recipientId: counsellorId,
+//       templateKey: 'lead.assigned',
+//       vars: {
+//         leadName: updated.fullName,
+//         source: updated.source?.name,
+//         leadId,
+//       },
+//     });
+//   }
+
+//   return updated;
+// };
+
+export const assignCounsellor = async (
+  leadId: number,
+  counsellorId: number | null,
+  assignedById: number
+) => {
+  return prisma.$transaction(async (tx) => {
+    const lead = await tx.lead.findFirst({
+      where: {
+        id: leadId,
+        deletedAt: null,
       },
     });
-  }
 
-  return updated;
+    if (!lead) {
+      throw new Error("Lead not found");
+    }
+
+    const updatedLead = await tx.lead.update({
+      where: {
+        id: leadId,
+      },
+      data: {
+        assignedCounsellorId: counsellorId,
+        assignedById,
+      },
+      include: {
+        source: true,
+        assignedCounsellor: true,
+        assignedBy: true,
+        studentUser: true,
+      },
+    });
+
+    if (updatedLead.studentUserId) {
+      await tx.user.update({
+        where: {
+          id: updatedLead.studentUserId,
+        },
+        data: {
+          counsellorId,
+        },
+      });
+    }
+
+    return updatedLead;
+  });
 };
 
 export const updateLeadRating = async (leadId: number, rating: string) => {

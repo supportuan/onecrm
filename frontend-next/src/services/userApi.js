@@ -3,12 +3,28 @@ import authFetch from "@/lib/api";
 const API_URL = "/api/users";
 
 // Helper to handle responses
+// const handleResponse = async (res) => {
+//   if (!res.ok) {
+//     const errorData = await res.json().catch(() => ({}));
+//     throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
+//   }
+//   return res.json();
+// };
+
 const handleResponse = async (res) => {
+  const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
+    return {
+      success: false,
+      message:
+        data.message ||
+        data.error ||
+        `Request failed with status ${res.status}`,
+    };
   }
-  return res.json();
+
+  return data;
 };
 
 export const getUsers = async (role) => {
