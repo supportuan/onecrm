@@ -126,6 +126,7 @@ enum UserRole {
   TELECALLER
   AGENCY_FREELANCER
   STUDENT
+  AGENT
 }
 
 enum HrAccessRole {
@@ -1099,5 +1100,17 @@ model RolePermission {
   permissions String[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+
+model Permission {
+  id        Int      @id @default(autoincrement())
+  module    String
+  option    String
+  action    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([module, option, action])
 }
 
