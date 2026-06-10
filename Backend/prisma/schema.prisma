@@ -485,7 +485,7 @@ model User {
   isApproved    Boolean        @default(true)
   agencyDetails Json?
   moduleAccess  Json?
-  counsellorId  Int
+  counsellorId  Int?
   lastLogin     DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
