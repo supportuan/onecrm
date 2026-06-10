@@ -235,7 +235,6 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, Command, LogOut } from "lucide-react";
 import MenuItem from "./MenuItem";
-import NotificationBell from "./NotificationBell";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from '../lib/workspaceContext';
