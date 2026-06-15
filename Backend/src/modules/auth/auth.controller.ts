@@ -83,7 +83,8 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
 };
 
 const sendResetEmail = async (email: string, token: string) => {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    console.log("resetUrl", resetUrl);
     console.info(`Password reset link for ${email}: ${resetUrl}`);
 };
 

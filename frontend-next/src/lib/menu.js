@@ -213,11 +213,11 @@ export const navMenu = [
       },
       { label: "Campaigns", path: "/marketing/campaigns", icon: Megaphone },
       { label: "Automation", path: "/marketing/automation", icon: Zap },
-      {
-        label: "Landing Pages & Forms",
-        path: "/marketing/landing-pages-forms",
-        icon: FileText,
-      },
+      // {
+      //   label: "Landing Pages & Forms",
+      //   path: "/marketing/landing-pages-forms",
+      //   icon: FileText,
+      // },
       {
         label: "Marketing Analytics",
         path: "/marketing/marketing-analytics",
