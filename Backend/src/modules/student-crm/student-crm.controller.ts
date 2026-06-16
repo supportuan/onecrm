@@ -10,11 +10,13 @@ const numId = (raw: any) => {
 
 // -------------------- Students --------------------
 
+const actor = (req: Request) => ({ id: req.user?.id, role: req.user?.role });
+
 export const listStudents = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const search = typeof req.query.search === 'string' ? req.query.search : undefined;
     const limit = Math.min(Number(req.query.limit) || 200, 500);
-    const items = await service.listStudents({ search, limit });
+    const items = await service.listStudents({ search, limit, actor: actor(req) });
     return sendSuccess(res, 'students fetched', items);
   } catch (err) {
     next(err);
@@ -25,9 +27,29 @@ export const getStudent = async (req: Request, res: Response, next: NextFunction
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const item = await service.getStudent(id);
+    const item = await service.getStudent(id, actor(req));
     if (!item) return sendError(res, 'not found', null, 404);
     return sendSuccess(res, 'student', item);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getMyStudent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
+    const item = await service.getStudentByUserId(req.user.id);
+    if (!item) return sendError(res, 'student profile not found', null, 404);
+    return sendSuccess(res, 'my student profile', item);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getStatistics = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const stats = await service.getStatistics(actor(req));
+    return sendSuccess(res, 'statistics', stats);
   } catch (err) {
     next(err);
   }
@@ -49,9 +71,52 @@ export const updateStudent = async (req: Request, res: Response, next: NextFunct
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const updated = await service.updateStudent(id, req.body || {});
+    const updated = await service.updateStudent(id, req.body || {}, actor(req));
     return sendSuccess(res, 'student updated', updated);
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('enrolled')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const updateMyStudent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
+    const profile = await service.getStudentByUserId(req.user.id);
+    if (!profile) return sendError(res, 'student profile not found', null, 404);
+    const updated = await service.updateStudent(profile.id, req.body || {}, actor(req));
+    return sendSuccess(res, 'profile updated', updated);
+  } catch (err: any) {
+    if (err?.message?.includes('enrolled')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const setEnrolled = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const isEnrolled = Boolean(req.body?.isEnrolled);
+    const updated = await service.setStudentEnrolled(id, isEnrolled, actor(req));
+    return sendSuccess(res, 'enrollment updated', updated);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const patchStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const { status, notes } = req.body || {};
+    if (!status) return sendError(res, 'status is required', null, 400);
+    const updated = await service.patchStudentStatus(id, status, notes, actor(req));
+    return sendSuccess(res, 'status updated', updated);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
     next(err);
   }
 };
@@ -71,6 +136,7 @@ export const listApplications = async (req: Request, res: Response, next: NextFu
       assignedToId: assignedToId ?? undefined,
       search,
       limit,
+      actor: actor(req),
     });
     return sendSuccess(res, 'applications fetched', items);
   } catch (err) {
@@ -82,10 +148,74 @@ export const getApplication = async (req: Request, res: Response, next: NextFunc
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const item = await service.getApplication(id);
+    const item = await service.getApplication(id, actor(req));
     if (!item) return sendError(res, 'not found', null, 404);
     return sendSuccess(res, 'application', item);
   } catch (err) {
+    next(err);
+  }
+};
+
+export const listChecklists = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    if (!studentId) return sendError(res, 'invalid student id', null, 400);
+    const items = await service.listStudentChecklists(studentId, actor(req));
+    return sendSuccess(res, 'checklists', items);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const updateChecklistValue = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    const checkListId = numId(req.params.checkListId);
+    if (!studentId || !checkListId) return sendError(res, 'invalid ids', null, 400);
+    const item = await service.updateChecklistValue(studentId, checkListId, req.body || {}, actor(req));
+    return sendSuccess(res, 'checklist updated', item);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const listUniversities = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    if (!studentId) return sendError(res, 'invalid student id', null, 400);
+    const items = await service.listStudentUniversities(studentId, actor(req));
+    return sendSuccess(res, 'universities', items);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const upsertUniversity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    if (!studentId || !req.body?.universityId) return sendError(res, 'student id and universityId required', null, 400);
+    const item = await service.upsertStudentUniversity(studentId, req.body, actor(req));
+    return sendSuccess(res, 'university saved', item);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const removeUniversity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    const universityId = numId(req.params.universityId);
+    if (!studentId || !universityId) return sendError(res, 'invalid ids', null, 400);
+    await service.removeStudentUniversity(studentId, universityId, actor(req));
+    return sendSuccess(res, 'university removed', { studentId, universityId });
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     next(err);
   }
 };
@@ -200,6 +330,37 @@ export const getChecklist = async (req: Request, res: Response, next: NextFuncti
 };
 
 // -------------------- Lead → Application bridge (Phase 2) --------------------
+
+export const listPromotableLeads = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const items = await service.listPromotableLeads();
+    return sendSuccess(res, 'promotable leads', items);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const promoteLead = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const leadId = numId(req.params.leadId);
+    if (!leadId) return sendError(res, 'invalid lead id', null, 400);
+    const result = await service.promoteLeadToStudent(leadId, req.body || {}, req.user?.id);
+    return sendSuccess(res, 'lead promoted to student application', result, 201);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const promoteAllLeads = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const password = typeof req.body?.password === 'string' ? req.body.password : undefined;
+    const results = await service.promoteAllLeads(password, req.user?.id);
+    return sendSuccess(res, 'batch promote complete', results);
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const createFromLead = async (req: Request, res: Response, next: NextFunction) => {
   try {

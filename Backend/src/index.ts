@@ -13,6 +13,10 @@ import authRouter from './modules/auth/auth.routes.js';
 import rbacRouter from './modules/rbac/rbac.routes.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
 import studentCrmRouter from './modules/student-crm/student-crm.routes.js';
+import crmSettingsRouter from './modules/crm-settings/crm-settings.routes.js';
+import uploadsRouter from './modules/uploads/uploads.routes.js';
+import agencyCrmRouter from './modules/agency-crm/agency-crm.routes.js';
+import path from 'path';
 import { ensureDefaults, loadPermissions } from './modules/rbac/rbac.service.js';
 import { startNotificationScheduler } from './modules/notifications/scheduler.js';
 
@@ -40,6 +44,10 @@ app.use('/api/marketing', marketingRouter);
 app.use('/api/hr', hrRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/student-crm', studentCrmRouter);
+app.use('/api/crm-settings', crmSettingsRouter);
+app.use('/api/uploads', uploadsRouter);
+app.use('/api/agency-crm', agencyCrmRouter);
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Mount global error handling middleware
 app.use(errorHandler);

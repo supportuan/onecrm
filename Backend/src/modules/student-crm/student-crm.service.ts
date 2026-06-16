@@ -1,7 +1,24 @@
+import crypto from 'crypto';
+import { UserRole } from '@prisma/client';
 import { prisma } from '../../prisma.js';
+import { hashPassword } from '../../utils/password.js';
 import { getDefaultChecklist, type ChecklistItem } from './checklists.js';
-import { notify } from '../notifications/notifications.service.js';
 import { safeNotify } from '../notifications/recipients.js';
+import { applicationScopeWhere, studentScopeWhere } from './scoping.js';
+import { computeProcessProgress } from './stage-engine.js';
+
+type Actor = { id?: number; role?: string };
+
+const STUDENT_INCLUDE = {
+  country: true,
+  industry: true,
+  subIndustry: true,
+  studyArea: true,
+  contact: { select: { id: true, fullName: true, email: true, role: true } },
+  applications: { orderBy: { createdAt: 'desc' as const } },
+  universities: { include: { university: { include: { country: true } } } },
+  checklists: { include: { checkList: true }, orderBy: { id: 'asc' as const } },
+};
 
 /** Generate a human-readable application code like APP-2026-0007. */
 const generateApplicationCode = async (): Promise<string> => {
@@ -16,13 +33,20 @@ const generateApplicationCode = async (): Promise<string> => {
 
 // -------------------- Students --------------------
 
-export const listStudents = async (opts: { search?: string; limit?: number } = {}) => {
-  const where: any = {};
+export const listStudents = async (
+  opts: { search?: string; limit?: number; actor?: Actor } = {}
+) => {
+  const where: any = { ...studentScopeWhere(opts.actor) };
   if (opts.search) {
-    where.OR = [
-      { fullName: { contains: opts.search, mode: 'insensitive' } },
-      { email: { contains: opts.search, mode: 'insensitive' } },
-      { phone: { contains: opts.search, mode: 'insensitive' } },
+    where.AND = [
+      ...(where.AND || []),
+      {
+        OR: [
+          { fullName: { contains: opts.search, mode: 'insensitive' } },
+          { email: { contains: opts.search, mode: 'insensitive' } },
+          { phone: { contains: opts.search, mode: 'insensitive' } },
+        ],
+      },
     ];
   }
   return prisma.student.findMany({
@@ -30,75 +54,242 @@ export const listStudents = async (opts: { search?: string; limit?: number } = {
     orderBy: { createdAt: 'desc' },
     take: opts.limit ?? 200,
     include: {
+      country: { select: { id: true, name: true } },
       applications: { select: { id: true, stage: true, university: true, country: true } },
     },
   });
 };
 
-export const getStudent = async (id: number) =>
-  prisma.student.findUnique({
-    where: { id },
-    include: {
-      applications: {
-        orderBy: { createdAt: 'desc' },
-      },
-    },
+export const getStudent = async (id: number, actor?: Actor) => {
+  const student = await prisma.student.findFirst({
+    where: { id, ...studentScopeWhere(actor) },
+    include: STUDENT_INCLUDE,
+  });
+  return student;
+};
+
+export const getStudentByUserId = async (userId: number) =>
+  prisma.student.findFirst({
+    where: { userId, deletedAt: null },
+    include: STUDENT_INCLUDE,
   });
 
-export const createStudent = async (data: {
-  fullName: string;
-  email: string;
-  phone?: string;
-  dob?: string;
-  nationality?: string;
-  preferredCountry?: string;
-  academicHistory?: any;
-  ieltsScore?: number;
-  toeflScore?: number;
-  greScore?: number;
-  gmatScore?: number;
-  source?: string;
-  sourceLeadId?: number;
-}) => {
+const buildFullName = (data: { firstName?: string; lastName?: string; fullName?: string }) => {
+  if (data.fullName?.trim()) return data.fullName.trim();
+  return [data.firstName, data.lastName].filter(Boolean).join(' ').trim();
+};
+
+const studentDataFromPayload = (data: Record<string, any>) => {
+  const fullName = buildFullName(data);
+  const payload: Record<string, unknown> = {
+    firstName: data.firstName ?? null,
+    lastName: data.lastName ?? null,
+    fullName: fullName || data.email,
+    email: data.email,
+    phone: data.phone ?? null,
+    dob: data.dob ? new Date(data.dob) : null,
+    nationality: data.nationality ?? null,
+    preferredCountry: data.preferredCountry ?? null,
+    level: data.level ?? null,
+    countryId: data.countryId ?? null,
+    industryId: data.industryId ?? null,
+    subIndustryId: data.subIndustryId ?? null,
+    studyAreaId: data.studyAreaId ?? null,
+    intakeMonth: data.intakeMonth ?? null,
+    intakeYear: data.intakeYear ?? null,
+    studyMode: data.studyMode ?? null,
+    studyDuration: data.studyDuration ?? null,
+    studyBudget: data.studyBudget ?? null,
+    studyAttendanceType: data.studyAttendanceType ?? null,
+    typeOfDegree: data.typeOfDegree ?? null,
+    workExperience: data.workExperience ?? null,
+    recLevelAcademic: data.recLevelAcademic ?? null,
+    recGradeAchieved: data.recGradeAchieved ?? null,
+    preStudyLoc: data.preStudyLoc ?? null,
+    educationDetails: data.educationDetails ?? undefined,
+    asstExamSections: data.asstExamSections ?? undefined,
+    academicHistory: data.academicHistory ?? undefined,
+    ieltsScore: data.ieltsScore ?? null,
+    toeflScore: data.toeflScore ?? null,
+    greScore: data.greScore ?? null,
+    gmatScore: data.gmatScore ?? null,
+    contactId: data.contactId ?? null,
+    source: data.source ?? null,
+    sourceLeadId: data.sourceLeadId ?? null,
+    notes: data.notes ?? null,
+  };
+  return payload;
+};
+
+export const createStudent = async (data: Record<string, any>) => {
   const existing = await prisma.student.findUnique({ where: { email: data.email } });
   if (existing) return existing;
-  return prisma.student.create({
-    data: {
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone || null,
-      dob: data.dob ? new Date(data.dob) : null,
-      nationality: data.nationality || null,
-      preferredCountry: data.preferredCountry || null,
-      academicHistory: data.academicHistory || undefined,
-      ieltsScore: data.ieltsScore ?? null,
-      toeflScore: data.toeflScore ?? null,
-      greScore: data.greScore ?? null,
-      gmatScore: data.gmatScore ?? null,
-      source: data.source || null,
-      sourceLeadId: data.sourceLeadId || null,
-    },
+  const created = await prisma.student.create({
+    data: studentDataFromPayload(data) as any,
+  });
+  if (created.countryId) await seedStudentChecklists(created.id, created.countryId);
+  return getStudent(created.id);
+};
+
+export const updateStudent = async (id: number, data: Record<string, any>, actor?: Actor) => {
+  const current = await getStudent(id, actor);
+  if (!current) throw new Error('student not found');
+  if (current.isEnrolled) throw new Error('enrolled students cannot be edited');
+
+  const allowed = [
+    'firstName', 'lastName', 'fullName', 'phone', 'dob', 'nationality', 'preferredCountry',
+    'level', 'countryId', 'industryId', 'subIndustryId', 'studyAreaId',
+    'intakeMonth', 'intakeYear', 'studyMode', 'studyDuration', 'studyBudget',
+    'studyAttendanceType', 'typeOfDegree', 'workExperience', 'recLevelAcademic', 'recGradeAchieved',
+    'preStudyLoc', 'educationDetails', 'asstExamSections', 'academicHistory',
+    'ieltsScore', 'toeflScore', 'greScore', 'gmatScore', 'contactId', 'notes', 'status',
+  ];
+  const payload: any = {};
+  for (const k of allowed) {
+    if (k in data) payload[k] = k === 'dob' && data.dob ? new Date(data.dob) : data[k];
+  }
+  if (payload.firstName || payload.lastName) {
+    payload.fullName = buildFullName({ ...current, ...payload });
+  }
+  await prisma.student.update({ where: { id }, data: payload });
+  if (data.countryId && data.countryId !== current.countryId) {
+    await seedStudentChecklists(id, data.countryId);
+  }
+  return getStudent(id, actor);
+};
+
+export const setStudentEnrolled = async (id: number, isEnrolled: boolean, actor?: Actor) => {
+  const current = await getStudent(id, actor);
+  if (!current) throw new Error('student not found');
+  await prisma.student.update({ where: { id }, data: { isEnrolled } });
+  if (isEnrolled) {
+    await prisma.application.updateMany({
+      where: { studentId: id },
+      data: { stage: 'ENROLLED' },
+    });
+  }
+  return getStudent(id, actor);
+};
+
+export const patchStudentStatus = async (id: number, status: string, notes?: string, actor?: Actor) => {
+  const current = await getStudent(id, actor);
+  if (!current) throw new Error('student not found');
+  if (current.isEnrolled) throw new Error('enrolled students are locked');
+  return prisma.student.update({
+    where: { id },
+    data: { status, ...(notes !== undefined ? { notes } : {}) },
   });
 };
 
-export const updateStudent = async (id: number, data: Record<string, any>) => {
-  // Whitelist fields we accept here so updates are predictable.
-  const allowed = [
-    'fullName',
-    'phone',
-    'dob',
-    'nationality',
-    'preferredCountry',
-    'academicHistory',
-    'ieltsScore',
-    'toeflScore',
-    'greScore',
-    'gmatScore',
-    'notes',
-  ];
-  const payload: any = {};
-  for (const k of allowed) if (k in data) payload[k] = k === 'dob' && data.dob ? new Date(data.dob) : data[k];
-  return prisma.student.update({ where: { id }, data: payload });
+export const getStatistics = async (actor?: Actor) => {
+  const studentWhere = studentScopeWhere(actor);
+  const appWhere = applicationScopeWhere(actor);
+
+  const [totalStudents, enrolled, byStage, byProcessStage] = await Promise.all([
+    prisma.student.count({ where: studentWhere }),
+    prisma.student.count({ where: { ...studentWhere, isEnrolled: true } }),
+    prisma.application.groupBy({ by: ['stage'], where: appWhere, _count: { id: true } }),
+    prisma.student.groupBy({ by: ['processStage'], where: studentWhere, _count: { id: true } }),
+  ]);
+
+  return {
+    totalStudents,
+    enrolled,
+    applicationsByStage: byStage.map((r) => ({ stage: r.stage, count: r._count.id })),
+    studentsByProcessStage: byProcessStage.map((r) => ({ stage: r.processStage, count: r._count.id })),
+  };
+};
+
+/** Seed country-linked checklist rows for a student */
+export const seedStudentChecklists = async (studentId: number, countryId: number) => {
+  const links = await prisma.countryChecklist.findMany({
+    where: { countryId },
+    include: { checkList: true },
+  });
+  if (!links.length) return;
+  for (const link of links) {
+    await prisma.studentChecklist.upsert({
+      where: { studentId_checkListId: { studentId, checkListId: link.checkListId } },
+      create: { studentId, checkListId: link.checkListId },
+      update: {},
+    });
+  }
+  await refreshStudentProgress(studentId);
+};
+
+export const refreshStudentProgress = async (studentId: number) => {
+  const items = await prisma.studentChecklist.findMany({
+    where: { studentId },
+    include: { checkList: true },
+  });
+  const progress = computeProcessProgress(items);
+  await prisma.student.update({ where: { id: studentId }, data: progress });
+};
+
+export const listStudentChecklists = async (studentId: number, actor?: Actor) => {
+  const student = await getStudent(studentId, actor);
+  if (!student) throw new Error('student not found');
+  return student.checklists;
+};
+
+export const updateChecklistValue = async (
+  studentId: number,
+  checkListId: number,
+  data: { value?: string; linkUrl?: string; completed?: boolean },
+  actor?: Actor
+) => {
+  const student = await getStudent(studentId, actor);
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  const item = await prisma.studentChecklist.upsert({
+    where: { studentId_checkListId: { studentId, checkListId } },
+    create: { studentId, checkListId, ...data },
+    update: data,
+    include: { checkList: true },
+  });
+  await refreshStudentProgress(studentId);
+  return item;
+};
+
+export const listStudentUniversities = async (studentId: number, actor?: Actor) => {
+  const student = await getStudent(studentId, actor);
+  if (!student) throw new Error('student not found');
+  return student.universities;
+};
+
+export const upsertStudentUniversity = async (
+  studentId: number,
+  data: {
+    universityId: number;
+    value?: string;
+    isSelected?: boolean;
+    status?: string;
+    appliedIntake?: string;
+    offerIntake?: string;
+    courseLink?: string;
+    defer?: boolean;
+  },
+  actor?: Actor
+) => {
+  const student = await getStudent(studentId, actor);
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  return prisma.studentUniversity.upsert({
+    where: { studentId_universityId: { studentId, universityId: data.universityId } },
+    create: { studentId, ...data },
+    update: data,
+    include: { university: { include: { country: true } } },
+  });
+};
+
+export const removeStudentUniversity = async (studentId: number, universityId: number, actor?: Actor) => {
+  const student = await getStudent(studentId, actor);
+  if (!student) throw new Error('student not found');
+  await prisma.studentUniversity.delete({
+    where: { studentId_universityId: { studentId, universityId } },
+  });
 };
 
 // -------------------- Applications --------------------
@@ -122,8 +313,9 @@ export const listApplications = async (opts: {
   assignedToId?: number;
   search?: string;
   limit?: number;
+  actor?: Actor;
 } = {}) => {
-  const where: any = {};
+  const where: any = { ...applicationScopeWhere(opts.actor) };
   if (opts.studentId) where.studentId = opts.studentId;
   if (opts.stage) where.stage = opts.stage;
   if (opts.assignedToId) where.assignedToId = opts.assignedToId;
@@ -146,8 +338,10 @@ export const listApplications = async (opts: {
   });
 };
 
-export const getApplication = async (id: number) =>
-  prisma.application.findUnique({ where: { id }, include: APPLICATION_INCLUDE });
+export const getApplication = async (id: number, actor?: Actor) => {
+  const scope = applicationScopeWhere(actor);
+  return prisma.application.findFirst({ where: { id, ...scope }, include: APPLICATION_INCLUDE });
+};
 
 /** Seed the document checklist for a new application using country/university defaults. */
 const seedChecklistFor = async (applicationId: number, country: string, university: string) => {
@@ -487,27 +681,43 @@ export const createApplicationFromLead = async (
   if (lead.status === 'CONVERTED') throw new Error('lead already converted');
 
   // Find or create a Student.
+  const nameParts = (lead.fullName || '').trim().split(/\s+/);
+  const firstName = nameParts[0] || lead.fullName;
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+  const assignedToId = opts.assignedToId ?? lead.assignedCounsellorId ?? null;
+  const countryName = opts.country || lead.preferredCountry || lead.country || 'UNKNOWN';
+
   let student = await prisma.student.findUnique({ where: { email: lead.email } });
   if (!student) {
     student = await prisma.student.create({
       data: {
+        firstName,
+        lastName,
         fullName: lead.fullName,
         email: lead.email,
         phone: lead.phone || null,
-        preferredCountry: lead.preferredCountry || lead.country || null,
-        source: lead.source?.name || null,
+        preferredCountry: countryName,
+        level: (lead as any).level || null,
+        intakeMonth: (lead as any).intakeMonth || null,
+        intakeYear: (lead as any).intakeYear || null,
+        contactId: assignedToId,
+        source: lead.source?.name || 'lead_conversion',
         sourceLeadId: lead.id,
       },
     });
   } else if (!student.sourceLeadId) {
     student = await prisma.student.update({
       where: { id: student.id },
-      data: { sourceLeadId: lead.id, source: student.source || lead.source?.name || null },
+      data: {
+        sourceLeadId: lead.id,
+        source: student.source || lead.source?.name || null,
+        contactId: student.contactId || assignedToId,
+        level: student.level || (lead as any).level || null,
+      },
     });
   }
 
-  const assignedToId = opts.assignedToId ?? lead.assignedCounsellorId ?? null;
-  const country = opts.country || lead.preferredCountry || lead.country || 'UNKNOWN';
+  const country = countryName;
 
   const application = await createApplication({
     studentId: student.id,
@@ -543,4 +753,250 @@ export const createApplicationFromLead = async (
   }
 
   return { student, application };
+};
+
+// -------------------- Lead → Student login + application (full promote) --------------------
+
+const resolveCountry = async (name?: string | null) => {
+  if (!name) return null;
+  return prisma.country.findFirst({
+    where: { name: { equals: name, mode: 'insensitive' }, deletedAt: null },
+  });
+};
+
+const pickUniversityForCountry = async (countryId: number, preferredName?: string | null) => {
+  if (preferredName) {
+    const exact = await prisma.university.findFirst({
+      where: {
+        countryId,
+        deletedAt: null,
+        name: { contains: preferredName, mode: 'insensitive' },
+      },
+    });
+    if (exact) return exact;
+  }
+  return prisma.university.findFirst({
+    where: { countryId, deletedAt: null },
+    orderBy: { name: 'asc' },
+  });
+};
+
+/**
+ * Create student login (User), Student profile, Application, and university shortlist from a marketing Lead.
+ * Safe to re-run: links existing user/student and skips duplicate applications.
+ */
+export const promoteLeadToStudent = async (
+  leadId: number,
+  opts: {
+    password?: string;
+    university?: string;
+    universityId?: number;
+    course?: string;
+    country?: string;
+    intake?: string;
+    assignedToId?: number;
+  } = {},
+  actingUserId?: number
+) => {
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    include: { source: true, assignedCounsellor: true },
+  });
+  if (!lead) throw new Error('lead not found');
+
+  const nameParts = (lead.fullName || '').trim().split(/\s+/);
+  const firstName = nameParts[0] || lead.fullName;
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+  const assignedToId = opts.assignedToId ?? lead.assignedCounsellorId ?? null;
+  const countryName = opts.country || lead.preferredCountry || lead.country || 'Unknown';
+  const countryRow = await resolveCountry(countryName);
+
+  let user = lead.studentUserId
+    ? await prisma.user.findUnique({ where: { id: lead.studentUserId } })
+    : await prisma.user.findUnique({ where: { email: lead.email } });
+
+  let tempPassword: string | undefined;
+
+  if (!user) {
+    tempPassword = opts.password || crypto.randomBytes(9).toString('base64').slice(0, 12);
+    const passwordHash = await hashPassword(tempPassword);
+    user = await prisma.user.create({
+      data: {
+        fullName: lead.fullName,
+        email: lead.email,
+        phone: lead.phone,
+        passwordHash,
+        role: UserRole.STUDENT,
+        isActive: true,
+        isApproved: true,
+      },
+    });
+  }
+
+  let student = await prisma.student.findUnique({ where: { email: lead.email } });
+  if (!student) {
+    student = await prisma.student.create({
+      data: {
+        userId: user.id,
+        firstName,
+        lastName,
+        fullName: lead.fullName,
+        email: lead.email,
+        phone: lead.phone || null,
+        preferredCountry: countryName,
+        countryId: countryRow?.id ?? null,
+        contactId: assignedToId,
+        source: lead.source?.name || 'lead_promotion',
+        sourceLeadId: lead.id,
+      },
+    });
+  } else {
+    student = await prisma.student.update({
+      where: { id: student.id },
+      data: {
+        userId: user.id,
+        firstName: student.firstName || firstName,
+        lastName: student.lastName || lastName,
+        preferredCountry: student.preferredCountry || countryName,
+        countryId: student.countryId || countryRow?.id || null,
+        contactId: student.contactId || assignedToId,
+        sourceLeadId: student.sourceLeadId || lead.id,
+      },
+    });
+  }
+
+  if (countryRow?.id) {
+    await seedStudentChecklists(student.id, countryRow.id);
+  }
+
+  let universityRecord =
+    opts.universityId != null
+      ? await prisma.university.findUnique({ where: { id: opts.universityId } })
+      : null;
+
+  if (!universityRecord && countryRow) {
+    universityRecord = await pickUniversityForCountry(countryRow.id, opts.university || lead.preferredCourse);
+  }
+
+  const universityName = opts.university || universityRecord?.name || lead.preferredCourse || 'TBD';
+  const course = opts.course || lead.preferredCourse || 'General';
+
+  let application = await prisma.application.findFirst({
+    where: { studentId: student.id },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!application) {
+    application = await createApplication({
+      studentId: student.id,
+      country: countryName,
+      university: universityName,
+      course,
+      intake: opts.intake,
+      assignedToId: assignedToId || undefined,
+    });
+  }
+
+  if (universityRecord) {
+    await prisma.studentUniversity.upsert({
+      where: {
+        studentId_universityId: { studentId: student.id, universityId: universityRecord.id },
+      },
+      create: {
+        studentId: student.id,
+        universityId: universityRecord.id,
+        isSelected: true,
+        status: 'Application Processing',
+      },
+      update: { isSelected: true },
+    });
+  }
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      status: 'CONVERTED',
+      studentUserId: user.id,
+      isStudentLoginCreated: true,
+    },
+  });
+
+  if (assignedToId) {
+    await safeNotify({
+      recipientId: assignedToId,
+      templateKey: 'lead.converted',
+      vars: {
+        studentName: student.fullName,
+        country: countryName,
+        applicationId: application?.id,
+      },
+    });
+  }
+
+  return {
+    user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
+    student: await getStudent(student.id),
+    application,
+    tempPassword,
+  };
+};
+
+export const listPromotableLeads = async () => {
+  const leads = await prisma.lead.findMany({
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      assignedCounsellor: { select: { id: true, fullName: true } },
+      studentUser: { select: { id: true, email: true } },
+    },
+  });
+
+  const studentEmails = new Set(
+    (await prisma.student.findMany({ select: { email: true, userId: true } })).map((s) => s.email)
+  );
+
+  return leads.map((lead) => ({
+    id: lead.id,
+    fullName: lead.fullName,
+    email: lead.email,
+    phone: lead.phone,
+    preferredCountry: lead.preferredCountry,
+    preferredCourse: lead.preferredCourse,
+    status: lead.status,
+    isStudentLoginCreated: lead.isStudentLoginCreated,
+    studentUserId: lead.studentUserId,
+    hasStudentProfile: studentEmails.has(lead.email),
+    assignedCounsellor: lead.assignedCounsellor,
+  }));
+};
+
+export const promoteAllLeads = async (password?: string, actingUserId?: number) => {
+  const leads = await prisma.lead.findMany({
+    where: { deletedAt: null, email: { not: '' } },
+    orderBy: { id: 'asc' },
+  });
+
+  const results: Array<{ leadId: number; email: string; ok: boolean; error?: string; tempPassword?: string }> = [];
+
+  for (const lead of leads) {
+    try {
+      const studentExists = await prisma.student.findUnique({ where: { email: lead.email } });
+      const hasLogin = lead.isStudentLoginCreated || lead.studentUserId;
+      if (studentExists?.userId && hasLogin && lead.status === 'CONVERTED') {
+        results.push({ leadId: lead.id, email: lead.email, ok: true });
+        continue;
+      }
+      const out = await promoteLeadToStudent(lead.id, { password }, actingUserId);
+      results.push({
+        leadId: lead.id,
+        email: lead.email,
+        ok: true,
+        tempPassword: out.tempPassword,
+      });
+    } catch (err: any) {
+      results.push({ leadId: lead.id, email: lead.email, ok: false, error: err?.message || 'failed' });
+    }
+  }
+
+  return results;
 };

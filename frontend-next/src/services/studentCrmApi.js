@@ -78,4 +78,52 @@ export const getChecklist = async (country) =>
 export const convertLeadToApplication = async (leadId, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/from-lead/${leadId}`, json(payload)));
 
+export const listPromotableLeads = async () =>
+  handleResponse(await tenantFetch(`${API_URL}/leads/promotable`));
+
+export const promoteLead = async (leadId, payload = {}) =>
+  handleResponse(await tenantFetch(`${API_URL}/leads/${leadId}/promote`, json(payload)));
+
+export const promoteAllLeads = async (password) =>
+  handleResponse(await tenantFetch(`${API_URL}/leads/promote-all`, json({ password })));
+
 export const listCounsellors = async () => handleResponse(await tenantFetch('/api/counsellors'));
+
+export const getStatistics = async () => handleResponse(await tenantFetch(`${API_URL}/statistics`));
+
+export const getMyStudent = async () => handleResponse(await tenantFetch(`${API_URL}/students/me`));
+export const updateMyStudent = async (payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/me`, putJson(payload)));
+
+export const patchStudentStatus = async (id, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${id}/status`, { method: 'PATCH', ...json(payload) }));
+
+export const setStudentEnrolled = async (id, isEnrolled) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${id}/enrolled`, { method: 'PATCH', ...json({ isEnrolled }) }));
+
+export const listStudentChecklists = async (studentId) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/checklists`));
+
+export const updateChecklistValue = async (studentId, checkListId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/checklists/${checkListId}`, putJson(payload)));
+
+export const listStudentUniversities = async (studentId) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/universities`));
+
+export const upsertStudentUniversity = async (studentId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/universities`, putJson(payload)));
+
+export const removeStudentUniversity = async (studentId, universityId) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/universities/${universityId}`, { method: 'DELETE' }));
+
+export const uploadFile = async (file) => {
+  const form = new FormData();
+  form.append('file', file);
+  const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenantId') || 'default-tenant' : 'default-tenant';
+  const res = await authFetch('/api/uploads', {
+    method: 'POST',
+    headers: { 'x-tenant-id': tenantId },
+    body: form,
+  });
+  return handleResponse(res);
+};
