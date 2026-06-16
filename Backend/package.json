@@ -25,7 +25,11 @@
     "express": "^4.18.3",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
+<<<<<<< HEAD
     "mysql2": "^3.22.5",
+=======
+    "node-cron": "^4.2.1",
+>>>>>>> d106c92ddbe3c7b6645dae169de11b2bd77c561b
     "nodemailer": "^8.0.9",
     "pg": "^8.11.2",
     "resend": "^6.12.3",
@@ -43,6 +47,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.9.1",
+    "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.0",

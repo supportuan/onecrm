@@ -235,7 +235,6 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, Command, LogOut } from "lucide-react";
 import MenuItem from "./MenuItem";
-import NotificationBell from "./NotificationBell";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from '../lib/workspaceContext';
@@ -489,15 +488,15 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
   };
 
   const handleLogout = () => {
-    logout?.();   
+    logout?.();
     router.push("/login");
-    localStorage.clear();  };
+    localStorage.clear();
+  };
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-30 w-[288px] min-w-[288px] max-w-[288px] flex-none transform flex-col border-r border-neutral-200 bg-white text-neutral-800 transition-transform duration-300 h-screen flex ${
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      } lg:translate-x-0`}
+      className={`fixed inset-y-0 left-0 z-30 w-[288px] min-w-[288px] max-w-[288px] flex-none transform flex-col border-r border-neutral-200 bg-white text-neutral-800 transition-transform duration-300 h-screen flex ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0`}
     >
       <div className="flex-none p-5 pb-3">
         <div className="flex items-center justify-between gap-3 border-b border-neutral-200 pb-4">
@@ -510,7 +509,6 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
               <p className="text-xs text-neutral-500 truncate">Role based access</p>
             </div>
           </div>
-          <NotificationBell />
         </div>
       </div>
 
@@ -531,11 +529,10 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
           <div key={item.label} className="space-y-1">
             <button
               type="button"
-              className={`flex w-full justify-between gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition ${
-                isSectionActive(item)
+              className={`flex w-full justify-between gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition ${isSectionActive(item)
                   ? "bg-neutral-100 text-neutral-900"
                   : "text-neutral-600 hover:bg-neutral-50"
-              }`}
+                }`}
               onClick={() => toggleSection(item.label, item.path)}
             >
               <span className="flex gap-3 text-neutral-800 items-center">
@@ -544,16 +541,14 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
               </span>
 
               <ChevronDown
-                className={`h-4 w-4 text-neutral-400 transition-transform ${
-                  openSections[item.label] ? "rotate-180" : "rotate-0"
-                }`}
+                className={`h-4 w-4 text-neutral-400 transition-transform ${openSections[item.label] ? "rotate-180" : "rotate-0"
+                  }`}
               />
             </button>
 
             <div
-              className={`${
-                openSections[item.label] ? "block" : "hidden"
-              } space-y-1 pt-2`}
+              className={`${openSections[item.label] ? "block" : "hidden"
+                } space-y-1 pt-2`}
             >
               {item.subItems?.map((sub) => (
                 <MenuItem
@@ -572,11 +567,11 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
 
       <div className="flex-none p-5 border-t border-neutral-200 bg-neutral-50">
         <button
-           onClick={() => {
-              handleLogout();
-              try { authLogout(); } catch (e) {}
-              try { workspaceLogout(); } catch (e) {}
-            }}
+          onClick={() => {
+            handleLogout();
+            try { authLogout(); } catch (e) { }
+            try { workspaceLogout(); } catch (e) { }
+          }}
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-white p-3 border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition"
         >
           <LogOut className="h-4 w-4" />
