@@ -15,11 +15,7 @@
     "crm:import-courses": "tsx scripts/import-courses-mysql.ts",
     "crm:dedupe-countries": "tsx scripts/dedupe-countries.ts",
     "crm:promote-leads": "tsx scripts/promote-leads.ts"
-    "build": "tsc",
-    "crm:import-universities": "tsx scripts/import-universities-mysql.ts",
-    "crm:import-courses": "tsx scripts/import-courses-mysql.ts",
-    "crm:dedupe-countries": "tsx scripts/dedupe-countries.ts",
-    "crm:promote-leads": "tsx scripts/promote-leads.ts"
+
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -32,7 +28,6 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "node-cron": "^4.2.1",
-    "mysql2": "^3.22.5",
     "mysql2": "^3.22.5",
     "nodemailer": "^8.0.9",
     "pg": "^8.11.2",
