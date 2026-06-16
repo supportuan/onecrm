@@ -211,24 +211,148 @@ async function main() {
   );
 
   await seedHrData(hrUser.id, defaultPassword);
-  await seedStudentCrmData(counsellor.id);
+  const crmSettings = await seedCrmSettings();
+  await seedStudentCrmData(counsellor.id, crmSettings);
   console.log(`Default password for seeded users: ${defaultPassword}`);
 }
 
-async function seedStudentCrmData(counsellorId: number) {
+async function seedCrmSettings() {
+  console.log('Seeding CRM settings (countries, industries, universities, checklists)...');
+
+  const countrySpecs = [
+    { name: 'Canada', symbol: 'CA', currency: 'CAD' },
+    { name: 'United Kingdom', symbol: 'UK', currency: 'GBP' },
+    { name: 'United States', symbol: 'US', currency: 'USD' },
+    { name: 'Germany', symbol: 'DE', currency: 'EUR' },
+    { name: 'Australia', symbol: 'AU', currency: 'AUD' },
+  ];
+
+  const countries: Record<string, { id: number }> = {};
+  for (const c of countrySpecs) {
+    const row = await prisma.country.upsert({
+      where: { name: c.name },
+      create: c,
+      update: c,
+    });
+    countries[c.name] = row;
+  }
+
+  const industry = await prisma.studyIndustry.upsert({
+    where: { name: 'Business & Management' },
+    create: { name: 'Business & Management' },
+    update: {},
+  });
+
+  const subIndustry = await prisma.studySubIndustry.upsert({
+    where: { industryId_name: { industryId: industry.id, name: 'MBA' } },
+    create: { industryId: industry.id, name: 'MBA' },
+    update: {},
+  });
+
+  const studyArea = await prisma.studyArea.upsert({
+    where: { industryId_name: { industryId: industry.id, name: 'Finance' } },
+    create: { industryId: industry.id, subIndustryId: subIndustry.id, name: 'Finance' },
+    update: { subIndustryId: subIndustry.id },
+  });
+
+  const csIndustry = await prisma.studyIndustry.upsert({
+    where: { name: 'Computer Science' },
+    create: { name: 'Computer Science' },
+    update: {},
+  });
+
+  const csArea = await prisma.studyArea.upsert({
+    where: { industryId_name: { industryId: csIndustry.id, name: 'Data Science' } },
+    create: { industryId: csIndustry.id, name: 'Data Science' },
+    update: {},
+  });
+
+  const universitySpecs = [
+    { name: 'University of Toronto', country: 'Canada', city: 'Toronto' },
+    { name: 'London Business School', country: 'United Kingdom', city: 'London' },
+    { name: 'Imperial College London', country: 'United Kingdom', city: 'London' },
+    { name: 'Carnegie Mellon University', country: 'United States', city: 'Pittsburgh' },
+    { name: 'TU Munich', country: 'Germany', city: 'Munich' },
+    { name: 'University of British Columbia', country: 'Canada', city: 'Vancouver' },
+    { name: 'University of Melbourne', country: 'Australia', city: 'Melbourne' },
+  ];
+
+  const universities: Record<string, { id: number }> = {};
+  for (const u of universitySpecs) {
+    const countryId = countries[u.country].id;
+    const row = await prisma.university.upsert({
+      where: { countryId_name: { countryId, name: u.name } },
+      create: { name: u.name, countryId, city: u.city },
+      update: { city: u.city },
+    });
+    universities[u.name] = row;
+  }
+
+  const checklistSpecs = [
+    { name: 'Passport copy', stage: 'GATHERING_CHECKLIST' as const, required: true },
+    { name: 'Academic transcripts', stage: 'GATHERING_CHECKLIST' as const, required: true },
+    { name: 'Statement of purpose', stage: 'GATHERING_CHECKLIST' as const, required: true },
+    { name: 'IELTS / TOEFL score', stage: 'GATHERING_CHECKLIST' as const, required: true },
+    { name: 'Bank statement', stage: 'FINANCIAL_EVIDENCE' as const, required: true },
+    { name: 'University application form', stage: 'UNIVERSITY_APPLICATION' as const, required: true },
+    { name: 'Visa application', stage: 'VISA_APPLICATION' as const, required: true },
+  ];
+
+  const checkLists = [];
+  for (const spec of checklistSpecs) {
+    let item = await prisma.checkList.findFirst({ where: { name: spec.name, stage: spec.stage } });
+    if (!item) {
+      item = await prisma.checkList.create({ data: spec });
+    }
+    checkLists.push(item);
+    for (const country of Object.values(countries)) {
+      await prisma.countryChecklist.upsert({
+        where: { countryId_checkListId: { countryId: country.id, checkListId: item.id } },
+        create: { countryId: country.id, checkListId: item.id },
+        update: {},
+      });
+    }
+  }
+
+  console.log(`✅ CRM settings ready (${Object.keys(countries).length} countries, ${Object.keys(universities).length} universities)`);
+  return { countries, industry, subIndustry, studyArea, csIndustry, csArea, universities, checkLists };
+}
+
+async function seedStudentCrmData(
+  counsellorId: number,
+  crm: Awaited<ReturnType<typeof seedCrmSettings>>
+) {
   console.log('Seeding Student CRM data...');
 
   const studentSpecs = [
     {
       leadEmail: 'rahul.verma@example.com',
+      firstName: 'Rahul',
+      lastName: 'Verma',
       fullName: 'Rahul Verma',
       email: 'rahul.verma@example.com',
       phone: '+919811223344',
       dob: new Date('1998-03-15'),
       nationality: 'India',
       preferredCountry: 'Canada',
+      countryId: crm.countries['Canada'].id,
+      industryId: crm.industry.id,
+      subIndustryId: crm.subIndustry.id,
+      studyAreaId: crm.studyArea.id,
+      level: 'PG',
+      intakeMonth: 'September',
+      intakeYear: '2026',
+      studyMode: 'On-campus',
+      studyDuration: '2 years',
+      studyBudget: '40000 CAD',
       ieltsScore: 7.5,
       greScore: 315,
+      educationDetails: [
+        { type: 'UG', label: 'B.Com', passing_year: '2020', grade: '8.2 CGPA', medium: 'English' },
+      ],
+      asstExamSections: [
+        { type: 'IELTS', label: 'IELTS Academic', overall_score: '7.5', reading: '8', writing: '7', speaking: '7', listening: '7.5' },
+      ],
       academicHistory: [
         { degree: 'B.Com', institution: 'Delhi University', year: '2020', grade: '8.2 CGPA' },
         { degree: 'MBA prep', institution: 'Career Launcher', year: '2024', grade: 'Completed' },
@@ -254,14 +378,29 @@ async function seedStudentCrmData(counsellorId: number) {
     },
     {
       leadEmail: 'ananya.patel@example.com',
+      firstName: 'Ananya',
+      lastName: 'Patel',
       fullName: 'Ananya Patel',
       email: 'ananya.patel@example.com',
       phone: '+919900112233',
       dob: new Date('1999-07-22'),
       nationality: 'India',
       preferredCountry: 'UK',
+      countryId: crm.countries['United Kingdom'].id,
+      industryId: crm.csIndustry.id,
+      studyAreaId: crm.csArea.id,
+      level: 'PG',
+      intakeMonth: 'September',
+      intakeYear: '2026',
+      studyMode: 'On-campus',
       ieltsScore: 8.0,
       toeflScore: 108,
+      educationDetails: [
+        { type: 'UG', label: 'B.Tech CSE', passing_year: '2021', grade: '9.1 CGPA', medium: 'English' },
+      ],
+      asstExamSections: [
+        { type: 'IELTS', label: 'IELTS Academic', overall_score: '8.0' },
+      ],
       academicHistory: [
         { degree: 'B.Tech CSE', institution: 'IIT Bombay', year: '2021', grade: '9.1 CGPA' },
       ],
@@ -286,14 +425,25 @@ async function seedStudentCrmData(counsellorId: number) {
     },
     {
       leadEmail: 'sneha.iyer@example.com',
+      firstName: 'Sneha',
+      lastName: 'Iyer',
       fullName: 'Sneha Iyer',
       email: 'sneha.iyer@example.com',
       phone: '+919777665544',
       dob: new Date('1997-11-08'),
       nationality: 'India',
       preferredCountry: 'Germany',
+      countryId: crm.countries['Germany'].id,
+      industryId: crm.industry.id,
+      level: 'PG',
+      intakeMonth: 'October',
+      intakeYear: '2026',
       ieltsScore: 7.0,
       gmatScore: 680,
+      educationDetails: [
+        { type: 'UG', label: 'B.E. Mechanical', passing_year: '2019', grade: '8.5 CGPA' },
+        { type: 'PG', label: 'M.Tech', passing_year: '2021', grade: '8.8 CGPA' },
+      ],
       academicHistory: [
         { degree: 'B.E. Mechanical', institution: 'Anna University', year: '2019', grade: '8.5 CGPA' },
         { degree: 'M.Tech', institution: 'BITS Pilani', year: '2021', grade: '8.8 CGPA' },
@@ -339,21 +489,59 @@ async function seedStudentCrmData(counsellorId: number) {
     if (!student) {
       student = await prisma.student.create({
         data: {
+          firstName: spec.firstName,
+          lastName: spec.lastName,
           fullName: spec.fullName,
           email: spec.email,
           phone: spec.phone,
           dob: spec.dob,
           nationality: spec.nationality,
           preferredCountry: spec.preferredCountry,
+          countryId: spec.countryId ?? null,
+          industryId: spec.industryId ?? null,
+          subIndustryId: spec.subIndustryId ?? null,
+          studyAreaId: spec.studyAreaId ?? null,
+          level: spec.level ?? null,
+          intakeMonth: spec.intakeMonth ?? null,
+          intakeYear: spec.intakeYear ?? null,
+          studyMode: spec.studyMode ?? null,
+          studyDuration: spec.studyDuration ?? null,
+          studyBudget: spec.studyBudget ?? null,
+          educationDetails: spec.educationDetails ?? undefined,
+          asstExamSections: spec.asstExamSections ?? undefined,
           academicHistory: spec.academicHistory,
           ieltsScore: spec.ieltsScore,
           toeflScore: spec.toeflScore ?? null,
           greScore: spec.greScore ?? null,
           gmatScore: spec.gmatScore ?? null,
+          contactId: counsellorId,
           source: 'lead_conversion',
           sourceLeadId: lead?.id ?? null,
         },
       });
+
+      if (spec.countryId) {
+        for (const cl of crm.checkLists) {
+          await prisma.studentChecklist.upsert({
+            where: { studentId_checkListId: { studentId: student.id, checkListId: cl.id } },
+            create: { studentId: student.id, checkListId: cl.id, completed: cl.name === 'Passport copy' },
+            update: {},
+          });
+        }
+        const total = crm.checkLists.length;
+        const completed = await prisma.studentChecklist.count({
+          where: { studentId: student.id, completed: true },
+        });
+        await prisma.student.update({
+          where: { id: student.id },
+          data: {
+            totalCheckList: total,
+            completedCheckList: completed,
+            stageTotalTask: total,
+            stageCompletedTask: completed,
+          },
+        });
+      }
     }
 
     if (lead) {

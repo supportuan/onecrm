@@ -142,6 +142,19 @@ enum CommissionStatus {
   CANCELLED
 }
 
+enum AgencyPartnerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum CommissionStatus {
+  PENDING
+  APPROVED
+  PAID
+  CANCELLED
+}
+
 enum HrAccessRole {
   EMPLOYEE
   SUPER_ADMIN

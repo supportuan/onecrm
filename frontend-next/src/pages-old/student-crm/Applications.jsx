@@ -39,6 +39,9 @@ import {
   upsertOffer,
   upsertVisa,
   listCounsellors,
+  listPromotableLeads,
+  promoteLead,
+  promoteAllLeads,
 } from '@/services/studentCrmApi';
 import { getFormOptions, listUniversities, listCourses } from '@/services/crmSettingsApi';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -704,6 +707,7 @@ const Applications = () => {
           onSave={handleNewApp}
           student={selectedStudent}
           counsellors={counsellors}
+          formOptions={formOptions}
         />
       )}
     </div>
@@ -1334,7 +1338,13 @@ const NewStudentModal = ({ onClose, onSave }) => {
   );
 };
 
-const NewApplicationModal = ({ onClose, onSave, student, counsellors = [] }) => {
+const NewApplicationModal = ({ onClose, onSave, student, counsellors = [], formOptions = {} }) => {
+  const countries = formOptions.countries || [];
+  const [countryUniversities, setCountryUniversities] = useState([]);
+  const [universityCourses, setUniversityCourses] = useState([]);
+  const [loadingUnis, setLoadingUnis] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+
   const [form, setForm] = useState({
     country: student?.preferredCountry || '',
     countryId: student?.countryId || '',
