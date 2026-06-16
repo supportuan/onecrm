@@ -244,6 +244,11 @@ export const navMenu = [
         path: "/student-crm/applications",
         icon: ClipboardList,
       },
+      {
+        label: "CRM Settings",
+        path: "/student-crm/settings",
+        icon: Settings,
+      },
     ],
   },
   {

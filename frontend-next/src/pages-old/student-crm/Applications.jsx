@@ -34,7 +34,11 @@ import {
   upsertOffer,
   upsertVisa,
   listCounsellors,
+  listPromotableLeads,
+  promoteLead,
+  promoteAllLeads,
 } from '@/services/studentCrmApi';
+import { getFormOptions, listUniversities, listCourses } from '@/services/crmSettingsApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import {
@@ -106,6 +110,53 @@ const Applications = () => {
 
   const [showNewStudent, setShowNewStudent] = useState(false);
   const [showNewApp, setShowNewApp] = useState(false);
+  const [promotableLeads, setPromotableLeads] = useState([]);
+  const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
+  const [promotingId, setPromotingId] = useState(null);
+
+  const fetchPromotableLeads = useCallback(async () => {
+    try {
+      const res = await listPromotableLeads();
+      setPromotableLeads(Array.isArray(res?.data) ? res.data : []);
+    } catch {
+      setPromotableLeads([]);
+    }
+  }, []);
+
+  const handlePromoteLead = async (leadId) => {
+    setPromotingId(leadId);
+    try {
+      const res = await promoteLead(leadId, { password: 'Welcome@123' });
+      const pwd = res?.data?.tempPassword;
+      flash('ok', pwd ? `Student login created. Password: ${pwd}` : 'Lead promoted to application');
+      await fetchPromotableLeads();
+      await fetchStudents();
+    } catch (e) {
+      flash('err', e?.message || 'Promote failed');
+    } finally {
+      setPromotingId(null);
+    }
+  };
+
+  const handlePromoteAll = async () => {
+    if (!window.confirm('Create student logins + applications for all leads?')) return;
+    try {
+      const res = await promoteAllLeads('Welcome@123');
+      const ok = (res?.data || []).filter((r) => r.ok).length;
+      flash('ok', `Promoted ${ok} lead(s)`);
+      await fetchPromotableLeads();
+      await fetchStudents();
+    } catch (e) {
+      flash('err', e?.message || 'Batch promote failed');
+    }
+  };
+
+  useEffect(() => {
+    fetchPromotableLeads();
+    getFormOptions()
+      .then((r) => setFormOptions(r?.data || { countries: [], industries: [] }))
+      .catch(() => {});
+  }, [fetchPromotableLeads]);
 
   // -------- fetch students --------
   const fetchStudents = useCallback(async () => {
@@ -353,13 +404,22 @@ const Applications = () => {
 
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">applications</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">Applications</h1>
           <p className="text-neutral-500 text-sm mt-1">
             track student applications from initiation through enrolment.{' '}
             {can('VIEW_MARKETING') && 'leads from marketing can be converted into applications here.'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {canManage && promotableLeads.length > 0 && (
+            <button
+              type="button"
+              onClick={handlePromoteAll}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100"
+            >
+              Import all leads ({promotableLeads.length})
+            </button>
+          )}
           {canManage && (
             <button
               onClick={() => setShowNewStudent(true)}
@@ -378,6 +438,39 @@ const Applications = () => {
           )}
         </div>
       </div>
+
+      {canManage && promotableLeads.some((l) => !l.hasStudentProfile || !l.isStudentLoginCreated) && (
+        <div className="ui-panel mb-5 overflow-hidden">
+          <div className="px-5 py-3 border-b border-neutral-200 bg-neutral-50">
+            <h2 className="text-xs font-semibold text-neutral-800">Leads ready for student applications</h2>
+            <p className="text-[10px] text-neutral-500 mt-0.5">
+              Creates student login (password Welcome@123), profile, and application using universities from CRM settings.
+            </p>
+          </div>
+          <ul className="divide-y divide-neutral-100 max-h-48 overflow-y-auto">
+            {promotableLeads
+              .filter((l) => !l.hasStudentProfile || !l.isStudentLoginCreated)
+              .map((lead) => (
+                <li key={lead.id} className="px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[11px] font-semibold text-neutral-900">{lead.fullName}</p>
+                    <p className="text-[10px] text-neutral-500">
+                      {lead.email} · {lead.preferredCountry || '—'} · {lead.preferredCourse || '—'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={promotingId === lead.id}
+                    onClick={() => handlePromoteLead(lead.id)}
+                    className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-neutral-900 text-white disabled:opacity-50"
+                  >
+                    {promotingId === lead.id ? 'Creating…' : 'Create login + application'}
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-5">
         {/* Students column */}
@@ -523,6 +616,7 @@ const Applications = () => {
           onSave={handleNewApp}
           student={selectedStudent}
           counsellors={counsellors}
+          formOptions={formOptions}
         />
       )}
     </div>
@@ -1055,16 +1149,85 @@ const NewStudentModal = ({ onClose, onSave }) => {
   );
 };
 
-const NewApplicationModal = ({ onClose, onSave, student, counsellors = [] }) => {
+const NewApplicationModal = ({ onClose, onSave, student, counsellors = [], formOptions = {} }) => {
+  const countries = formOptions.countries || [];
+  const [countryUniversities, setCountryUniversities] = useState([]);
+  const [universityCourses, setUniversityCourses] = useState([]);
+  const [loadingUnis, setLoadingUnis] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+
   const [form, setForm] = useState({
     country: student?.preferredCountry || '',
+    countryId: student?.countryId || '',
     university: '',
-    course: '',
+    universityId: '',
+    course: student?.preferredCourse || '',
+    courseId: '',
     intake: '',
     deadline: '',
     assignedToId: '',
     notes: '',
   });
+
+  useEffect(() => {
+    if (!form.countryId) {
+      setCountryUniversities([]);
+      return;
+    }
+    setLoadingUnis(true);
+    listUniversities({ countryId: Number(form.countryId), page: 1, limit: 500 })
+      .then((r) => setCountryUniversities(r?.data?.items || []))
+      .catch(() => setCountryUniversities([]))
+      .finally(() => setLoadingUnis(false));
+  }, [form.countryId]);
+
+  useEffect(() => {
+    if (!form.universityId) {
+      setUniversityCourses([]);
+      return;
+    }
+    setLoadingCourses(true);
+    listCourses({ universityId: Number(form.universityId), page: 1, limit: 500 })
+      .then((r) => setUniversityCourses(r?.data?.items || []))
+      .catch(() => setUniversityCourses([]))
+      .finally(() => setLoadingCourses(false));
+  }, [form.universityId]);
+
+  const onCountryChange = (countryId) => {
+    const country = countries.find((c) => c.id === Number(countryId));
+    setForm({
+      ...form,
+      countryId,
+      country: country?.name || '',
+      university: '',
+      universityId: '',
+      course: '',
+      courseId: '',
+    });
+  };
+
+  const onUniversityChange = (universityId) => {
+    const uni = countryUniversities.find((u) => u.id === Number(universityId));
+    setForm({
+      ...form,
+      universityId,
+      university: uni?.name || '',
+      countryId: uni?.countryId || form.countryId,
+      country: uni?.country?.name || form.country,
+      course: '',
+      courseId: '',
+    });
+  };
+
+  const onCourseChange = (courseId) => {
+    const course = universityCourses.find((c) => c.id === Number(courseId));
+    setForm({
+      ...form,
+      courseId,
+      course: course?.name || '',
+    });
+  };
+
   return (
     <Modal title={`New application · ${student?.fullName}`} onClose={onClose}>
       <form
@@ -1080,12 +1243,28 @@ const NewApplicationModal = ({ onClose, onSave, student, counsellors = [] }) => 
       >
         <div className="grid grid-cols-2 gap-4">
           <Field label="country *">
-            <input
-              required
-              value={form.country}
-              onChange={(e) => setForm({ ...form, country: e.target.value })}
-              className={INPUT_CLS}
-            />
+            {countries.length ? (
+              <select
+                required
+                value={form.countryId}
+                onChange={(e) => onCountryChange(e.target.value)}
+                className={INPUT_CLS}
+              >
+                <option value="">Select country</option>
+                {countries.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                required
+                value={form.country}
+                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                className={INPUT_CLS}
+              />
+            )}
           </Field>
           <Field label="intake">
             <input
@@ -1097,20 +1276,61 @@ const NewApplicationModal = ({ onClose, onSave, student, counsellors = [] }) => 
           </Field>
         </div>
         <Field label="university *">
-          <input
-            required
-            value={form.university}
-            onChange={(e) => setForm({ ...form, university: e.target.value })}
-            className={INPUT_CLS}
-          />
+          {loadingUnis ? (
+            <input disabled className={INPUT_CLS} placeholder="Loading universities..." />
+          ) : countryUniversities.length ? (
+            <select
+              required
+              value={form.universityId}
+              onChange={(e) => onUniversityChange(e.target.value)}
+              className={INPUT_CLS}
+            >
+              <option value="">Select university</option>
+              {countryUniversities.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                  {u.city ? ` · ${u.city}` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              required
+              value={form.university}
+              onChange={(e) => setForm({ ...form, university: e.target.value })}
+              className={INPUT_CLS}
+              placeholder={form.countryId ? 'No universities for this country' : 'Select a country first'}
+            />
+          )}
         </Field>
         <Field label="course *">
-          <input
-            required
-            value={form.course}
-            onChange={(e) => setForm({ ...form, course: e.target.value })}
-            className={INPUT_CLS}
-          />
+          {loadingCourses ? (
+            <input disabled className={INPUT_CLS} placeholder="Loading courses..." />
+          ) : universityCourses.length ? (
+            <select
+              required
+              value={form.courseId}
+              onChange={(e) => onCourseChange(e.target.value)}
+              className={INPUT_CLS}
+            >
+              <option value="">Select course</option>
+              {universityCourses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.level ? ` (${c.level})` : ''}
+                  {c.duration ? ` · ${c.duration}` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              required
+              value={form.course}
+              onChange={(e) => setForm({ ...form, course: e.target.value, courseId: '' })}
+              className={INPUT_CLS}
+              placeholder={form.universityId ? 'No courses imported — type manually' : 'Select university first'}
+            />
+          )}
         </Field>
         <Field label="deadline">
           <input
