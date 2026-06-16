@@ -240,38 +240,6 @@ export const navMenu = [
         path: "/student-crm/applications",
         icon: ClipboardList,
       },
-      {
-        label: "CRM Settings",
-        path: "/student-crm/settings",
-        icon: Settings,
-      },
-    ],
-  },
-  {
-    label: "Agency CRM",
-    path: "/agency-crm",
-    icon: Folder,
-    subItems: [
-      {
-        label: "Agency Management",
-        path: "/agency-crm/agency-management",
-        icon: Users,
-      },
-      {
-        label: "Agency Leads",
-        path: "/agency-crm/agency-leads",
-        icon: ClipboardList,
-      },
-      {
-        label: "Co-branding Tools",
-        path: "/agency-crm/co-branding-tools",
-        icon: Layers,
-      },
-      {
-        label: "Commission Management",
-        path: "/agency-crm/commission-management",
-        icon: Percent,
-      },
     ],
   },
   {
