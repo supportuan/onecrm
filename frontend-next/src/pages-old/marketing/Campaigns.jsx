@@ -9,7 +9,8 @@ import {
   updateCampaign, 
   deleteCampaign,
   associateCampaignLeads,
-  getLeads
+  getLeads,
+  launchCampaign
 } from '../../services/marketingApi';
 import { 
   Search, 
@@ -108,6 +109,26 @@ const Campaigns = () => {
   const [summary, setSummary] = useState({ totalBudget: 0, totalSpent: 0, totalLeads: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [launchingIds, setLaunchingIds] = useState([]);
+
+  const handleLaunchCampaign = async (campaignId) => {
+    setLaunchingIds(prev => [...prev, campaignId]);
+    setActiveMenuId(null);
+    try {
+      const response = await launchCampaign(campaignId);
+      if (response.success) {
+        alert(response.message || 'Campaign launched successfully!');
+        fetchCampaignsList();
+      } else {
+        alert(response.message || 'Failed to launch campaign.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error occurred while launching the campaign.');
+    } finally {
+      setLaunchingIds(prev => prev.filter(id => id !== campaignId));
+    }
+  };
 
   // Filters, Pagination, & Sorting State
   const [search, setSearch] = useState('');
@@ -323,6 +344,7 @@ const Campaigns = () => {
       const response = await createCampaign(payload);
       if (response.success) {
         setIsCreateOpen(false);
+        const createdCampaign = response.data;
         // Reset form
         setCampaignForm({
           name: '',
@@ -336,6 +358,11 @@ const Campaigns = () => {
           description: ''
         });
         fetchCampaignsList();
+
+        // Auto-launch if created with status ACTIVE
+        if (payload.status === 'ACTIVE' && createdCampaign?.id) {
+          handleLaunchCampaign(createdCampaign.id);
+        }
       } else {
         alert(response.message || 'Failed to create campaign. Please verify fields.');
       }
@@ -695,16 +722,20 @@ const Campaigns = () => {
 
                       {/* Three-Dot Actions Menu */}
                       <td className="px-6 py-4.5 text-center relative">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuId(activeMenuId === camp.id ? null : camp.id);
-                          }}
-                          className="p-1.5 hover:bg-slate-100 rounded-full text-neutral-500 hover:text-neutral-600 transition"
-                        >
-                          <MoreVertical className="h-4.5 w-4.5" />
-                        </button>
-
+                        {launchingIds.includes(camp.id) ? (
+                          <Loader2 className="h-5.5 w-5.5 text-neutral-500 animate-spin mx-auto" />
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(activeMenuId === camp.id ? null : camp.id);
+                            }}
+                            className="p-1.5 hover:bg-slate-100 rounded-full text-neutral-500 hover:text-neutral-600 transition"
+                          >
+                            <MoreVertical className="h-4.5 w-4.5" />
+                          </button>
+                        )}
+ 
                         {activeMenuId === camp.id && (
                           <div 
                             ref={menuRef}
@@ -724,6 +755,15 @@ const Campaigns = () => {
                               <Target className="h-3.5 w-3.5 text-neutral-500" />
                               Edit details
                             </button>
+                            {camp.status !== 'ACTIVE' && camp.status !== 'COMPLETED' && (
+                              <button
+                                onClick={() => handleLaunchCampaign(camp.id)}
+                                className="w-full px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 transition"
+                              >
+                                <Megaphone className="h-3.5 w-3.5 text-emerald-500" />
+                                Launch Campaign
+                              </button>
+                            )}
                             <div className="border-t border-neutral-100 my-1"></div>
                             <button
                               onClick={() => handleDeleteCampaign(camp.id)}

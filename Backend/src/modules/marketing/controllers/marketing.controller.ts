@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as marketingService from '../services/marketing.service.js';
+import * as campaignLaunchService from '../services/campaignLaunch.service.js';
 import { sendSuccess, sendError } from '../../../utils/response.js';
 import {
   createLeadSchema,
@@ -376,6 +377,20 @@ export const addCampaignLeads = async (req: Request, res: Response, next: NextFu
     await marketingService.addCampaignLeads(id, validatedData.leadIds, validatedData.status || undefined, validatedData.engagement || undefined);
     return sendSuccess(res, 'Leads associated with campaign successfully');
   } catch (error) {
+    next(error);
+  }
+};
+
+export const launchCampaign = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return sendError(res, 'Invalid campaign ID', null, 400);
+
+    const launchedBy = req.user ? req.user.id : undefined;
+
+    const result = await campaignLaunchService.launchCampaign(id, launchedBy);
+    return sendSuccess(res, result.message, result);
+  } catch (error: any) {
     next(error);
   }
 };
