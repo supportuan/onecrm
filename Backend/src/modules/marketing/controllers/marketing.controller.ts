@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as marketingService from '../services/marketing.service.js';
+import * as campaignLaunchService from '../services/campaignLaunch.service.js';
 import { sendSuccess, sendError } from '../../../utils/response.js';
 import {
   createLeadSchema,
@@ -197,30 +198,6 @@ export const deleteLead = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-// export const assignCounsellor = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const leadId = parseInt(req.params.leadId as string);
-//     if (isNaN(leadId)) return sendError(res, 'Invalid lead ID', null, 400);
-
-//     const { counsellorId } = req.body;
-
-//     // Check if current user is admin or super admin
-//     if (!req.user || (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN)) {
-//       return sendError(res, 'Unauthorized to assign counsellor', null, 403);
-//     }
-
-//     const adminId = req.user.id;
-//     const updatedLead = await marketingService.assignCounsellor(
-//       leadId,
-//       counsellorId ? parseInt(counsellorId) : null,
-//       adminId
-//     );
-//     return sendSuccess(res, 'Counsellor assigned successfully', updatedLead);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
 export const assignCounsellor = async (
   req: Request,
   res: Response,
@@ -376,6 +353,40 @@ export const addCampaignLeads = async (req: Request, res: Response, next: NextFu
     await marketingService.addCampaignLeads(id, validatedData.leadIds, validatedData.status || undefined, validatedData.engagement || undefined);
     return sendSuccess(res, 'Leads associated with campaign successfully');
   } catch (error) {
+    next(error);
+  }
+};
+
+export const launchCampaign = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = parseInt(req.params.id as string);
+
+    if (isNaN(id)) {
+      return sendError(res, 'Invalid campaign ID', null, 400);
+    }
+
+    const launchedBy = req.user ? req.user.id : undefined;
+    const audienceType = req.body?.audienceType || 'ALL';
+
+    const result = await campaignLaunchService.launchCampaign(
+      id,
+      launchedBy,
+      audienceType
+    );
+
+    return res.status(200).json({
+      success: result.success,
+      message: result.message,
+      audienceType: result.audienceType,
+      totalSent: result.totalSent,
+      totalFailed: result.totalFailed,
+      details: result.details,
+    });
+  } catch (error: any) {
     next(error);
   }
 };

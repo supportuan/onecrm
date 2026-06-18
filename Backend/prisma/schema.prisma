@@ -291,6 +291,10 @@ model Lead {
   updatedAt            DateTime   @updatedAt
   deletedAt            DateTime?
 
+  externalCampaignId  String?
+  platform            String?
+  launchDetails       Json?
+
   source               LeadSource? @relation(fields: [sourceId], references: [id])
   assignedCounsellor   User?       @relation("LeadCounsellor", fields: [assignedCounsellorId], references: [id])
   assignedBy           User?       @relation("LeadAssignor", fields: [assignedById], references: [id])
@@ -315,21 +319,29 @@ model LeadActivity {
 }
 
 model Campaign {
-  id             Int            @id @default(autoincrement())
-  name           String
-  type           CampaignType
-  budget         Float?
-  spent          Float?         @default(0)
-  startDate      DateTime?
-  endDate        DateTime?
-  status         CampaignStatus @default(DRAFT)
-  targetAudience String?
-  description    String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  deletedAt      DateTime?
+  id                 Int            @id @default(autoincrement())
+  name               String
+  type               CampaignType
+  budget             Float?
+  spent              Float?         @default(0)
+  startDate          DateTime?
+  endDate            DateTime?
+  status             CampaignStatus @default(DRAFT)
+  targetAudience     String?
+  description        String?
+  externalLeadId     String?
+  audienceType       String @default("ALL")
 
-  leads          CampaignLead[]
+  externalCampaignId String?
+  platform           String?
+  launchDetails      Json?
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  deletedAt          DateTime?
+
+  leads              CampaignLead[]
+  launchLogs         CampaignLaunchLog[]
 }
 
 model CampaignLead {
@@ -1501,5 +1513,16 @@ model Permission {
   updatedAt DateTime @updatedAt
 
   @@unique([module, option, action])
+}
+
+model CampaignLaunchLog {
+  id          Int      @id @default(autoincrement())
+  campaignId  Int
+  launchedBy  Int?
+  launchedAt  DateTime @default(now())
+  status      String
+  details     Json?
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }
 
