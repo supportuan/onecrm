@@ -68,6 +68,15 @@ const AUDIENCE_TYPES = [
   { label: 'Maybe', value: 'MAYBE' },
 ];
 
+// const getLeadAudienceValue = (lead) => {
+//   return String(
+//     lead.audienceCategory ||
+//     lead.rating ||
+//     lead.leadRating ||
+//     lead.category ||
+//     ''
+//   ).toUpperCase();
+// };
 
 const getLeadAudienceValue = (lead) => {
   return String(lead?.rating || "").toUpperCase();
@@ -126,7 +135,76 @@ const Campaigns = () => {
   const [error, setError] = useState(null);
   const [launchingIds, setLaunchingIds] = useState([]);
 
-  
+  // const handleLaunchCampaign = async (campaignId) => {
+  //   setLaunchingIds(prev => [...prev, campaignId]);
+  //   setActiveMenuId(null);
+  //   try {
+  //     const response = await launchCampaign(campaignId);
+  //     if (response.success) {
+  //       alert(response.message || 'Campaign launched successfully!');
+  //       fetchCampaignsList();
+  //     } else {
+  //       alert(response.message || 'Failed to launch campaign.');
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert('Error occurred while launching the campaign.');
+  //   } finally {
+  //     setLaunchingIds(prev => prev.filter(id => id !== campaignId));
+  //   }
+  // };
+
+//   const handleLaunchCampaign = async (campaignId) => {
+//   console.log('Launch clicked campaignId:', campaignId);
+
+//   setLaunchingIds((prev) => [...prev, campaignId]);
+//   setActiveMenuId(null);
+
+//   try {
+//     const response = await launchCampaign(campaignId);
+//     console.log('Launch API response:', response);
+
+//     if (response.success) {
+//       alert(response.message || 'Campaign launched successfully!');
+//       fetchCampaignsList();
+//     } else {
+//       alert(response.message || 'Failed to launch campaign.');
+//     }
+//   } catch (err) {
+//     console.error('Launch campaign error:', err);
+//     alert('Error occurred while launching the campaign.');
+//   } finally {
+//     setLaunchingIds((prev) => prev.filter((id) => id !== campaignId));
+//   }
+// };
+
+// const handleLaunchCampaign = async (campaignId, audienceType = 'ALL') => {
+//   console.log('Launch clicked campaignId:', campaignId);
+//   console.log('Selected audienceType:', audienceType);
+
+//   setLaunchingIds((prev) => [...prev, campaignId]);
+//   setActiveMenuId(null);
+
+//   try {
+//     const response = await launchCampaign(campaignId, { audienceType });
+
+//     console.log('Launch API response:', response);
+
+//     if (response.success) {
+//       alert(
+//         `${response.message || 'Campaign launched successfully!'}\nSelected Audience: ${audienceType}\nLeads Sent: ${response.data?.totalSent ?? 0}`
+//       );
+//       fetchCampaignsList();
+//     } else {
+//       alert(response.message || 'Failed to launch campaign.');
+//     }
+//   } catch (err) {
+//     console.error('Launch campaign error:', err);
+//     alert('Error occurred while launching the campaign.');
+//   } finally {
+//     setLaunchingIds((prev) => prev.filter((id) => id !== campaignId));
+//   }
+// };
 
   const handleLaunchCampaign = async (campaignId, audienceType = "ALL") => {
   setLaunchingIds((prev) => [...prev, campaignId]);
@@ -184,7 +262,18 @@ const Campaigns = () => {
   // Actions menu ref for closing on outside click
   const menuRef = useRef(null);
 
-
+  // Create/Edit Form State
+  // const [campaignForm, setCampaignForm] = useState({
+  //   name: '',
+  //   type: 'EMAIL',
+  //   budget: '',
+  //   spent: 0,
+  //   startDate: '',
+  //   endDate: '',
+  //   status: 'DRAFT',
+  //   targetAudience: '',
+  //   description: ''
+  // });
   const [campaignForm, setCampaignForm] = useState({
     name: '',
     type: 'EMAIL',
@@ -300,7 +389,41 @@ const Campaigns = () => {
     }
   };
 
+  // Open Edit Modal
+  // const handleOpenEdit = (campaign) => {
+  //   setSelectedCampaign(campaign);
+  //   setCampaignForm({
+  //     name: campaign.name || '',
+  //     type: campaign.type || 'EMAIL',
+  //     budget: campaign.budget !== null ? String(campaign.budget) : '',
+  //     spent: campaign.spent || 0,
+  //     startDate: campaign.startDate ? new Date(campaign.startDate).toISOString().slice(0, 10) : '',
+  //     endDate: campaign.endDate ? new Date(campaign.endDate).toISOString().slice(0, 10) : '',
+  //     status: campaign.status || 'DRAFT',
+  //     targetAudience: campaign.targetAudience || '',
+  //     description: campaign.description || ''
+  //   });
+  //   setIsEditOpen(true);
+  //   setActiveMenuId(null);
+  // };
 
+  // const handleOpenEdit = (campaign) => {
+  //   setSelectedCampaign(campaign);
+  //   setCampaignForm({
+  //     name: campaign.name || '',
+  //     type: campaign.type || 'EMAIL',
+  //     budget: campaign.budget !== null ? String(campaign.budget) : '',
+  //     spent: campaign.spent || 0,
+  //     startDate: campaign.startDate ? new Date(campaign.startDate).toISOString().slice(0, 10) : '',
+  //     endDate: campaign.endDate ? new Date(campaign.endDate).toISOString().slice(0, 10) : '',
+  //     status: campaign.status || 'DRAFT',
+  //     audienceType: campaign.audienceType || 'ALL',
+  //     targetAudience: campaign.targetAudience || '',
+  //     description: campaign.description || '',
+  //   });
+  //   setIsEditOpen(true);
+  //   setActiveMenuId(null);
+  // };
 
   const handleOpenEdit = (campaign) => {
     setSelectedCampaign(campaign);
@@ -390,6 +513,123 @@ const Campaigns = () => {
     }
   };
 
+  // Create Campaign Submit
+  // const handleCreateSubmit = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const payload = {
+  //       ...campaignForm,
+  //       budget: campaignForm.budget ? parseFloat(campaignForm.budget) : null,
+  //       spent: campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
+  //       startDate: campaignForm.startDate ? new Date(campaignForm.startDate).toISOString() : null,
+  //       endDate: campaignForm.endDate ? new Date(campaignForm.endDate).toISOString() : null
+  //     };
+
+  //     const response = await createCampaign(payload);
+  //     if (response.success) {
+  //       setIsCreateOpen(false);
+  //       const createdCampaign = response.data;
+  //       // Reset form
+  //       setCampaignForm({
+  //         name: '',
+  //         type: 'EMAIL',
+  //         budget: '',
+  //         spent: 0,
+  //         startDate: '',
+  //         endDate: '',
+  //         status: 'DRAFT',
+  //         targetAudience: '',
+  //         description: ''
+  //       });
+  //       fetchCampaignsList();
+
+  //       // Auto-launch if created with status ACTIVE
+  //       if (payload.status === 'ACTIVE' && createdCampaign?.id) {
+  //         handleLaunchCampaign(createdCampaign.id);
+  //       }
+  //     } else {
+  //       alert(response.message || 'Failed to create campaign. Please verify fields.');
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert('Connection error while creating campaign.');
+  //   }
+  // };
+
+  // const handleCreateSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   try {
+  //     const payload = {
+  //       ...campaignForm,
+  //       budget: campaignForm.budget ? parseFloat(campaignForm.budget) : null,
+  //       spent: campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
+  //       startDate: campaignForm.startDate
+  //         ? new Date(campaignForm.startDate).toISOString()
+  //         : null,
+  //       endDate: campaignForm.endDate
+  //         ? new Date(campaignForm.endDate).toISOString()
+  //         : null,
+  //     };
+
+  //     const response = await createCampaign(payload);
+
+  //     if (!response.success) {
+  //       alert(response.message || 'Failed to create campaign.');
+  //       return;
+  //     }
+
+  //     const createdCampaign = response.data;
+
+  //     setIsCreateOpen(false);
+
+  //     setCampaignForm({
+  //       name: '',
+  //       type: 'EMAIL',
+  //       budget: '',
+  //       spent: 0,
+  //       startDate: '',
+  //       endDate: '',
+  //       status: 'DRAFT',
+  //       targetAudience: '',
+  //       description: '',
+  //     });
+
+  //     await fetchCampaignsList();
+
+  //     if (payload.status === 'ACTIVE' && createdCampaign?.id) {
+  //       const leadsResponse = await getLeads({ limit: 1000 });
+
+  //       const leadIds =
+  //         leadsResponse?.data?.items?.map((lead) => lead.id) || [];
+
+  //       console.log('Leads selected for campaign:', leadIds.length);
+
+  //       if (leadIds.length === 0) {
+  //         alert('Campaign created, but no leads found to launch.');
+  //         return;
+  //       }
+
+  //       const associateResponse = await associateCampaignLeads(createdCampaign.id, {
+  //         leadIds,
+  //         status: 'PENDING',
+  //         engagement: 'new',
+  //       });
+
+  //       console.log('Associate leads response:', associateResponse);
+
+  //       if (!associateResponse.success) {
+  //         alert('Campaign created, but failed to attach leads.');
+  //         return;
+  //       }
+
+  //       await handleLaunchCampaign(createdCampaign.id);
+  //     }
+  //   } catch (err) {
+  //     console.error('Create campaign error:', err);
+  //     alert('Connection error while creating campaign.');
+  //   }
+  // };
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
@@ -472,6 +712,30 @@ const Campaigns = () => {
     }
   };
 
+  // Edit Campaign Submit
+  // const handleEditSubmit = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const payload = {
+  //       ...campaignForm,
+  //       budget: campaignForm.budget ? parseFloat(campaignForm.budget) : null,
+  //       spent: campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
+  //       startDate: campaignForm.startDate ? new Date(campaignForm.startDate).toISOString() : null,
+  //       endDate: campaignForm.endDate ? new Date(campaignForm.endDate).toISOString() : null
+  //     };
+
+  //     const response = await updateCampaign(selectedCampaign.id, payload);
+  //     if (response.success) {
+  //       setIsEditOpen(false);
+  //       fetchCampaignsList();
+  //     } else {
+  //       alert(response.message || 'Failed to update campaign. Please verify fields.');
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert('Connection error while updating campaign.');
+  //   }
+  // };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -625,6 +889,17 @@ const Campaigns = () => {
           {/* Create Campaign Button */}
           <button
             onClick={() => {
+              // setCampaignForm({
+              //   name: '',
+              //   type: 'EMAIL',
+              //   budget: '',
+              //   spent: 0,
+              //   startDate: '',
+              //   endDate: '',
+              //   status: 'DRAFT',
+              //   targetAudience: '',
+              //   description: ''
+              // });
               setCampaignForm({
                 name: '',
                 type: 'EMAIL',
@@ -858,7 +1133,24 @@ const Campaigns = () => {
                               <Target className="h-3.5 w-3.5 text-neutral-500" />
                               Edit details
                             </button>
-                           
+                            {/* {camp.status !== 'ACTIVE' && camp.status !== 'COMPLETED' && (
+                              <button
+                                onClick={() => handleLaunchCampaign(camp.id)}
+                                className="w-full px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 transition"
+                              >
+                                <Megaphone className="h-3.5 w-3.5 text-emerald-500" />
+                                Launch Campaign
+                              </button>
+                            )} */}
+                            {/* {camp.status !== 'COMPLETED' && (
+                              <button
+                                onClick={() => handleLaunchCampaign(camp.id)}
+                                className="w-full px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 transition"
+                              >
+                                <Megaphone className="h-3.5 w-3.5 text-emerald-500" />
+                                Launch Campaign
+                              </button>
+                            )} */}
                             <button
                               onClick={() => handleLaunchCampaign(camp.id, camp.audienceType || 'ALL')}
                               className="w-full px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 transition"
@@ -1278,7 +1570,16 @@ const Campaigns = () => {
                 </div>
               </div>
 
-             
+              {/* <div className="space-y-1">
+                <label className="">Target Audience Demographics</label>
+                <input
+                  type="text"
+                  placeholder="e.g. IT and engineering graduates in South Asia"
+                  value={campaignForm.targetAudience}
+                  onChange={(e) => setCampaignForm(p => ({ ...p, targetAudience: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                />
+              </div> */}
               <div className="space-y-1">
                 <label>Target Audience Category *</label>
                 <select
@@ -1333,23 +1634,21 @@ const Campaigns = () => {
         </div>
       )}
 
-   
       {/* EDIT CAMPAIGN MODAL */}
       {isEditOpen && selectedCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition p-4 animate-fade-in">
           <div className="w-auto bg-white rounded-[24px] border border-neutral-100 shadow-sm flex flex-col justify-between overflow-hidden">
-
+            
+            {/* Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-neutral-900 text-lg flex items-center gap-1.5">
                   <Megaphone className="h-5 w-5 text-neutral-900" />
                   Edit Campaign Detail
                 </h3>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Modify established outreach channel parameters
-                </p>
+                <p className="text-xs text-neutral-500 mt-0.5">Modify established outreach channel parameters</p>
               </div>
-              <button
+              <button 
                 onClick={() => setIsEditOpen(false)}
                 className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition"
               >
@@ -1357,33 +1656,28 @@ const Campaigns = () => {
               </button>
             </div>
 
-            <form
-              onSubmit={handleEditSubmit}
-              className="p-6 space-y-4 max-h-[420px] overflow-y-auto bg-neutral-50/50 font-semibold text-xs text-neutral-500"
-            >
+            {/* Scrollable form body */}
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4 max-h-[420px] overflow-y-auto bg-neutral-50/50 font-semibold text-xs text-neutral-500">
+              
               <div className="space-y-1">
-                <label>Campaign Identity Name *</label>
+                <label className="">Campaign Identity Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Sep 2026 UK Intake Ads"
                   value={campaignForm.name}
-                  onChange={(e) =>
-                    setCampaignForm((p) => ({ ...p, name: e.target.value }))
-                  }
+                  onChange={(e) => setCampaignForm(p => ({ ...p, name: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 outline-none transition font-semibold text-neutral-700 bg-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label>Broadcast Type *</label>
+                  <label className="">Broadcast Type *</label>
                   <select
                     required
                     value={campaignForm.type}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, type: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, type: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="EMAIL">Email Marketing</option>
@@ -1394,14 +1688,11 @@ const Campaigns = () => {
                     <option value="CONTENT">Content Marketing</option>
                   </select>
                 </div>
-
                 <div className="space-y-1">
-                  <label>Status Milestone</label>
+                  <label className="">Status Milestone</label>
                   <select
                     value={campaignForm.status}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, status: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, status: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="DRAFT">Draft</option>
@@ -1415,32 +1706,24 @@ const Campaigns = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label>Budget Allocation ($)</label>
+                  <label className="">Budget Allocation ($)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="e.g. 5000"
                     value={campaignForm.budget}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, budget: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, budget: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
-
                 <div className="space-y-1">
-                  <label>Direct Spent ($)</label>
+                  <label className="">Direct Spent ($)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="0"
                     value={campaignForm.spent}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({
-                        ...p,
-                        spent: parseFloat(e.target.value) || 0,
-                      }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, spent: parseFloat(e.target.value) || 0 }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
@@ -1448,80 +1731,48 @@ const Campaigns = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label>Start Date</label>
+                  <label className="">Start Date</label>
                   <input
                     type="date"
                     value={campaignForm.startDate}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, startDate: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, startDate: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
-
                 <div className="space-y-1">
-                  <label>End Date</label>
+                  <label className="">End Date</label>
                   <input
                     type="date"
                     value={campaignForm.endDate}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, endDate: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, endDate: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label>Target Audience Category *</label>
-                <select
-                  value={campaignForm.audienceType}
-                  onChange={(e) =>
-                    setCampaignForm((p) => ({ ...p, audienceType: e.target.value }))
-                  }
-                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
-                >
-                  {AUDIENCE_TYPES.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-
-                <p className="text-[11px] font-semibold text-neutral-500">
-                  Selected audience count: {selectedAudienceCount}
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <label>Target Audience Demographics</label>
+                <label className="">Target Audience Demographics</label>
                 <input
                   type="text"
                   placeholder="e.g. IT and engineering graduates in South Asia"
                   value={campaignForm.targetAudience}
-                  onChange={(e) =>
-                    setCampaignForm((p) => ({
-                      ...p,
-                      targetAudience: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setCampaignForm(p => ({ ...p, targetAudience: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                 />
               </div>
 
               <div className="space-y-1">
-                <label>Campaign description / brief</label>
+                <label className="">Campaign description / brief</label>
                 <textarea
                   rows="3"
                   placeholder="Ad copywriting guidelines, objectives, conversion metrics..."
                   value={campaignForm.description}
-                  onChange={(e) =>
-                    setCampaignForm((p) => ({ ...p, description: e.target.value }))
-                  }
+                  onChange={(e) => setCampaignForm(p => ({ ...p, description: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white resize-none"
                 />
               </div>
 
+              {/* Submit actions */}
               <div className="pt-4 border-t border-neutral-100 flex items-center gap-3">
                 <button
                   type="submit"
@@ -1537,6 +1788,7 @@ const Campaigns = () => {
                   Cancel
                 </button>
               </div>
+
             </form>
           </div>
         </div>
