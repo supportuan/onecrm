@@ -330,6 +330,7 @@ model Campaign {
   targetAudience     String?
   description        String?
   externalLeadId     String?
+  audienceType       String @default("ALL")
 
   externalCampaignId String?
   platform           String?

@@ -32,15 +32,50 @@ export const leadActivitySchema = z.object({
 // Campaign Validation Schemas
 export const createCampaignSchema = z.object({
   name: z.string().min(1, 'Campaign name is required'),
-  type: z.enum(['EMAIL', 'SMS', 'WHATSAPP', 'SOCIAL_MEDIA', 'PPC', 'CONTENT']),
+
+  type: z.enum([
+    'EMAIL',
+    'SMS',
+    'WHATSAPP',
+    'SOCIAL_MEDIA',
+    'PPC',
+    'CONTENT',
+  ]),
+
   budget: z.number().nonnegative().optional().nullable(),
+
   spent: z.number().nonnegative().optional(),
-  startDate: z.string().datetime().or(z.string().date()).optional().nullable().transform(val => val ? new Date(val) : null),
-  endDate: z.string().datetime().or(z.string().date()).optional().nullable().transform(val => val ? new Date(val) : null),
-  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']).optional(),
+
+  startDate: z
+    .string()
+    .datetime()
+    .or(z.string().date())
+    .optional()
+    .nullable()
+    .transform((val) => (val ? new Date(val) : null)),
+
+  endDate: z
+    .string()
+    .datetime()
+    .or(z.string().date())
+    .optional()
+    .nullable()
+    .transform((val) => (val ? new Date(val) : null)),
+
+  status: z
+    .enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'])
+    .optional(),
+
   targetAudience: z.string().optional().nullable(),
+
+  audienceType: z
+    .enum(['ALL', 'HOT', 'WARM', 'COLD', 'MAYBE'])
+    .optional()
+    .default('ALL'),
+
   description: z.string().optional().nullable(),
 });
+
 
 export const updateCampaignSchema = createCampaignSchema.partial();
 
