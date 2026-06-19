@@ -14,21 +14,55 @@ dotenv.config();
 
 const BATCH = Number(process.env.IMPORT_BATCH_SIZE || 2000);
 const MAX_BATCHES = Number(process.env.IMPORT_MAX_BATCHES || 0); // 0 = all
-const TABLE = process.env.APPLY_UNI_COURSE_TABLE || 'course_lists';
+const FALLBACK_DATABASE = 'applyuninow_new';
 
-async function connectMysql() {
+async function connectMysql(database?: string) {
   return mysql.createConnection({
     host: process.env.APPLY_UNI_MYSQL_HOST || 'localhost',
     port: Number(process.env.APPLY_UNI_MYSQL_PORT || 3307),
     user: process.env.APPLY_UNI_MYSQL_USER,
     password: process.env.APPLY_UNI_MYSQL_PASSWORD || '',
-    database: process.env.APPLY_UNI_MYSQL_DATABASE || 'applyuninow_new',
+    database: database || process.env.APPLY_UNI_MYSQL_DATABASE || FALLBACK_DATABASE,
   });
+}
+
+async function resolveCourseSource(conn: mysql.Connection) {
+  const [dbRow] = await conn.query<any[]>('SELECT DATABASE() AS db');
+  const db = dbRow[0]?.db as string;
+
+  const [tables] = await conn.query<any[]>(
+    `SELECT table_name FROM information_schema.tables
+     WHERE table_schema = ? AND table_name IN ('course_lists', 'course_lists_1', 'course_lists_5001')
+     ORDER BY table_name`,
+    [db]
+  );
+
+  if (tables.length) {
+    const name = tables[0].TABLE_NAME || tables[0].table_name;
+    return { conn, db, table: process.env.APPLY_UNI_COURSE_TABLE || name };
+  }
+
+  await conn.end();
+
+  if (db !== FALLBACK_DATABASE) {
+    console.warn(
+      `No course table in "${db}". Courses live in "${FALLBACK_DATABASE}" — retrying there.\n` +
+        `Tip: set APPLY_UNI_MYSQL_DATABASE=${FALLBACK_DATABASE} and re-run crm:import-universities first.`
+    );
+    const fallbackConn = await connectMysql(FALLBACK_DATABASE);
+    return resolveCourseSource(fallbackConn);
+  }
+
+  throw new Error(
+    `No course_lists table in "${db}". Set APPLY_UNI_MYSQL_DATABASE=${FALLBACK_DATABASE} ` +
+      'and run npm run crm:import-universities before importing courses.'
+  );
 }
 
 async function main() {
   const prisma = new PrismaClient();
-  const conn = await connectMysql();
+  const { conn, db, table } = await resolveCourseSource(await connectMysql());
+  console.log(`MySQL source: ${db}.${table}`);
 
   const uniMap = new Map(
     (await prisma.university.findMany({ where: { externalId: { not: null }, deletedAt: null }, select: { id: true, externalId: true } }))
@@ -41,10 +75,10 @@ async function main() {
   }
 
   const [countRow] = await conn.query<any[]>(
-    `SELECT COUNT(*) as c FROM \`${TABLE}\` WHERE deleted_at IS NULL AND university_id IS NOT NULL`
+    `SELECT COUNT(*) as c FROM \`${table}\` WHERE deleted_at IS NULL AND university_id IS NOT NULL`
   );
   const total = Number(countRow[0]?.c || 0);
-  console.log(`MySQL courses to import (${TABLE}): ${total}`);
+  console.log(`MySQL courses to import (${table}): ${total}`);
 
   let offset = 0;
   let imported = 0;
@@ -57,7 +91,7 @@ async function main() {
     const [rows] = await conn.query<any[]>(
       `SELECT id, COURSE_NAME, INTAKES, APPLICATION_FEE, TUITION_FEE, DURATION, IELTS, TOEFL,
               COURSE_LEVEL, university_id
-       FROM \`${TABLE}\`
+       FROM \`${table}\`
        WHERE deleted_at IS NULL AND university_id IS NOT NULL
        ORDER BY id
        LIMIT ? OFFSET ?`,

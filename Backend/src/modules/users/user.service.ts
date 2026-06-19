@@ -120,11 +120,13 @@ export const getDefaultModuleAccessByRole = (role: string) => {
   return clean;
 };
 
-export const getUsers = async (role?: UserRole) => {
+// tenantId === null means "no scoping" (SUPER_ADMIN). A numeric tenantId
+// restricts the result to that tenant only.
+export const getUsers = async (role?: UserRole, tenantId: number | null = null) => {
   return prisma.user.findMany({
     where: {
-      // isActive: true,
       ...(role ? { role } : {}),
+      ...(tenantId != null ? { tenantId } : {}),
     },
     orderBy: {
       createdAt: 'desc',
@@ -132,15 +134,19 @@ export const getUsers = async (role?: UserRole) => {
   });
 };
 
-export const getUserById = async (id: number) => {
-  return prisma.user.findUnique({
-    where: { id },
+export const getUserById = async (id: number, tenantId: number | null = null) => {
+  return prisma.user.findFirst({
+    where: {
+      id,
+      ...(tenantId != null ? { tenantId } : {}),
+    },
     select: {
       id: true,
       fullName: true,
       email: true,
       phone: true,
       role: true,
+      tenantId: true,
       isActive: true,
       isApproved: true,
       lastLogin: true,
@@ -318,9 +324,10 @@ export const createUser = async (data: {
   role: UserRole;
   agencyDetails?: any;
   moduleAccess?: any;
+  tenantId?: number | null;
 }) => {
   try {
-    if (!allowedRoles.includes(data.role)) {
+    if (!(allowedRoles as UserRole[]).includes(data.role)) {
       throw new Error('Invalid role selected');
     }
 
@@ -369,6 +376,7 @@ export const createUser = async (data: {
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          tenantId: data.tenantId ?? null,
           fullName: data.fullName,
           email: normalizedEmail,
           phone: data.phone || null,
@@ -509,8 +517,16 @@ export const updateUser = async (
     isApproved?: boolean;
     counsellorId?: number | null;
     moduleAccess?: any;
-  }
+  },
+  tenantId: number | null = null,
 ) => {
+  // When called by a tenant ADMIN we verify the row belongs to their tenant.
+  // SUPER_ADMIN passes tenantId=null and skips the check.
+  if (tenantId != null) {
+    const existing = await prisma.user.findFirst({ where: { id, tenantId } });
+    if (!existing) throw new Error('User not found');
+  }
+
   const existing = data.isApproved !== undefined
     ? await prisma.user.findUnique({ where: { id } })
     : null;
@@ -546,7 +562,11 @@ export const updateUser = async (
   return updated;
 };
 
-export const deactivateUser = async (id: number) => {
+export const deactivateUser = async (id: number, tenantId: number | null = null) => {
+  if (tenantId != null) {
+    const existing = await prisma.user.findFirst({ where: { id, tenantId } });
+    if (!existing) throw new Error('User not found');
+  }
   return prisma.user.update({
     where: { id },
     data: {
@@ -555,11 +575,12 @@ export const deactivateUser = async (id: number) => {
   });
 };
 
-export const getCounsellors = async () => {
+export const getCounsellors = async (tenantId: number | null = null) => {
   return prisma.user.findMany({
     where: {
       role: UserRole.COUNSELLOR,
       isActive: true,
+      ...(tenantId != null ? { tenantId } : {}),
     },
     select: {
       id: true,

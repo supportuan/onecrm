@@ -2,8 +2,23 @@ import { Request, Response, NextFunction } from 'express';
 import * as authService from './auth.service.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
 import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
+import { getEnabledModules } from '../rbac/tenant-modules.service.js';
+import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+
+// Super admin operates cross-tenant, so they "have" every module.
+const allModuleKeys = () => MODULE_CATALOG.map((m) => m.key);
+
+const resolveEnabledModules = async (
+    role: string,
+    tenantId: number | null,
+): Promise<string[]> => {
+    if (role === 'SUPER_ADMIN') return allModuleKeys();
+    if (tenantId == null) return [];
+    const set = await getEnabledModules(tenantId);
+    return Array.from(set);
+};
 
 const createResetToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -32,7 +47,21 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     try {
         const data = loginSchema.parse(req.body);
         const { user, accessToken, refreshToken, isFirstLogin } = await authService.login(data.email, data.password);
-        return sendSuccess(res, 'Login successful', { user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role, moduleAccess: user.moduleAccess }, accessToken, refreshToken, isFirstLogin });
+        const enabledModules = await resolveEnabledModules(user.role, user.tenantId ?? null);
+        return sendSuccess(res, 'Login successful', {
+            user: {
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+                tenantId: user.tenantId ?? null,
+                moduleAccess: user.moduleAccess,
+                enabledModules,
+            },
+            accessToken,
+            refreshToken,
+            isFirstLogin,
+        });
     } catch (error) {
         next(error);
     }
@@ -66,7 +95,12 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
         if (!req.user) return sendError(res, 'Unauthorized', null, 401);
         const user = await authService.getUserProfile(req.user.id);
         if (!user) return sendError(res, 'User not found', null, 404);
-        return sendSuccess(res, 'Authenticated user retrieved successfully', user);
+        const enabledModules = await resolveEnabledModules(req.user.role, req.user.tenantId);
+        return sendSuccess(res, 'Authenticated user retrieved successfully', {
+            ...user,
+            tenantId: req.user.tenantId,
+            enabledModules,
+        });
     } catch (error) {
         next(error);
     }

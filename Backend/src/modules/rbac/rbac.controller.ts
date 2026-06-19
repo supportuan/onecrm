@@ -33,7 +33,7 @@ export const updatePermissions = async (req: Request, res: Response) => {
   }
 
   try {
-    const saved = await updateRolePermissions(role, permissions);
+    const saved = await updateRolePermissions(role as string, permissions);
     const roles = await getPermissionsMap();
     return sendSuccess(res, `Permissions updated for ${role}`, {
       role,

@@ -250,6 +250,7 @@ export const updatePartner = async (
     data: {
       ...payload,
       agencyCode: payload.agencyCode?.toUpperCase(),
+      branding: payload.branding as any,
     },
     include: PARTNER_INCLUDE,
   });

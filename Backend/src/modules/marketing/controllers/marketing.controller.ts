@@ -75,7 +75,7 @@ export const getAnalytics = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const updateLeadRating = async (req, res) => {
+export const updateLeadRating = async (req: Request, res: Response) => {
   try {
     const leadId = Number(req.params.leadId);
     const { rating } = req.body;

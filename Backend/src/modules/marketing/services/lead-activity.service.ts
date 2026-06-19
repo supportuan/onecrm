@@ -96,7 +96,7 @@ export const createLeadActivity = async (
     const activity = await prisma.leadActivity.create({
         data: {
             leadId,
-            actorId: data.actorId || null,
+            actorId: data.actorId ?? undefined,
             activityType: data.activityType,
             comment: data.comment || '',
             metadata: data.metadata || {},

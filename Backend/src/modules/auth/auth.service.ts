@@ -101,7 +101,10 @@ export const register = async (data: RegisterData) => {
 };
 
 export const login = async (email: string, password: string) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { tenant: true },
+  });
   if (!user || !user.isActive) throw new Error('Invalid credentials');
 
   const isValid = await comparePasswords(password, user.passwordHash);
@@ -109,6 +112,17 @@ export const login = async (email: string, password: string) => {
 
   if (user.role === UserRole.AGENT && !user.isApproved) {
     throw new Error('Agent account has not been approved by an administrator yet');
+  }
+
+  // Tenant gate: SUPER_ADMIN has no tenant; everyone else must belong to an
+  // ACTIVE tenant. Suspended or archived → login refused with a clear reason.
+  if (user.role !== UserRole.SUPER_ADMIN) {
+    if (!user.tenant) {
+      throw new Error('User is not associated with any tenant');
+    }
+    if (user.tenant.status !== 'ACTIVE') {
+      throw new Error(`Tenant is ${user.tenant.status.toLowerCase()}; contact your administrator`);
+    }
   }
 
   const isFirstLogin = user.lastLogin === null;
@@ -122,6 +136,7 @@ export const login = async (email: string, password: string) => {
     id: user.id,
     email: user.email,
     role: user.role,
+    tenantId: user.tenantId ?? null,
   };
 
   const accessToken = generateAccessToken(payload);
@@ -149,8 +164,9 @@ export const refreshToken = async (token: string) => {
   const user = await prisma.user.findUnique({ where: { id: payload.id } });
   if (!user || !user.isActive) throw new Error('Invalid refresh token');
 
-  const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role });
-  const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: user.role });
+  const tokenPayload = { id: user.id, email: user.email, role: user.role, tenantId: user.tenantId ?? null };
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload);
 
   await prisma.refreshToken.create({
     data: {
@@ -180,6 +196,7 @@ export const getUserProfile = async (id: number) => {
       email: true,
       phone: true,
       role: true,
+      tenantId: true,
       isActive: true,
       lastLogin: true,
       createdAt: true,
