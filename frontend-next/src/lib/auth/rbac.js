@@ -118,6 +118,19 @@ export const MODULE_PERMISSION_MAP = {
   'Admin & Settings': ['VIEW_ADMIN', 'MANAGE_SYSTEM', 'MANAGE_ADMINS'],
 };
 
+// Maps a sidebar label to its tenant-module key. Super admin toggles these
+// per tenant; if the tenant has the module disabled, the item is hidden.
+// Items without an entry here are not tenant-gated.
+export const MODULE_KEY_MAP = {
+  Marketing: 'MARKETING',
+  'Student CRM': 'STUDENT_CRM',
+  'Agency CRM': 'AGENCY_CRM',
+  HR: 'HR',
+  HRMS: 'HR',
+  'Admin Settings': 'ADMIN',
+  'Admin & Settings': 'ADMIN',
+};
+
 // Fallback defaults — mirror Backend/src/modules/rbac/rbac.constants.ts
 export const ROLE_PERMISSIONS = {
   SUPER_ADMIN: [...ALL_PERMISSIONS],

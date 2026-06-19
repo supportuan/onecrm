@@ -27,6 +27,24 @@ export const AuthProvider = ({ children }) => {
   const [refreshToken, setRefreshToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const syncProfile = () => {
+    return import('@/lib/api')
+      .then(({ default: authFetch }) => authFetch('/api/auth/me'))
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Failed to fetch profile');
+      })
+      .then((data) => {
+        if (data?.success && data?.data) {
+          setUser(data.data);
+          localStorage.setItem('currentUser', JSON.stringify(data.data));
+        }
+      })
+      .catch((err) => {
+        console.error('[Permissions Sync] Failed to sync profile:', err);
+      });
+  };
+
   useEffect(() => {
     const storedAccess = localStorage.getItem('accessToken');
     const storedRefresh = localStorage.getItem('refreshToken');
@@ -37,25 +55,21 @@ export const AuthProvider = ({ children }) => {
       setRefreshToken(storedRefresh);
       setUser(JSON.parse(storedUser));
       syncAccessToken(storedAccess);
-
-      import('@/lib/api')
-        .then(({ default: authFetch }) => authFetch('/api/auth/me'))
-        .then((res) => {
-          if (res.ok) return res.json();
-          throw new Error('Failed to fetch profile');
-        })
-        .then((data) => {
-          if (data?.success && data?.data) {
-            setUser(data.data);
-            localStorage.setItem('currentUser', JSON.stringify(data.data));
-          }
-        })
-        .catch((err) => {
-          console.error('[Permissions Sync] Failed to sync permissions on mount:', err);
-        });
+      syncProfile();
     }
 
     setLoading(false);
+  }, []);
+
+  // Re-fetch profile when the tab regains focus so super-admin module toggles
+  // take effect without a manual re-login.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onFocus = () => {
+      if (localStorage.getItem('accessToken')) syncProfile();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   // Keep authFetch in sync with React session state.

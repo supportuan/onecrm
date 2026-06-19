@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { LeadStatus } from '@prisma/client';
+import { LeadStatus, LeadRating } from '@prisma/client';
 import { prisma } from '../../../prisma.js';
 
 type ExcelLeadRow = {
@@ -262,7 +262,7 @@ export const bulkUploadLeadsFromExcel = async (fileBuffer: Buffer) => {
             preferredCourse: row.preferredCourse || null,
             sourceId: sourceMap.get(row.source || 'Bulk Excel Upload')!,
             status: LeadStatus.NEW,
-            rating: calculateLeadScore(row) >= 80 ? 'HOT' : calculateLeadScore(row) >= 50 ? 'WARM' : 'COLD',
+            rating: (calculateLeadScore(row) >= 80 ? LeadRating.HOT : calculateLeadScore(row) >= 50 ? LeadRating.WARM : LeadRating.COLD),
             remark: row.remark || 'Lead uploaded through Excel bulk upload',
         });
     }

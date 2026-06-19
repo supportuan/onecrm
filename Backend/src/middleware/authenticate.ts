@@ -12,7 +12,13 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     try {
         const payload = verifyAccessToken(token);
-        req.user = payload;
+        req.user = {
+            id: payload.id,
+            email: payload.email,
+            role: payload.role as any,
+            tenantId: payload.tenantId ?? null,
+        };
+        req.tenantId = payload.tenantId ?? null;
         next();
     } catch (error) {
         return sendError(res, 'Invalid or expired access token', null, 401);

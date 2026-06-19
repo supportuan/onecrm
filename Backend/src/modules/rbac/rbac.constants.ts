@@ -86,3 +86,68 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
  * don't need to manage their permissions interactively.
  */
 export const HIDDEN_ROLES = new Set(['STUDENT']);
+
+// ---------------------------------------------------------------------------
+// Module catalog. Each module owns a set of permissions; if a tenant has the
+// module disabled, requirePermission returns 403 for any permission in its set.
+// Super admin toggles modules per tenant via TenantModule rows.
+// ---------------------------------------------------------------------------
+export type ModuleKey =
+  | 'HR'
+  | 'MARKETING'
+  | 'STUDENT_CRM'
+  | 'AGENCY_CRM'
+  | 'ADMIN';
+
+export interface ModuleDefinition {
+  key: ModuleKey;
+  label: string;
+  permissions: string[];
+  beta?: boolean;
+}
+
+export const MODULE_CATALOG: ModuleDefinition[] = [
+  {
+    key: 'HR',
+    label: 'Human Resources',
+    permissions: [
+      'VIEW_HR',
+      ...HR_PERMISSIONS,
+    ],
+  },
+  {
+    key: 'MARKETING',
+    label: 'Marketing',
+    permissions: ['VIEW_MARKETING', 'MANAGE_MARKETING'],
+  },
+  {
+    key: 'STUDENT_CRM',
+    label: 'Student CRM',
+    permissions: ['VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'],
+  },
+  {
+    key: 'AGENCY_CRM',
+    label: 'Agency CRM',
+    permissions: ['VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM'],
+  },
+  {
+    key: 'ADMIN',
+    label: 'Admin Settings',
+    permissions: ['VIEW_ADMIN', 'MANAGE_ADMINS', 'MANAGE_SYSTEM'],
+  },
+];
+
+// Reverse lookup: permission -> owning module key.
+export const PERMISSION_TO_MODULE: Record<string, ModuleKey> = (() => {
+  const map: Record<string, ModuleKey> = {};
+  for (const mod of MODULE_CATALOG) {
+    for (const perm of mod.permissions) {
+      map[perm] = mod.key;
+    }
+  }
+  return map;
+})();
+
+// Modules enabled by default when a new tenant is created (super admin
+// can override at onboarding time).
+export const DEFAULT_TENANT_MODULES: ModuleKey[] = ['HR', 'ADMIN'];

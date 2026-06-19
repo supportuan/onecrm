@@ -1,15 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 
-export interface TenantRequest extends Request {
-  tenantId?: string;
-}
+// Populates req.tenantId from the authenticated user's JWT claim.
+// Must run AFTER authenticateToken on protected routes; for public routes
+// it is a no-op (req.tenantId stays undefined).
+export const tenantMiddleware = (req: Request, _res: Response, next: NextFunction) => {
+  if (req.user) {
+    req.tenantId = req.user.tenantId ?? null;
+  }
 
-export const tenantMiddleware = (req: TenantRequest, res: Response, next: NextFunction) => {
-  const tenantId = req.headers['x-tenant-id'] || 'default-tenant';
-  req.tenantId = tenantId as string;
-  
   if (process.env.DEBUG_TENANT === 'true') {
-    console.log(`[Tenant Route Context] Request routed to tenant: ${tenantId}`);
+    console.log(`[Tenant] user=${req.user?.id ?? 'anon'} tenant=${req.tenantId ?? 'none'}`);
   }
 
   next();

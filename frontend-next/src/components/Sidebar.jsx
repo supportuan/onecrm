@@ -239,7 +239,9 @@ import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from '../lib/workspaceContext';
 import { usePermissions } from "@/lib/auth/PermissionsContext";
-import { MODULE_PERMISSION_MAP } from "@/lib/auth/rbac";
+import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
+import { ShieldAlert } from "lucide-react";
+import Link from "next/link";
 
 
 const MODULE_ACCESS_OPTIONS = [
@@ -401,9 +403,27 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
   const filteredNavMenu = useMemo(() => {
     if (!user) return [];
 
+    // SUPER_ADMIN does not belong to a tenant — they get only the Super Admin
+    // entry (rendered separately above) and nothing else from the tenant nav.
+    if (user.role === "SUPER_ADMIN") return [];
+
+    // Tenant-level gate: users see only items whose module is enabled on their
+    // tenant. Items not in the catalog (e.g. Dashboard) are not tenant-gated.
+    // Fail closed: if enabledModules is missing on the user payload, treat
+    // every tenant-gated item as hidden (forces a fresh login or /me refresh).
+    const enabledModules = Array.isArray(user.enabledModules)
+      ? new Set(user.enabledModules)
+      : new Set();
+    const tenantAllows = (item) => {
+      const moduleKey = MODULE_KEY_MAP[item.label];
+      if (!moduleKey) return true; // unmapped items (Dashboard, etc.)
+      return enabledModules.has(moduleKey);
+    };
+
     // A module is visible if the user has any permission mapped to it.
     // Items with no mapping (e.g. Dashboard) are visible to all authenticated users.
     const moduleVisible = (item) => {
+      if (!tenantAllows(item)) return false;
       const required = MODULE_PERMISSION_MAP[item.label];
       if (!required) return true;
       return can(required);
@@ -417,8 +437,9 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
 
     const role = user.role;
 
-    // Super admin and RBAC-only users: sidebar follows permission map (can()).
-    if (role === "SUPER_ADMIN" || !hasConfiguredModuleAccess(user.moduleAccess)) {
+    // RBAC-only users: sidebar follows permission map (can()). SUPER_ADMIN was
+    // already returned early above.
+    if (!hasConfiguredModuleAccess(user.moduleAccess)) {
       return navMenu
         .filter(moduleVisible)
         .map((item) => ({
@@ -525,6 +546,16 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto sidebar-scrollbar px-5 py-3 space-y-1">
+        {user?.role === "SUPER_ADMIN" && (
+          <Link
+            href="/super-admin"
+            onClick={onClose}
+            className="mb-2 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-900 hover:bg-amber-100"
+          >
+            <ShieldAlert className="h-4 w-4 text-amber-700" />
+            Super Admin
+          </Link>
+        )}
         {filteredNavMenu.map((item) => (
           <div key={item.label} className="space-y-1">
             <button

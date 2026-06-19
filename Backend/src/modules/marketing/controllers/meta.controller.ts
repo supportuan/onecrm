@@ -21,7 +21,7 @@ export const getForms = async (req: Request, res: Response) => {
     try {
         const { pageId } = req.params;
 
-        const data = await metaService.fetchLeadForms(pageId);
+        const data = await metaService.fetchLeadForms(pageId as string);
 
         res.json({
             success: true,

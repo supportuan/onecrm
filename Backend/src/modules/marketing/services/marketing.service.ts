@@ -415,7 +415,7 @@ export const assignCounsellor = async (
 export const updateLeadRating = async (leadId: number, rating: string) => {
   return await prisma.lead.update({
     where: { id: leadId },
-    data: { rating },
+    data: { rating: rating as any },
     include: {
       source: true,
       assignedCounsellor: true,
@@ -1509,6 +1509,7 @@ export const executeCampaign = async (campaignId: number) => {
       }
 
       if (campaign.type === 'SMS') {
+        if (!lead.phone) continue;
         await sendSMS({
           to: lead.phone,
           message: campaign.description || campaign.name,
@@ -1516,6 +1517,7 @@ export const executeCampaign = async (campaignId: number) => {
       }
 
       if (campaign.type === 'WHATSAPP') {
+        if (!lead.phone) continue;
         await sendWhatsAppMessage({
           phone: lead.phone,
           templateName: 'hello_world',

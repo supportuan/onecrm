@@ -2,9 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { sendError, sendSuccess } from '../../utils/response.js';
 import * as service from './crm-settings.service.js';
 
-const numId = (raw: unknown) => {
+const numId = (raw: unknown): number | undefined => {
   const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) ? n : undefined;
 };
 
 export const getFormOptions = async (_req: Request, res: Response, next: NextFunction) => {

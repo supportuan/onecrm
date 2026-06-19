@@ -1,6 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendError } from '../utils/response.js';
 import { prisma } from '../prisma.js';
+import { getEnabledModules } from '../modules/rbac/tenant-modules.service.js';
+
+// Maps the legacy moduleName (used by authorizePermission) to the new
+// TenantModule catalog key. Keep in sync with MODULE_CATALOG.
+const LEGACY_MODULE_TO_KEY: Record<string, string> = {
+    'Marketing': 'MARKETING',
+    'Student CRM': 'STUDENT_CRM',
+    'Agency CRM': 'AGENCY_CRM',
+    'HR': 'HR',
+    'Admin & Settings': 'ADMIN',
+};
 
 export const authorizeRole = (...allowedRoles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
@@ -25,6 +36,23 @@ export const authorizePermission = (moduleName: string, optionName: string, requ
         // SUPER_ADMIN bypasses all permission checks
         if (role === 'SUPER_ADMIN') {
             return next();
+        }
+
+        // Tenant module gate: if the tenant has this module disabled, block.
+        try {
+            const moduleKey = LEGACY_MODULE_TO_KEY[moduleName];
+            const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+            if (moduleKey) {
+                if (tenantId == null) {
+                    return sendError(res, 'Forbidden: user is not associated with a tenant', null, 403);
+                }
+                const enabled = await getEnabledModules(tenantId);
+                if (!enabled.has(moduleKey as any)) {
+                    return sendError(res, 'Forbidden: module disabled for this tenant', null, 403);
+                }
+            }
+        } catch (err) {
+            return sendError(res, 'Authorization check failed', null, 500);
         }
 
         try {

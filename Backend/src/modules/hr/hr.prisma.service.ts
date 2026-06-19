@@ -227,7 +227,7 @@ const mapInterview = (i: HrInterview): Interview => ({
   interviewers: i.interviewers as string[],
   meetingLink: i.meetingLink ?? undefined,
   status: i.status,
-  feedback: i.feedback ? (i.feedback as InterviewFeedback) : undefined,
+  feedback: i.feedback ? (i.feedback as unknown as InterviewFeedback) : undefined,
   createdAt: i.createdAt.toISOString(),
 });
 

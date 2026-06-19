@@ -75,7 +75,7 @@ One Workspace`;
             metadata: {
                 subject,
                 provider: 'SMTP',
-                result,
+                result: result as any,
             },
         },
     });
@@ -162,7 +162,7 @@ export const sendLeadWhatsApp = async (
             comment: message,
             metadata: {
                 provider: 'Meta WhatsApp',
-                result,
+                result: result as any,
             },
         },
     });
