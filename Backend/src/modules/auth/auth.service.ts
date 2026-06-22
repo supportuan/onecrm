@@ -126,6 +126,7 @@ export const login = async (email: string, password: string) => {
   }
 
   const isFirstLogin = user.lastLogin === null;
+  const mustChangePassword = user.mustChangePassword;
 
   await prisma.user.update({
     where: { id: user.id },
@@ -150,7 +151,7 @@ export const login = async (email: string, password: string) => {
     },
   });
 
-  return { user, accessToken, refreshToken, isFirstLogin };
+  return { user, accessToken, refreshToken, isFirstLogin, mustChangePassword };
 };
 
 export const refreshToken = async (token: string) => {
@@ -198,6 +199,7 @@ export const getUserProfile = async (id: number) => {
       role: true,
       tenantId: true,
       isActive: true,
+      mustChangePassword: true,
       lastLogin: true,
       createdAt: true,
       updatedAt: true,
@@ -214,7 +216,10 @@ export const changePassword = async (userId: number, currentPassword: string, ne
   if (!isValid) throw new Error('Current password is incorrect');
 
   const passwordHash = await hashPassword(newPassword);
-  return prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  return prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, mustChangePassword: false },
+  });
 };
 
 export const createPasswordResetToken = async (email: string, token: string, expiresAt: Date) => {

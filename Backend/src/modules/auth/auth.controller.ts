@@ -46,7 +46,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const data = loginSchema.parse(req.body);
-        const { user, accessToken, refreshToken, isFirstLogin } = await authService.login(data.email, data.password);
+        const { user, accessToken, refreshToken, isFirstLogin, mustChangePassword } = await authService.login(data.email, data.password);
         const enabledModules = await resolveEnabledModules(user.role, user.tenantId ?? null);
         return sendSuccess(res, 'Login successful', {
             user: {
@@ -57,10 +57,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
                 tenantId: user.tenantId ?? null,
                 moduleAccess: user.moduleAccess,
                 enabledModules,
+                mustChangePassword,
             },
             accessToken,
             refreshToken,
             isFirstLogin,
+            mustChangePassword,
         });
     } catch (error) {
         next(error);

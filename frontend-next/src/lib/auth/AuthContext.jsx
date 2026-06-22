@@ -106,6 +106,10 @@ export const AuthProvider = ({ children }) => {
   const login = async ({ email, password }) => {
     const data = await loginRequest({ email, password });
     saveSession(data.data.user, data.data.accessToken, data.data.refreshToken);
+    // Forced password change overrides every other landing page.
+    if (data.data.mustChangePassword) {
+      router.push('/change-password?forced=1');
+    }
     return data.data;
   };
 
@@ -143,6 +147,7 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       refreshAuthToken,
+      syncProfile,
     }),
     [user, accessToken, refreshToken, loading]
   );

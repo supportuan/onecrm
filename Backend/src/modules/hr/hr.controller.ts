@@ -93,7 +93,9 @@ export const bulkImportEmployees = async (req: Request, res: Response, next: Nex
 
 export const getAttendanceSettings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await hrService.getAttendanceSettings();
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const data = await hrService.getAttendanceSettings(tenantId);
     return sendSuccess(res, 'Attendance settings retrieved successfully', data);
   } catch (error) {
     next(error);
@@ -102,8 +104,10 @@ export const getAttendanceSettings = async (req: Request, res: Response, next: N
 
 export const updateAttendanceSettings = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const validatedData = updateSettingsSchema.parse(req.body);
-    const data = await hrService.updateAttendanceSettings(validatedData);
+    const data = await hrService.updateAttendanceSettings(tenantId, validatedData);
     return sendSuccess(res, 'Attendance settings updated successfully', data);
   } catch (error) {
     next(error);
@@ -657,8 +661,10 @@ export const getProcessingMetrics = async (req: Request, res: Response, next: Ne
 
 export const addProcessingMetric = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const validatedData = addProcessingMetricSchema.parse(req.body);
-    const data = await hrService.addProcessingMetric(validatedData);
+    const data = await hrService.addProcessingMetric(tenantId, validatedData);
     return sendSuccess(res, 'Processing metric saved successfully', data);
   } catch (error) {
     next(error);
@@ -865,7 +871,7 @@ export const createLeaveRequest = async (req: Request, res: Response, next: Next
     if (!req.user?.email) return sendError(res, 'Unauthorized', null, 401);
     const validated = createLeaveRequestSchema.parse(req.body);
     const data = await hrService.createLeaveRequest(req.user.email, validated);
-    await notifyRoles([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR], 'hr.leave_request', {
+    await notifyRoles([UserRole.GLOBAL_ADMIN, UserRole.SUPER_ADMIN, UserRole.HR], 'hr.leave_request', {
       employeeName: data.employeeName,
       leaveType: data.leaveTypeName,
       from: data.fromDate,

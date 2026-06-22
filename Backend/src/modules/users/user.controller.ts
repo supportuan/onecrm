@@ -19,8 +19,8 @@ const sendError = (res: Response, message: string, status = 400) => {
 };
 
 const canCreateRole = (currentRole: UserRole, newRole: UserRole) => {
-  if (currentRole === UserRole.SUPER_ADMIN && (newRole === UserRole.ADMIN || newRole === UserRole.AGENT)) return true;
-  if (currentRole === UserRole.ADMIN && ([UserRole.COUNSELLOR, UserRole.HR, UserRole.STUDENT, UserRole.AGENT] as UserRole[]).includes(newRole)) return true;
+  if (currentRole === UserRole.SUPER_ADMIN && (newRole === UserRole.GLOBAL_ADMIN || newRole === UserRole.AGENT)) return true;
+  if (currentRole === UserRole.GLOBAL_ADMIN && ([UserRole.COUNSELLOR, UserRole.HR, UserRole.STUDENT, UserRole.AGENT] as UserRole[]).includes(newRole)) return true;
   return false;
 };
 
@@ -32,7 +32,7 @@ const scopeFor = (req: Request): number | null => {
 
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user || !([UserRole.SUPER_ADMIN, UserRole.ADMIN] as UserRole[]).includes(req.user.role)) {
+    if (!req.user || !([UserRole.SUPER_ADMIN, UserRole.GLOBAL_ADMIN] as UserRole[]).includes(req.user.role)) {
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 
@@ -52,7 +52,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     }
 
     if (!req.user) return sendError(res, 'Unauthorized', 401);
-    if (req.user.id !== id && !([UserRole.SUPER_ADMIN, UserRole.ADMIN] as UserRole[]).includes(req.user.role)) {
+    if (req.user.id !== id && !([UserRole.SUPER_ADMIN, UserRole.GLOBAL_ADMIN] as UserRole[]).includes(req.user.role)) {
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 
@@ -69,7 +69,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user || !([UserRole.SUPER_ADMIN, UserRole.ADMIN] as UserRole[]).includes(req.user.role)) {
+    if (!req.user || !([UserRole.SUPER_ADMIN, UserRole.GLOBAL_ADMIN] as UserRole[]).includes(req.user.role)) {
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 
@@ -97,7 +97,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       return sendError(res, 'Invalid user ID', 400);
     }
 
-    if (!req.user || !([UserRole.SUPER_ADMIN, UserRole.ADMIN] as UserRole[]).includes(req.user.role)) {
+    if (!req.user || !([UserRole.SUPER_ADMIN, UserRole.GLOBAL_ADMIN] as UserRole[]).includes(req.user.role)) {
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 
@@ -119,7 +119,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
       return sendError(res, 'Invalid user ID', 400);
     }
 
-    if (!req.user || !([UserRole.SUPER_ADMIN, UserRole.ADMIN] as UserRole[]).includes(req.user.role)) {
+    if (!req.user || !([UserRole.SUPER_ADMIN, UserRole.GLOBAL_ADMIN] as UserRole[]).includes(req.user.role)) {
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 

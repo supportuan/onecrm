@@ -7,7 +7,7 @@ import RoleGuard from '@/components/RoleGuard';
 export default function Page() {
   return (
     <ProtectedRoute>
-      <RoleGuard allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+      <RoleGuard allowedRoles={['SUPER_ADMIN', 'GLOBAL_ADMIN']}>
         <Users />
       </RoleGuard>
     </ProtectedRoute>

@@ -8,7 +8,7 @@ import RoleGuard from '@/components/RoleGuard';
 export default function Page() {
   return (
     <ProtectedRoute>
-      <RoleGuard allowedRoles={["SUPER_ADMIN", "ADMIN", "COUNSELLOR"]}>
+      <RoleGuard allowedRoles={["SUPER_ADMIN", "GLOBAL_ADMIN", "COUNSELLOR"]}>
         <Suspense
           fallback={
             <div className="flex h-screen items-center justify-center bg-neutral-50">

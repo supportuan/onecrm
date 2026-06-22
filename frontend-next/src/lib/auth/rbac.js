@@ -94,8 +94,8 @@ export const ALL_PERMISSIONS = PERMISSION_CATEGORIES.flatMap((c) =>
 );
 
 export const ROLE_DESCRIPTIONS = {
-  SUPER_ADMIN: 'system owner. full access to every module and capability.',
-  ADMIN: 'management / directors. broad access across all modules.',
+  SUPER_ADMIN: 'platform owner. cross-tenant access — onboards tenants and toggles their modules.',
+  GLOBAL_ADMIN: 'tenant administrator. full access inside their own tenant; cannot see other tenants.',
   HR: 'hr operators. full hr module access except admin-level system config.',
   MARKETING_MANAGER: 'marketing manager. owns leads, campaigns, automations and landing pages.',
   COUNSELLOR: 'counsellor / advisor. marketing + student crm management, self-service hr.',
@@ -134,7 +134,7 @@ export const MODULE_KEY_MAP = {
 // Fallback defaults — mirror Backend/src/modules/rbac/rbac.constants.ts
 export const ROLE_PERMISSIONS = {
   SUPER_ADMIN: [...ALL_PERMISSIONS],
-  ADMIN: [
+  GLOBAL_ADMIN: [
     'VIEW_MARKETING', 'MANAGE_MARKETING',
     'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
     'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM',

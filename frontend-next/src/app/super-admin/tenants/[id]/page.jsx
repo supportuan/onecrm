@@ -13,6 +13,8 @@ export default function TenantDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [resetResult, setResetResult] = useState(null);
+  const [resetting, setResetting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -60,6 +62,26 @@ export default function TenantDetailPage() {
       setError(e.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const resetAdminPassword = async () => {
+    if (!confirm('Generate a new password for the primary admin? Their current password stops working immediately.')) return;
+    setResetting(true);
+    setError(null);
+    try {
+      const res = await authFetch(`/api/super-admin/tenants/${id}/admin/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || 'Failed');
+      setResetResult(json.data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -112,6 +134,79 @@ export default function TenantDetailPage() {
           <option value="ARCHIVED">ARCHIVED</option>
         </select>
       </div>
+
+      <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-6">
+        <h2 className="font-medium text-neutral-900 mb-3">Primary admin</h2>
+        {tenant.primaryAdmin ? (
+          <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-sm">
+            <div>
+              <div className="text-xs text-neutral-500">Name</div>
+              <div className="text-neutral-900">{tenant.primaryAdmin.fullName}</div>
+            </div>
+            <div>
+              <div className="text-xs text-neutral-500">Login email</div>
+              <div className="text-neutral-900 font-mono">{tenant.primaryAdmin.email}</div>
+            </div>
+            {tenant.primaryAdmin.phone && (
+              <div>
+                <div className="text-xs text-neutral-500">Phone</div>
+                <div className="text-neutral-900">{tenant.primaryAdmin.phone}</div>
+              </div>
+            )}
+            <div>
+              <div className="text-xs text-neutral-500">Last login</div>
+              <div className="text-neutral-900">
+                {tenant.primaryAdmin.lastLogin
+                  ? new Date(tenant.primaryAdmin.lastLogin).toLocaleString()
+                  : 'Never'}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500">No primary admin found for this tenant.</p>
+        )}
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={resetAdminPassword}
+            disabled={resetting || !tenant.primaryAdmin}
+            className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+          >
+            {resetting ? 'Resetting…' : 'Reset password'}
+          </button>
+          <span className="text-xs text-neutral-500">
+            Generates a new password. Shown once — copy it before closing.
+          </span>
+        </div>
+
+        {resetResult && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-800">
+              New credentials (shown once)
+            </div>
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+              <span className="text-amber-700">Email</span>
+              <code className="text-amber-900">{resetResult.email}</code>
+              <span className="text-amber-700">Password</span>
+              <div className="flex items-center gap-2">
+                <code className="text-amber-900 font-mono">{resetResult.password}</code>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(resetResult.password)}
+                  className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => setResetResult(null)}
+              className="mt-3 text-xs font-medium text-amber-800 hover:text-amber-900"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+      </section>
 
       <section className="rounded-lg border border-neutral-200 bg-white p-6">
         <div className="flex items-center justify-between mb-4">

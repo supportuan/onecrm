@@ -21,8 +21,10 @@ export const requirePermission = (...required: string[]) => {
       return sendError(res, 'Forbidden: no role assigned', null, 403);
     }
 
+    const tenantId = req.tenantId ?? null;
+
     try {
-      const ok = await hasPermission(role, required);
+      const ok = await hasPermission(role, required, tenantId);
       if (!ok) {
         return sendError(res, 'Forbidden: insufficient permissions', null, 403);
       }
@@ -32,7 +34,6 @@ export const requirePermission = (...required: string[]) => {
         return next();
       }
 
-      const tenantId = req.tenantId;
       if (tenantId == null) {
         return sendError(res, 'Forbidden: user is not associated with a tenant', null, 403);
       }

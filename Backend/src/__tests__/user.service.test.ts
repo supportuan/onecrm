@@ -59,8 +59,8 @@ describe("user.service - getDefaultModuleAccessByRole", () => {
         expect(access["Student CRM"]["Student Management"]).toEqual(["VIEW"]);
     });
 
-    it("should return Admin access for ADMIN role", () => {
-        const access = userService.getDefaultModuleAccessByRole("ADMIN");
+    it("should return Admin access for GLOBAL_ADMIN role", () => {
+        const access = userService.getDefaultModuleAccessByRole("GLOBAL_ADMIN");
 
         expect(access.Marketing).toBeDefined();
         expect(access["Admin & Settings"]).toBeDefined();
@@ -95,14 +95,14 @@ describe("user.service - getUsers", () => {
 
 describe("user.service - getUserById", () => {
     it("should fetch user by id with selected fields", async () => {
-        mockPrisma.user.findUnique.mockResolvedValue({
+        mockPrisma.user.findFirst.mockResolvedValue({
             id: 1,
             email: "user@test.com",
         });
 
         const result = await userService.getUserById(1);
 
-        expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
             where: { id: 1 },
             select: expect.objectContaining({
                 id: true,
@@ -126,7 +126,7 @@ describe("user.service - createUser", () => {
             fullName: "Test Admin",
             email: "admin@test.com",
             phone: "9999999999",
-            role: "ADMIN",
+            role: "GLOBAL_ADMIN",
             isApproved: true,
         });
 
@@ -135,7 +135,7 @@ describe("user.service - createUser", () => {
             email: " ADMIN@Test.com ",
             phone: "9999999999",
             password: "Temp@123",
-            role: "ADMIN" as any,
+            role: "GLOBAL_ADMIN" as any,
         });
 
         expect(hashPassword).toHaveBeenCalledWith("Temp@123");
@@ -145,7 +145,7 @@ describe("user.service - createUser", () => {
                 fullName: "Test Admin",
                 email: "admin@test.com",
                 phone: "9999999999",
-                role: "ADMIN",
+                role: "GLOBAL_ADMIN",
                 isActive: true,
                 isApproved: true,
             }),
@@ -166,7 +166,7 @@ describe("user.service - createUser", () => {
             userService.createUser({
                 fullName: "Duplicate User",
                 email: "admin@test.com",
-                role: "ADMIN" as any,
+                role: "GLOBAL_ADMIN" as any,
             })
         ).rejects.toThrow("User with this email already exists");
 
@@ -185,7 +185,7 @@ describe("user.service - createUser", () => {
                 fullName: "Duplicate Phone",
                 email: "new@test.com",
                 phone: "9999999999",
-                role: "ADMIN" as any,
+                role: "GLOBAL_ADMIN" as any,
             })
         ).rejects.toThrow("User with this mobile number already exists");
 
@@ -271,7 +271,7 @@ describe("user.service - updateUser", () => {
         mockPrisma.user.update.mockResolvedValue({
             id: 1,
             fullName: "Updated User",
-            role: "ADMIN",
+            role: "GLOBAL_ADMIN",
         });
 
         const result = await userService.updateUser(1, {
@@ -313,7 +313,7 @@ describe("user.service - updateUser", () => {
     it("should not sync lead when non-student user is updated", async () => {
         mockPrisma.user.update.mockResolvedValue({
             id: 2,
-            role: "ADMIN",
+            role: "GLOBAL_ADMIN",
         });
 
         await userService.updateUser(2, {

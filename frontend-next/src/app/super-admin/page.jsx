@@ -37,12 +37,20 @@ export default function SuperAdminTenantsPage() {
             Onboard organizations and control which modules they can access.
           </p>
         </div>
-        <Link
-          href="/super-admin/tenants/new"
-          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-        >
-          + Onboard tenant
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/super-admin/audit"
+            className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            Audit log
+          </Link>
+          <Link
+            href="/super-admin/tenants/new"
+            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+          >
+            + Onboard tenant
+          </Link>
+        </div>
       </div>
 
       {loading && <p className="text-sm text-neutral-500">Loading…</p>}
@@ -56,6 +64,7 @@ export default function SuperAdminTenantsPage() {
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">Slug</th>
                 <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Primary admin</th>
                 <th className="px-4 py-3 text-left">Users</th>
                 <th className="px-4 py-3 text-left">Enabled modules</th>
                 <th className="px-4 py-3" />
@@ -64,7 +73,7 @@ export default function SuperAdminTenantsPage() {
             <tbody className="divide-y divide-neutral-200">
               {tenants.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-neutral-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-neutral-500">
                     No tenants yet. Click <em>Onboard tenant</em> to create one.
                   </td>
                 </tr>
@@ -85,6 +94,16 @@ export default function SuperAdminTenantsPage() {
                     >
                       {t.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-neutral-600">
+                    {t.primaryAdmin ? (
+                      <div className="flex flex-col">
+                        <span className="text-neutral-900">{t.primaryAdmin.fullName}</span>
+                        <span className="text-xs text-neutral-500">{t.primaryAdmin.email}</span>
+                      </div>
+                    ) : (
+                      <span className="text-neutral-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-neutral-600">{t.userCount}</td>
                   <td className="px-4 py-3 text-neutral-600">

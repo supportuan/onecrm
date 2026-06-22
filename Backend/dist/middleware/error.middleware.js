@@ -4,7 +4,14 @@ export const errorHandler = (err, req, res, next) => {
     if (err.name === 'ZodError') {
         return sendError(res, 'Validation failed', err.errors, 400);
     }
-    if (err.message === 'Invalid credentials') {
+    const authMessages = [
+        'Invalid credentials',
+        'Invalid refresh token',
+        'Invalid or expired refresh token',
+        'Invalid or expired access token',
+        'Authentication token is required',
+    ];
+    if (authMessages.includes(err.message)) {
         return sendError(res, err.message, null, 401);
     }
     // Handle Prisma unique constraint violations etc.

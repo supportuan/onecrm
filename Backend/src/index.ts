@@ -17,7 +17,7 @@ import uploadsRouter from './modules/uploads/uploads.routes.js';
 import agencyCrmRouter from './modules/agency-crm/agency-crm.routes.js';
 import superAdminRouter from './modules/super-admin/super-admin.routes.js';
 import path from 'path';
-import { ensureDefaults, loadPermissions } from './modules/rbac/rbac.service.js';
+import { ensureDefaultTenantSeeded } from './modules/rbac/rbac.service.js';
 import { startNotificationScheduler } from './modules/notifications/scheduler.js';
 
 const app = express();
@@ -57,9 +57,8 @@ app.listen(port, async () => {
   console.log(`[One CRM] Swagger UI available at http://localhost:${port}/api-docs`);
   console.log('[One CRM] Multi-tenant: ON (HR root models auto-scoped via ALS + Prisma extension)');
   try {
-    await ensureDefaults();
-    await loadPermissions();
-    console.log('[One CRM] RBAC permission map loaded');
+    await ensureDefaultTenantSeeded();
+    console.log('[One CRM] RBAC seeded for default tenant');
     startNotificationScheduler();
     console.log('[One CRM] Notification scheduler started');
   } catch (err) {

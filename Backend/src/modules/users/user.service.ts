@@ -5,7 +5,7 @@ import { sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
 
 const allowedRoles = [
-  UserRole.ADMIN,
+  UserRole.GLOBAL_ADMIN,
   UserRole.COUNSELLOR,
   UserRole.STUDENT,
   UserRole.HR,
@@ -93,7 +93,7 @@ export const getDefaultModuleAccessByRole = (role: string) => {
   } else if (role === "COUNSELLOR") {
     giveModuleActions("Marketing", ["VIEW"]);
     giveModuleActions("Student CRM", ["VIEW"]);
-  } else if (role === "ADMIN") {
+  } else if (role === "GLOBAL_ADMIN") {
     giveModuleActions("Marketing", ["VIEW", "EDIT"]);
     giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
     giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
