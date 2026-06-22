@@ -1666,15 +1666,23 @@ model Permission {
   @@unique([module, option, action])
 }
 
-model CampaignLaunchLog {
-  id         Int      @id @default(autoincrement())
-  campaignId Int
-  launchedBy Int?
-  launchedAt DateTime @default(now())
-  status     String
-  details    Json?
+// Append-only log of write actions taken from the Super Admin UI.
+// `actorId` is the super-admin user; `targetTenantId` is the affected tenant.
+// `payload` captures the smallest useful diff (modules array, new email, etc.).
+model SuperAdminAudit {
+  id             Int      @id @default(autoincrement())
+  actorId        Int
+  action         String
+  targetTenantId Int?
+  payload        Json?
+  createdAt      DateTime @default(now())
 
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [targetTenantId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([targetTenantId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 // Append-only log of write actions taken from the Super Admin UI.
