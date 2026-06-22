@@ -496,6 +496,24 @@ router.delete('/campaigns/:id', authenticateToken, authorizePermission('Marketin
  */
 router.post('/campaigns/:id/leads', controller.addCampaignLeads);
 
+/**
+ * @swagger
+ * /api/marketing/campaigns/{id}/launch:
+ *   post:
+ *     summary: Launch a marketing campaign across its channels
+ *     tags: [Marketing]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Campaign launched successfully
+ */
+router.post('/campaigns/:id/launch', authenticateToken, authorizePermission('Marketing', 'Campaigns', 'EDIT'), controller.launchCampaign);
+
 // ==========================================
 // 4. Marketing Automation Workflows
 // ==========================================

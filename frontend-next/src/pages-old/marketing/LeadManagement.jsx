@@ -15,7 +15,8 @@ import {
   scheduleLeadMeeting,
   createStudentLogin,
   assignLeadCounsellor,
-  updateLeadRating
+  updateLeadRating,
+  bulkUploadLeads
 } from '../../services/marketingApi';
 import { getCounsellors } from '../../services/userApi';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -26,6 +27,7 @@ import {
   Phone,
   Mail,
   Download,
+  Upload,
   Loader2,
   AlertCircle,
   X,
@@ -139,6 +141,42 @@ const LeadManagement = () => {
     activityType: 'NOTE',
     comment: ''
   });
+
+  const fileInputRef = useRef(null);
+  const [uploadingLeads, setUploadingLeads] = useState(false);
+
+  const handleBulkUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedExtensions = ['xlsx', 'xls', 'csv'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+
+    if (!allowedExtensions.includes(fileExtension)) {
+      alert('Please upload only Excel or CSV file.');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingLeads(true);
+
+    try {
+      const response = await bulkUploadLeads(file);
+
+      if (response.success) {
+        alert(response.message || 'Leads uploaded successfully.');
+        fetchLeadsList();
+      } else {
+        alert(response.message || 'Bulk upload failed.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error occurred while uploading leads.');
+    } finally {
+      setUploadingLeads(false);
+      e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     if (searchParams && searchParams.get('intake') === 'true') {
@@ -372,58 +410,148 @@ ApplyUniNow`
     }
   };
 
-  const handleExport = () => {
-    if (leads.length === 0) {
-      alert('No leads found to export.');
-      return;
+  // const handleExport = () => {
+  //   if (leads.length === 0) {
+  //     alert('No leads found to export.');
+  //     return;
+  //   }
+
+  //   const headers = [
+  //     'Lead Name',
+  //     'Country',
+  //     'Email',
+  //     'Phone',
+  //     'Source',
+  //     'Interested In',
+  //     'Lead Status',
+  //     'Assigned By',
+  //     'Assigned To',
+  //     'Remark',
+  //     'Created At'
+  //   ];
+
+  //   const rows = leads.map((lead) => [
+  //     lead.fullName,
+  //     lead.country || '',
+  //     lead.email,
+  //     lead.phone || '',
+  //     lead.source?.name || '',
+  //     lead.interestedIn || lead.preferredCourse || '',
+  //     lead.rating || 'WARM',
+  //     lead.assignedBy?.name || '-',
+  //     lead.assignedCounsellor?.name || 'Unassigned',
+  //     lead.remark || '',
+  //     new Date(lead.createdAt).toLocaleString()
+  //   ]);
+
+  //   const csvContent =
+  //     'data:text/csv;charset=utf-8,' +
+  //     [headers.join(','), ...rows.map((e) =>
+  //       e.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',')
+  //     )].join('\n');
+
+  //   const encodedUri = encodeURI(csvContent);
+  //   const link = document.createElement('a');
+
+  //   link.setAttribute('href', encodedUri);
+  //   link.setAttribute(
+  //     'download',
+  //     `leads_export_${new Date().toISOString().slice(0, 10)}.csv`
+  //   );
+
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  // };
+
+  const handleExport = async () => {
+    try {
+      const response = await getLeads({
+        search,
+        page: 1,
+        limit: pagination.total || 10000,
+        sortBy,
+        sortOrder
+      });
+
+      if (!response.success) {
+        alert(response.message || 'Failed to export leads.');
+        return;
+      }
+
+      const allLeads = response.data.items || [];
+
+      if (allLeads.length === 0) {
+        alert('No leads found to export.');
+        return;
+      }
+
+      const exportLeads =
+        user?.role === 'COUNSELLOR'
+          ? allLeads.filter((l) => l.assignedCounsellor?.id === user.id)
+          : allLeads;
+
+      const headers = [
+        'Lead Name',
+        'Country',
+        'Email',
+        'Phone',
+        'Source',
+        'Interested In',
+        'Lead Status',
+        'Assigned By',
+        'Assigned To',
+        'Remark',
+        'Created At'
+      ];
+
+      const rows = exportLeads.map((lead) => [
+        lead.fullName || '',
+        lead.country || '',
+        lead.email || '',
+        lead.phone || '',
+        lead.source?.name || '',
+        lead.interestedIn || lead.preferredCourse || '',
+        lead.rating || 'WARM',
+        lead.assignedBy?.name || '-',
+        lead.assignedCounsellor?.fullName ||
+        lead.assignedCounsellor?.name ||
+        'Unassigned',
+        lead.remark || '',
+        lead.createdAt ? new Date(lead.createdAt).toLocaleString() : ''
+      ]);
+
+      const csvContent =
+        '\uFEFF' +
+        [headers, ...rows]
+          .map((row) =>
+            row
+              .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+              .join(',')
+          )
+          .join('\n');
+
+      const blob = new Blob([csvContent], {
+        type: 'text/csv;charset=utf-8;'
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `leads_export_${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Error occurred while exporting leads.');
     }
-
-    const headers = [
-      'Lead Name',
-      'Country',
-      'Email',
-      'Phone',
-      'Source',
-      'Interested In',
-      'Lead Status',
-      'Assigned By',
-      'Assigned To',
-      'Remark',
-      'Created At'
-    ];
-
-    const rows = leads.map((lead) => [
-      lead.fullName,
-      lead.country || '',
-      lead.email,
-      lead.phone || '',
-      lead.source?.name || '',
-      lead.interestedIn || lead.preferredCourse || '',
-      lead.rating || 'WARM',
-      lead.assignedBy?.name || '-',
-      lead.assignedCounsellor?.name || 'Unassigned',
-      lead.remark || '',
-      new Date(lead.createdAt).toLocaleString()
-    ]);
-
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) =>
-        e.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',')
-      )].join('\n');
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-
-    link.setAttribute('href', encodedUri);
-    link.setAttribute(
-      'download',
-      `leads_export_${new Date().toISOString().slice(0, 10)}.csv`
-    );
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleRowClick = async (lead) => {
@@ -537,7 +665,46 @@ ApplyUniNow`
           )}
         </div>
 
+        {/* <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleExport}
+            className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+          >
+            <Download className="h-4 w-4 text-slate-600 stroke-[2.5]" />
+            Export
+          </button>
+
+          <button
+            onClick={() => setIsIntakeOpen(true)}
+            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
+          >
+            <Plus className="h-4 w-4 stroke-[3]" />
+            Add Lead
+          </button>
+        </div> */}
+
         <div className="flex flex-wrap items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleBulkUpload}
+            className="hidden"
+          />
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingLeads}
+            className="border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+          >
+            {uploadingLeads ? (
+              <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 text-slate-600 stroke-[2.5]" />
+            )}
+            {uploadingLeads ? 'Uploading...' : 'Upload'}
+          </button>
+
           <button
             onClick={handleExport}
             className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
@@ -648,12 +815,14 @@ ApplyUniNow`
 
               <tbody className="divide-y divide-slate-100">
                 {displayedLeads.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    onClick={() => handleRowClick(lead)}
-                    className="group hover:bg-[#f8fafc]/70 transition-all cursor-pointer duration-150"
+                  <tr key={`lead-${lead.id}`}
+                    className="group hover:bg-[#f8fafc]/70 transition-all duration-150"
                   >
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRowClick(lead);
+                      }}>
                       <div className="flex flex-col">
                         <span className="font-semibold text-slate-800 text-[14.5px] leading-tight">
                           {lead.fullName}
@@ -811,7 +980,7 @@ ApplyUniNow`
                         {!lead.isStudentLoginCreated ? (
                           <button
                             onClick={() => handleCreateStudentLogin(lead.id)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap cursor-pointer"
                             title="Create Student Login"
                           >
                             Create Login

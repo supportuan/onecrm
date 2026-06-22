@@ -159,6 +159,13 @@ export const associateCampaignLeads = async (id, leadData) => {
   return res.json();
 };
 
+export const launchCampaign = async (id) => {
+  const res = await authFetch(`${API_URL}/campaigns/${id}/launch`, {
+    method: 'POST',
+  });
+  return res.json();
+};
+
 // ==========================================
 // 4. Marketing Automation Service
 // ==========================================
@@ -412,5 +419,18 @@ export const convertStudentToLead = async (userId, overrides = {}) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(overrides),
   });
+  return res.json();
+};
+
+
+export const bulkUploadLeads = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await authFetch('/api/marketing/leads/bulk-upload', {
+    method: 'POST',
+    body: formData,
+  });
+
   return res.json();
 };
