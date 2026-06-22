@@ -18,9 +18,15 @@ const basePrisma = new PrismaClient({
 const TENANT_SCOPED_MODELS = new Set<string>([
   'HrEmployee',
   'HrAttendanceDevice',
+  'HrAttendanceSetting',
+  'HrAttendanceRecord',
+  'HrRegularization',
   'HrNetworkWhitelist',
   'HrLeavePlan',
   'HrLeaveType',
+  'HrLeaveDefinition',
+  'HrLeavePlanAssignment',
+  'HrLeaveRequest',
   'HrHoliday',
   'HrJobPosting',
   'HrKpiDefinition',
@@ -30,23 +36,22 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   'HrPerformanceReview',
 ]);
 
+// findUnique/findUniqueOrThrow/upsert.where require a WhereUniqueInput, which
+// Prisma rejects when wrapped in AND. Those ops are excluded from auto-merge —
+// the caller's where (which is already a unique key) must include tenantId
+// where the model uses tenantId as part of the unique key.
 const READ_OPS = new Set([
   'findFirst',
   'findFirstOrThrow',
   'findMany',
-  'findUnique',
-  'findUniqueOrThrow',
   'count',
   'aggregate',
   'groupBy',
 ]);
 
 const MUTATION_OPS_WITH_WHERE = new Set([
-  'update',
   'updateMany',
-  'delete',
   'deleteMany',
-  'upsert',
 ]);
 
 const CREATE_OPS = new Set(['create', 'createMany']);

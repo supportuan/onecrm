@@ -339,7 +339,7 @@ const getDefaultModuleAccessByRole = (role) => {
     giveModuleActions("Student CRM", ["VIEW"]);
   }
 
-  if (role === "ADMIN") {
+  if (role === "GLOBAL_ADMIN") {
     giveModuleActions("Marketing", ["VIEW", "EDIT"]);
     giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
     giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);

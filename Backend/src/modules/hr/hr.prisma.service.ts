@@ -391,10 +391,12 @@ export const bulkImportEmployees = async (rows: Partial<Employee>[]) => {
 // 2. Attendance Settings
 // ---------------------------------------------------------------------------
 
-export const getAttendanceSettings = async () => {
+// HrAttendanceSetting is per-tenant since Priority A. The PK is tenantId.
+// Callers must pass req.tenantId; the controller does that.
+export const getAttendanceSettings = async (tenantId: number) => {
   const settings = await prisma.hrAttendanceSetting.upsert({
-    where: { id: 1 },
-    create: { id: 1, attendanceMode: 'biometric', enableIpValidation: true },
+    where: { tenantId },
+    create: { tenantId, attendanceMode: 'biometric', enableIpValidation: true },
     update: {},
   });
   return {
@@ -403,14 +405,14 @@ export const getAttendanceSettings = async () => {
   };
 };
 
-export const updateAttendanceSettings = async (data: {
-  attendance_mode?: string;
-  enable_ip_validation?: boolean;
-}) => {
+export const updateAttendanceSettings = async (
+  tenantId: number,
+  data: { attendance_mode?: string; enable_ip_validation?: boolean },
+) => {
   const settings = await prisma.hrAttendanceSetting.upsert({
-    where: { id: 1 },
+    where: { tenantId },
     create: {
-      id: 1,
+      tenantId,
       attendanceMode: data.attendance_mode ?? 'biometric',
       enableIpValidation: data.enable_ip_validation ?? true,
     },
@@ -734,7 +736,7 @@ export const requestRegularization = async (employeeId: string, data: {
 
   const { notifyRoles } = await import('../notifications/recipients.js');
   const { UserRole } = await import('@prisma/client');
-  await notifyRoles([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR], 'hr.regularization_request', {
+  await notifyRoles([UserRole.GLOBAL_ADMIN, UserRole.SUPER_ADMIN, UserRole.HR], 'hr.regularization_request', {
     employeeName: emp.name,
     date: data.date,
     type: data.type,
@@ -751,7 +753,8 @@ export const processRegularization = async (
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Regularization request not found');
 
-  const reg = await prisma.hrRegularization.findUnique({ where: { id: numericId } });
+  // findFirst is auto-scoped to the active tenant.
+  const reg = await prisma.hrRegularization.findFirst({ where: { id: numericId } });
   if (!reg) throw new Error('Regularization request not found');
 
   const updated = await prisma.hrRegularization.update({
@@ -1337,9 +1340,12 @@ export const getProcessingMetrics = async () => {
   return rows.map(mapProcessingMetric);
 };
 
-export const addProcessingMetric = async (data: Omit<ProcessingMetric, 'id'>) => {
+export const addProcessingMetric = async (
+  tenantId: number,
+  data: Omit<ProcessingMetric, 'id'>,
+) => {
   const metric = await prisma.hrProcessingMetric.upsert({
-    where: { period: data.period },
+    where: { tenantId_period: { tenantId, period: data.period } },
     create: {
       period: data.period,
       totalApplications: data.totalApplications,
@@ -1743,11 +1749,15 @@ export const createLeaveRequest = async (
   userEmail: string,
   data: { leaveTypeName: string; fromDate: string; toDate: string; days: number; reason?: string }
 ) => {
-  let emp = await prisma.hrEmployee.findFirst({ where: { email: userEmail } });
+  // Strict match: the leave request must be filed against the caller's own
+  // employee record. The Prisma extension scopes by the active tenant so we
+  // can never match an employee in another tenant. No fallback — if no record
+  // matches, the caller gets a clear error instead of a phantom request
+  // attached to whichever employee happened to sort first.
+  const emp = await prisma.hrEmployee.findFirst({ where: { email: userEmail } });
   if (!emp) {
-    emp = await prisma.hrEmployee.findFirst({ orderBy: { id: 'asc' } });
+    throw new Error('No HR employee record matches your login email');
   }
-  if (!emp) throw new Error('Employee record not found');
 
   const row = await prisma.hrLeaveRequest.create({
     data: {
@@ -1771,6 +1781,12 @@ export const processLeaveRequest = async (
   const numericId = parseInt(id, 10);
   if (Number.isNaN(numericId)) throw new Error('Leave request not found');
 
+  // findUnique is no longer auto-scoped, so verify the row belongs to the
+  // active tenant before mutating. findFirst IS auto-scoped → returns null
+  // if the id belongs to another tenant.
+  const existing = await prisma.hrLeaveRequest.findFirst({ where: { id: numericId } });
+  if (!existing) throw new Error('Leave request not found');
+
   const row = await prisma.hrLeaveRequest.update({
     where: { id: numericId },
     data: {
@@ -1787,7 +1803,8 @@ export const cancelLeaveRequest = async (id: string, userEmail: string) => {
   const numericId = parseInt(id, 10);
   if (Number.isNaN(numericId)) throw new Error('Leave request not found');
 
-  const existing = await prisma.hrLeaveRequest.findUnique({
+  // findFirst is auto-scoped to the active tenant.
+  const existing = await prisma.hrLeaveRequest.findFirst({
     where: { id: numericId },
     include: { employee: true },
   });

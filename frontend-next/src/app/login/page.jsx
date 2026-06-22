@@ -145,7 +145,9 @@ export default function LoginPage() {
       let targetRoute = '/';
       const role = data.user?.role;
 
-      if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+      if (role === 'SUPER_ADMIN') {
+        targetRoute = '/super-admin';
+      } else if (role === 'GLOBAL_ADMIN') {
         targetRoute = '/marketing';
       } else if (role === 'HR') {
         targetRoute = getDefaultHrRoute(role) || '/hr';

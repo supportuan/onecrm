@@ -235,7 +235,7 @@ export const assignCounsellor = async (
 
     if (
       !req.user ||
-      (req.user.role !== UserRole.ADMIN &&
+      (req.user.role !== UserRole.GLOBAL_ADMIN &&
         req.user.role !== UserRole.SUPER_ADMIN)
     ) {
       return sendError(res, 'Unauthorized to assign counsellor', null, 403);

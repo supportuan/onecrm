@@ -43,7 +43,7 @@
 //       fullName: 'Admin User',
 //       email: 'admin@test.com',
 //       passwordHash: 'hashed_pw',
-//       role: UserRole.ADMIN,
+//       role: UserRole.GLOBAL_ADMIN,
 //       isActive: true,
 //       isApproved: true,
 //       isFirstLogin: false,
@@ -94,7 +94,7 @@
 //       fullName: 'Admin User',
 //       email: 'admin@test.com',
 //       passwordHash: 'hashed_pw',
-//       role: UserRole.ADMIN,
+//       role: UserRole.GLOBAL_ADMIN,
 //       isActive: true,
 //       isApproved: true,
 //     };
@@ -119,7 +119,7 @@
 //       fullName: 'Inactive User',
 //       email: 'inactive@test.com',
 //       passwordHash: 'hashed_pw',
-//       role: UserRole.ADMIN,
+//       role: UserRole.GLOBAL_ADMIN,
 //       isActive: false,
 //       isApproved: true,
 //     };
@@ -250,10 +250,16 @@ describe('Auth Service - Login', () => {
             fullName: 'Admin User',
             email: 'admin@test.com',
             passwordHash: 'hashed_pw',
-            role: UserRole.ADMIN,
+            role: UserRole.GLOBAL_ADMIN,
             isActive: true,
             isApproved: true,
             isFirstLogin: false,
+            tenant: {
+                id: 1,
+                name: 'Test Tenant',
+                slug: 'test-tenant',
+                status: 'ACTIVE',
+            },
         };
 
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
@@ -268,6 +274,7 @@ describe('Auth Service - Login', () => {
 
         expect(prisma.user.findUnique).toHaveBeenCalledWith({
             where: { email: 'admin@test.com' },
+            include: { tenant: true },
         });
 
         expect(comparePasswords).toHaveBeenCalledWith(
@@ -307,9 +314,15 @@ describe('Auth Service - Login', () => {
             fullName: 'Admin User',
             email: 'admin@test.com',
             passwordHash: 'hashed_pw',
-            role: UserRole.ADMIN,
+            role: UserRole.GLOBAL_ADMIN,
             isActive: true,
             isApproved: true,
+            tenant: {
+                id: 1,
+                name: 'Test Tenant',
+                slug: 'test-tenant',
+                status: 'ACTIVE',
+            },
         };
 
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
@@ -328,9 +341,15 @@ describe('Auth Service - Login', () => {
             fullName: 'Inactive User',
             email: 'inactive@test.com',
             passwordHash: 'hashed_pw',
-            role: UserRole.ADMIN,
+            role: UserRole.GLOBAL_ADMIN,
             isActive: false,
             isApproved: true,
+            tenant: {
+                id: 1,
+                name: 'Test Tenant',
+                slug: 'test-tenant',
+                status: 'ACTIVE',
+            },
         };
 
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
@@ -352,6 +371,12 @@ describe('Auth Service - Login', () => {
             role: UserRole.AGENT,
             isActive: true,
             isApproved: false,
+            tenant: {
+                id: 1,
+                name: 'Test Tenant',
+                slug: 'test-tenant',
+                status: 'ACTIVE',
+            },
         };
 
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
@@ -374,6 +399,12 @@ describe('Auth Service - Login', () => {
             isActive: true,
             isApproved: true,
             isFirstLogin: true,
+            tenant: {
+                id: 1,
+                name: 'Test Tenant',
+                slug: 'test-tenant',
+                status: 'ACTIVE',
+            },
         };
 
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);

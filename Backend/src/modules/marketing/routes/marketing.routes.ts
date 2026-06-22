@@ -1471,14 +1471,14 @@ router.use('/meta', metaRoutes);
 router.post(
     '/leads/:leadId/create-student-login',
     authenticateToken,
-    authorizeRole('SUPER_ADMIN', 'ADMIN', 'COUNSELLOR'),
+    authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
     controller.createStudentLogin
 );
 
 router.post(
     '/students/:userId/convert-to-lead',
     authenticateToken,
-    authorizeRole('SUPER_ADMIN', 'ADMIN', 'COUNSELLOR'),
+    authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
     controller.convertStudentToLead
 );
 

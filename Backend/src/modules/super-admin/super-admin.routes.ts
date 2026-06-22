@@ -20,5 +20,7 @@ router.post('/tenants', ctrl.create);
 router.get('/tenants/:id', ctrl.get);
 router.patch('/tenants/:id', ctrl.update);
 router.patch('/tenants/:id/modules', ctrl.setModules);
+router.post('/tenants/:id/admin/reset-password', ctrl.resetAdminPassword);
+router.get('/audit', ctrl.listAudits);
 
 export default router;

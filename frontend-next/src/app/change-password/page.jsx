@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import authFetch from '@/lib/api';
 import { ShieldCheck, Eye, EyeOff, Lock, Check } from 'lucide-react';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
+  const { syncProfile } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,6 +59,9 @@ export default function ChangePasswordPage() {
         throw new Error(data.message || 'Failed to update password');
       }
 
+      // Clear the mustChangePassword flag in the cached user so the
+      // ProtectedRoute guard releases on the next render.
+      await syncProfile?.();
       setSuccess(true);
     } catch (err) {
       setError(err.message || 'Failed to change password. Please check your credentials.');
