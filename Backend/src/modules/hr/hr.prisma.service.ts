@@ -511,10 +511,22 @@ export const getBiometricUsers = async (_ip: string) => {
 // 6. Attendance Events / Log Processor
 // ---------------------------------------------------------------------------
 
-export const getAttendanceEvents = async () => {
+// Date filter is required at scale. Default is "today only" so the admin sees
+// the live feed without scrolling through history. Pass YYYY-MM-DD for a
+// specific day, or 'all' to retrieve everything (use with caution).
+export const getAttendanceEvents = async (date?: string) => {
+  const whereDate =
+    date === 'all'
+      ? undefined
+      : date && /^\d{4}-\d{2}-\d{2}$/.test(date)
+        ? date
+        : new Date().toISOString().slice(0, 10);
+
   const records = await prisma.hrAttendanceRecord.findMany({
+    where: whereDate ? { date: whereDate } : undefined,
     include: { employee: true },
-    orderBy: { id: 'asc' },
+    orderBy: { id: 'desc' },
+    take: whereDate ? undefined : 500, // safety cap for 'all'
   });
   return records.map((r) => ({
     ...mapAttendanceRecord(r),

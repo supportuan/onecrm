@@ -1664,6 +1664,20 @@ model CampaignLaunchLog {
   campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }
 
+// Append-only log of marketing campaign launches (referenced by
+// modules/marketing/services/campaignLaunch.service.ts). Free-form payload.
+model CampaignLaunchLog {
+  id          Int      @id @default(autoincrement())
+  campaignId  Int
+  launchedBy  Int?
+  status      String
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  @@index([campaignId])
+  @@index([createdAt])
+}
+
 // Append-only log of write actions taken from the Super Admin UI.
 // `actorId` is the super-admin user; `targetTenantId` is the affected tenant.
 // `payload` captures the smallest useful diff (modules array, new email, etc.).

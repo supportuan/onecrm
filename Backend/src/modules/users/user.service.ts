@@ -403,6 +403,33 @@ export const createUser = async (data: {
         });
       }
 
+      // Auto-provision an HrEmployee row for staff users so they can clock in
+      // without HR having to manually create the directory entry. Skipped for
+      // STUDENT/AGENT/AGENCY_FREELANCER (not in-house staff).
+      const isStaffRole =
+        data.role === UserRole.GLOBAL_ADMIN ||
+        data.role === UserRole.HR ||
+        data.role === UserRole.COUNSELLOR ||
+        data.role === UserRole.MARKETING_MANAGER ||
+        data.role === UserRole.TELECALLER;
+
+      if (isStaffRole && data.tenantId != null) {
+        // Composite-style code keeps it unique even though the column is
+        // currently globally @unique. Switch to per-tenant unique later.
+        const employeeCode = `EMP-T${data.tenantId}-U${user.id}`;
+        await tx.hrEmployee.create({
+          data: {
+            tenantId: data.tenantId,
+            userId: user.id,
+            name: user.fullName,
+            email: normalizedEmail,
+            employeeCode,
+            phone: user.phone,
+            accessRole: data.role === UserRole.GLOBAL_ADMIN || data.role === UserRole.HR ? 'HR_MANAGER' : 'EMPLOYEE',
+          },
+        });
+      }
+
       return user;
     });
 

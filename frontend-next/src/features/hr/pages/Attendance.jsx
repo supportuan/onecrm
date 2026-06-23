@@ -31,6 +31,7 @@ import {
   createNetwork,
   deleteNetwork,
   processBiometricLogs,
+  getAttendanceEvents,
 } from '@/services/hrApi';
 
 const MONTHS = [
@@ -100,6 +101,15 @@ export default function Attendance() {
   const [newNetwork, setNewNetwork] = useState({ label: '', ip_address_or_range: '' });
   const [adminBusy, setAdminBusy] = useState(false);
 
+  // Team-wide attendance feed (admin only). Auto-scoped to the active tenant
+  // by the backend Prisma extension. Defaults to today; admin can pick a day
+  // or pass 'all' to retrieve everything (capped at 500 server-side).
+  const [teamEvents, setTeamEvents] = useState([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamDate, setTeamDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [pendingRegs, setPendingRegs] = useState([]);
+  const [regBusy, setRegBusy] = useState(null);
+
   const showToast = (type, msg) => {
     setToast({ type, msg });
     setTimeout(() => setToast({ type: '', msg: '' }), 3500);
@@ -137,6 +147,43 @@ export default function Attendance() {
     }
   }, [canManage]);
 
+  const loadTeamAttendance = useCallback(async () => {
+    if (!canManage) return;
+    setTeamLoading(true);
+    try {
+      const [evRes, regRes] = await Promise.all([
+        getAttendanceEvents(teamDate || undefined),
+        getRegularizations(),
+      ]);
+      if (evRes.success) setTeamEvents(evRes.data || []);
+      if (regRes.success) {
+        setPendingRegs((regRes.data || []).filter((r) => r.status === 'PENDING'));
+      }
+    } catch (_) {
+      setTeamEvents([]);
+      setPendingRegs([]);
+    } finally {
+      setTeamLoading(false);
+    }
+  }, [canManage, teamDate]);
+
+  const decideRegularization = async (id, status) => {
+    setRegBusy(id);
+    try {
+      const res = await processRegularization(id, { status });
+      if (res?.success) {
+        showToast('ok', `Regularization ${status.toLowerCase()}`);
+        await loadTeamAttendance();
+      } else {
+        showToast('err', res?.message || 'Failed to update regularization');
+      }
+    } catch (e) {
+      showToast('err', e.message || 'Failed to update regularization');
+    } finally {
+      setRegBusy(null);
+    }
+  };
+
   useEffect(() => {
     const tick = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(tick);
@@ -149,7 +196,8 @@ export default function Attendance() {
   useEffect(() => {
     if (activeTab === 'requests') loadRegularizations();
     if (activeTab === 'admin') loadAdmin();
-  }, [activeTab, loadRegularizations, loadAdmin]);
+    if (activeTab === 'team') loadTeamAttendance();
+  }, [activeTab, loadRegularizations, loadAdmin, loadTeamAttendance]);
 
   const clockState = data?.clockState || 'not_clocked_in';
   const todayRecord = data?.today;
@@ -211,7 +259,12 @@ export default function Attendance() {
     { id: 'clock', label: 'Clock in / out', icon: Fingerprint },
     { id: 'history', label: 'My history', icon: CalendarDays },
     { id: 'requests', label: 'Regularizations', icon: FileText },
-    ...(canManage ? [{ id: 'admin', label: 'Admin setup', icon: Settings }] : []),
+    ...(canManage
+      ? [
+          { id: 'team', label: 'Team attendance', icon: Activity },
+          { id: 'admin', label: 'Admin setup', icon: Settings },
+        ]
+      : []),
   ];
 
   const summary = data?.summary || { present: 0, late: 0, absent: 0, halfDay: 0, totalDays: 0 };
@@ -464,6 +517,142 @@ export default function Attendance() {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'team' && canManage && (
+          <div className="space-y-4">
+            <div className="ui-card">
+              <div className="flex flex-wrap items-end justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="text-base font-semibold text-neutral-900">Team attendance</h3>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Every record in your tenant for the selected day.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-medium text-neutral-600">
+                    Date
+                    <input
+                      type="date"
+                      value={teamDate === 'all' ? '' : teamDate}
+                      onChange={(e) =>
+                        setTeamDate(e.target.value || new Date().toISOString().slice(0, 10))
+                      }
+                      className="ml-2 rounded-md border border-neutral-200 px-2 py-1 text-xs"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setTeamDate('all')}
+                    className={`text-xs font-medium px-2 py-1 rounded-md border transition-colors ${
+                      teamDate === 'all'
+                        ? 'bg-neutral-900 text-white border-neutral-900'
+                        : 'text-neutral-600 border-neutral-200 hover:bg-neutral-50'
+                    }`}
+                  >
+                    All (last 500)
+                  </button>
+                  <button
+                    onClick={loadTeamAttendance}
+                    disabled={teamLoading}
+                    className="text-xs font-medium text-neutral-600 hover:text-neutral-900 inline-flex items-center gap-1"
+                  >
+                    <RefreshCw size={12} className={teamLoading ? 'animate-spin' : ''} />
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              {pendingRegs.length > 0 && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-amber-900">
+                      {pendingRegs.length} pending regularization{pendingRegs.length === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                  <ul className="space-y-2">
+                    {pendingRegs.map((r) => (
+                      <li
+                        key={r.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white border border-amber-200 px-3 py-2"
+                      >
+                        <div className="flex-1 min-w-0 text-xs">
+                          <div className="font-medium text-neutral-900 truncate">{r.name}</div>
+                          <div className="text-neutral-500">
+                            {r.type} · {r.date} · {r.time} · "{r.reason}"
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            disabled={regBusy === r.id}
+                            onClick={() => decideRegularization(r.id, 'APPROVED')}
+                            className="rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1 disabled:opacity-50 inline-flex items-center gap-1"
+                          >
+                            <Check size={12} /> Approve
+                          </button>
+                          <button
+                            disabled={regBusy === r.id}
+                            onClick={() => decideRegularization(r.id, 'REJECTED')}
+                            className="rounded-md bg-white border border-neutral-200 hover:bg-neutral-50 text-neutral-700 text-xs font-medium px-3 py-1 disabled:opacity-50 inline-flex items-center gap-1"
+                          >
+                            <X size={12} /> Reject
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {teamLoading ? (
+                <p className="text-sm text-neutral-500">Loading…</p>
+              ) : teamEvents.length === 0 ? (
+                <p className="text-sm text-neutral-500">No attendance records for this day.</p>
+              ) : (
+                <div className="overflow-hidden rounded-lg border border-neutral-200">
+                  <table className="min-w-full divide-y divide-neutral-200 text-sm">
+                    <thead className="bg-neutral-50 text-xs font-medium uppercase text-neutral-500">
+                      <tr>
+                        <th className="px-4 py-3 text-left">Employee</th>
+                        <th className="px-4 py-3 text-left">Code</th>
+                        <th className="px-4 py-3 text-left">Date</th>
+                        <th className="px-4 py-3 text-left">Check-in</th>
+                        <th className="px-4 py-3 text-left">Check-out</th>
+                        <th className="px-4 py-3 text-left">Worked</th>
+                        <th className="px-4 py-3 text-left">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-200">
+                      {teamEvents
+                        .slice()
+                        .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+                        .map((ev) => (
+                          <tr key={ev.id}>
+                            <td className="px-4 py-3 text-neutral-900 font-medium">{ev.employeeName || '—'}</td>
+                            <td className="px-4 py-3 text-neutral-500 font-mono text-xs">{ev.employeeId || '—'}</td>
+                            <td className="px-4 py-3 text-neutral-600">{formatDate(ev.date)}</td>
+                            <td className="px-4 py-3 text-neutral-700">{formatTime(ev.check_in)}</td>
+                            <td className="px-4 py-3 text-neutral-700">{formatTime(ev.check_out)}</td>
+                            <td className="px-4 py-3 text-neutral-600">
+                              {workedHours(ev.check_in, ev.check_out) || '—'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusStyle(
+                                  ev.status,
+                                )}`}
+                              >
+                                {ev.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>

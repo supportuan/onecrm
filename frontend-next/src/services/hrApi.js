@@ -135,8 +135,9 @@ export const getBiometricUsers = async (ip) => {
   return handleResponse(res);
 };
 
-export const getAttendanceEvents = async () => {
-  const res = await tenantFetch(`${API_URL}/attendance/events`);
+export const getAttendanceEvents = async (date) => {
+  const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+  const res = await tenantFetch(`${API_URL}/attendance/events${qs}`);
   return handleResponse(res);
 };
 

@@ -197,7 +197,8 @@ export const getBiometricUsers = async (req: Request, res: Response, next: NextF
 
 export const getAttendanceEvents = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await hrService.getAttendanceEvents();
+    const date = typeof req.query.date === 'string' ? req.query.date : undefined;
+    const data = await hrService.getAttendanceEvents(date);
     return sendSuccess(res, 'Attendance events retrieved successfully', data);
   } catch (error) {
     next(error);
