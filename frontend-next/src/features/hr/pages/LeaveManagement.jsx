@@ -94,16 +94,20 @@ export default function LeaveManagement() {
     setLoading(true);
     try {
       const [plansRes, typesRes, empRes] = await Promise.all([getLeavePlans(), getLeaveTypes(), getEmployees()]);
+      // Backend wraps every response as { success, message, data }.
+      const plans = plansRes?.data || [];
+      const types = typesRes?.data || [];
+      const employees = empRes?.data || [];
       if (plansRes.success) {
-        setPlans(plansRes.plans || []);
-        if (plansRes.plans && plansRes.plans.length > 0) {
-          const firstPlan = plansRes.plans[0];
+        setPlans(plans);
+        if (plans.length > 0) {
+          const firstPlan = plans[0];
           setSelectedPlan(firstPlan);
           await fetchPlanDetails(firstPlan.id);
         }
       }
-      if (typesRes.success) setLeaveTypes(typesRes.types || []);
-      if (empRes.success) setAllEmployees(empRes.employees || []);
+      if (typesRes.success) setLeaveTypes(types);
+      if (empRes.success) setAllEmployees(employees);
     } catch (err) {
       console.error('Failed to load initial leave data:', err);
     } finally {
@@ -114,8 +118,8 @@ export default function LeaveManagement() {
   const fetchPlanDetails = async (planId) => {
     try {
       const [defRes, empRes] = await Promise.all([getLeaveDefinitions(planId), getLeavePlanEmployees(planId)]);
-      if (defRes.success) setDefinitions(defRes.definitions || []);
-      if (empRes.success) setAssignedEmployees(empRes.employees || []);
+      if (defRes.success) setDefinitions(defRes.data || []);
+      if (empRes.success) setAssignedEmployees(empRes.data || []);
     } catch (err) {
       console.error(`Failed to fetch plan details for ${planId}:`, err);
     }
@@ -130,13 +134,14 @@ export default function LeaveManagement() {
     e.preventDefault();
     try {
       const res = await createLeavePlan(newPlan);
-      if (res.success) {
-        setPlans([...plans, res.plan]);
+      if (res.success && res.data) {
+        const created = res.data;
+        setPlans([...plans, created]);
         setNewPlan({ name: '', cycle: 'Apr - Mar' });
         setShowPlanModal(false);
         if (!selectedPlan) {
-          setSelectedPlan(res.plan);
-          fetchPlanDetails(res.plan.id);
+          setSelectedPlan(created);
+          fetchPlanDetails(created.id);
         }
       }
     } catch (err) {
@@ -203,8 +208,9 @@ export default function LeaveManagement() {
     try {
       const res = await getHolidays();
       if (res.success) {
-        setHolidays(res.holidays || []);
-        const types = (res.holidays || []).map((h) => h.type).filter(Boolean);
+        const list = res.data || [];
+        setHolidays(list);
+        const types = list.map((h) => h.type).filter(Boolean);
         setHolidayFolders(Array.from(new Set([...holidayFolders, ...types])));
       }
     } catch (err) {

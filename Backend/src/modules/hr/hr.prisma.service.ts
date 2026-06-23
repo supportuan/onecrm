@@ -141,6 +141,7 @@ const mapLeaveType = (t: HrLeaveType): LeaveType => ({
 });
 
 const mapLeaveDefinition = (d: HrLeaveDefinition): LeaveDefinition => ({
+  id: sid(d.id),
   plan_id: sid(d.planId),
   leave_type_id: sid(d.leaveTypeId),
   name: d.name,

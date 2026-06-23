@@ -65,6 +65,7 @@ export interface LeaveType {
 }
 
 export interface LeaveDefinition {
+  id: string;
   plan_id: string;
   leave_type_id: string;
   name: string;
