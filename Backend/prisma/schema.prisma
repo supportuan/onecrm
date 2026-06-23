@@ -1704,3 +1704,22 @@ model SuperAdminAudit {
   @@index([createdAt])
 }
 
+// Append-only log of write actions taken from the Super Admin UI.
+// `actorId` is the super-admin user; `targetTenantId` is the affected tenant.
+// `payload` captures the smallest useful diff (modules array, new email, etc.).
+model SuperAdminAudit {
+  id             Int      @id @default(autoincrement())
+  actorId        Int
+  action         String
+  targetTenantId Int?
+  payload        Json?
+  createdAt      DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [targetTenantId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([targetTenantId])
+  @@index([action])
+  @@index([createdAt])
+}
+
