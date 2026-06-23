@@ -200,19 +200,6 @@ enum CommissionStatus {
   CANCELLED
 }
 
-enum AgencyPartnerStatus {
-  PENDING
-  ACTIVE
-  SUSPENDED
-}
-
-enum CommissionStatus {
-  PENDING
-  APPROVED
-  PAID
-  CANCELLED
-}
-
 enum HrAccessRole {
   EMPLOYEE
   SUPER_ADMIN
@@ -573,36 +560,36 @@ model AgencyFunnelStage {
 }
 
 model User {
-  id                 Int            @id @default(autoincrement())
+  id                 Int       @id @default(autoincrement())
   tenantId           Int?
   fullName           String
-  email              String         @unique
+  email              String    @unique
   phone              String?
   passwordHash       String
   role               UserRole
-  isActive           Boolean        @default(true)
-  isApproved         Boolean        @default(true)
-  mustChangePassword Boolean        @default(false)
+  isActive           Boolean   @default(true)
+  isApproved         Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
   agencyDetails      Json?
   moduleAccess       Json?
   counsellorId       Int?
   lastLogin          DateTime?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  tenant               Tenant?             @relation(fields: [tenantId], references: [id])
-  counsellor           User?               @relation("StudentCounsellor", fields: [counsellorId], references: [id])
-  students             User[]              @relation("StudentCounsellor")
-  assignedLeads        Lead[]              @relation("LeadCounsellor")
-  assignedByLeads      Lead[]              @relation("LeadAssignor")
-  studentLeads        Lead[]              @relation("LeadStudentUser")
-  refreshTokens        RefreshToken[]
-  passwordResetTokens  PasswordResetToken[]
-  hrEmployee           HrEmployee?
-  notifications        Notification[]       @relation("UserNotifications")
-  studentProfile          Student?               @relation("StudentUser")
-  studentsAsContact       Student[]              @relation("StudentContact")
-  applicationsAssigned    Application[]          @relation("ApplicationAssignee")
+  tenant                  Tenant?                 @relation(fields: [tenantId], references: [id])
+  counsellor              User?                   @relation("StudentCounsellor", fields: [counsellorId], references: [id])
+  students                User[]                  @relation("StudentCounsellor")
+  assignedLeads           Lead[]                  @relation("LeadCounsellor")
+  assignedByLeads         Lead[]                  @relation("LeadAssignor")
+  studentLeads            Lead[]                  @relation("LeadStudentUser")
+  refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
+  hrEmployee              HrEmployee?
+  notifications           Notification[]          @relation("UserNotifications")
+  studentProfile          Student?                @relation("StudentUser")
+  studentsAsContact       Student[]               @relation("StudentContact")
+  applicationsAssigned    Application[]           @relation("ApplicationAssignee")
   applicationStageChanges ApplicationStageEvent[] @relation("StageChangedBy")
   agencyPartner           AgencyPartner?
 }
@@ -1280,7 +1267,7 @@ model HrLeavePlan {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant      Tenant? @relation(fields: [tenantId], references: [id])
+  tenant      Tenant?                 @relation(fields: [tenantId], references: [id])
   definitions HrLeaveDefinition[]
   assignments HrLeavePlanAssignment[]
 
@@ -1295,7 +1282,7 @@ model HrLeaveType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant      Tenant? @relation(fields: [tenantId], references: [id])
+  tenant      Tenant?             @relation(fields: [tenantId], references: [id])
   definitions HrLeaveDefinition[]
 
   @@unique([tenantId, code])
@@ -1303,7 +1290,7 @@ model HrLeaveType {
 }
 
 model HrLeaveDefinition {
-  id           Int     @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   tenantId     Int?
   planId       Int
   leaveTypeId  Int
@@ -1322,7 +1309,7 @@ model HrLeaveDefinition {
 }
 
 model HrLeavePlanAssignment {
-  id         Int @id @default(autoincrement())
+  id         Int  @id @default(autoincrement())
   tenantId   Int?
   planId     Int
   employeeId Int
@@ -1685,41 +1672,18 @@ model SuperAdminAudit {
   @@index([createdAt])
 }
 
-// Append-only log of write actions taken from the Super Admin UI.
-// `actorId` is the super-admin user; `targetTenantId` is the affected tenant.
-// `payload` captures the smallest useful diff (modules array, new email, etc.).
-model SuperAdminAudit {
-  id             Int      @id @default(autoincrement())
-  actorId        Int
-  action         String
-  targetTenantId Int?
-  payload        Json?
-  createdAt      DateTime @default(now())
+model CampaignLaunchLog {
+  id         Int      @id @default(autoincrement())
+  campaignId Int
+  launchedBy Int?
+  launchedAt DateTime?
+  status     String
+  details    Json?
+  message    String?
+  createdAt  DateTime @default(now())
 
-  tenant Tenant? @relation(fields: [targetTenantId], references: [id], onDelete: SetNull)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
-  @@index([actorId])
-  @@index([targetTenantId])
-  @@index([action])
-  @@index([createdAt])
+  @@index([campaignId])
+  @@index([launchedBy])
 }
-
-// Append-only log of write actions taken from the Super Admin UI.
-// `actorId` is the super-admin user; `targetTenantId` is the affected tenant.
-// `payload` captures the smallest useful diff (modules array, new email, etc.).
-model SuperAdminAudit {
-  id             Int      @id @default(autoincrement())
-  actorId        Int
-  action         String
-  targetTenantId Int?
-  payload        Json?
-  createdAt      DateTime @default(now())
-
-  tenant Tenant? @relation(fields: [targetTenantId], references: [id], onDelete: SetNull)
-
-  @@index([actorId])
-  @@index([targetTenantId])
-  @@index([action])
-  @@index([createdAt])
-}
-

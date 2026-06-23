@@ -116,8 +116,18 @@ export const invalidateTenant = (tenantId: number): void => {
 
 // Boot-time hook: backfill defaults on the default tenant so the existing
 // app keeps working without manual seed steps.
+// export const ensureDefaultTenantSeeded = async (): Promise<void> => {
+//   const tenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
+//   if (tenant) await seedTenantDefaults(tenant.id);
+// };
+
 export const ensureDefaultTenantSeeded = async (): Promise<void> => {
-  const tenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
+  // console.log("Prisma Models:", Object.keys(prisma));
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: 'default' }
+  });
+
   if (tenant) await seedTenantDefaults(tenant.id);
 };
 

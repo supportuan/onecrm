@@ -82,12 +82,5 @@ export const getCounsellors = async () => {
   return handleResponse(res);
 };
 
-export const registerUser = async (registerData) => {
-  const res = await authFetch("/api/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(registerData),
-  });
-  return handleResponse(res);
-};
+
 
