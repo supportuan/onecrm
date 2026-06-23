@@ -33,6 +33,16 @@ export const getUsers = async (role) => {
   return handleResponse(res);
 };
 
+export const registerUser = async (userData) => {
+  // Uses regular fetch because it's a public endpoint
+  const res = await fetch(`${API_URL}/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(userData),
+  });
+  return handleResponse(res);
+};
+
 export const createUser = async (userData) => {
   // Map fields if needed, like generating a random password since backend requires a password
   // Wait, let's see what password backend requires.

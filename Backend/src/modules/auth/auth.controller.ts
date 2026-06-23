@@ -3,6 +3,7 @@ import * as authService from './auth.service.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
 import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 const createResetToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -82,10 +83,51 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
     }
 };
 
-const sendResetEmail = async (email: string, token: string) => {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-    console.log("resetUrl", resetUrl);
-    console.info(`Password reset link for ${email}: ${resetUrl}`);
+// const sendResetEmail = async (email: string, token: string) => {
+//     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+//     console.log("resetUrl", resetUrl);
+//     console.info(`Password reset link for ${email}: ${resetUrl}`);
+// };
+
+export const sendResetEmail = async (email: string, token: string) => {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+  console.log("resetUrl", resetUrl);
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: email,
+    subject: "Reset your One CRM password",
+    html: `
+      <div style="font-family: Arial, sans-serif;">
+        <h2>Password Reset</h2>
+        <p>Click the button below to reset your password.</p>
+
+        <a href="${resetUrl}"
+          style="display:inline-block;background:#111827;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;">
+          Reset Password
+        </a>
+
+        <p style="margin-top:20px;">Or copy this link:</p>
+        <p>${resetUrl}</p>
+
+        <p>This link will expire in 1 hour.</p>
+      </div>
+    `,
+  });
+
+  console.info(`Password reset email sent to ${email}`);
 };
 
 export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
