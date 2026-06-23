@@ -15,6 +15,7 @@
     "crm:import-courses": "tsx scripts/import-courses-mysql.ts",
     "crm:dedupe-countries": "tsx scripts/dedupe-countries.ts",
     "crm:promote-leads": "tsx scripts/promote-leads.ts"
+   
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -28,7 +29,7 @@
     "multer": "^2.1.1",
     "mysql2": "^3.22.5",
     "node-cron": "^4.2.1",
->>>>>>> d106c92ddbe3c7b6645dae169de11b2bd77c561b
+
     "nodemailer": "^8.0.9",
     "pg": "^8.11.2",
     "resend": "^6.12.3",
@@ -64,3 +65,4 @@
     "seed": "tsx prisma/seed.ts"
   }
 }
+

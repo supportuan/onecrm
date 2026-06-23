@@ -171,7 +171,7 @@ import {
   File,
   FileText,
   Folder,
-  GraduationCap,
+  GraduationCap,BriefcaseBusiness,
   Globe,
   Image,
   Key,
@@ -212,17 +212,17 @@ export const navMenu = [
         icon: Target,
       },
       { label: "Campaigns", path: "/marketing/campaigns", icon: Megaphone },
-      { label: "Automation", path: "/marketing/automation", icon: Zap },
+      // { label: "Automation", path: "/marketing/automation", icon: Zap },
       // {
       //   label: "Landing Pages & Forms",
       //   path: "/marketing/landing-pages-forms",
       //   icon: FileText,
       // },
-      {
-        label: "Marketing Analytics",
-        path: "/marketing/marketing-analytics",
-        icon: BarChart2,
-      },
+      // {
+      //   label: "Marketing Analytics",
+      //   path: "/marketing/marketing-analytics",
+      //   icon: BarChart2,
+      // },
     ],
   },
   {
@@ -304,4 +304,10 @@ export const navMenu = [
       },
     ],
   },
+  {
+    label: "Allied Services",
+    path: "/allied-services",
+    icon: BriefcaseBusiness,
+  },
+
 ];
