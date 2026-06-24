@@ -7,31 +7,7 @@ import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
-// Super admin operates cross-tenant, so they "have" every module.
-const allModuleKeys = () => MODULE_CATALOG.map((m) => m.key);
 
-const resolveEnabledModules = async (
-    role: string,
-    tenantId: number | null,
-): Promise<string[]> => {
-    if (role === 'SUPER_ADMIN') return allModuleKeys();
-    if (tenantId == null) return [];
-    const set = await getEnabledModules(tenantId);
-    return Array.from(set);
-};
-
-// Super admin operates cross-tenant, so they "have" every module.
-const allModuleKeys = () => MODULE_CATALOG.map((m) => m.key);
-
-const resolveEnabledModules = async (
-    role: string,
-    tenantId: number | null,
-): Promise<string[]> => {
-    if (role === 'SUPER_ADMIN') return allModuleKeys();
-    if (tenantId == null) return [];
-    const set = await getEnabledModules(tenantId);
-    return Array.from(set);
-};
 
 // Super admin operates cross-tenant, so they "have" every module.
 const allModuleKeys = () => MODULE_CATALOG.map((m) => m.key);

@@ -41,7 +41,7 @@ const services = [
   {
     title: "InternationalStudentVisas",
     description: "Student visa guidance and documentation",
-    url: "https://internationsstudentvisa.com",
+    url: "https://internationalstudentvisas.com",
   },
   {
     title: "AustraliaSkills",

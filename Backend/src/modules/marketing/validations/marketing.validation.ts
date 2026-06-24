@@ -40,6 +40,7 @@ export const createCampaignSchema = z.object({
     'SOCIAL_MEDIA',
     'PPC',
     'CONTENT',
+    'GOOGLE_ADS',
   ]),
 
   budget: z.number().nonnegative().optional().nullable(),

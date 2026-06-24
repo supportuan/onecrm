@@ -17,7 +17,18 @@ interface RegisterData {
 export const register = async (data: RegisterData) => {
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) throw new Error('Email already registered');
+  // Check duplicate phone number
+  if (data.phone) {
+    const existingPhone = await prisma.user.findFirst({
+      where: {
+        phone: data.phone,
+      },
+    });
 
+    if (existingPhone) {
+      throw new Error('Phone number already registered');
+    }
+  }
   const passwordHash = await hashPassword(data.password);
   const isApproved = data.role !== UserRole.AGENT;
 
