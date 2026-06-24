@@ -123,6 +123,10 @@ export const launchCampaign = async (
         results = await googleAdsCampaignService.execute(campaign, []);
         break;
 
+      case 'GOOGLE_ADS':
+        results = await googleAdsCampaignService.execute(campaign, []);
+        break;
+
       case 'CONTENT':
         results = await websiteCampaignService.execute(campaign, []);
         break;

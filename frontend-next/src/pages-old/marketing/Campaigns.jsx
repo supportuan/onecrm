@@ -45,6 +45,7 @@ const mapTypeLabel = (type) => {
     case 'SOCIAL_MEDIA': return 'Social';
     case 'PPC': return 'PPC';
     case 'CONTENT': return 'Content';
+    case 'GOOGLE_ADS': return 'Google Ads';
     default: return type;
   }
 };
@@ -245,6 +246,87 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
         </div>
       </div>
     );
+  } else if (type === 'GOOGLE_ADS') {
+    return (
+      <div className="space-y-4 pt-4 border-t border-neutral-100 mt-4">
+        <h4 className="font-semibold text-neutral-800 text-sm">Google Ads Settings</h4>
+        <div className="space-y-1">
+          <label>Campaign Goal *</label>
+          <select
+            value={launchDetails.goal || ''}
+            onChange={(e) => updateDetails('goal', e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+          >
+            <option value="LEADS">Leads</option>
+            <option value="WEBSITE_TRAFFIC">Website Traffic</option>
+            <option value="SALES">Sales</option>
+            <option value="BRAND_AWARENESS">Brand Awareness</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label>Landing Page URL *</label>
+          <input
+            type="url"
+            required
+            value={launchDetails.landingPageUrl || ''}
+            onChange={(e) => updateDetails('landingPageUrl', e.target.value)}
+            placeholder="https://..."
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+          />
+        </div>
+        <div className="space-y-1">
+          <label>Headlines (comma separated)</label>
+          <textarea
+            rows="2"
+            value={launchDetails.headlines || ''}
+            onChange={(e) => updateDetails('headlines', e.target.value)}
+            placeholder="Headline 1, Headline 2, ..."
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
+          />
+        </div>
+        <div className="space-y-1">
+          <label>Descriptions (comma separated)</label>
+          <textarea
+            rows="2"
+            value={launchDetails.descriptions || ''}
+            onChange={(e) => updateDetails('descriptions', e.target.value)}
+            placeholder="Description 1, Description 2, ..."
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
+          />
+        </div>
+        <div className="space-y-1">
+          <label>Keywords (comma separated)</label>
+          <textarea
+            rows="2"
+            value={launchDetails.keywords || ''}
+            onChange={(e) => updateDetails('keywords', e.target.value)}
+            placeholder="Keyword1, Keyword2, ..."
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
+          />
+        </div>
+        <div className="space-y-1">
+          <label>Daily Budget *</label>
+          <input
+            type="number"
+            min="0"
+            required
+            value={launchDetails.dailyBudget || ''}
+            onChange={(e) => updateDetails('dailyBudget', e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+          />
+        </div>
+        <div className="space-y-1">
+          <label>Target Location *</label>
+          <input
+            type="text"
+            value={launchDetails.targetLocation || ''}
+            onChange={(e) => updateDetails('targetLocation', e.target.value)}
+            placeholder="e.g. United States"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+          />
+        </div>
+      </div>
+    );
   }
 
   return null;
@@ -268,6 +350,16 @@ const filterLaunchDetailsByType = (type, details) => {
         whatsappContent: details.whatsappContent,
         ctaText: details.ctaText,
         ctaUrl: details.ctaUrl,
+      };
+    case 'GOOGLE_ADS':
+      return {
+        goal: details.goal,
+        landingPageUrl: details.landingPageUrl,
+        headlines: details.headlines,
+        descriptions: details.descriptions,
+        keywords: details.keywords,
+        dailyBudget: details.dailyBudget,
+        targetLocation: details.targetLocation,
       };
     case 'EMAIL':
     case 'PPC':
@@ -632,11 +724,19 @@ const Campaigns = () => {
       //   await handleLaunchCampaign(createdCampaign.id, payload.audienceType);
       // }
       if (payload.status === 'ACTIVE' && createdCampaign?.id) {
+        // Social Media campaigns do not send leads; launch directly with NOT_APPLICABLE audience
         if (payload.type === 'SOCIAL_MEDIA') {
           await handleLaunchCampaign(createdCampaign.id, 'NOT_APPLICABLE');
           return;
         }
 
+        // Google Ads campaigns should not associate leads – just launch
+        if (payload.type === 'GOOGLE_ADS') {
+          await handleLaunchCampaign(createdCampaign.id, payload.audienceType);
+          return;
+        }
+
+        // Default flow: fetch leads, associate them, then launch
         const leadsResponse = await getLeads({ limit: 1000 });
         const leads = leadsResponse?.data?.items || [];
 
@@ -807,7 +907,7 @@ const Campaigns = () => {
               <option value="SMS">SMS</option>
               <option value="WHATSAPP">WhatsApp</option>
               <option value="SOCIAL_MEDIA">Social Media</option>
-              <option value="PPC">PPC Ads</option>
+              <option value="GOOGLE_ADS">Google Ads</option>
               <option value="CONTENT">Content</option>
             </select>
             <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 pointer-events-none stroke-[2]" />
@@ -1430,6 +1530,8 @@ const Campaigns = () => {
                     {/* <option value="SMS">SMS Promo Broadcast</option> */}
                     {/* <option value="WHATSAPP">WhatsApp Automation</option> */}
                     <option value="SOCIAL_MEDIA">Social Media Ads</option>
+                    {/* <option value="LINKEDIN">LinkedIn Ads</option> */}
+                    <option value="GOOGLE_ADS">Google Ads</option>
                     {/* <option value="PPC">Paid Search (PPC)</option> */}
                     {/* <option value="CONTENT">Content Marketing</option> */}
                   </select>

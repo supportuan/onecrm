@@ -32,6 +32,7 @@ enum CampaignType {
   WHATSAPP
   SOCIAL_MEDIA
   PPC
+  GOOGLE_ADS
   CONTENT
 }
 
