@@ -3,6 +3,14 @@ import { UserRole } from '@prisma/client';
 import { hashPassword } from '../../utils/password.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
+import { updateRolePermissions } from '../rbac/rbac.service.js';
+import {
+  employeeSelfServiceModuleAccess,
+  employeeSelfServicePermissions,
+  inferSystemRole,
+  moduleAccessToPermissions,
+  slugifyRoleName,
+} from '../../utils/role-permissions.js';
 
 const allowedRoles = [
   UserRole.GLOBAL_ADMIN,
@@ -146,6 +154,8 @@ export const getUserById = async (id: number, tenantId: number | null = null) =>
       email: true,
       phone: true,
       role: true,
+      roleLabel: true,
+      permissionRole: true,
       tenantId: true,
       isActive: true,
       isApproved: true,
@@ -321,27 +331,22 @@ export const createUser = async (data: {
   email: string;
   phone?: string | null;
   password?: string;
-  role: UserRole;
+  role?: UserRole;
+  roleName?: string;
   agencyDetails?: any;
   moduleAccess?: any;
   tenantId?: number | null;
+  linkHrEmployeeId?: number;
 }) => {
   try {
-    if (!(allowedRoles as UserRole[]).includes(data.role)) {
+    const trimmedRoleName = data.roleName?.trim();
+    const systemRole = trimmedRoleName ? inferSystemRole(trimmedRoleName) : data.role;
+
+    if (!systemRole || !(allowedRoles as UserRole[]).includes(systemRole)) {
       throw new Error('Invalid role selected');
     }
 
     const normalizedEmail = data.email.trim().toLowerCase();
-
-    // const existingUser = await prisma.user.findUnique({
-    //   where: {
-    //     email: normalizedEmail,
-    //   },
-    // });
-
-    // if (existingUser) {
-    //   throw new Error('User with this email already exists');
-    // }
 
     const existingEmail = await prisma.user.findUnique({
       where: {
@@ -369,9 +374,12 @@ export const createUser = async (data: {
       data.password || Math.random().toString(36).slice(-8) + 'A@1';
 
     const passwordHash = await hashPassword(temporaryPassword);
-    const isApproved = data.role !== UserRole.AGENT;
+    const isApproved = systemRole !== UserRole.AGENT;
     const moduleAccess =
-      data.moduleAccess || getDefaultModuleAccessByRole(data.role);
+      data.moduleAccess || getDefaultModuleAccessByRole(systemRole);
+    const roleLabel = trimmedRoleName ?? null;
+    const permissionRole = trimmedRoleName ? slugifyRoleName(trimmedRoleName) : null;
+    const displayRole = roleLabel || systemRole;
 
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -381,7 +389,9 @@ export const createUser = async (data: {
           email: normalizedEmail,
           phone: data.phone || null,
           passwordHash,
-          role: data.role,
+          role: systemRole,
+          roleLabel,
+          permissionRole,
           isActive: true,
           isApproved,
           agencyDetails: data.agencyDetails || null,
@@ -389,7 +399,7 @@ export const createUser = async (data: {
         },
       });
 
-      if (data.role === UserRole.STUDENT) {
+      if (systemRole === UserRole.STUDENT) {
         await tx.lead.create({
           data: {
             fullName: user.fullName,
@@ -403,35 +413,57 @@ export const createUser = async (data: {
         });
       }
 
-      // Auto-provision an HrEmployee row for staff users so they can clock in
-      // without HR having to manually create the directory entry. Skipped for
-      // STUDENT/AGENT/AGENCY_FREELANCER (not in-house staff).
       const isStaffRole =
-        data.role === UserRole.GLOBAL_ADMIN ||
-        data.role === UserRole.HR ||
-        data.role === UserRole.COUNSELLOR ||
-        data.role === UserRole.MARKETING_MANAGER ||
-        data.role === UserRole.TELECALLER;
+        systemRole === UserRole.GLOBAL_ADMIN ||
+        systemRole === UserRole.HR ||
+        systemRole === UserRole.COUNSELLOR ||
+        systemRole === UserRole.MARKETING_MANAGER ||
+        systemRole === UserRole.TELECALLER;
 
-      if (isStaffRole && data.tenantId != null) {
-        // Composite-style code keeps it unique even though the column is
-        // currently globally @unique. Switch to per-tenant unique later.
-        const employeeCode = `EMP-T${data.tenantId}-U${user.id}`;
-        await tx.hrEmployee.create({
-          data: {
-            tenantId: data.tenantId,
-            userId: user.id,
-            name: user.fullName,
-            email: normalizedEmail,
-            employeeCode,
-            phone: user.phone,
-            accessRole: data.role === UserRole.GLOBAL_ADMIN || data.role === UserRole.HR ? 'HR_MANAGER' : 'EMPLOYEE',
-          },
+      if (data.linkHrEmployeeId) {
+        await tx.hrEmployee.update({
+          where: { id: data.linkHrEmployeeId },
+          data: { userId: user.id },
         });
+      } else if (isStaffRole && data.tenantId != null) {
+        const existingEmp = await tx.hrEmployee.findUnique({
+          where: { email: normalizedEmail },
+        });
+        if (existingEmp) {
+          await tx.hrEmployee.update({
+            where: { id: existingEmp.id },
+            data: { userId: user.id, name: user.fullName, phone: user.phone },
+          });
+        } else {
+          const employeeCode = `EMP-T${data.tenantId}-U${user.id}`;
+          await tx.hrEmployee.create({
+            data: {
+              tenantId: data.tenantId,
+              userId: user.id,
+              name: user.fullName,
+              email: normalizedEmail,
+              employeeCode,
+              phone: user.phone,
+              accessRole:
+                systemRole === UserRole.GLOBAL_ADMIN || systemRole === UserRole.HR
+                  ? 'HR_MANAGER'
+                  : 'EMPLOYEE',
+            },
+          });
+        }
       }
 
       return user;
     });
+
+    if (permissionRole && data.tenantId != null) {
+      const perms = moduleAccessToPermissions(moduleAccess);
+      await updateRolePermissions(
+        data.tenantId,
+        permissionRole,
+        perms.length ? perms : moduleAccessToPermissions(getDefaultModuleAccessByRole(systemRole))
+      );
+    }
 
     sendCampaignEmail({
       to: normalizedEmail,
@@ -440,11 +472,11 @@ export const createUser = async (data: {
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
           <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
             <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
-            <p style="color: #334155; font-size: 14px;">Your account has been created successfully with the role of <strong>${data.role}</strong>.</p>
+            <p style="color: #334155; font-size: 14px;">Your account has been created successfully with the role of <strong>${displayRole}</strong>.</p>
             <p style="color: #334155; font-size: 14px;">Here are your temporary login credentials:</p>
           <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
             <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Username (Email):</strong> ${data.email}</p>
-            <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Temporary Password:</strong> ${data.password}</p>
+            <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Temporary Password:</strong> ${temporaryPassword}</p>
           </div>
             <p style="color: #64748b; font-size: 13px;">Please note that you will be prompted to change this temporary password upon your first login for security reasons.</p>
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
@@ -466,7 +498,7 @@ export const createUser = async (data: {
         templateKey: 'welcome.user',
         vars: {
           name: result.fullName,
-          role: result.role,
+          role: displayRole,
         },
       });
     }
@@ -540,6 +572,7 @@ export const updateUser = async (
     email?: string;
     phone?: string | null;
     role?: UserRole;
+    roleName?: string;
     isActive?: boolean;
     isApproved?: boolean;
     counsellorId?: number | null;
@@ -547,8 +580,6 @@ export const updateUser = async (
   },
   tenantId: number | null = null,
 ) => {
-  // When called by a tenant ADMIN we verify the row belongs to their tenant.
-  // SUPER_ADMIN passes tenantId=null and skips the check.
   if (tenantId != null) {
     const existing = await prisma.user.findFirst({ where: { id, tenantId } });
     if (!existing) throw new Error('User not found');
@@ -558,10 +589,20 @@ export const updateUser = async (
     ? await prisma.user.findUnique({ where: { id } })
     : null;
 
+  const trimmedRoleName = data.roleName?.trim();
+  const patch: Record<string, unknown> = { ...data };
+  delete patch.roleName;
+
+  if (trimmedRoleName) {
+    patch.role = inferSystemRole(trimmedRoleName);
+    patch.roleLabel = trimmedRoleName;
+    patch.permissionRole = slugifyRoleName(trimmedRoleName);
+  }
+
   const updated = await prisma.$transaction(async (tx) => {
     const user = await tx.user.update({
       where: { id },
-      data,
+      data: patch,
     });
 
     if (data.counsellorId !== undefined && user.role === UserRole.STUDENT) {
@@ -578,11 +619,18 @@ export const updateUser = async (
     return user;
   });
 
+  if (updated.permissionRole && updated.tenantId != null && data.moduleAccess) {
+    const perms = moduleAccessToPermissions(data.moduleAccess);
+    if (perms.length) {
+      await updateRolePermissions(updated.tenantId, updated.permissionRole, perms);
+    }
+  }
+
   if (existing && data.isApproved === true && !existing.isApproved) {
     await safeNotify({
       recipientId: id,
       templateKey: 'welcome.user',
-      vars: { name: updated.fullName, role: updated.role },
+      vars: { name: updated.fullName, role: updated.roleLabel || updated.role },
     });
   }
 

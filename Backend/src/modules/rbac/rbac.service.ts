@@ -23,14 +23,23 @@ const allPermissionsFor = (): Record<string, string[]> => {
   return map;
 };
 
-/** Seed the default role rows for a tenant. Called from createTenant. */
+/** Seed the default role rows for a tenant. Called from createTenant.
+ *  Existing rows with a non-empty permissions array are preserved (admin may
+ *  have customized them); rows that are empty get refilled with defaults so
+ *  a stale or partially-migrated row doesn't lock users out forever. */
 export const seedTenantDefaults = async (tenantId: number): Promise<void> => {
   for (const [role, permissions] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
-    await prisma.rolePermission.upsert({
+    const existing = await prisma.rolePermission.findUnique({
       where: { tenantId_role: { tenantId, role } },
-      create: { tenantId, role, permissions },
-      update: {},
     });
+    if (!existing) {
+      await prisma.rolePermission.create({ data: { tenantId, role, permissions } });
+    } else if (!existing.permissions || existing.permissions.length === 0) {
+      await prisma.rolePermission.update({
+        where: { tenantId_role: { tenantId, role } },
+        data: { permissions },
+      });
+    }
   }
   cache.delete(tenantId);
 };
@@ -43,10 +52,11 @@ export const loadPermissions = async (
   const map: Record<string, string[]> = {};
   for (const row of rows) map[row.role] = row.permissions;
 
-  // Fallback: roles missing from the DB inherit the static defaults so a
-  // newly added role (in code) doesn't 403 every user until reseeded.
+  // Fallback: roles missing OR with an empty permissions array inherit the
+  // static defaults. The "empty array" branch catches stale rows from the
+  // ADMIN -> GLOBAL_ADMIN rename or partial seeds.
   for (const [role, perms] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
-    if (!map[role]) map[role] = perms;
+    if (!map[role] || map[role].length === 0) map[role] = perms;
   }
 
   cache.set(tenantId, map);
@@ -114,11 +124,18 @@ export const invalidateTenant = (tenantId: number): void => {
   cache.delete(tenantId);
 };
 
-// Boot-time hook: backfill defaults on the default tenant so the existing
-// app keeps working without manual seed steps.
+// Boot-time hook: backfill defaults on every tenant so stale or partially
+// migrated rows are healed. seedTenantDefaults preserves customized non-empty
+// rows; only empty/missing rows are filled.
 export const ensureDefaultTenantSeeded = async (): Promise<void> => {
-  const tenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
-  if (tenant) await seedTenantDefaults(tenant.id);
+  const tenants = await prisma.tenant.findMany({ select: { id: true } });
+  for (const t of tenants) {
+    try {
+      await seedTenantDefaults(t.id);
+    } catch (err) {
+      console.error(`[rbac] failed to seed defaults for tenant ${t.id}`, err);
+    }
+  }
 };
 
 // Static fallback used when no tenant context exists (scripts, etc.)

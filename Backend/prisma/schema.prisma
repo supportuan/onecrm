@@ -566,9 +566,12 @@ model User {
   phone              String?
   passwordHash       String
   role               UserRole
+  roleLabel          String?
+  permissionRole     String?
   isActive           Boolean        @default(true)
   isApproved         Boolean        @default(true)
   mustChangePassword Boolean        @default(false)
+  policyAcceptedAt DateTime?
   agencyDetails      Json?
   moduleAccess       Json?
   counsellorId       Int?
@@ -1660,19 +1663,9 @@ model CampaignLaunchLog {
   launchedAt  DateTime @default(now())
   status      String
   details     Json?
+  createdAt   DateTime @default(now())
 
   campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-}
-
-// Append-only log of marketing campaign launches (referenced by
-// modules/marketing/services/campaignLaunch.service.ts). Free-form payload.
-model CampaignLaunchLog {
-  id          Int      @id @default(autoincrement())
-  campaignId  Int
-  launchedBy  Int?
-  status      String
-  details     Json?
-  createdAt   DateTime @default(now())
 
   @@index([campaignId])
   @@index([createdAt])

@@ -16,7 +16,7 @@ import {
   Trash2,
   Wifi,
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores/authStore';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import {
   getMyAttendance,
@@ -75,7 +75,7 @@ const statusStyle = (status) => {
 };
 
 export default function Attendance() {
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { can } = usePermissions();
   const canManage = can(['MANAGE_ATTENDANCE', 'MANAGE_BIOMETRICS']);
 
@@ -206,7 +206,6 @@ export default function Attendance() {
     setClockBusy(true);
     try {
       const res = await submitRemoteClockIn({
-        employeeId: user?.email,
         isCheckOut,
       });
       if (res?.success) {
@@ -283,11 +282,6 @@ export default function Attendance() {
       )}
 
       <div className="ui-container">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Attendance</h1>
-          <p className="text-sm text-neutral-500 mt-1">Clock in and out, track your hours, and request corrections.</p>
-        </div>
-
         <div className="flex flex-wrap gap-1 bg-white border border-neutral-200 rounded-lg p-1 w-fit">
           {TABS.map((tab) => {
             const Icon = tab.icon;

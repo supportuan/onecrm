@@ -264,6 +264,31 @@ export const getLeaveTypes = async () => {
   return handleResponse(res);
 };
 
+export const createLeaveType = async (data) => {
+  const res = await tenantFetch(`${API_URL}/leave/types`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateLeaveType = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/leave/types/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const deleteLeaveType = async (id) => {
+  const res = await tenantFetch(`${API_URL}/leave/types/${id}`, {
+    method: "DELETE",
+  });
+  return handleResponse(res);
+};
+
 export const getLeaveDefinitions = async (planId) => {
   const res = await tenantFetch(`${API_URL}/leave/plans/${planId}/definitions`);
   return handleResponse(res);

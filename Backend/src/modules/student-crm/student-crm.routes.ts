@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticateToken } from '../../middleware/authenticate.js';
 import { requirePermission } from '../rbac/rbac.middleware.js';
 import * as controller from './student-crm.controller.js';
@@ -7,16 +7,25 @@ const router = Router();
 
 router.use(authenticateToken);
 
-// All read endpoints — VIEW_STUDENT_CRM (or MANAGE_STUDENT_CRM which is a stronger permission).
 const view = requirePermission('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM');
 const manage = requirePermission('MANAGE_STUDENT_CRM');
+
+/** Students may access their own portal endpoints without staff CRM permissions */
+const studentSelfOr =
+  (...perms: string[]) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.user?.role === 'STUDENT') return next();
+    return requirePermission(...perms)(req, res, next);
+  };
 
 // Statistics
 router.get('/statistics', view, controller.getStatistics);
 
-// Students
-router.get('/students/me', view, controller.getMyStudent);
-router.put('/students/me', manage, controller.updateMyStudent);
+// Students — self-service portal
+router.get('/students/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getMyStudent);
+router.put('/students/me', studentSelfOr('MANAGE_STUDENT_CRM'), controller.updateMyStudent);
+router.get('/applications/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.listMyApplications);
+router.get('/form-options', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getFormOptions);
 router.get('/students', view, controller.listStudents);
 router.get('/students/:id', view, controller.getStudent);
 router.post('/students', manage, controller.createStudent);

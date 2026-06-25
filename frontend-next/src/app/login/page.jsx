@@ -156,7 +156,7 @@ export default function LoginPage() {
       } else if (role === 'AGENT' || role === 'AGENCY_FREELANCER') {
         targetRoute = '/student-crm/applications';
       } else if (role === 'STUDENT') {
-        targetRoute = '/student-crm/applications';
+        targetRoute = '/applicant/profile/view';
       }
 
       if (data.isFirstLogin) {

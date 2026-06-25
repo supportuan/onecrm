@@ -92,8 +92,11 @@ export const listCounsellors = async () => handleResponse(await tenantFetch('/ap
 export const getStatistics = async () => handleResponse(await tenantFetch(`${API_URL}/statistics`));
 
 export const getMyStudent = async () => handleResponse(await tenantFetch(`${API_URL}/students/me`));
+export const getFormOptions = async () => handleResponse(await tenantFetch(`${API_URL}/form-options`));
 export const updateMyStudent = async (payload) =>
   handleResponse(await tenantFetch(`${API_URL}/students/me`, putJson(payload)));
+export const listMyApplications = async () =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/me`));
 
 export const patchStudentStatus = async (id, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/students/${id}/status`, { method: 'PATCH', ...json(payload) }));

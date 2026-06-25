@@ -5,6 +5,7 @@ interface JWTPayload {
     email: string;
     role: string;
     tenantId: number | null;
+    permissionRole?: string | null;
 }
 
 export const generateAccessToken = (payload: JWTPayload): string => {

@@ -166,6 +166,8 @@ router.get('/me', authenticateToken, authController.me);
  *         description: Password changed successfully
  */
 router.post('/change-password', authenticateToken, authController.changePassword);
+router.post('/update-password', authenticateToken, authController.changePassword);
+router.post('/accept-policy', authenticateToken, authController.acceptPolicy);
 
 /**
  * @swagger

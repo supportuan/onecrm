@@ -148,6 +148,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       refreshAuthToken,
       syncProfile,
+      saveSession,
     }),
     [user, accessToken, refreshToken, loading]
   );

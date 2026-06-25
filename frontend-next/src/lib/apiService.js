@@ -19,10 +19,10 @@ async function jsonRequest(url, init = {}) {
   return body;
 }
 
-export async function login({ email, password }) {
+export async function login({ email, password, type }) {
   return jsonRequest(`${AUTH_API_BASE}/login`, {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, ...(type ? { type } : {}) }),
   });
 }
 

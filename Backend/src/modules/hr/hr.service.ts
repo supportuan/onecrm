@@ -2,7 +2,10 @@
 export interface Employee {
   id: string;
   name: string;
+  first_name: string;
+  last_name: string;
   employeeId: string;
+  employee_id: string;
   email: string;
   access_role: string;
   department?: string | null;
@@ -55,6 +58,7 @@ export interface Regularization {
 export interface LeavePlan {
   id: string;
   name: string;
+  cycle: string;
   description?: string;
 }
 
@@ -71,6 +75,20 @@ export interface LeaveDefinition {
   name: string;
   annual_quota: number;
   carry_forward: boolean;
+  // Display fields surfaced from the joined HrLeaveType row.
+  type_code: string;
+  type_name: string;
+  leave_type_code: string;
+  leave_type_name: string;
+  // Frontend-only metadata (not currently persisted; safe defaults).
+  is_unlimited: boolean;
+  accrual_type: string;
+  accrual_rate: number;
+  year_end_policy: string;
+  carry_forward_max: number;
+  min_days_per_request: number;
+  max_days_per_request: number;
+  gender_restriction: string;
 }
 
 export interface Holiday {
@@ -296,6 +314,9 @@ export {
   getLeavePlans,
   createLeavePlan,
   getLeaveTypes,
+  createLeaveType,
+  updateLeaveType,
+  deleteLeaveType,
   getLeaveDefinitions,
   addLeaveDefinition,
   deleteLeaveDefinition,

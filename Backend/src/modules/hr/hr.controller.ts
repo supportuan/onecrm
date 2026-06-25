@@ -9,6 +9,8 @@ import {
   processRegularizationSchema,
   createLeavePlanSchema,
   createLeaveDefinitionSchema,
+  createLeaveTypeSchema,
+  updateLeaveTypeSchema,
   assignLeaveEmployeesSchema,
   createHolidaySchema,
   executePayrollSchema,
@@ -216,12 +218,9 @@ export const processBiometricLogs = async (req: Request, res: Response, next: Ne
 
 export const submitRemoteClockIn = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user?.id) return sendError(res, 'Unauthorized', null, 401);
     const { ip, coordinates, isCheckOut } = req.body;
-    const employeeId = req.body.employeeId || req.user?.email;
-    if (!employeeId) {
-      return sendError(res, 'Unauthorized', null, 401);
-    }
-    const data = await hrService.submitRemoteClockIn(employeeId, {
+    const data = await hrService.submitRemoteClockIn(req.user.id, req.user.email, {
       ip: ip || req.ip || '0.0.0.0',
       coordinates,
       isCheckOut: Boolean(isCheckOut),
@@ -234,10 +233,10 @@ export const submitRemoteClockIn = async (req: Request, res: Response, next: Nex
 
 export const getMyAttendanceProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user?.email) return sendError(res, 'Unauthorized', null, 401);
+    if (!req.user?.id) return sendError(res, 'Unauthorized', null, 401);
     const month = req.query.month ? parseInt(req.query.month as string, 10) : undefined;
     const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
-    const data = await hrService.getMyAttendance(req.user.email, month, year);
+    const data = await hrService.getMyAttendance(req.user.id, req.user.email, month, year);
     return sendSuccess(res, 'My attendance retrieved', data);
   } catch (error) {
     next(error);
@@ -318,9 +317,52 @@ export const createLeavePlan = async (req: Request, res: Response, next: NextFun
 
 export const getLeaveTypes = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await hrService.getLeaveTypes();
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const data = await hrService.getLeaveTypes(tenantId);
     return sendSuccess(res, 'Leave types retrieved successfully', data);
   } catch (error) {
+    next(error);
+  }
+};
+
+export const createLeaveType = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const validated = createLeaveTypeSchema.parse(req.body);
+    const data = await hrService.createLeaveType(tenantId, validated);
+    return sendSuccess(res, 'Leave category created successfully', data, 201);
+  } catch (error: any) {
+    if (error?.message?.includes('already exists')) {
+      return sendError(res, error.message, null, 409);
+    }
+    next(error);
+  }
+};
+
+export const updateLeaveType = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const validated = updateLeaveTypeSchema.parse(req.body);
+    const data = await hrService.updateLeaveType(tenantId, req.params.id as string, validated);
+    return sendSuccess(res, 'Leave category updated successfully', data);
+  } catch (error: any) {
+    if (error?.message?.includes('not found')) return sendError(res, error.message, null, 404);
+    if (error?.message?.includes('already exists')) return sendError(res, error.message, null, 409);
+    next(error);
+  }
+};
+
+export const deleteLeaveType = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const result = await hrService.deleteLeaveType(tenantId, req.params.id as string);
+    return sendSuccess(res, 'Leave category deleted successfully', result);
+  } catch (error: any) {
+    if (error?.message?.includes('not found')) return sendError(res, error.message, null, 404);
+    if (error?.message?.includes('in use')) return sendError(res, error.message, null, 409);
     next(error);
   }
 };
@@ -921,8 +963,8 @@ export const getDashboardSummary = async (_req: Request, res: Response, next: Ne
 
 export const getHrMeProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user?.email) return sendError(res, 'Unauthorized', null, 401);
-    const data = await hrService.getHrMe(req.user.email);
+    if (!req.user?.id) return sendError(res, 'Unauthorized', null, 401);
+    const data = await hrService.getHrMe(req.user.id, req.user.email);
     return sendSuccess(res, 'HR self-service profile', data);
   } catch (error) {
     next(error);

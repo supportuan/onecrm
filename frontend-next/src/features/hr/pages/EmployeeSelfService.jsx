@@ -14,14 +14,14 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores/authStore';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { getHrMe, submitRemoteClockIn } from '@/services/hrApi';
 import { sentenceCase } from '@/lib/text';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function EmployeeSelfService() {
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [clockBusy, setClockBusy] = useState(false);
@@ -60,7 +60,6 @@ export default function EmployeeSelfService() {
     setClockBusy(true);
     try {
       const res = await submitRemoteClockIn({
-        employeeId: user?.email,
         ip: '0.0.0.0',
         coordinates: '',
         isCheckOut,
@@ -99,13 +98,9 @@ export default function EmployeeSelfService() {
       )}
 
       <div className="ui-container">
-        <div>
-          <p className="text-[10px] font-semibold text-neutral-500 tracking-wide">My HR</p>
-          <h1 className="text-2xl font-semibold text-neutral-900 mt-1">
-            Hello, {emp?.name || user?.fullName || user?.name || 'there'}
-          </h1>
-          <p className="text-sm text-neutral-500 mt-1">Attendance, leave, and payslips in one place.</p>
-        </div>
+        <p className="text-[13px] text-neutral-500 tracking-tight">
+          Hello, {emp?.name || user?.fullName || user?.name || 'there'} — attendance, leave, and payslips in one place.
+        </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Clock */}

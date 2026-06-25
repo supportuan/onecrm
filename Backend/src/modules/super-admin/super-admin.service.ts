@@ -80,7 +80,7 @@ export const createTenant = async (input: CreateTenantInput) => {
 
 // Minimum data a fresh HR tenant needs before screens stop being empty.
 // Holidays are intentionally skipped — every org has its own calendar.
-const seedHrDefaults = async (tenantId: number) => {
+export const seedHrDefaults = async (tenantId: number) => {
   // 1. Attendance setting row
   await prisma.hrAttendanceSetting.upsert({
     where: { tenantId },

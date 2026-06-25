@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { sendError, sendSuccess } from '../../utils/response.js';
 import * as service from './student-crm.service.js';
 import { getDefaultChecklist } from './checklists.js';
+import { getFormOptions as loadFormOptions } from '../crm-settings/crm-settings.service.js';
 
 const numId = (raw: any) => {
   const n = Number(raw);
@@ -83,12 +84,30 @@ export const updateStudent = async (req: Request, res: Response, next: NextFunct
 export const updateMyStudent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
-    const profile = await service.getStudentByUserId(req.user.id);
-    if (!profile) return sendError(res, 'student profile not found', null, 404);
-    const updated = await service.updateStudent(profile.id, req.body || {}, actor(req));
+    const updated = await service.updateMyStudentProfile(req.user.id, req.body || {});
     return sendSuccess(res, 'profile updated', updated);
   } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     if (err?.message?.includes('enrolled')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const listMyApplications = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
+    const items = await service.listMyApplications(req.user.id);
+    return sendSuccess(res, 'my applications', items);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getFormOptions = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await loadFormOptions();
+    return sendSuccess(res, 'form options', data);
+  } catch (err) {
     next(err);
   }
 };

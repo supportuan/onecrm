@@ -75,18 +75,49 @@ export const resolveEmployeeId = async (id: string): Promise<HrEmployee | null> 
   });
 };
 
-const mapEmployee = (e: HrEmployee): Employee => ({
-  id: sid(e.id),
-  name: e.name,
-  employeeId: e.employeeCode,
-  email: e.email,
-  access_role: e.accessRole,
-  department: e.department,
-  designation: e.designation,
-  phone: e.phone,
-  biometricId: e.biometricId,
-  location: e.location,
-});
+/** Match the logged-in user to their HR employee row (userId link, then email). */
+export const resolveEmployeeForUser = async (
+  userId: number,
+  email?: string | null
+): Promise<HrEmployee | null> => {
+  const byUser = await prisma.hrEmployee.findFirst({ where: { userId } });
+  if (byUser) return byUser;
+  if (email) {
+    return prisma.hrEmployee.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+    });
+  }
+  return null;
+};
+
+const todayDateString = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: process.env.HR_TIMEZONE || 'Asia/Kolkata' }).format(
+    new Date()
+  );
+
+const mapEmployee = (e: HrEmployee): Employee => {
+  // Split a stored full name into first/last for legacy frontend code that
+  // still expects emp.first_name / emp.last_name.
+  const trimmed = (e.name ?? '').trim();
+  const spaceIdx = trimmed.indexOf(' ');
+  const first_name = spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
+  const last_name = spaceIdx === -1 ? '' : trimmed.slice(spaceIdx + 1);
+  return {
+    id: sid(e.id),
+    name: e.name,
+    first_name,
+    last_name,
+    employeeId: e.employeeCode,
+    employee_id: e.employeeCode,
+    email: e.email,
+    access_role: e.accessRole,
+    department: e.department,
+    designation: e.designation,
+    phone: e.phone,
+    biometricId: e.biometricId,
+    location: e.location,
+  };
+};
 
 const mapDevice = (d: HrAttendanceDevice): Device => ({
   id: sid(d.id),
@@ -131,6 +162,7 @@ const mapRegularization = (r: HrRegularization): Regularization => ({
 const mapLeavePlan = (p: HrLeavePlan): LeavePlan => ({
   id: sid(p.id),
   name: p.name,
+  cycle: 'Apr - Mar',
   description: p.description ?? undefined,
 });
 
@@ -140,13 +172,29 @@ const mapLeaveType = (t: HrLeaveType): LeaveType => ({
   code: t.code,
 });
 
-const mapLeaveDefinition = (d: HrLeaveDefinition): LeaveDefinition => ({
+const mapLeaveDefinition = (
+  d: HrLeaveDefinition & { leaveType?: { code: string; name: string } | null },
+): LeaveDefinition => ({
   id: sid(d.id),
   plan_id: sid(d.planId),
   leave_type_id: sid(d.leaveTypeId),
   name: d.name,
   annual_quota: d.annualQuota,
   carry_forward: d.carryForward,
+  // Extra fields the LeaveManagement page expects. Derived from the joined
+  // HrLeaveType row; safe defaults so the UI never renders undefined.
+  type_code: d.leaveType?.code ?? '',
+  type_name: d.leaveType?.name ?? d.name,
+  leave_type_code: d.leaveType?.code ?? '',
+  leave_type_name: d.leaveType?.name ?? d.name,
+  is_unlimited: false,
+  accrual_type: 'monthly',
+  accrual_rate: 1,
+  year_end_policy: d.carryForward ? 'carry_forward' : 'lapse',
+  carry_forward_max: d.carryForward ? d.annualQuota : 0,
+  min_days_per_request: 0.5,
+  max_days_per_request: d.annualQuota,
+  gender_restriction: 'all',
 });
 
 const mapHoliday = (h: HrHoliday): Holiday => ({
@@ -574,13 +622,14 @@ export const processBiometricLogs = async () => {
 };
 
 export const submitRemoteClockIn = async (
-  employeeId: string,
+  userId: number,
+  userEmail: string | null | undefined,
   data: { ip: string; coordinates?: string; isCheckOut?: boolean }
 ) => {
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = todayDateString();
   const now = new Date();
 
-  const emp = await resolveEmployeeId(employeeId);
+  const emp = await resolveEmployeeForUser(userId, userEmail);
   if (!emp) {
     throw new Error('Employee profile not found. Ask HR to link your account to the employee directory.');
   }
@@ -633,15 +682,16 @@ export const submitRemoteClockIn = async (
 };
 
 export const getMyAttendance = async (
-  userEmail: string,
+  userId: number,
+  userEmail: string | null | undefined,
   month?: number,
   year?: number
 ) => {
-  const employee = await prisma.hrEmployee.findFirst({ where: { email: userEmail } });
+  const employee = await resolveEmployeeForUser(userId, userEmail);
 
   const m = month ?? new Date().getMonth() + 1;
   const y = year ?? new Date().getFullYear();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayDateString();
   const monthPrefix = `${y}-${String(m).padStart(2, '0')}`;
 
   if (!employee) {
@@ -828,9 +878,72 @@ export const createLeavePlan = async (plan: { name: string; description?: string
   return mapLeavePlan(newPlan);
 };
 
-export const getLeaveTypes = async () => {
-  const rows = await prisma.hrLeaveType.findMany({ orderBy: { id: 'asc' } });
+export const getLeaveTypes = async (tenantId?: number | null) => {
+  const where =
+    tenantId == null
+      ? {}
+      : { OR: [{ tenantId }, { tenantId: null }] };
+  const rows = await prisma.hrLeaveType.findMany({ where, orderBy: { id: 'asc' } });
   return rows.map(mapLeaveType);
+};
+
+export const createLeaveType = async (
+  tenantId: number,
+  data: { name: string; code: string },
+) => {
+  const code = data.code.trim().toUpperCase();
+  const existing = await prisma.hrLeaveType.findFirst({
+    where: { tenantId, code },
+  });
+  if (existing) throw new Error(`Category code "${code}" already exists`);
+  const row = await prisma.hrLeaveType.create({
+    data: { tenantId, name: data.name.trim(), code },
+  });
+  return mapLeaveType(row);
+};
+
+export const updateLeaveType = async (
+  tenantId: number,
+  id: string,
+  data: { name?: string; code?: string },
+) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Leave category not found');
+  const existing = await prisma.hrLeaveType.findFirst({
+    where: { id: numericId, tenantId },
+  });
+  if (!existing) throw new Error('Leave category not found');
+  const patch: { name?: string; code?: string } = {};
+  if (data.name != null) patch.name = data.name.trim();
+  if (data.code != null) {
+    const code = data.code.trim().toUpperCase();
+    if (code !== existing.code) {
+      const dup = await prisma.hrLeaveType.findFirst({
+        where: { tenantId, code, NOT: { id: numericId } },
+      });
+      if (dup) throw new Error(`Category code "${code}" already exists`);
+    }
+    patch.code = code;
+  }
+  const row = await prisma.hrLeaveType.update({ where: { id: numericId }, data: patch });
+  return mapLeaveType(row);
+};
+
+export const deleteLeaveType = async (tenantId: number, id: string) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Leave category not found');
+  const existing = await prisma.hrLeaveType.findFirst({
+    where: { id: numericId, tenantId },
+  });
+  if (!existing) throw new Error('Leave category not found');
+  const inUse = await prisma.hrLeaveDefinition.count({
+    where: { leaveTypeId: numericId },
+  });
+  if (inUse > 0) {
+    throw new Error('Category is in use by an entitlement plan; remove definitions first');
+  }
+  await prisma.hrLeaveType.delete({ where: { id: numericId } });
+  return { id };
 };
 
 export const getLeaveDefinitions = async (planId: string) => {
@@ -838,6 +951,7 @@ export const getLeaveDefinitions = async (planId: string) => {
   if (numericPlanId === null) return [];
   const rows = await prisma.hrLeaveDefinition.findMany({
     where: { planId: numericPlanId },
+    include: { leaveType: { select: { code: true, name: true } } },
     orderBy: { id: 'asc' },
   });
   return rows.map(mapLeaveDefinition);
@@ -868,14 +982,15 @@ export const addLeaveDefinition = async (
       planId: numericPlanId,
       leaveTypeId: lt.id,
       name: lt.name,
-      annualQuota: data.annual_quota || 10,
-      carryForward: data.carry_forward || false,
+      annualQuota: data.annual_quota ?? 10,
+      carryForward: data.carry_forward ?? false,
     },
     update: {
       name: lt.name,
-      annualQuota: data.annual_quota || 10,
-      carryForward: data.carry_forward || false,
+      annualQuota: data.annual_quota ?? 10,
+      carryForward: data.carry_forward ?? false,
     },
+    include: { leaveType: { select: { code: true, name: true } } },
   });
   return mapLeaveDefinition(def);
 };
@@ -1837,8 +1952,8 @@ export const cancelLeaveRequest = async (id: string, userEmail: string) => {
 // HR dashboard summary
 // ---------------------------------------------------------------------------
 
-export const getHrMe = async (userEmail: string) => {
-  const employee = await prisma.hrEmployee.findFirst({ where: { email: userEmail } });
+export const getHrMe = async (userId: number, userEmail: string | null | undefined) => {
+  const employee = await resolveEmployeeForUser(userId, userEmail);
 
   if (!employee) {
     return {
@@ -1851,7 +1966,7 @@ export const getHrMe = async (userEmail: string) => {
     };
   }
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayDateString();
   const yearStart = `${new Date().getFullYear()}-01-01`;
 
   const [planAssignment, leaveRequests, payslips, pendingRegs, todayRecord] = await Promise.all([

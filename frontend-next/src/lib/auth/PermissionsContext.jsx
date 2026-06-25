@@ -91,7 +91,8 @@ export const PermissionsProvider = ({ children }) => {
   const can = useCallback(
     (permission) => {
       if (!user?.role) return false;
-      return hasAnyPermission(user.role, permission, permissionMap);
+      const effectiveRole = user.permissionRole || user.role;
+      return hasAnyPermission(effectiveRole, permission, permissionMap);
     },
     [user, permissionMap]
   );

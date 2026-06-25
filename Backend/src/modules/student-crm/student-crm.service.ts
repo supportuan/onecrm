@@ -4,6 +4,8 @@ import { prisma } from '../../prisma.js';
 import { hashPassword } from '../../utils/password.js';
 import { getDefaultChecklist, type ChecklistItem } from './checklists.js';
 import { safeNotify } from '../notifications/recipients.js';
+import { getDefaultTenantId } from '../../utils/tenant-default.js';
+import { sendCampaignEmail } from '../marketing/services/email.service.js';
 import { applicationScopeWhere, studentScopeWhere } from './scoping.js';
 import { computeProcessProgress } from './stage-engine.js';
 
@@ -156,6 +158,27 @@ export const updateStudent = async (id: number, data: Record<string, any>, actor
     await seedStudentChecklists(id, data.countryId);
   }
   return getStudent(id, actor);
+};
+
+/** Student self-service update — bypasses counsellor scope */
+export const updateMyStudentProfile = async (userId: number, data: Record<string, any>) => {
+  const current = await getStudentByUserId(userId);
+  if (!current) throw new Error('student profile not found');
+  return updateStudent(current.id, data);
+};
+
+export const listMyApplications = async (userId: number) => {
+  const student = await getStudentByUserId(userId);
+  if (!student) return [];
+  return prisma.application.findMany({
+    where: { studentId: student.id },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      documents: true,
+      offerLetter: true,
+      visaTracking: true,
+    },
+  });
 };
 
 export const setStudentEnrolled = async (id: number, isEnrolled: boolean, actor?: Actor) => {
@@ -820,6 +843,7 @@ export const promoteLeadToStudent = async (
   if (!user) {
     tempPassword = opts.password || crypto.randomBytes(9).toString('base64').slice(0, 12);
     const passwordHash = await hashPassword(tempPassword);
+    const tenantId = await getDefaultTenantId(assignedToId ?? actingUserId ?? null);
     user = await prisma.user.create({
       data: {
         fullName: lead.fullName,
@@ -827,10 +851,32 @@ export const promoteLeadToStudent = async (
         phone: lead.phone,
         passwordHash,
         role: UserRole.STUDENT,
+        tenantId,
         isActive: true,
         isApproved: true,
+        mustChangePassword: true,
       },
     });
+
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/student-login`;
+    sendCampaignEmail({
+      to: lead.email,
+      subject: 'Your ApplyUniNow student account',
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:20px;">
+          <h2>Welcome, ${lead.fullName}</h2>
+          <p>Your student account has been created. Log in at <a href="${loginUrl}">${loginUrl}</a></p>
+          <p><strong>Email:</strong> ${lead.email}</p>
+          <p><strong>Temporary password:</strong> ${tempPassword}</p>
+          <p>You will be asked to set a new password on first login.</p>
+        </div>
+      `,
+    }).catch((err) => console.error('[Student welcome email]', err));
+  } else if (!user.tenantId) {
+    const tenantId = await getDefaultTenantId(assignedToId ?? actingUserId ?? null);
+    if (tenantId) {
+      user = await prisma.user.update({ where: { id: user.id }, data: { tenantId } });
+    }
   }
 
   let student = await prisma.student.findUnique({ where: { email: lead.email } });

@@ -13,13 +13,15 @@ const Layout = ({ children }) => {
   const publicRoutes = [
     '/',
     '/login',
+    '/student-login',
     '/register',
     '/forgot-password',
     '/reset-password',
     '/change-password',
   ];
 
-  const isPublicPage = publicRoutes.includes(pathname);
+  const isApplicantPortal = pathname?.startsWith('/applicant');
+  const isPublicPage = publicRoutes.includes(pathname) || isApplicantPortal;
 
   if (isPublicPage) {
     return (

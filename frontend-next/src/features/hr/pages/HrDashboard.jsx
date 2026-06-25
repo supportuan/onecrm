@@ -21,9 +21,10 @@ import {
   MapPin,
   Wifi,
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores/authStore';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { hasPermission } from '@/lib/auth/rbac';
 import {
+  getMyAttendance,
   submitRemoteClockIn,
   getAttendanceEvents,
   getHrDashboardSummary,
@@ -41,7 +42,7 @@ const QUICK_LINKS = [
 
 export default function HrDashboard() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const role = user?.role;
 
   const can = (perm) => hasPermission(role, perm);
@@ -71,25 +72,19 @@ export default function HrDashboard() {
     setTimeout(() => setToast({ kind: '', msg: '' }), 3000);
   };
 
-  // Load my latest attendance event so the widget shows correct state
+  // Load today's clock state for the signed-in user
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await getAttendanceEvents();
-        if (!mounted) return;
-        if (res?.success && Array.isArray(res.data)) {
-          const todayStr = new Date().toISOString().split('T')[0];
-          const mine = res.data
-            .filter((e) => (e.employeeId || e.email) === user?.email)
-            .sort((a, b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0));
-          const latest = mine[0] || null;
-          const isToday = latest && (latest.timestamp || latest.createdAt || '').startsWith(todayStr);
-          const status = isToday ? (latest.eventType === 'CHECK_OUT' || latest.isCheckOut ? 'clocked_out' : 'clocked_in') : 'not_clocked_in';
-          setClockState({ status, lastEvent: latest });
-          const todayCount = res.data.filter((e) => (e.timestamp || e.createdAt || '').startsWith(todayStr)).length;
-          setKpi((k) => ({ ...k, todayClockIns: todayCount }));
-        }
+        const res = await getMyAttendance();
+        if (!mounted || !res?.success) return;
+        const state = res.data?.clockState || 'not_clocked_in';
+        const today = res.data?.today;
+        setClockState({
+          status: state,
+          lastEvent: today?.checkIn ? { checkIn: today.checkIn, checkOut: today.checkOut } : null,
+        });
       } catch (_) {
         // backend may be down; widget still works for clock-in attempts
       }
@@ -97,7 +92,7 @@ export default function HrDashboard() {
     return () => {
       mounted = false;
     };
-  }, [user?.email]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!can('VIEW_HR')) return;
@@ -129,13 +124,17 @@ export default function HrDashboard() {
     setClockBusy(true);
     try {
       const res = await submitRemoteClockIn({
-        employeeId: user?.email,
         ip: '0.0.0.0',
         coordinates: '',
         isCheckOut,
       });
       if (res?.success) {
-        setClockState({ status: isCheckOut ? 'clocked_out' : 'clocked_in', lastEvent: res.data });
+        const refresh = await getMyAttendance();
+        const state = refresh?.data?.clockState || (isCheckOut ? 'clocked_out' : 'clocked_in');
+        setClockState({
+          status: state,
+          lastEvent: refresh?.data?.today || res.data,
+        });
         showToast('ok', isCheckOut ? 'Clocked out successfully' : 'clocked in successfully');
       } else {
         showToast('err', res?.error || 'clock-in failed');
@@ -167,11 +166,19 @@ export default function HrDashboard() {
   const showKpiRow = can('VIEW_HR');
   const showApprovals = can('MANAGE_LEAVE') || can('MANAGE_ATTENDANCE');
 
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  })();
+  const firstName = (user?.name || user?.fullName || '').split(' ')[0];
+
   return (
-    <div className="ui-page text-neutral-800 font-sans">
+    <div className="text-neutral-900">
       {toast.msg && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 text-xs font-semibold text-white ${
+          className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-[13px] font-medium text-white ${
             toast.kind === 'ok' ? 'bg-emerald-500' : 'bg-rose-500'
           }`}
         >
@@ -180,113 +187,125 @@ export default function HrDashboard() {
         </div>
       )}
 
-      <div className="ui-container">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">HR dashboard</h1>
-            <p className="text-neutral-500 text-sm mt-1">
-              Welcome back, {user?.name || 'team member'} — manage attendance, recruitment, and people operations.
-            </p>
-          </div>
-          <span className="px-3 py-1.5 bg-white border border-neutral-200 rounded-xl text-[10px] font-semibold text-neutral-600 self-start md:self-auto">
-            Role · {(role || 'unknown').toLowerCase()}
+      <div className="space-y-6">
+        {/* Compact greeting strip — replaces duplicate page title */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <p className="text-[13px] text-neutral-500 tracking-tight">
+            {greeting}{firstName ? `, ${firstName}` : ''} · here's what needs your attention today.
+          </p>
+          <span className="px-2.5 py-1 bg-white border border-neutral-200 rounded-full text-[10.5px] font-medium text-neutral-500 tracking-wide capitalize">
+            {(role || 'unknown').toLowerCase().replace(/_/g, ' ')}
           </span>
         </div>
 
-        {/* Top row: Clock-in widget + (optional) primary KPI tiles */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Remote Clock-In Widget */}
+        {/* Top row: clock card + KPI grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {can('VIEW_ATTENDANCE') && (
-            <div className="lg:col-span-1 ui-panel p-6 space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center">
-                    <Fingerprint size={16} className="text-neutral-700" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-neutral-500 leading-none">Remote attendance</p>
-                    <h3 className="text-sm font-semibold text-neutral-900 mt-1">Clock in / out</h3>
-                  </div>
-                </div>
-                <span
-                  className={`px-2.5 py-1 text-[9px] font-extrabold tracking-wide rounded-lg border ${
-                    clockState.status === 'clocked_in'
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            <div className="lg:col-span-1 bg-white border border-neutral-200/80 rounded-2xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[10.5px] font-medium text-neutral-400 tracking-wide uppercase">Today</p>
+                  <h3 className="text-[18px] font-semibold tracking-tight text-neutral-900 mt-1">
+                    {clockState.status === 'clocked_in'
+                      ? 'On the clock'
                       : clockState.status === 'clocked_out'
-                      ? 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                      : 'bg-amber-50 border-amber-200 text-amber-700'
-                  }`}
-                >
-                  {clockState.status === 'clocked_in' ? 'On the clock' : clockState.status === 'clocked_out' ? 'Clocked out' : 'Not yet today'}
-                </span>
+                      ? 'Clocked out'
+                      : 'Not yet clocked in'}
+                  </h3>
+                  <p className="text-[12px] text-neutral-500 mt-1.5">
+                    {clockState.lastEvent?.checkIn || clockState.lastEvent?.timestamp
+                      ? `Last action · ${formatTime(clockState.lastEvent.checkIn || clockState.lastEvent.timestamp)}`
+                      : 'No activity recorded yet.'}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
+                  <Fingerprint size={16} />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="mt-6 grid grid-cols-2 gap-2.5">
                 <button
                   onClick={() => handleClock(false)}
                   disabled={clockBusy || clockState.status === 'clocked_in'}
-                  className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-lg text-xs font-semibold bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all shadow-sm"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[12.5px] font-medium bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-all"
                 >
-                  <LogIn size={14} />
-                  Clock in
+                  <LogIn size={13} /> Clock in
                 </button>
                 <button
                   onClick={() => handleClock(true)}
                   disabled={clockBusy || clockState.status !== 'clocked_in'}
-                  className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-lg text-xs font-semibold bg-white border border-neutral-200 text-neutral-700 hover:border-rose-300 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[12.5px] font-medium bg-neutral-50 border border-neutral-200 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
-                  <LogOut size={14} />
-                  Clock out
+                  <LogOut size={13} /> Clock out
                 </button>
               </div>
 
-              <div className="border-t border-neutral-200 pt-4 grid grid-cols-2 gap-3 text-[10px]">
-                <div>
-                  <span className="block font-semibold text-neutral-500">Last action</span>
-                  <span className="font-semibold text-neutral-700 flex items-center gap-1 mt-0.5">
-                    <Clock size={11} className="text-neutral-500" />
-                    {formatTime(clockState.lastEvent?.timestamp || clockState.lastEvent?.createdAt)}
-                  </span>
-                </div>
-                <div>
-                  <span className="block font-semibold text-neutral-500">Network</span>
-                  <span className="font-semibold text-neutral-700 flex items-center gap-1 mt-0.5">
-                    <Wifi size={11} className="text-neutral-500" />
-                    Remote
-                  </span>
-                </div>
+              <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between text-[11px]">
+                <span className="flex items-center gap-1.5 text-neutral-500">
+                  <Wifi size={12} /> Remote
+                </span>
+                <span className="flex items-center gap-1.5 text-neutral-500">
+                  <Clock size={12} /> {new Date().toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                </span>
               </div>
             </div>
           )}
 
-          {/* KPI tiles (HR operators) */}
           {showKpiRow && (
-            <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div
+              className={`grid grid-cols-2 sm:grid-cols-3 gap-3.5 ${
+                can('VIEW_ATTENDANCE') ? 'lg:col-span-2' : 'lg:col-span-3'
+              }`}
+            >
               <KpiTile label="Employees" value={kpi.employeeCount} icon={Users} visible={can('VIEW_ALL_EMPLOYEES')} />
               <KpiTile label="Open positions" value={kpi.openPositions} icon={Briefcase} visible={can('MANAGE_EMPLOYEES')} />
               <KpiTile label="Candidates" value={kpi.candidatesInPipeline} icon={Search} visible={can('MANAGE_EMPLOYEES')} />
-              <KpiTile label="Pending leave" value={kpi.pendingLeaveRequests} icon={CalendarCheck} visible={can('MANAGE_LEAVE')} href="/hr/leave-management?tab=approvals" />
-              <KpiTile label="Pending regularizations" value={kpi.pendingRegularizations} icon={Clock} visible={can('MANAGE_ATTENDANCE')} href="/hr/attendance" />
-              <KpiTile label="Today's clock-ins" value={kpi.todayClockIns} icon={TrendingUp} visible={can('VIEW_ATTENDANCE')} />
+              <KpiTile
+                label="Pending leave"
+                value={kpi.pendingLeaveRequests}
+                icon={CalendarCheck}
+                visible={can('MANAGE_LEAVE')}
+                href="/hr/leave-management?tab=approvals"
+                accent={kpi.pendingLeaveRequests > 0}
+              />
+              <KpiTile
+                label="Regularizations"
+                value={kpi.pendingRegularizations}
+                icon={Clock}
+                visible={can('MANAGE_ATTENDANCE')}
+                href="/hr/attendance"
+                accent={kpi.pendingRegularizations > 0}
+              />
+              <KpiTile label="Today's check-ins" value={kpi.todayClockIns} icon={TrendingUp} visible={can('VIEW_ATTENDANCE')} />
             </div>
           )}
         </div>
 
         {showApprovals && (kpi.pendingLeaveRequests > 0 || kpi.pendingRegularizations > 0) && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <p className="text-sm text-amber-900 font-medium">
-              {kpi.pendingLeaveRequests > 0 && `${kpi.pendingLeaveRequests} leave request(s) pending. `}
-              {kpi.pendingRegularizations > 0 && `${kpi.pendingRegularizations} regularization(s) pending.`}
-            </p>
+          <div className="bg-white border border-amber-200/70 rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+                <AlertCircle size={15} className="text-amber-600" />
+              </div>
+              <p className="text-[13px] text-neutral-800 tracking-tight">
+                {kpi.pendingLeaveRequests > 0 && `${kpi.pendingLeaveRequests} leave request${kpi.pendingLeaveRequests === 1 ? '' : 's'} pending. `}
+                {kpi.pendingRegularizations > 0 && `${kpi.pendingRegularizations} regularization${kpi.pendingRegularizations === 1 ? '' : 's'} pending.`}
+              </p>
+            </div>
             <div className="flex gap-2">
               {kpi.pendingLeaveRequests > 0 && can('MANAGE_LEAVE') && (
-                <Link href="/hr/leave-management?tab=approvals" className="px-4 py-2 bg-neutral-900 text-white text-xs font-semibold rounded-xl">
+                <Link
+                  href="/hr/leave-management?tab=approvals"
+                  className="px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-[12px] font-medium rounded-lg transition-all"
+                >
                   Review leave
                 </Link>
               )}
               {kpi.pendingRegularizations > 0 && can('MANAGE_ATTENDANCE') && (
-                <Link href="/hr/attendance" className="px-4 py-2 bg-white border border-neutral-200 text-xs font-semibold rounded-xl text-neutral-700">
+                <Link
+                  href="/hr/attendance"
+                  className="px-3.5 py-2 bg-white border border-neutral-200 hover:bg-neutral-50 text-[12px] font-medium rounded-lg text-neutral-700 transition-all"
+                >
                   Review attendance
                 </Link>
               )}
@@ -294,41 +313,42 @@ export default function HrDashboard() {
           </div>
         )}
 
-        {/* Quick Links */}
+        {/* Quick access */}
         {allowedLinks.length > 0 && (
-          <div className="ui-panel p-6 space-y-5">
-            <div className="flex items-center justify-between">
+          <div className="bg-white border border-neutral-200/80 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+            <div className="px-6 pt-6 pb-4 flex items-end justify-between gap-4 border-b border-neutral-100">
               <div>
-                <h3 className="text-sm font-semibold text-neutral-900">Quick access</h3>
-                <p className="text-[10px] text-neutral-500 mt-0.5">Jump into any HR module you have access to.</p>
+                <h3 className="text-[15px] font-semibold tracking-tight text-neutral-900">Quick access</h3>
+                <p className="text-[12px] text-neutral-500 mt-1">Jump into any HR module you have access to.</p>
               </div>
-              <span className="px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[10px] font-semibold text-neutral-600">
-                {allowedLinks.length} modules available
+              <span className="text-[11px] font-medium text-neutral-400 whitespace-nowrap">
+                {allowedLinks.length} module{allowedLinks.length === 1 ? '' : 's'}
               </span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
               {allowedLinks.map(({ label, path, icon: Icon }) => (
                 <Link
                   key={path}
                   href={path}
-                  className="group flex items-center gap-3 px-4 py-3.5 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 hover:border-neutral-200 rounded-lg transition-all"
+                  className="group flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-neutral-50 transition-all"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-white border border-neutral-200 group-hover:border-neutral-400 flex items-center justify-center transition-all">
-                    <Icon size={14} className="text-neutral-600 group-hover:text-neutral-700" />
+                  <div className="w-9 h-9 rounded-xl bg-neutral-100 group-hover:bg-neutral-900 flex items-center justify-center transition-all">
+                    <Icon size={15} className="text-neutral-600 group-hover:text-white transition-all" />
                   </div>
-                  <span className="text-xs font-semibold text-neutral-700 group-hover:text-neutral-900">{label}</span>
+                  <span className="text-[13px] font-medium text-neutral-800 tracking-tight">{label}</span>
                 </Link>
               ))}
             </div>
           </div>
         )}
 
-        {/* Empty state for users with no access beyond clock-in */}
         {allowedLinks.length === 0 && (
-          <div className="ui-panel p-10 text-center">
-            <MapPin size={28} className="text-neutral-700 mx-auto opacity-70" />
-            <p className="text-xs font-semibold text-neutral-800 mt-3">No additional modules available</p>
-            <p className="text-[10px] text-neutral-500 mt-1">You can clock in and out from the widget above.</p>
+          <div className="bg-white border border-neutral-200/80 rounded-2xl p-12 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-neutral-200 mx-auto flex items-center justify-center">
+              <MapPin size={18} className="text-neutral-400" />
+            </div>
+            <p className="text-[13px] font-medium text-neutral-800 mt-4">No additional modules available</p>
+            <p className="text-[12px] text-neutral-500 mt-1">You can clock in and out from the widget above.</p>
           </div>
         )}
       </div>
@@ -336,25 +356,33 @@ export default function HrDashboard() {
   );
 }
 
-const KpiTile = ({ label, value, icon: Icon, visible, href }) => {
+const KpiTile = ({ label, value, icon: Icon, visible, href, accent }) => {
   if (!visible) return null;
   const inner = (
     <>
       <div className="flex items-center justify-between">
-        <span className="text-[9px] font-semibold text-neutral-500 tracking-widest">{label}</span>
-        <div className="w-7 h-7 rounded-xl bg-neutral-100 border border-neutral-200 flex items-center justify-center">
-          <Icon size={12} className="text-neutral-700" />
+        <span className="text-[10.5px] font-medium text-neutral-500 tracking-tight">{label}</span>
+        <div
+          className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+            accent ? 'bg-amber-500 text-white' : 'bg-neutral-100 text-neutral-600'
+          }`}
+        >
+          <Icon size={12} />
         </div>
       </div>
-      <p className="text-2xl font-semibold text-neutral-900">{value === null ? '—' : value}</p>
+      <p className="text-[26px] font-semibold text-neutral-900 tracking-tight leading-none mt-2">
+        {value === null ? '—' : value}
+      </p>
     </>
   );
+  const base =
+    'bg-white border border-neutral-200/80 rounded-2xl px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all';
   if (href) {
     return (
-      <Link href={href} className="ui-panel p-5 space-y-3 hover:border-neutral-200 transition block">
+      <Link href={href} className={`${base} hover:border-neutral-300 hover:-translate-y-0.5 block`}>
         {inner}
       </Link>
     );
   }
-  return <div className="ui-panel p-5 space-y-3">{inner}</div>;
+  return <div className={base}>{inner}</div>;
 };

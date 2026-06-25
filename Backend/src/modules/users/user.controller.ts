@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { UserRole } from '@prisma/client';
 import * as userService from './user.service.js';
 import { createUserSchema, updateUserSchema } from './user.schema.js';
+import { isForbiddenRoleName } from '../../utils/role-permissions.js';
 
 const sendSuccess = (res: Response, message: string, data: any = null, status = 200) => {
   return res.status(status).json({
@@ -18,10 +19,34 @@ const sendError = (res: Response, message: string, status = 400) => {
   });
 };
 
-const canCreateRole = (currentRole: UserRole, newRole: UserRole) => {
-  if (currentRole === UserRole.SUPER_ADMIN && (newRole === UserRole.GLOBAL_ADMIN || newRole === UserRole.AGENT)) return true;
-  if (currentRole === UserRole.GLOBAL_ADMIN && ([UserRole.COUNSELLOR, UserRole.HR, UserRole.STUDENT, UserRole.AGENT] as UserRole[]).includes(newRole)) return true;
-  return false;
+const validateCreatePayload = (
+  currentRole: UserRole,
+  body: { role?: UserRole; roleName?: string }
+): string | null => {
+  if (currentRole === UserRole.SUPER_ADMIN) {
+    if (body.role !== UserRole.GLOBAL_ADMIN) {
+      return 'Super admin can only create Global Admin users';
+    }
+    if (body.roleName) {
+      return 'Use role GLOBAL_ADMIN only when creating users as super admin';
+    }
+    return null;
+  }
+
+  if (currentRole === UserRole.GLOBAL_ADMIN) {
+    if (body.role === UserRole.SUPER_ADMIN) {
+      return 'You cannot create Super Admin users';
+    }
+    if (!body.roleName?.trim()) {
+      return 'Role name is required';
+    }
+    if (isForbiddenRoleName(body.roleName)) {
+      return 'You cannot create a Super Admin role';
+    }
+    return null;
+  }
+
+  return 'Forbidden: insufficient permissions';
 };
 
 // SUPER_ADMIN: cross-tenant (null). Anyone else: locked to their tenantId.
@@ -56,7 +81,6 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 
-    // Users can always read their own profile; otherwise scope to tenant.
     const scope = req.user.id === id ? null : scopeFor(req);
     const user = await userService.getUserById(id, scope);
     if (!user) return sendError(res, 'User not found', 404);
@@ -74,15 +98,22 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     }
 
     const data = createUserSchema.parse(req.body);
-    if (!canCreateRole(req.user.role, data.role)) {
-      return sendError(res, 'You are not allowed to create users with this role', 403);
+    const validationError = validateCreatePayload(req.user.role, data);
+    if (validationError) {
+      return sendError(res, validationError, 403);
     }
 
     const user = await userService.createUser({
-      ...data,
+      fullName: data.fullName,
+      email: data.email,
       phone: data.phone ?? undefined,
-      agencyDetails: (data as any).agencyDetails ?? undefined,
+      password: data.password,
+      role: data.role,
+      roleName: data.roleName,
+      agencyDetails: data.agencyDetails ?? undefined,
+      moduleAccess: data.moduleAccess ?? undefined,
       tenantId: scopeFor(req),
+      linkHrEmployeeId: data.linkHrEmployeeId,
     });
     return sendSuccess(res, 'User created successfully', user, 201);
   } catch (error) {
@@ -102,10 +133,21 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     }
 
     const data = updateUserSchema.parse(req.body);
-    const updated = await userService.updateUser(id, {
-      ...data,
-      phone: data.phone ?? undefined,
-    }, scopeFor(req));
+    if (data.roleName && isForbiddenRoleName(data.roleName)) {
+      return sendError(res, 'You cannot assign a Super Admin role name', 403);
+    }
+    if (data.role === UserRole.SUPER_ADMIN && req.user.role !== UserRole.SUPER_ADMIN) {
+      return sendError(res, 'You cannot assign Super Admin role', 403);
+    }
+
+    const updated = await userService.updateUser(
+      id,
+      {
+        ...data,
+        phone: data.phone ?? undefined,
+      },
+      scopeFor(req)
+    );
     return sendSuccess(res, 'User updated successfully', updated);
   } catch (error) {
     next(error);

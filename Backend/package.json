@@ -14,7 +14,8 @@
     "crm:import-universities": "tsx scripts/import-universities-mysql.ts",
     "crm:import-courses": "tsx scripts/import-courses-mysql.ts",
     "crm:dedupe-countries": "tsx scripts/dedupe-countries.ts",
-    "crm:promote-leads": "tsx scripts/promote-leads.ts"
+    "crm:promote-leads": "tsx scripts/promote-leads.ts",
+    "db:repair-tenant": "tsx scripts/repair-tenant-migrations.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

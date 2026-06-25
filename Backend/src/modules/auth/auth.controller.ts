@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as authService from './auth.service.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
-import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
+import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema, acceptPolicySchema } from './auth.schema.js';
 import { getEnabledModules } from '../rbac/tenant-modules.service.js';
 import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
 import crypto from 'crypto';
@@ -45,7 +45,8 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const data = loginSchema.parse(req.body);
-        const { user, accessToken, refreshToken, isFirstLogin, mustChangePassword } = await authService.login(data.email, data.password);
+        const { user, accessToken, refreshToken, isFirstLogin, mustChangePassword, showPolicyModal } =
+            await authService.login(data.email, data.password, data.type);
         const enabledModules = await resolveEnabledModules(user.role, user.tenantId ?? null);
         return sendSuccess(res, 'Login successful', {
             user: {
@@ -53,15 +54,20 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
                 fullName: user.fullName,
                 email: user.email,
                 role: user.role,
+                roleLabel: user.roleLabel ?? null,
+                permissionRole: user.permissionRole ?? null,
                 tenantId: user.tenantId ?? null,
                 moduleAccess: user.moduleAccess,
                 enabledModules,
                 mustChangePassword,
+                policyAcceptedAt: user.policyAcceptedAt ?? null,
+                showPolicyModal,
             },
             accessToken,
             refreshToken,
             isFirstLogin,
             mustChangePassword,
+            showPolicyModal,
         });
     } catch (error) {
         next(error);
@@ -113,6 +119,17 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
         const data = changePasswordSchema.parse(req.body);
         await authService.changePassword(req.user.id, data.currentPassword, data.newPassword);
         return sendSuccess(res, 'Password changed successfully', null);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const acceptPolicy = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.user) return sendError(res, 'Unauthorized', null, 401);
+        acceptPolicySchema.parse(req.body);
+        const result = await authService.acceptPolicy(req.user.id);
+        return sendSuccess(res, 'Policy accepted', result);
     } catch (error) {
         next(error);
     }

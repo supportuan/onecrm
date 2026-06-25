@@ -24,6 +24,12 @@ import {
   DocumentStatus,
 } from '@prisma/client';
 import { hashPassword, comparePasswords } from '../src/utils/password.js';
+import { getDefaultTenantId } from '../src/utils/tenant-default.js';
+import {
+  employeeSelfServiceModuleAccess,
+  employeeSelfServicePermissions,
+  slugifyRoleName,
+} from '../src/utils/role-permissions.js';
 
 dotenv.config();
 
@@ -34,7 +40,13 @@ async function ensureUser(
   fullName: string,
   role: UserRole,
   defaultPassword: string,
-  phone: string
+  phone: string,
+  opts: {
+    tenantId?: number | null;
+    roleLabel?: string | null;
+    permissionRole?: string | null;
+    moduleAccess?: Record<string, Record<string, string[]>> | null;
+  } = {}
 ) {
   const existing = await prisma.user.findUnique({ where: { email } });
 
@@ -47,6 +59,10 @@ async function ensureUser(
         phone,
         passwordHash,
         role,
+        tenantId: opts.tenantId ?? null,
+        roleLabel: opts.roleLabel ?? null,
+        permissionRole: opts.permissionRole ?? null,
+        moduleAccess: opts.moduleAccess ?? null,
         isActive: true,
         isApproved: true,
       },
@@ -56,18 +72,26 @@ async function ensureUser(
   }
 
   const hasCorrectPassword = await comparePasswords(defaultPassword, existing.passwordHash);
+  const patch: Record<string, unknown> = {
+    fullName,
+    phone,
+    role,
+    tenantId: opts.tenantId ?? existing.tenantId,
+    roleLabel: opts.roleLabel ?? existing.roleLabel,
+    permissionRole: opts.permissionRole ?? existing.permissionRole,
+    moduleAccess: opts.moduleAccess ?? existing.moduleAccess,
+  };
   if (!hasCorrectPassword) {
-    const passwordHash = await hashPassword(defaultPassword);
-    await prisma.user.update({
-      where: { id: existing.id },
-      data: { passwordHash },
-    });
+    patch.passwordHash = await hashPassword(defaultPassword);
     console.log(`✅ ${role} password reset: ${email}`);
   } else {
     console.log(`ℹ️ ${role} already exists: ${email}`);
   }
 
-  return existing;
+  return prisma.user.update({
+    where: { id: existing.id },
+    data: patch,
+  });
 }
 
 async function main() {
@@ -77,6 +101,7 @@ async function main() {
   console.log('Database connection successful.');
 
   const defaultPassword = 'Welcome@123';
+  const tenantId = await getDefaultTenantId();
 
   const superAdmin = await ensureUser(
     'superadmin@onecrm.com',
@@ -91,7 +116,8 @@ async function main() {
     'Priya Sharma',
     UserRole.COUNSELLOR,
     defaultPassword,
-    '+919876543210'
+    '+919876543210',
+    { tenantId }
   );
 
   const leadSources = [
@@ -205,10 +231,15 @@ async function main() {
     'HR Manager',
     UserRole.HR,
     defaultPassword,
-    '+919000000001'
+    '+919000000001',
+    {
+      tenantId,
+      roleLabel: 'HR Manager',
+      permissionRole: 'HR',
+    }
   );
 
-  await seedHrData(hrUser.id, defaultPassword);
+  await seedHrData(hrUser.id, defaultPassword, tenantId);
   const crmSettings = await seedCrmSettings();
   await seedStudentCrmData(counsellor.id, crmSettings);
   console.log(`Default password for seeded users: ${defaultPassword}`);
@@ -606,7 +637,7 @@ async function seedStudentCrmData(
   console.log(`✅ Student CRM ready (${studentCount} students, ${appCount} applications)`);
 }
 
-async function seedHrData(hrUserId: number, defaultPassword: string) {
+async function seedHrData(hrUserId: number, defaultPassword: string, tenantId: number) {
   console.log('Seeding HR module data...');
 
   const employeeSpecs = [
@@ -667,11 +698,47 @@ async function seedHrData(hrUserId: number, defaultPassword: string) {
     data: { userId: hrUserId },
   });
 
+  const selfServiceAccess = employeeSelfServiceModuleAccess() as Record<string, Record<string, string[]>>;
+  const selfServicePerms = employeeSelfServicePermissions();
+
+  for (const emp of employees) {
+    if (emp.id === employees[2].id) continue;
+
+    const roleLabel = emp.designation || 'Employee';
+    const permissionRole = slugifyRoleName(`EMP_${emp.employeeCode}`);
+    const loginUser = await ensureUser(
+      emp.email,
+      emp.name,
+      UserRole.COUNSELLOR,
+      defaultPassword,
+      '+919000000099',
+      {
+        tenantId,
+        roleLabel,
+        permissionRole,
+        moduleAccess: selfServiceAccess,
+      }
+    );
+
+    await prisma.hrEmployee.update({
+      where: { id: emp.id },
+      data: { userId: loginUser.id, tenantId },
+    });
+
+    await prisma.rolePermission.upsert({
+      where: { tenantId_role: { tenantId, role: permissionRole } },
+      create: { tenantId, role: permissionRole, permissions: selfServicePerms },
+      update: { permissions: selfServicePerms },
+    });
+
+    console.log(`✅ Employee login ready: ${emp.email} / ${defaultPassword}`);
+  }
+
   console.log(`✅ HR employees ready (${employees.length})`);
 
   await prisma.hrAttendanceSetting.upsert({
-    where: { id: 1 },
-    create: { id: 1, attendanceMode: 'biometric', enableIpValidation: true },
+    where: { tenantId },
+    create: { tenantId, attendanceMode: 'biometric', enableIpValidation: true },
     update: { attendanceMode: 'biometric', enableIpValidation: true },
   });
 

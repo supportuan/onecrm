@@ -1,10 +1,12 @@
+'use client';
+
 import { Suspense } from 'react';
-import Applications from '@/pages-old/student-crm/Applications';
+import ApplicationsList from '@/features/student-crm/pages/ApplicationsList';
 
 export default function Page() {
   return (
     <Suspense fallback={<div className="p-8 text-sm text-neutral-500">Loading applications…</div>}>
-      <Applications />
+      <ApplicationsList />
     </Suspense>
   );
 }

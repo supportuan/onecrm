@@ -56,14 +56,42 @@ export const processLeaveRequestSchema = z.object({
   reviewerNote: z.string().optional(),
 });
 
-export const createLeaveDefinitionSchema = z.object({
-  leaveTypeId: z.string(),
-  annual_quota: z.number().int().optional(),
-  carry_forward: z.boolean().optional(),
-});
+// Accepts both snake_case (legacy) and camelCase (current frontend) field
+// names so the LeaveManagement form's annualQuota / yearEndPolicy / etc.
+// values stop being silently ignored.
+export const createLeaveDefinitionSchema = z
+  .object({
+    leaveTypeId: z.string(),
+    annual_quota: z.number().optional(),
+    annualQuota: z.number().optional(),
+    carry_forward: z.boolean().optional(),
+    yearEndPolicy: z.string().optional(),
+    isUnlimited: z.boolean().optional(),
+    accrualType: z.string().optional(),
+    accrualRate: z.number().optional(),
+    carryForwardMax: z.number().optional(),
+    minDays: z.number().optional(),
+    maxDays: z.number().optional(),
+    gender: z.string().optional(),
+  })
+  .transform((d) => ({
+    leaveTypeId: d.leaveTypeId,
+    annual_quota: d.annualQuota ?? d.annual_quota,
+    carry_forward: d.carry_forward ?? d.yearEndPolicy === 'carry_forward',
+  }));
 
 export const assignLeaveEmployeesSchema = z.object({
   employeeIds: z.array(z.string()),
+});
+
+export const createLeaveTypeSchema = z.object({
+  name: z.string().min(1).max(80),
+  code: z.string().min(1).max(20).regex(/^[A-Za-z0-9_-]+$/),
+});
+
+export const updateLeaveTypeSchema = z.object({
+  name: z.string().min(1).max(80).optional(),
+  code: z.string().min(1).max(20).regex(/^[A-Za-z0-9_-]+$/).optional(),
 });
 
 export const createHolidaySchema = z.object({
