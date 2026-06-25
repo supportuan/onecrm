@@ -48,6 +48,9 @@ const ROUTE_PERMISSION_MAP = [
   { path: '/admin-settings/content-management', module: 'Admin & Settings', option: 'Settings' },
   { path: '/admin-settings/branding', module: 'Admin & Settings', option: 'Settings' },
   { path: '/admin-settings', module: 'Admin & Settings', option: null },
+
+  //Alied Services
+  { path: '/allied-services', module: 'Allied Services', option: null },
 ];
 
 /**

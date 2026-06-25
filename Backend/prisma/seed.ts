@@ -22,6 +22,8 @@ import {
   HrReviewStatus,
   ApplicationStage,
   DocumentStatus,
+  ApplicationStage,
+  DocumentStatus,
 } from '@prisma/client';
 import { hashPassword, comparePasswords } from '../src/utils/password.js';
 import { getDefaultTenantId } from '../src/utils/tenant-default.js';

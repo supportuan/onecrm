@@ -10,6 +10,7 @@ import {
   validateDuplicateUser,
   normalizeValue,
 } from "../../../utils/validation.js";
+import { buildCampaignEmailTemplate } from './emailTemplate.service.js';
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {
@@ -626,9 +627,24 @@ export const getCampaignById = async (id: number) => {
   };
 };
 
+import { createAd } from './metaAd.service.js';
+
 export const createCampaign = async (data: any) => {
+  let emailContent = undefined;
+  let metaAdId = undefined;
+
+  if (data.type === 'EMAIL') {
+    emailContent = buildCampaignEmailTemplate(data, {});
+  } else if (data.type === 'SOCIAL_MEDIA') {
+    metaAdId = await createAd(data, data.launchDetails);
+  }
+
   return await prisma.campaign.create({
-    data,
+    data: {
+      ...data,
+      emailContent,
+      metaAdId,
+    },
   });
 };
 

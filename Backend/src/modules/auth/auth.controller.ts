@@ -5,6 +5,9 @@ import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, 
 import { getEnabledModules } from '../rbac/tenant-modules.service.js';
 import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
+
+
 
 // Super admin operates cross-tenant, so they "have" every module.
 const allModuleKeys = () => MODULE_CATALOG.map((m) => m.key);
@@ -124,21 +127,51 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
     }
 };
 
-export const acceptPolicy = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        if (!req.user) return sendError(res, 'Unauthorized', null, 401);
-        acceptPolicySchema.parse(req.body);
-        const result = await authService.acceptPolicy(req.user.id);
-        return sendSuccess(res, 'Policy accepted', result);
-    } catch (error) {
-        next(error);
-    }
-};
+// const sendResetEmail = async (email: string, token: string) => {
+//     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+//     console.log("resetUrl", resetUrl);
+//     console.info(`Password reset link for ${email}: ${resetUrl}`);
+// };
 
-const sendResetEmail = async (email: string, token: string) => {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+export const sendResetEmail = async (email: string, token: string) => {
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
     console.log("resetUrl", resetUrl);
-    console.info(`Password reset link for ${email}: ${resetUrl}`);
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+
+    await transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: email,
+        subject: "Reset your One CRM password",
+        html: `
+      <div style="font-family: Arial, sans-serif;">
+        <h2>Password Reset</h2>
+        <p>Click the button below to reset your password.</p>
+
+        <a href="${resetUrl}"
+          style="display:inline-block;background:#111827;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;">
+          Reset Password
+        </a>
+
+        <p style="margin-top:20px;">Or copy this link:</p>
+        <p>${resetUrl}</p>
+
+        <p>This link will expire in 1 hour.</p>
+      </div>
+    `,
+    });
+
+    console.info(`Password reset email sent to ${email}`);
 };
 
 export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {

@@ -2,25 +2,25 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import {
-  getCampaigns,
-  getCampaignById,
-  createCampaign,
-  updateCampaign,
+import { 
+  getCampaigns, 
+  getCampaignById, 
+  createCampaign, 
+  updateCampaign, 
   deleteCampaign,
   associateCampaignLeads,
   getLeads,
   launchCampaign
 } from '../../services/marketingApi';
-import {
-  Search,
-  Plus,
-  X,
-  Download,
-  Loader2,
-  AlertCircle,
-  ChevronDown,
-  ArrowUpDown,
+import { 
+  Search, 
+  Plus, 
+  X, 
+  Download, 
+  Loader2, 
+  AlertCircle, 
+  ChevronDown, 
+  ArrowUpDown, 
   MoreVertical,
   Calendar,
   DollarSign,
@@ -45,7 +45,6 @@ const mapTypeLabel = (type) => {
     case 'SOCIAL_MEDIA': return 'Social';
     case 'PPC': return 'PPC';
     case 'CONTENT': return 'Content';
-    case 'GOOGLE_ADS': return 'Google Ads';
     default: return type;
   }
 };
@@ -69,7 +68,15 @@ const AUDIENCE_TYPES = [
   { label: 'Maybe', value: 'MAYBE' },
 ];
 
-
+// const getLeadAudienceValue = (lead) => {
+//   return String(
+//     lead.audienceCategory ||
+//     lead.rating ||
+//     lead.leadRating ||
+//     lead.category ||
+//     ''
+//   ).toUpperCase();
+// };
 
 const getLeadAudienceValue = (lead) => {
   return String(lead?.rating || "").toUpperCase();
@@ -118,256 +125,7 @@ const formatDuration = (start, end) => {
   return `${startDateStr} - ${endDateStr}`;
 };
 
-const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
-  const updateDetails = (key, value) => {
-    onChange({ ...launchDetails, [key]: value });
-  };
 
-  if (type === 'SOCIAL_MEDIA') {
-    return (
-      <div className="space-y-4 pt-4 border-t border-neutral-100 mt-4">
-        <h4 className="font-semibold text-neutral-800 text-sm">Social Media Settings</h4>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label>Platform *</label>
-            <select
-              value={launchDetails.platform || 'FACEBOOK'}
-              onChange={(e) => updateDetails('platform', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-            >
-              <option value="FACEBOOK">Facebook</option>
-              <option value="INSTAGRAM">Instagram</option>
-              <option value="BOTH">Both</option>
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label>Campaign Objective *</label>
-            <select
-              value={launchDetails.objective || 'LEAD_GENERATION'}
-              onChange={(e) => updateDetails('objective', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-            >
-              <option value="LEAD_GENERATION">Lead Generation</option>
-              <option value="TRAFFIC">Traffic</option>
-              <option value="ENGAGEMENT">Engagement</option>
-              <option value="CONVERSIONS">Conversions</option>
-            </select>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label>Target Country</label>
-            <input
-              type="text"
-              value={launchDetails.targetCountry || ''}
-              onChange={(e) => updateDetails('targetCountry', e.target.value)}
-              placeholder="e.g. India"
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-            />
-          </div>
-          <div className="space-y-1">
-            <label>Target Age Range</label>
-            <input
-              type="text"
-              value={launchDetails.targetAgeRange || ''}
-              onChange={(e) => updateDetails('targetAgeRange', e.target.value)}
-              placeholder="e.g. 18-35"
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-            />
-          </div>
-        </div>
-        <div className="mt-2 text-xs text-neutral-500 bg-blue-50/50 border border-blue-100 p-3 rounded-lg flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-          <p>Social Media campaigns use leads to create a Custom Audience. No direct messages are sent.</p>
-        </div>
-      </div>
-    );
-  } else if (type === 'SMS') {
-    return (
-      <div className="space-y-4 pt-4 border-t border-neutral-100 mt-4">
-        <h4 className="font-semibold text-neutral-800 text-sm">SMS Settings</h4>
-        <div className="space-y-1">
-          <label>SMS Message Content *</label>
-          <textarea
-            rows="3"
-            required
-            value={launchDetails.smsContent || ''}
-            onChange={(e) => updateDetails('smsContent', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
-          />
-          <p className="text-[10px] text-neutral-500 text-right mt-1">
-            {launchDetails.smsContent?.length || 0} characters
-          </p>
-        </div>
-      </div>
-    );
-  } else if (type === 'WHATSAPP') {
-    return (
-      <div className="space-y-4 pt-4 border-t border-neutral-100 mt-4">
-        <h4 className="font-semibold text-neutral-800 text-sm">WhatsApp Settings</h4>
-        <div className="space-y-1">
-          <label>Template Name *</label>
-          <input
-            type="text"
-            required
-            value={launchDetails.whatsappTemplate || ''}
-            onChange={(e) => updateDetails('whatsappTemplate', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-          />
-        </div>
-        <div className="space-y-1">
-          <label>Message Content</label>
-          <textarea
-            rows="3"
-            value={launchDetails.whatsappContent || ''}
-            onChange={(e) => updateDetails('whatsappContent', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label>CTA Button Text</label>
-            <input
-              type="text"
-              value={launchDetails.ctaText || ''}
-              onChange={(e) => updateDetails('ctaText', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-            />
-          </div>
-          <div className="space-y-1">
-            <label>CTA URL</label>
-            <input
-              type="url"
-              value={launchDetails.ctaUrl || ''}
-              onChange={(e) => updateDetails('ctaUrl', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  } else if (type === 'GOOGLE_ADS') {
-    return (
-      <div className="space-y-4 pt-4 border-t border-neutral-100 mt-4">
-        <h4 className="font-semibold text-neutral-800 text-sm">Google Ads Settings</h4>
-        <div className="space-y-1">
-          <label>Campaign Goal *</label>
-          <select
-            value={launchDetails.goal || ''}
-            onChange={(e) => updateDetails('goal', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-          >
-            <option value="LEADS">Leads</option>
-            <option value="WEBSITE_TRAFFIC">Website Traffic</option>
-            <option value="SALES">Sales</option>
-            <option value="BRAND_AWARENESS">Brand Awareness</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <label>Landing Page URL *</label>
-          <input
-            type="url"
-            required
-            value={launchDetails.landingPageUrl || ''}
-            onChange={(e) => updateDetails('landingPageUrl', e.target.value)}
-            placeholder="https://..."
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-          />
-        </div>
-        <div className="space-y-1">
-          <label>Headlines (comma separated)</label>
-          <textarea
-            rows="2"
-            value={launchDetails.headlines || ''}
-            onChange={(e) => updateDetails('headlines', e.target.value)}
-            placeholder="Headline 1, Headline 2, ..."
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
-          />
-        </div>
-        <div className="space-y-1">
-          <label>Descriptions (comma separated)</label>
-          <textarea
-            rows="2"
-            value={launchDetails.descriptions || ''}
-            onChange={(e) => updateDetails('descriptions', e.target.value)}
-            placeholder="Description 1, Description 2, ..."
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
-          />
-        </div>
-        <div className="space-y-1">
-          <label>Keywords (comma separated)</label>
-          <textarea
-            rows="2"
-            value={launchDetails.keywords || ''}
-            onChange={(e) => updateDetails('keywords', e.target.value)}
-            placeholder="Keyword1, Keyword2, ..."
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
-          />
-        </div>
-        <div className="space-y-1">
-          <label>Daily Budget *</label>
-          <input
-            type="number"
-            min="0"
-            required
-            value={launchDetails.dailyBudget || ''}
-            onChange={(e) => updateDetails('dailyBudget', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-          />
-        </div>
-        <div className="space-y-1">
-          <label>Target Location *</label>
-          <input
-            type="text"
-            value={launchDetails.targetLocation || ''}
-            onChange={(e) => updateDetails('targetLocation', e.target.value)}
-            placeholder="e.g. United States"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-};
-
-const filterLaunchDetailsByType = (type, details) => {
-  if (!details) return {};
-  switch (type) {
-    case 'SOCIAL_MEDIA':
-      return {
-        platform: details.platform,
-        objective: details.objective,
-        targetCountry: details.targetCountry,
-        targetAgeRange: details.targetAgeRange,
-      };
-    case 'SMS':
-      return { smsContent: details.smsContent };
-    case 'WHATSAPP':
-      return {
-        whatsappTemplate: details.whatsappTemplate,
-        whatsappContent: details.whatsappContent,
-        ctaText: details.ctaText,
-        ctaUrl: details.ctaUrl,
-      };
-    case 'GOOGLE_ADS':
-      return {
-        goal: details.goal,
-        landingPageUrl: details.landingPageUrl,
-        headlines: details.headlines,
-        descriptions: details.descriptions,
-        keywords: details.keywords,
-        dailyBudget: details.dailyBudget,
-        targetLocation: details.targetLocation,
-      };
-    case 'EMAIL':
-    case 'PPC':
-    case 'CONTENT':
-    default:
-      return {};
-  }
-};
 
 const Campaigns = () => {
   const searchParams = useSearchParams();
@@ -377,31 +135,102 @@ const Campaigns = () => {
   const [error, setError] = useState(null);
   const [launchingIds, setLaunchingIds] = useState([]);
 
+  // const handleLaunchCampaign = async (campaignId) => {
+  //   setLaunchingIds(prev => [...prev, campaignId]);
+  //   setActiveMenuId(null);
+  //   try {
+  //     const response = await launchCampaign(campaignId);
+  //     if (response.success) {
+  //       alert(response.message || 'Campaign launched successfully!');
+  //       fetchCampaignsList();
+  //     } else {
+  //       alert(response.message || 'Failed to launch campaign.');
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert('Error occurred while launching the campaign.');
+  //   } finally {
+  //     setLaunchingIds(prev => prev.filter(id => id !== campaignId));
+  //   }
+  // };
 
+//   const handleLaunchCampaign = async (campaignId) => {
+//   console.log('Launch clicked campaignId:', campaignId);
+
+//   setLaunchingIds((prev) => [...prev, campaignId]);
+//   setActiveMenuId(null);
+
+//   try {
+//     const response = await launchCampaign(campaignId);
+//     console.log('Launch API response:', response);
+
+//     if (response.success) {
+//       alert(response.message || 'Campaign launched successfully!');
+//       fetchCampaignsList();
+//     } else {
+//       alert(response.message || 'Failed to launch campaign.');
+//     }
+//   } catch (err) {
+//     console.error('Launch campaign error:', err);
+//     alert('Error occurred while launching the campaign.');
+//   } finally {
+//     setLaunchingIds((prev) => prev.filter((id) => id !== campaignId));
+//   }
+// };
+
+// const handleLaunchCampaign = async (campaignId, audienceType = 'ALL') => {
+//   console.log('Launch clicked campaignId:', campaignId);
+//   console.log('Selected audienceType:', audienceType);
+
+//   setLaunchingIds((prev) => [...prev, campaignId]);
+//   setActiveMenuId(null);
+
+//   try {
+//     const response = await launchCampaign(campaignId, { audienceType });
+
+//     console.log('Launch API response:', response);
+
+//     if (response.success) {
+//       alert(
+//         `${response.message || 'Campaign launched successfully!'}\nSelected Audience: ${audienceType}\nLeads Sent: ${response.data?.totalSent ?? 0}`
+//       );
+//       fetchCampaignsList();
+//     } else {
+//       alert(response.message || 'Failed to launch campaign.');
+//     }
+//   } catch (err) {
+//     console.error('Launch campaign error:', err);
+//     alert('Error occurred while launching the campaign.');
+//   } finally {
+//     setLaunchingIds((prev) => prev.filter((id) => id !== campaignId));
+//   }
+// };
 
   const handleLaunchCampaign = async (campaignId, audienceType = "ALL") => {
-    setLaunchingIds((prev) => [...prev, campaignId]);
-    setActiveMenuId(null);
+  setLaunchingIds((prev) => [...prev, campaignId]);
+  setActiveMenuId(null);
 
-    try {
-      const response = await launchCampaign(campaignId, { audienceType });
+  try {
+    const response = await launchCampaign(campaignId, { audienceType });
 
-      const result = response.data || response;
+    const result = response.data || response;
 
-      alert(
-        `${result.message || "Campaign launch completed"}\nSelected Audience: ${result.audienceType || audienceType
-        }\nLeads Sent: ${result.totalSent ?? 0}\nFailed: ${result.totalFailed ?? 0
-        }`
-      );
+    alert(
+      `${result.message || "Campaign launch completed"}\nSelected Audience: ${
+        result.audienceType || audienceType
+      }\nLeads Sent: ${result.totalSent ?? 0}\nFailed: ${
+        result.totalFailed ?? 0
+      }`
+    );
 
-      fetchCampaignsList();
-    } catch (err) {
-      console.error("Launch campaign error:", err);
-      alert("Error occurred while launching the campaign.");
-    } finally {
-      setLaunchingIds((prev) => prev.filter((id) => id !== campaignId));
-    }
-  };
+    fetchCampaignsList();
+  } catch (err) {
+    console.error("Launch campaign error:", err);
+    alert("Error occurred while launching the campaign.");
+  } finally {
+    setLaunchingIds((prev) => prev.filter((id) => id !== campaignId));
+  }
+};
 
   // Filters, Pagination, & Sorting State
   const [search, setSearch] = useState('');
@@ -433,7 +262,18 @@ const Campaigns = () => {
   // Actions menu ref for closing on outside click
   const menuRef = useRef(null);
 
-
+  // Create/Edit Form State
+  // const [campaignForm, setCampaignForm] = useState({
+  //   name: '',
+  //   type: 'EMAIL',
+  //   budget: '',
+  //   spent: 0,
+  //   startDate: '',
+  //   endDate: '',
+  //   status: 'DRAFT',
+  //   targetAudience: '',
+  //   description: ''
+  // });
   const [campaignForm, setCampaignForm] = useState({
     name: '',
     type: 'EMAIL',
@@ -445,7 +285,6 @@ const Campaigns = () => {
     audienceType: 'ALL',
     targetAudience: '',
     description: '',
-    launchDetails: {},
   });
 
   const [selectedAudienceCount, setSelectedAudienceCount] = useState(0);
@@ -491,11 +330,6 @@ const Campaigns = () => {
       fetchAudienceCount(campaignForm.audienceType);
     }
   }, [campaignForm.audienceType, isCreateOpen, isEditOpen]);
-
-  const showAudienceType =
-    campaignForm.type === 'EMAIL' ||
-    campaignForm.type === 'SMS' ||
-    campaignForm.type === 'WHATSAPP';
 
   // Fetch campaigns
   const fetchCampaignsList = async () => {
@@ -555,7 +389,41 @@ const Campaigns = () => {
     }
   };
 
+  // Open Edit Modal
+  // const handleOpenEdit = (campaign) => {
+  //   setSelectedCampaign(campaign);
+  //   setCampaignForm({
+  //     name: campaign.name || '',
+  //     type: campaign.type || 'EMAIL',
+  //     budget: campaign.budget !== null ? String(campaign.budget) : '',
+  //     spent: campaign.spent || 0,
+  //     startDate: campaign.startDate ? new Date(campaign.startDate).toISOString().slice(0, 10) : '',
+  //     endDate: campaign.endDate ? new Date(campaign.endDate).toISOString().slice(0, 10) : '',
+  //     status: campaign.status || 'DRAFT',
+  //     targetAudience: campaign.targetAudience || '',
+  //     description: campaign.description || ''
+  //   });
+  //   setIsEditOpen(true);
+  //   setActiveMenuId(null);
+  // };
 
+  // const handleOpenEdit = (campaign) => {
+  //   setSelectedCampaign(campaign);
+  //   setCampaignForm({
+  //     name: campaign.name || '',
+  //     type: campaign.type || 'EMAIL',
+  //     budget: campaign.budget !== null ? String(campaign.budget) : '',
+  //     spent: campaign.spent || 0,
+  //     startDate: campaign.startDate ? new Date(campaign.startDate).toISOString().slice(0, 10) : '',
+  //     endDate: campaign.endDate ? new Date(campaign.endDate).toISOString().slice(0, 10) : '',
+  //     status: campaign.status || 'DRAFT',
+  //     audienceType: campaign.audienceType || 'ALL',
+  //     targetAudience: campaign.targetAudience || '',
+  //     description: campaign.description || '',
+  //   });
+  //   setIsEditOpen(true);
+  //   setActiveMenuId(null);
+  // };
 
   const handleOpenEdit = (campaign) => {
     setSelectedCampaign(campaign);
@@ -575,7 +443,6 @@ const Campaigns = () => {
       audienceType: campaign.audienceType || "ALL",
       targetAudience: campaign.targetAudience || "",
       description: campaign.description || "",
-      launchDetails: campaign.launchDetails || {},
     });
 
     setIsEditOpen(true);
@@ -646,6 +513,123 @@ const Campaigns = () => {
     }
   };
 
+  // Create Campaign Submit
+  // const handleCreateSubmit = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const payload = {
+  //       ...campaignForm,
+  //       budget: campaignForm.budget ? parseFloat(campaignForm.budget) : null,
+  //       spent: campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
+  //       startDate: campaignForm.startDate ? new Date(campaignForm.startDate).toISOString() : null,
+  //       endDate: campaignForm.endDate ? new Date(campaignForm.endDate).toISOString() : null
+  //     };
+
+  //     const response = await createCampaign(payload);
+  //     if (response.success) {
+  //       setIsCreateOpen(false);
+  //       const createdCampaign = response.data;
+  //       // Reset form
+  //       setCampaignForm({
+  //         name: '',
+  //         type: 'EMAIL',
+  //         budget: '',
+  //         spent: 0,
+  //         startDate: '',
+  //         endDate: '',
+  //         status: 'DRAFT',
+  //         targetAudience: '',
+  //         description: ''
+  //       });
+  //       fetchCampaignsList();
+
+  //       // Auto-launch if created with status ACTIVE
+  //       if (payload.status === 'ACTIVE' && createdCampaign?.id) {
+  //         handleLaunchCampaign(createdCampaign.id);
+  //       }
+  //     } else {
+  //       alert(response.message || 'Failed to create campaign. Please verify fields.');
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert('Connection error while creating campaign.');
+  //   }
+  // };
+
+  // const handleCreateSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   try {
+  //     const payload = {
+  //       ...campaignForm,
+  //       budget: campaignForm.budget ? parseFloat(campaignForm.budget) : null,
+  //       spent: campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
+  //       startDate: campaignForm.startDate
+  //         ? new Date(campaignForm.startDate).toISOString()
+  //         : null,
+  //       endDate: campaignForm.endDate
+  //         ? new Date(campaignForm.endDate).toISOString()
+  //         : null,
+  //     };
+
+  //     const response = await createCampaign(payload);
+
+  //     if (!response.success) {
+  //       alert(response.message || 'Failed to create campaign.');
+  //       return;
+  //     }
+
+  //     const createdCampaign = response.data;
+
+  //     setIsCreateOpen(false);
+
+  //     setCampaignForm({
+  //       name: '',
+  //       type: 'EMAIL',
+  //       budget: '',
+  //       spent: 0,
+  //       startDate: '',
+  //       endDate: '',
+  //       status: 'DRAFT',
+  //       targetAudience: '',
+  //       description: '',
+  //     });
+
+  //     await fetchCampaignsList();
+
+  //     if (payload.status === 'ACTIVE' && createdCampaign?.id) {
+  //       const leadsResponse = await getLeads({ limit: 1000 });
+
+  //       const leadIds =
+  //         leadsResponse?.data?.items?.map((lead) => lead.id) || [];
+
+  //       console.log('Leads selected for campaign:', leadIds.length);
+
+  //       if (leadIds.length === 0) {
+  //         alert('Campaign created, but no leads found to launch.');
+  //         return;
+  //       }
+
+  //       const associateResponse = await associateCampaignLeads(createdCampaign.id, {
+  //         leadIds,
+  //         status: 'PENDING',
+  //         engagement: 'new',
+  //       });
+
+  //       console.log('Associate leads response:', associateResponse);
+
+  //       if (!associateResponse.success) {
+  //         alert('Campaign created, but failed to attach leads.');
+  //         return;
+  //       }
+
+  //       await handleLaunchCampaign(createdCampaign.id);
+  //     }
+  //   } catch (err) {
+  //     console.error('Create campaign error:', err);
+  //     alert('Connection error while creating campaign.');
+  //   }
+  // };
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
@@ -653,7 +637,6 @@ const Campaigns = () => {
     try {
       const payload = {
         ...campaignForm,
-        launchDetails: filterLaunchDetailsByType(campaignForm.type, campaignForm.launchDetails),
         budget: campaignForm.budget ? parseFloat(campaignForm.budget) : null,
         spent: campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
         startDate: campaignForm.startDate
@@ -662,7 +645,7 @@ const Campaigns = () => {
         endDate: campaignForm.endDate
           ? new Date(campaignForm.endDate).toISOString()
           : null,
-        audienceType: showAudienceType ? campaignForm.audienceType || 'ALL' : 'ALL',
+        audienceType: campaignForm.audienceType || 'ALL',
       };
 
       const response = await createCampaign(payload);
@@ -691,53 +674,9 @@ const Campaigns = () => {
 
       await fetchCampaignsList();
 
-      // if (payload.status === 'ACTIVE' && createdCampaign?.id) {
-      //   const leadsResponse = await getLeads({ limit: 1000 });
-
-      //   const leads = leadsResponse?.data?.items || [];
-
-      //   const filteredLeads =
-      //     payload.audienceType === 'ALL'
-      //       ? leads
-      //       : leads.filter((lead) => getLeadAudienceValue(lead) === payload.audienceType);
-
-      //   const leadIds = filteredLeads.map((lead) => lead.id);
-
-      //   console.log('Leads selected for campaign:', leadIds.length);
-
-      //   if (leadIds.length === 0) {
-      //     alert(`Campaign created, but no ${payload.audienceType} leads found.`);
-      //     return;
-      //   }
-
-      //   const associateResponse = await associateCampaignLeads(createdCampaign.id, {
-      //     leadIds,
-      //     status: 'PENDING',
-      //     engagement: 'new',
-      //   });
-
-      //   if (!associateResponse.success) {
-      //     alert('Campaign created, but failed to attach leads.');
-      //     return;
-      //   }
-
-      //   await handleLaunchCampaign(createdCampaign.id, payload.audienceType);
-      // }
       if (payload.status === 'ACTIVE' && createdCampaign?.id) {
-        // Social Media campaigns do not send leads; launch directly with NOT_APPLICABLE audience
-        if (payload.type === 'SOCIAL_MEDIA') {
-          await handleLaunchCampaign(createdCampaign.id, 'NOT_APPLICABLE');
-          return;
-        }
-
-        // Google Ads campaigns should not associate leads – just launch
-        if (payload.type === 'GOOGLE_ADS') {
-          await handleLaunchCampaign(createdCampaign.id, payload.audienceType);
-          return;
-        }
-
-        // Default flow: fetch leads, associate them, then launch
         const leadsResponse = await getLeads({ limit: 1000 });
+
         const leads = leadsResponse?.data?.items || [];
 
         const filteredLeads =
@@ -746,6 +685,8 @@ const Campaigns = () => {
             : leads.filter((lead) => getLeadAudienceValue(lead) === payload.audienceType);
 
         const leadIds = filteredLeads.map((lead) => lead.id);
+
+        console.log('Leads selected for campaign:', leadIds.length);
 
         if (leadIds.length === 0) {
           alert(`Campaign created, but no ${payload.audienceType} leads found.`);
@@ -771,6 +712,30 @@ const Campaigns = () => {
     }
   };
 
+  // Edit Campaign Submit
+  // const handleEditSubmit = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const payload = {
+  //       ...campaignForm,
+  //       budget: campaignForm.budget ? parseFloat(campaignForm.budget) : null,
+  //       spent: campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
+  //       startDate: campaignForm.startDate ? new Date(campaignForm.startDate).toISOString() : null,
+  //       endDate: campaignForm.endDate ? new Date(campaignForm.endDate).toISOString() : null
+  //     };
+
+  //     const response = await updateCampaign(selectedCampaign.id, payload);
+  //     if (response.success) {
+  //       setIsEditOpen(false);
+  //       fetchCampaignsList();
+  //     } else {
+  //       alert(response.message || 'Failed to update campaign. Please verify fields.');
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert('Connection error while updating campaign.');
+  //   }
+  // };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -778,12 +743,11 @@ const Campaigns = () => {
     try {
       const payload = {
         ...campaignForm,
-        launchDetails: filterLaunchDetailsByType(campaignForm.type, campaignForm.launchDetails),
         budget: campaignForm.budget ? parseFloat(campaignForm.budget) : null,
         spent: campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
         startDate: campaignForm.startDate ? new Date(campaignForm.startDate).toISOString() : null,
         endDate: campaignForm.endDate ? new Date(campaignForm.endDate).toISOString() : null,
-        audienceType: showAudienceType ? campaignForm.audienceType || 'ALL' : 'ALL',
+        audienceType: campaignForm.audienceType || 'ALL',
       };
 
       const response = await updateCampaign(selectedCampaign.id, payload);
@@ -830,13 +794,13 @@ const Campaigns = () => {
       `${camp.conversionRate}%`
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8,"
+    const csvContent = "data:text/csv;charset=utf-8," 
       + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
-
+    
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `campaigns_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `campaigns_export_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -858,7 +822,7 @@ const Campaigns = () => {
   const endRow = Math.min(page * limit, totalCount);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6">   
       {/* FILTER & ACTIONS BAR - high-fidelity rounded pills */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-2 py-1 rounded-lg border border-neutral-200/50 shadow-xs">
         <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 sm:max-w-md shadow-xs transition-all focus-within:ring-2 focus-within:ring-neutral-900/20 focus-within:border-neutral-900/60">
@@ -907,7 +871,7 @@ const Campaigns = () => {
               <option value="SMS">SMS</option>
               <option value="WHATSAPP">WhatsApp</option>
               <option value="SOCIAL_MEDIA">Social Media</option>
-              <option value="GOOGLE_ADS">Google Ads</option>
+              <option value="PPC">PPC Ads</option>
               <option value="CONTENT">Content</option>
             </select>
             <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 pointer-events-none stroke-[2]" />
@@ -925,6 +889,17 @@ const Campaigns = () => {
           {/* Create Campaign Button */}
           <button
             onClick={() => {
+              // setCampaignForm({
+              //   name: '',
+              //   type: 'EMAIL',
+              //   budget: '',
+              //   spent: 0,
+              //   startDate: '',
+              //   endDate: '',
+              //   status: 'DRAFT',
+              //   targetAudience: '',
+              //   description: ''
+              // });
               setCampaignForm({
                 name: '',
                 type: 'EMAIL',
@@ -936,7 +911,6 @@ const Campaigns = () => {
                 audienceType: 'ALL',
                 targetAudience: '',
                 description: '',
-                launchDetails: {},
               });
               setIsCreateOpen(true);
             }}
@@ -974,7 +948,7 @@ const Campaigns = () => {
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="bg-[#f8fafc] border-b border-neutral-100">
-                  <th
+                  <th 
                     onClick={() => handleSort('name')}
                     className="cursor-pointer select-none px-6 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition"
                   >
@@ -983,7 +957,7 @@ const Campaigns = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
-                  <th
+                  <th 
                     onClick={() => handleSort('type')}
                     className="cursor-pointer select-none px-5 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition text-center"
                   >
@@ -992,7 +966,7 @@ const Campaigns = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
-                  <th
+                  <th 
                     onClick={() => handleSort('status')}
                     className="cursor-pointer select-none px-5 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition text-center"
                   >
@@ -1001,7 +975,7 @@ const Campaigns = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
-                  <th
+                  <th 
                     onClick={() => handleSort('startDate')}
                     className="cursor-pointer select-none px-5 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition"
                   >
@@ -1010,7 +984,7 @@ const Campaigns = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
-                  <th
+                  <th 
                     onClick={() => handleSort('budget')}
                     className="cursor-pointer select-none px-5 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition"
                   >
@@ -1019,7 +993,7 @@ const Campaigns = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
-                  <th
+                  <th 
                     onClick={() => handleSort('spent')}
                     className="cursor-pointer select-none px-5 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition"
                   >
@@ -1028,7 +1002,7 @@ const Campaigns = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
-                  <th
+                  <th 
                     onClick={() => handleSort('leadsCount')}
                     className="cursor-pointer select-none px-5 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition text-center"
                   >
@@ -1037,7 +1011,7 @@ const Campaigns = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
-                  <th
+                  <th 
                     onClick={() => handleSort('conversionsCount')}
                     className="cursor-pointer select-none px-5 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition text-center"
                   >
@@ -1046,7 +1020,7 @@ const Campaigns = () => {
                       <ArrowUpDown className="h-3.5 w-3.5 text-neutral-500" />
                     </div>
                   </th>
-                  <th
+                  <th 
                     onClick={() => handleSort('conversionRate')}
                     className="cursor-pointer select-none px-5 py-4 text-xs font-semibold text-[#556987] hover:text-neutral-800 transition text-center"
                   >
@@ -1060,13 +1034,13 @@ const Campaigns = () => {
               </thead>
               <tbody className="divide-y divide-neutral-100 font-semibold text-neutral-700 text-sm">
                 {campaigns.map((camp) => {
-                  const spentPercent = camp.budget && camp.budget > 0
+                  const spentPercent = camp.budget && camp.budget > 0 
                     ? Math.round((camp.spent / camp.budget) * 100)
                     : 0;
 
                   return (
                     <tr key={camp.id} className="hover:bg-neutral-50/50 transition">
-
+                      
                       {/* Name & Target */}
                       <td className="px-6 py-4.5">
                         <span className="font-semibold text-neutral-800 block leading-tight">{camp.name}</span>
@@ -1111,23 +1085,17 @@ const Campaigns = () => {
 
                       {/* Leads Count */}
                       <td className="px-5 py-4.5 text-center text-neutral-800 font-semibold">
-                        {/* {camp.leadsCount || 0} */}
-                        {camp.type === 'SOCIAL_MEDIA' ? 'N/A' : camp.leadsCount || 0}
+                        {camp.leadsCount || 0}
                       </td>
 
                       {/* Conversions Count */}
                       <td className="px-5 py-4.5 text-center text-neutral-800 font-semibold">
-                        {camp.type === 'SOCIAL_MEDIA' ? 'N/A' : camp.conversionsCount || 0}
+                        {camp.conversionsCount || 0}
                       </td>
 
                       {/* Conversion Rate */}
                       <td className={`px-5 py-4.5 text-center ${getConvRateStyle(camp.conversionRate)}`}>
-                        {/* {camp.conversionRate !== undefined ? `${camp.conversionRate.toFixed(1)}%` : '0.0%'} */}
-                        {camp.type === 'SOCIAL_MEDIA'
-                          ? 'N/A'
-                          : camp.conversionRate !== undefined
-                            ? `${camp.conversionRate.toFixed(1)}%`
-                            : '0.0%'}
+                        {camp.conversionRate !== undefined ? `${camp.conversionRate.toFixed(1)}%` : '0.0%'}
                       </td>
 
                       {/* Three-Dot Actions Menu */}
@@ -1145,9 +1113,9 @@ const Campaigns = () => {
                             <MoreVertical className="h-4.5 w-4.5" />
                           </button>
                         )}
-
+ 
                         {activeMenuId === camp.id && (
-                          <div
+                          <div 
                             ref={menuRef}
                             className="absolute right-8 top-12 w-36 bg-white border border-neutral-200/80 rounded-xl shadow-lg py-1.5 z-10 animate-in fade-in zoom-in-95 duration-100 text-left font-semibold text-neutral-700"
                           >
@@ -1165,13 +1133,30 @@ const Campaigns = () => {
                               <Target className="h-3.5 w-3.5 text-neutral-500" />
                               Edit details
                             </button>
-
+                            {/* {camp.status !== 'ACTIVE' && camp.status !== 'COMPLETED' && (
+                              <button
+                                onClick={() => handleLaunchCampaign(camp.id)}
+                                className="w-full px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 transition"
+                              >
+                                <Megaphone className="h-3.5 w-3.5 text-emerald-500" />
+                                Launch Campaign
+                              </button>
+                            )} */}
+                            {/* {camp.status !== 'COMPLETED' && (
+                              <button
+                                onClick={() => handleLaunchCampaign(camp.id)}
+                                className="w-full px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 transition"
+                              >
+                                <Megaphone className="h-3.5 w-3.5 text-emerald-500" />
+                                Launch Campaign
+                              </button>
+                            )} */}
                             <button
                               onClick={() => handleLaunchCampaign(camp.id, camp.audienceType || 'ALL')}
                               className="w-full px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 transition"
                             >
                               <Megaphone className="h-3.5 w-3.5 text-emerald-500" />
-                              {camp.type === 'SOCIAL_MEDIA' ? 'Launch Social Media Ad' : 'Launch Campaign'}
+                              Launch Campaign
                             </button>
                             <div className="border-t border-neutral-100 my-1"></div>
                             <button
@@ -1239,10 +1224,11 @@ const Campaigns = () => {
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${page === p
-                ? 'bg-neutral-900 text-white shadow-xs'
-                : 'border border-neutral-200 hover:bg-neutral-50'
-                }`}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                page === p 
+                  ? 'bg-neutral-900 text-white shadow-xs' 
+                  : 'border border-neutral-200 hover:bg-neutral-50'
+              }`}
             >
               {p}
             </button>
@@ -1261,14 +1247,14 @@ const Campaigns = () => {
       {isViewOpen && selectedCampaign && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-xs transition duration-200 animate-fade-in">
           <div className="w-auto bg-white h-screen flex flex-col justify-between shadow-sm animate-slide-in p-1 border-l border-neutral-100">
-
+            
             {/* Slide Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 line-clamp-1">{selectedCampaign.name}</h3>
                 <p className="text-xs text-neutral-500 mt-0.5">Campaign Type: {mapTypeLabel(selectedCampaign.type)}</p>
               </div>
-              <button
+              <button 
                 onClick={() => setIsViewOpen(false)}
                 className="p-1.5 rounded-lg hover:bg-neutral-50 text-neutral-500 hover:text-neutral-900 transition"
               >
@@ -1290,7 +1276,7 @@ const Campaigns = () => {
                     <p className="text-sm font-semibold text-neutral-700 leading-relaxed">
                       {campaignDetails?.targetAudience || 'All inquiries and direct registrants.'}
                     </p>
-
+                    
                     <div className="grid grid-cols-2 gap-4 text-xs pt-2">
                       <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                         <span className="text-neutral-500 block font-semibold">Budget Allocated</span>
@@ -1368,10 +1354,11 @@ const Campaigns = () => {
                                 Lead Status: {mapStatusLabel(l.lead?.status)}
                               </span>
                             </div>
-                            <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold ${l.status === 'CLICKED' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
-                              l.status === 'OPENED' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                                'bg-neutral-50 text-neutral-600 border border-neutral-100'
-                              }`}>
+                            <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold ${
+                              l.status === 'CLICKED' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
+                              l.status === 'OPENED' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 
+                              'bg-neutral-50 text-neutral-600 border border-neutral-100'
+                            }`}>
                               {l.status}
                             </span>
                           </div>
@@ -1390,7 +1377,7 @@ const Campaigns = () => {
       {isPlannerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition p-4 animate-fade-in">
           <div className="w-auto bg-white rounded-[24px] border border-neutral-100 shadow-sm flex flex-col justify-between overflow-hidden">
-
+            
             {/* Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
@@ -1400,7 +1387,7 @@ const Campaigns = () => {
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">Select candidates to register into this campaign stream</p>
               </div>
-              <button
+              <button 
                 onClick={() => setIsPlannerOpen(false)}
                 className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition"
               >
@@ -1420,15 +1407,15 @@ const Campaigns = () => {
                 </div>
               ) : (
                 warmLeads.map((lead) => (
-                  <label
-                    key={lead.id}
+                  <label 
+                    key={lead.id} 
                     className="flex items-center gap-3 p-3 rounded-xl border border-neutral-200 bg-white hover:border-neutral-900/50 hover:bg-slate-100/20 cursor-pointer select-none transition font-semibold"
                   >
                     <input
                       type="checkbox"
                       checked={selectedLeadIds.includes(lead.id)}
                       onChange={() => {
-                        setSelectedLeadIds(prev =>
+                        setSelectedLeadIds(prev => 
                           prev.includes(lead.id) ? prev.filter(id => id !== lead.id) : [...prev, lead.id]
                         );
                       }}
@@ -1471,7 +1458,7 @@ const Campaigns = () => {
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition p-4 animate-fade-in">
           <div className="w-auto bg-white rounded-[24px] border border-neutral-100 shadow-sm flex flex-col justify-between overflow-hidden">
-
+            
             {/* Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
@@ -1481,7 +1468,7 @@ const Campaigns = () => {
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">Establish outreach channel broadcast specifications</p>
               </div>
-              <button
+              <button 
                 onClick={() => setIsCreateOpen(false)}
                 className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition"
               >
@@ -1491,7 +1478,7 @@ const Campaigns = () => {
 
             {/* Scrollable form body */}
             <form onSubmit={handleCreateSubmit} className="p-6 space-y-4 max-h-[420px] overflow-y-auto bg-neutral-50/50 font-semibold text-xs text-neutral-500">
-
+              
               <div className="space-y-1">
                 <label className="">Campaign Identity Name *</label>
                 <input
@@ -1510,30 +1497,15 @@ const Campaigns = () => {
                   <select
                     required
                     value={campaignForm.type}
-                    onChange={(e) => {
-                      const selectedType = e.target.value;
-
-                      setCampaignForm((p) => ({
-                        ...p,
-                        type: selectedType,
-                        audienceType:
-                          selectedType === 'EMAIL' ||
-                            selectedType === 'SMS' ||
-                            selectedType === 'WHATSAPP'
-                            ? p.audienceType || 'ALL'
-                            : 'ALL',
-                      }));
-                    }}
+                    onChange={(e) => setCampaignForm(p => ({ ...p, type: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="EMAIL">Email Marketing</option>
-                    {/* <option value="SMS">SMS Promo Broadcast</option> */}
-                    {/* <option value="WHATSAPP">WhatsApp Automation</option> */}
+                    <option value="SMS">SMS Promo Broadcast</option>
+                    <option value="WHATSAPP">WhatsApp Automation</option>
                     <option value="SOCIAL_MEDIA">Social Media Ads</option>
-                    {/* <option value="LINKEDIN">LinkedIn Ads</option> */}
-                    <option value="GOOGLE_ADS">Google Ads</option>
-                    {/* <option value="PPC">Paid Search (PPC)</option> */}
-                    {/* <option value="CONTENT">Content Marketing</option> */}
+                    <option value="PPC">Paid Search (PPC)</option>
+                    <option value="CONTENT">Content Marketing</option>
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -1598,29 +1570,36 @@ const Campaigns = () => {
                 </div>
               </div>
 
+              {/* <div className="space-y-1">
+                <label className="">Target Audience Demographics</label>
+                <input
+                  type="text"
+                  placeholder="e.g. IT and engineering graduates in South Asia"
+                  value={campaignForm.targetAudience}
+                  onChange={(e) => setCampaignForm(p => ({ ...p, targetAudience: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                />
+              </div> */}
+              <div className="space-y-1">
+                <label>Target Audience Category *</label>
+                <select
+                  value={campaignForm.audienceType}
+                  onChange={(e) =>
+                    setCampaignForm((p) => ({ ...p, audienceType: e.target.value }))
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                >
+                  {AUDIENCE_TYPES.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
 
-              {showAudienceType && (
-                <div className="space-y-1">
-                  <label>Target Audience Category *</label>
-                  <select
-                    value={campaignForm.audienceType}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, audienceType: e.target.value }))
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
-                  >
-                    {AUDIENCE_TYPES.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <p className="text-[11px] font-semibold text-neutral-500">
-                    Selected audience count: {selectedAudienceCount}
-                  </p>
-                </div>
-              )}
+                <p className="text-[11px] font-semibold text-neutral-500">
+                  Selected audience count: {selectedAudienceCount}
+                </p>
+              </div>
 
               <div className="space-y-1">
                 <label className="">Campaign description / brief</label>
@@ -1633,19 +1612,13 @@ const Campaigns = () => {
                 />
               </div>
 
-              <CampaignTypeFields
-                type={campaignForm.type}
-                launchDetails={campaignForm.launchDetails}
-                onChange={(newDetails) => setCampaignForm(p => ({ ...p, launchDetails: newDetails }))}
-              />
-
               {/* Submit actions */}
               <div className="pt-4 border-t border-neutral-100 flex items-center gap-3">
                 <button
                   type="submit"
                   className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95"
                 >
-                  {campaignForm.type === 'SOCIAL_MEDIA' ? 'Save & Launch Ad' : 'Save & Launch'}
+                  Save & Launch
                 </button>
                 <button
                   type="button"
@@ -1661,23 +1634,21 @@ const Campaigns = () => {
         </div>
       )}
 
-
       {/* EDIT CAMPAIGN MODAL */}
       {isEditOpen && selectedCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition p-4 animate-fade-in">
           <div className="w-auto bg-white rounded-[24px] border border-neutral-100 shadow-sm flex flex-col justify-between overflow-hidden">
-
+            
+            {/* Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-neutral-900 text-lg flex items-center gap-1.5">
                   <Megaphone className="h-5 w-5 text-neutral-900" />
                   Edit Campaign Detail
                 </h3>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Modify established outreach channel parameters
-                </p>
+                <p className="text-xs text-neutral-500 mt-0.5">Modify established outreach channel parameters</p>
               </div>
-              <button
+              <button 
                 onClick={() => setIsEditOpen(false)}
                 className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition"
               >
@@ -1685,51 +1656,43 @@ const Campaigns = () => {
               </button>
             </div>
 
-            <form
-              onSubmit={handleEditSubmit}
-              className="p-6 space-y-4 max-h-[420px] overflow-y-auto bg-neutral-50/50 font-semibold text-xs text-neutral-500"
-            >
+            {/* Scrollable form body */}
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4 max-h-[420px] overflow-y-auto bg-neutral-50/50 font-semibold text-xs text-neutral-500">
+              
               <div className="space-y-1">
-                <label>Campaign Identity Name *</label>
+                <label className="">Campaign Identity Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Sep 2026 UK Intake Ads"
                   value={campaignForm.name}
-                  onChange={(e) =>
-                    setCampaignForm((p) => ({ ...p, name: e.target.value }))
-                  }
+                  onChange={(e) => setCampaignForm(p => ({ ...p, name: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 outline-none transition font-semibold text-neutral-700 bg-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label>Broadcast Type *</label>
+                  <label className="">Broadcast Type *</label>
                   <select
                     required
                     value={campaignForm.type}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, type: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, type: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="EMAIL">Email Marketing</option>
-                    {/* <option value="SMS">SMS Promo Broadcast</option> */}
-                    {/* <option value="WHATSAPP">WhatsApp Automation</option> */}
+                    <option value="SMS">SMS Promo Broadcast</option>
+                    <option value="WHATSAPP">WhatsApp Automation</option>
                     <option value="SOCIAL_MEDIA">Social Media Ads</option>
-                    {/* <option value="PPC">Paid Search (PPC)</option> */}
-                    {/* <option value="CONTENT">Content Marketing</option> */}
+                    <option value="PPC">Paid Search (PPC)</option>
+                    <option value="CONTENT">Content Marketing</option>
                   </select>
                 </div>
-
                 <div className="space-y-1">
-                  <label>Status Milestone</label>
+                  <label className="">Status Milestone</label>
                   <select
                     value={campaignForm.status}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, status: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, status: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="DRAFT">Draft</option>
@@ -1743,32 +1706,24 @@ const Campaigns = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label>Budget Allocation ($)</label>
+                  <label className="">Budget Allocation ($)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="e.g. 5000"
                     value={campaignForm.budget}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, budget: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, budget: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
-
                 <div className="space-y-1">
-                  <label>Direct Spent ($)</label>
+                  <label className="">Direct Spent ($)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="0"
                     value={campaignForm.spent}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({
-                        ...p,
-                        spent: parseFloat(e.target.value) || 0,
-                      }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, spent: parseFloat(e.target.value) || 0 }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
@@ -1776,86 +1731,48 @@ const Campaigns = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label>Start Date</label>
+                  <label className="">Start Date</label>
                   <input
                     type="date"
                     value={campaignForm.startDate}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, startDate: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, startDate: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
-
                 <div className="space-y-1">
-                  <label>End Date</label>
+                  <label className="">End Date</label>
                   <input
                     type="date"
                     value={campaignForm.endDate}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, endDate: e.target.value }))
-                    }
+                    onChange={(e) => setCampaignForm(p => ({ ...p, endDate: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
               </div>
-              {showAudienceType && (
-                <div className="space-y-1">
-                  <label>Target Audience Category *</label>
-                  <select
-                    value={campaignForm.audienceType}
-                    onChange={(e) =>
-                      setCampaignForm((p) => ({ ...p, audienceType: e.target.value }))
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
-                  >
-                    {AUDIENCE_TYPES.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
 
-                  <p className="text-[11px] font-semibold text-neutral-500">
-                    Selected audience count: {selectedAudienceCount}
-                  </p>
-                </div>
-              )}
               <div className="space-y-1">
-                <label>Target Audience Demographics</label>
+                <label className="">Target Audience Demographics</label>
                 <input
                   type="text"
                   placeholder="e.g. IT and engineering graduates in South Asia"
                   value={campaignForm.targetAudience}
-                  onChange={(e) =>
-                    setCampaignForm((p) => ({
-                      ...p,
-                      targetAudience: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setCampaignForm(p => ({ ...p, targetAudience: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
                 />
               </div>
 
               <div className="space-y-1">
-                <label>Campaign description / brief</label>
+                <label className="">Campaign description / brief</label>
                 <textarea
                   rows="3"
                   placeholder="Ad copywriting guidelines, objectives, conversion metrics..."
                   value={campaignForm.description}
-                  onChange={(e) =>
-                    setCampaignForm((p) => ({ ...p, description: e.target.value }))
-                  }
+                  onChange={(e) => setCampaignForm(p => ({ ...p, description: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white resize-none"
                 />
               </div>
 
-              <CampaignTypeFields
-                type={campaignForm.type}
-                launchDetails={campaignForm.launchDetails}
-                onChange={(newDetails) => setCampaignForm(p => ({ ...p, launchDetails: newDetails }))}
-              />
-
+              {/* Submit actions */}
               <div className="pt-4 border-t border-neutral-100 flex items-center gap-3">
                 <button
                   type="submit"
@@ -1871,6 +1788,7 @@ const Campaigns = () => {
                   Cancel
                 </button>
               </div>
+
             </form>
           </div>
         </div>

@@ -5,7 +5,6 @@ import { prisma } from '../../../prisma.js';
 import * as emailCampaignService from './emailCampaign.service.js';
 import * as smsWhatsAppCampaignService from './smsWhatsAppCampaign.service.js';
 import * as metaCampaignService from './metaCampaign.service.js';
-import * as linkedInCampaignService from './linkedInCampaign.service.js';
 import * as websiteCampaignService from './websiteCampaign.service.js';
 import * as googleAdsCampaignService from './googleAdsCampaignService.js';
 
@@ -19,6 +18,10 @@ const normalizeAudienceType = (value?: string): AudienceType => {
   }
 
   return 'ALL';
+};
+
+const isDirectLeadCampaign = (type: string) => {
+  return ['EMAIL', 'SMS', 'WHATSAPP'].includes(type);
 };
 
 export const launchCampaign = async (
@@ -39,33 +42,41 @@ export const launchCampaign = async (
     throw new Error('Campaign not found');
   }
 
-  const campaignLeads = await prisma.campaignLead.findMany({
-    where: {
-      campaignId,
-      lead: {
-        deletedAt: null,
-        ...(selectedAudienceType !== 'ALL'
-          ? {
+  let leads: any[] = [];
+  let campaignLeadCount = 0;
+
+  if (isDirectLeadCampaign(campaign.type)) {
+    const campaignLeads = await prisma.campaignLead.findMany({
+      where: {
+        campaignId,
+        lead: {
+          deletedAt: null,
+          ...(selectedAudienceType !== 'ALL'
+            ? {
               rating: selectedAudienceType,
             }
-          : {}),
+            : {}),
+        },
       },
-    },
-    include: {
-      lead: true,
-    },
-  });
+      include: {
+        lead: true,
+      },
+    });
 
-  const leads = campaignLeads
-    .map((cl) => cl.lead)
-    .filter((lead) => lead && lead.email && String(lead.email).trim() !== '');
+    campaignLeadCount = campaignLeads.length;
+
+    leads = campaignLeads
+      .map((cl) => cl.lead)
+      .filter((lead) => lead && lead.email && String(lead.email).trim() !== '');
+  }
 
   console.log('Launching campaign ID:', campaignId);
-  console.log('Selected audience type:', selectedAudienceType);
-  console.log('CampaignLead records:', campaignLeads.length);
+  console.log('Campaign type:', campaign.type);
+  console.log('Selected audience type:', isDirectLeadCampaign(campaign.type) ? selectedAudienceType : 'NOT_APPLICABLE');
+  console.log('CampaignLead records:', campaignLeadCount);
   console.log('Leads passed to campaign service:', leads.length);
 
-  if (leads.length === 0) {
+  if (isDirectLeadCampaign(campaign.type) && leads.length === 0) {
     await prisma.campaignLaunchLog.create({
       data: {
         campaignId,
@@ -74,14 +85,14 @@ export const launchCampaign = async (
         details: {
           audienceType: selectedAudienceType,
           totalLeads: 0,
-          error: `No ${selectedAudienceType} leads with valid email found for this campaign`,
+          error: `No ${selectedAudienceType} leads found for this campaign`,
         },
       },
     });
 
     return {
       success: false,
-      message: `No ${selectedAudienceType} leads with valid email found for this campaign`,
+      message: `No ${selectedAudienceType} leads found for this campaign`,
       audienceType: selectedAudienceType,
       totalSent: 0,
       totalFailed: 0,
@@ -104,24 +115,20 @@ export const launchCampaign = async (
         results = await smsWhatsAppCampaignService.execute(campaign, leads);
         break;
 
-      case 'SOCIAL_MEDIA': {
-        const metaRes = await metaCampaignService.execute(campaign, leads);
-        const linkedInRes = await linkedInCampaignService.execute(campaign, leads);
-
-        results = {
-          success: Boolean(metaRes.success && linkedInRes.success),
-          meta: metaRes,
-          linkedin: linkedInRes,
-        };
+      case 'SOCIAL_MEDIA':
+        results = await metaCampaignService.execute(campaign, []);
         break;
-      }
 
       case 'PPC':
-        results = await googleAdsCampaignService.execute(campaign, leads);
+        results = await googleAdsCampaignService.execute(campaign, []);
+        break;
+
+      case 'GOOGLE_ADS':
+        results = await googleAdsCampaignService.execute(campaign, []);
         break;
 
       case 'CONTENT':
-        results = await websiteCampaignService.execute(campaign, leads);
+        results = await websiteCampaignService.execute(campaign, []);
         break;
 
       default:
@@ -146,7 +153,12 @@ export const launchCampaign = async (
       results.details?.skippedCount ||
       0;
 
-    const overallSuccess = totalSent > 0;
+    const overallSuccess =
+      campaign.type === 'SOCIAL_MEDIA' ||
+        campaign.type === 'PPC' ||
+        campaign.type === 'CONTENT'
+        ? Boolean(results.success)
+        : totalSent > 0;
 
     await prisma.campaignLaunchLog.create({
       data: {
@@ -154,7 +166,10 @@ export const launchCampaign = async (
         launchedBy: launchedByUserId || null,
         status: overallSuccess ? 'SUCCESS' : 'FAILED',
         details: {
-          audienceType: selectedAudienceType,
+          campaignType: campaign.type,
+          audienceType: isDirectLeadCampaign(campaign.type)
+            ? selectedAudienceType
+            : 'NOT_APPLICABLE',
           totalLeads: leads.length,
           totalSent,
           totalFailed,
@@ -178,10 +193,13 @@ export const launchCampaign = async (
     return {
       success: overallSuccess,
       message:
-        totalSent > 0
+        results.message ||
+        (overallSuccess
           ? 'Campaign launched successfully'
-          : 'Campaign launch completed with errors',
-      audienceType: selectedAudienceType,
+          : 'Campaign launch completed with errors'),
+      audienceType: isDirectLeadCampaign(campaign.type)
+        ? selectedAudienceType
+        : 'NOT_APPLICABLE',
       totalSent,
       totalFailed,
       totalSkipped,
@@ -194,7 +212,10 @@ export const launchCampaign = async (
         launchedBy: launchedByUserId || null,
         status: 'FAILED',
         details: {
-          audienceType: selectedAudienceType,
+          campaignType: campaign.type,
+          audienceType: isDirectLeadCampaign(campaign.type)
+            ? selectedAudienceType
+            : 'NOT_APPLICABLE',
           totalLeads: leads.length,
           error: error.message || 'Fatal launch error',
         },

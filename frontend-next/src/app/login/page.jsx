@@ -459,7 +459,7 @@ export default function LoginPage() {
                     />
                   </div>
 
-                  <div>
+                  {/* <div>
                     <label className="mb-2 block text-sm font-medium text-neutral-600">
                       Agency Code
                     </label>
@@ -469,7 +469,7 @@ export default function LoginPage() {
                       onChange={handleRegisterChange}
                       className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-neutral-600">

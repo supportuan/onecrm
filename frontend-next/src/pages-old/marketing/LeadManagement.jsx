@@ -640,7 +640,7 @@ ApplyUniNow`
 
   return (
     <div className="space-y-6 w-full">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-2 py-1 rounded-2xl">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-1 py-1 rounded-2xl">
         <div className="flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 sm:max-w-md shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#0084ff]/20 focus-within:border-[#0084ff]/60">
           <Search className="h-5 w-5 text-slate-400 flex-shrink-0" />
 
@@ -664,24 +664,6 @@ ApplyUniNow`
             </button>
           )}
         </div>
-
-        {/* <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleExport}
-            className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
-          >
-            <Download className="h-4 w-4 text-slate-600 stroke-[2.5]" />
-            Export
-          </button>
-
-          <button
-            onClick={() => setIsIntakeOpen(true)}
-            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
-          >
-            <Plus className="h-4 w-4 stroke-[3]" />
-            Add Lead
-          </button>
-        </div> */}
 
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -751,10 +733,13 @@ ApplyUniNow`
           </p>
         </div>
       ) : (
-        <div className="border border-slate-200 rounded-[24px] overflow-hidden bg-white shadow-sm w-full">
+        // <div className="border border-slate-200 rounded-[24px] overflow-hidden bg-white shadow-sm w-full">
+        <div className="border border-slate-200 rounded-[24px] bg-white shadow-sm w-full overflow-hidden">
           <div className="w-full overflow-x-auto">
-            <table className="min-w-[1200px] w-full border-collapse text-left">
-              <thead>
+            {/* <table className="min-w-[1200px] w-full border-collapse text-left"> */}
+            {/* <table className="w-full table-fixed border-collapse text-left"> */}
+            <table className="min-w-full border-collapse text-left">
+              {/* <thead>
                 <tr className="bg-[#f8fafc] border-b border-slate-100">
                   <th
                     onClick={() => handleSort('fullName')}
@@ -803,11 +788,52 @@ ApplyUniNow`
 
                   </th>
 
-                  {/* <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Remark
-                  </th> */}
-
                   <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
+                    Action
+                  </th>
+                </tr>
+              </thead> */}
+
+              <thead>
+                <tr className="bg-[#f8fafc] border-b border-slate-100">
+                  <th
+                    onClick={() => handleSort('fullName')}
+                    className="w-[14%] cursor-pointer px-3 py-4 text-sm font-semibold text-[#556987]"
+                  >
+                    Lead
+                  </th>
+
+                  <th className="w-[18%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
+                    Contact
+                  </th>
+
+                  <th
+                    onClick={() => handleSort('sourceId')}
+                    className="w-[10%] cursor-pointer px-3 py-4 text-sm font-semibold text-[#556987] text-center"
+                  >
+                    Source
+                  </th>
+
+                  <th className="w-[12%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
+                    Interested In
+                  </th>
+
+                  <th
+                    onClick={() => handleSort('rating')}
+                    className="w-[12%] cursor-pointer px-3 py-4 text-sm font-semibold text-[#556987] text-center"
+                  >
+                    Lead Status
+                  </th>
+
+                  <th className="w-[10%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
+                    Assigned By
+                  </th>
+
+                  <th className="w-[16%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
+                    Assigned To
+                  </th>
+
+                  <th className="w-[8%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
                     Action
                   </th>
                 </tr>
@@ -818,7 +844,7 @@ ApplyUniNow`
                   <tr key={`lead-${lead.id}`}
                     className="group hover:bg-[#f8fafc]/70 transition-all duration-150"
                   >
-                    <td className="px-6 py-5 cursor-pointer"
+                    <td className="px-3 py-4 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRowClick(lead);
@@ -833,7 +859,7 @@ ApplyUniNow`
                       </div>
                     </td>
 
-                    <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-col gap-1 text-[13px] text-slate-600">
                         {lead.email && (
                           <a
@@ -861,19 +887,19 @@ ApplyUniNow`
                       </div>
                     </td>
 
-                    <td className="px-6 py-5 text-center">
+                    <td className="px-3 py-4 text-center">
                       <span className="font-semibold text-slate-700 text-sm">
                         {lead.source?.name || 'N/A'}
                       </span>
                     </td>
 
-                    <td className="px-6 py-5 text-center">
+                    <td className="px-3 py-4 text-center">
                       <span className="font-semibold text-slate-700 text-sm">
                         {lead.interestedIn || lead.preferredCourse || 'N/A'}
                       </span>
                     </td>
 
-                    <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                       {isAdminOrSuperAdmin ? (
                         <div className="relative inline-block">
                           <select
@@ -881,7 +907,7 @@ ApplyUniNow`
                             onChange={(e) =>
                               handleLeadRatingChange(lead.id, e.target.value)
                             }
-                            className={`appearance-none border px-3 pr-8 py-1.5 rounded-xl text-xs font-bold outline-none cursor-pointer transition shadow-sm w-28 ${getRatingClasses(
+                            className={`appearance-none border px-3 pr-8 py-1.5 rounded-xl text-xs font-bold outline-none cursor-pointer transition shadow-sm w-[100px]${getRatingClasses(
                               lead.rating || 'WARM'
                             )}`}
                           >
@@ -904,13 +930,13 @@ ApplyUniNow`
                       )}
                     </td>
 
-                    <td className="px-6 py-5 text-center">
+                    <td className="px-3 py-4 text-center">
                       <span className="font-semibold text-slate-600 text-sm">
                         {lead.assignedBy?.name || '-'}
                       </span>
                     </td>
 
-                    {/* <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
+                    {/* <td className="px-3 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                       {isAdminOrSuperAdmin ? (
                         <select
                           value={lead.assignedCounsellor?.id || ''}
@@ -935,7 +961,7 @@ ApplyUniNow`
                     </td> */}
 
                     <td
-                      className="px-6 py-5 text-center"
+                      className="px-3 py-4 text-center"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {isAdminOrSuperAdmin ? (
@@ -945,7 +971,8 @@ ApplyUniNow`
                             onChange={(e) =>
                               handleAssignCounsellor(lead.id, e.target.value)
                             }
-                            className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-10 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm min-w-[180px]"
+                            className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-2 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm w-full max-w-[140px]"
+                          // className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-10 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm min-w-[180px]"
                           >
                             <option value="">Unassigned</option>
 
@@ -969,7 +996,7 @@ ApplyUniNow`
                       )}
                     </td>
 
-                    {/* <td className="px-6 py-5 text-center max-w-[200px] truncate">
+                    {/* <td className="px-3 py-4 text-center max-w-[200px] truncate">
                       <span className="font-semibold text-slate-600 text-sm">
                         {lead.remark || 'No remarks'}
                       </span>
@@ -1263,7 +1290,7 @@ ApplyUniNow`
                 <button
                   type="submit"
                   disabled={submittingLead}
-                  className="bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-[#0084ff]/50 text-white px-6 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md hover:shadow-lg"
+                  className="bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-[#0084ff]/50 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md hover:shadow-lg"
                 >
                   {submittingLead ? (
                     <>
@@ -1282,7 +1309,7 @@ ApplyUniNow`
 
       {isActivityOpen && activeLead && (
         <div className="fixed inset-y-0 right-0 z-50 w-[420px] max-w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col h-full transform transition-transform duration-300">
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-3 py-4 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-semibold text-slate-700 text-sm shadow-inner">

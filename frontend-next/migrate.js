@@ -72,7 +72,8 @@ const routes = [
     { path: 'chatbot-events', importPath: 'ChatbotEvents', component: 'ChatbotEvents' },
     { path: 'chatbot-events/chatbot-builder', importPath: 'chatbot-events/ChatbotBuilder', component: 'ChatbotBuilder' },
     { path: 'chatbot-events/bot-dashboard', importPath: 'chatbot-events/BotDashboard', component: 'BotDashboard' },
-    { path: 'chatbot-events/events-webinars', importPath: 'chatbot-events/EventsWebinars', component: 'EventsWebinars' }
+    { path: 'chatbot-events/events-webinars', importPath: 'chatbot-events/EventsWebinars', component: 'EventsWebinars' },
+    { path: 'allied-services', importPath: 'AlliedServices', component: 'AlliedServices' }
 ];
 
 routes.forEach(route => {

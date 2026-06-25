@@ -127,8 +127,18 @@ export const invalidateTenant = (tenantId: number): void => {
 // Boot-time hook: backfill defaults on every tenant so stale or partially
 // migrated rows are healed. seedTenantDefaults preserves customized non-empty
 // rows; only empty/missing rows are filled.
+// export const ensureDefaultTenantSeeded = async (): Promise<void> => {
+//   const tenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
+//   if (tenant) await seedTenantDefaults(tenant.id);
+// };
+
 export const ensureDefaultTenantSeeded = async (): Promise<void> => {
-  const tenants = await prisma.tenant.findMany({ select: { id: true } });
+  // console.log("Prisma Models:", Object.keys(prisma));
+
+  const tenants = await prisma.tenant.findMany({
+    select: { id: true }
+  });
+
   for (const t of tenants) {
     try {
       await seedTenantDefaults(t.id);
