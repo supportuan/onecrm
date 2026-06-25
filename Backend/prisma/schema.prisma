@@ -1691,18 +1691,3 @@ model SuperAdminAudit {
   @@index([createdAt])
 }
 
-model CampaignLaunchLog {
-  id         Int      @id @default(autoincrement())
-  campaignId Int
-  launchedBy Int?
-  launchedAt DateTime?
-  status     String
-  details    Json?
-  message    String?
-  createdAt  DateTime @default(now())
-
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-
-  @@index([campaignId])
-  @@index([launchedBy])
-}

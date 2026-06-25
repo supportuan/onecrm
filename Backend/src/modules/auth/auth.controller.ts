@@ -127,6 +127,17 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
     }
 };
 
+export const acceptPolicy = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.user) return sendError(res, 'Unauthorized', null, 401);
+        acceptPolicySchema.parse(req.body);
+        const result = await authService.acceptPolicy(req.user.id);
+        return sendSuccess(res, 'Policy accepted', result);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // const sendResetEmail = async (email: string, token: string) => {
 //     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 //     console.log("resetUrl", resetUrl);
