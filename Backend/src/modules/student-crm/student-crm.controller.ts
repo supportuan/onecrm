@@ -3,6 +3,7 @@ import { sendError, sendSuccess } from '../../utils/response.js';
 import * as service from './student-crm.service.js';
 import { getDefaultChecklist } from './checklists.js';
 import { getFormOptions as loadFormOptions } from '../crm-settings/crm-settings.service.js';
+import { resolveFileRefsDeep } from '../../lib/file-storage.js';
 
 const numId = (raw: any) => {
   const n = Number(raw);
@@ -167,7 +168,7 @@ export const getApplication = async (req: Request, res: Response, next: NextFunc
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const item = await service.getApplication(id, actor(req));
+    const item = await resolveFileRefsDeep(await service.getApplication(id, actor(req)));
     if (!item) return sendError(res, 'not found', null, 404);
     return sendSuccess(res, 'application', item);
   } catch (err) {

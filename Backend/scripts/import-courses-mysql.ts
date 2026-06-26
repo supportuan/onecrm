@@ -9,22 +9,13 @@
 import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
 import { PrismaClient } from '@prisma/client';
+import { connectApplyUniMysql } from './lib/applyuni-mysql.js';
 
 dotenv.config();
 
 const BATCH = Number(process.env.IMPORT_BATCH_SIZE || 2000);
 const MAX_BATCHES = Number(process.env.IMPORT_MAX_BATCHES || 0); // 0 = all
 const FALLBACK_DATABASE = 'applyuninow_new';
-
-async function connectMysql(database?: string) {
-  return mysql.createConnection({
-    host: process.env.APPLY_UNI_MYSQL_HOST || 'localhost',
-    port: Number(process.env.APPLY_UNI_MYSQL_PORT || 3307),
-    user: process.env.APPLY_UNI_MYSQL_USER,
-    password: process.env.APPLY_UNI_MYSQL_PASSWORD || '',
-    database: database || process.env.APPLY_UNI_MYSQL_DATABASE || FALLBACK_DATABASE,
-  });
-}
 
 async function resolveCourseSource(conn: mysql.Connection) {
   const [dbRow] = await conn.query<any[]>('SELECT DATABASE() AS db');
@@ -39,29 +30,19 @@ async function resolveCourseSource(conn: mysql.Connection) {
 
   if (tables.length) {
     const name = tables[0].TABLE_NAME || tables[0].table_name;
-    return { conn, db, table: process.env.APPLY_UNI_COURSE_TABLE || name };
-  }
-
-  await conn.end();
-
-  if (db !== FALLBACK_DATABASE) {
-    console.warn(
-      `No course table in "${db}". Courses live in "${FALLBACK_DATABASE}" — retrying there.\n` +
-        `Tip: set APPLY_UNI_MYSQL_DATABASE=${FALLBACK_DATABASE} and re-run crm:import-universities first.`
-    );
-    const fallbackConn = await connectMysql(FALLBACK_DATABASE);
-    return resolveCourseSource(fallbackConn);
+    return { db, table: process.env.APPLY_UNI_COURSE_TABLE || name };
   }
 
   throw new Error(
     `No course_lists table in "${db}". Set APPLY_UNI_MYSQL_DATABASE=${FALLBACK_DATABASE} ` +
-      'and run npm run crm:import-universities before importing courses.'
+      'and re-run crm:import-universities first.'
   );
 }
 
 async function main() {
   const prisma = new PrismaClient();
-  const { conn, db, table } = await resolveCourseSource(await connectMysql());
+  const { conn, close } = await connectApplyUniMysql();
+  const { db, table } = await resolveCourseSource(conn);
   console.log(`MySQL source: ${db}.${table}`);
 
   const uniMap = new Map(
@@ -132,7 +113,7 @@ async function main() {
     console.log(`Batch ${batchNum}: processed ${offset}/${total}, imported ${imported}, skipped ${skipped}`);
   }
 
-  await conn.end();
+  await close();
   const pgTotal = await prisma.course.count({ where: { deletedAt: null } });
   console.log(`✅ Courses in PostgreSQL: ${pgTotal}`);
   await prisma.$disconnect();

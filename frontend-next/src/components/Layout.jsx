@@ -21,7 +21,10 @@ const Layout = ({ children }) => {
   ];
 
   const isApplicantPortal = pathname?.startsWith('/applicant');
-  const isPublicPage = publicRoutes.includes(pathname) || isApplicantPortal;
+  // Print / document-render routes are chromeless on purpose so Ctrl+P captures
+  // only the document body. Match by suffix to keep the rule extensible.
+  const isPrintRoute = !!pathname && /\/print(\/|$)/.test(pathname);
+  const isPublicPage = publicRoutes.includes(pathname) || isApplicantPortal || isPrintRoute;
 
   if (isPublicPage) {
     return (

@@ -1,6 +1,7 @@
 import { prisma } from '../../prisma.js';
 import type {
   Employee,
+  EmployeeDocument,
   Device,
   NetworkWhitelist,
   AttendanceRecord,
@@ -13,7 +14,11 @@ import type {
   Payslip,
   OnboardingChecklist,
   OnboardingItem,
+  OnboardingTemplate,
+  OnboardingTemplateItem,
   OfferLetter,
+  OfferLetterTemplate,
+  CandidateStageEvent,
   Interview,
   InterviewFeedback,
   JobPosting,
@@ -40,7 +45,11 @@ import type {
   HrPayslip,
   HrOnboardingChecklist,
   HrOnboardingItem,
+  HrOnboardingTemplate,
+  HrOnboardingTemplateItem,
   HrOfferLetter,
+  HrOfferLetterTemplate,
+  HrCandidateStageEvent,
   HrInterview,
   HrJobPosting,
   HrCandidate,
@@ -54,10 +63,12 @@ import type {
   HrReviewStatus,
   HrAttendanceStatus,
   HrAccessRole,
+  HrEmploymentStatus,
+  HrEmployeeDocument,
+  HrEmployeeDocumentType,
 } from '@prisma/client';
+import { storeUploadedFile } from '../../lib/file-storage.js';
 
-// ---------------------------------------------------------------------------
-// Helpers
 // ---------------------------------------------------------------------------
 
 export const sid = (id: number) => String(id);
@@ -95,18 +106,28 @@ const todayDateString = () =>
     new Date()
   );
 
-const mapEmployee = (e: HrEmployee): Employee => {
-  // Split a stored full name into first/last for legacy frontend code that
-  // still expects emp.first_name / emp.last_name.
-  const trimmed = (e.name ?? '').trim();
+type EmployeeRow = HrEmployee & { manager?: HrEmployee | null };
+
+const splitName = (full: string) => {
+  const trimmed = (full ?? '').trim();
   const spaceIdx = trimmed.indexOf(' ');
-  const first_name = spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
-  const last_name = spaceIdx === -1 ? '' : trimmed.slice(spaceIdx + 1);
+  return {
+    first: spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx),
+    last: spaceIdx === -1 ? '' : trimmed.slice(spaceIdx + 1),
+  };
+};
+
+const mapEmployee = (e: EmployeeRow): Employee => {
+  const { first, last } = splitName(e.name);
+  const first_name = e.firstName ?? first;
+  const last_name = e.lastName ?? last;
   return {
     id: sid(e.id),
     name: e.name,
     first_name,
     last_name,
+    firstName: e.firstName,
+    lastName: e.lastName,
     employeeId: e.employeeCode,
     employee_id: e.employeeCode,
     email: e.email,
@@ -116,7 +137,92 @@ const mapEmployee = (e: HrEmployee): Employee => {
     phone: e.phone,
     biometricId: e.biometricId,
     location: e.location,
+    joiningDate: e.joiningDate,
+    managerId: e.managerId ? sid(e.managerId) : null,
+    managerName: e.manager?.name ?? null,
+    employmentStatus: e.employmentStatus,
+    resignedAt: e.resignedAt?.toISOString() ?? null,
+    terminatedAt: e.terminatedAt?.toISOString() ?? null,
+    exitReason: e.exitReason,
   };
+};
+
+const mapEmployeeDocument = (d: HrEmployeeDocument): EmployeeDocument => ({
+  id: sid(d.id),
+  employeeId: sid(d.employeeId),
+  type: d.type,
+  fileName: d.fileName,
+  fileUrl: d.fileUrl,
+  mimeType: d.mimeType,
+  fileSize: d.fileSize,
+  uploadedAt: d.uploadedAt.toISOString(),
+  expiresAt: d.expiresAt?.toISOString() ?? null,
+  notes: d.notes,
+  sourceOfferLetterId: d.sourceOfferLetterId ? sid(d.sourceOfferLetterId) : null,
+});
+
+/** Set ON_LEAVE when an approved leave covers today; otherwise ACTIVE (unless exited). */
+export const syncEmployeeLeaveStatus = async (
+  employeeId: number,
+  db: Pick<typeof prisma, 'hrEmployee' | 'hrLeaveRequest'> = prisma,
+) => {
+  const emp = await db.hrEmployee.findUnique({ where: { id: employeeId } });
+  if (!emp || emp.employmentStatus === 'RESIGNED' || emp.employmentStatus === 'TERMINATED') {
+    return;
+  }
+  const today = todayDateString();
+  const activeLeave = await db.hrLeaveRequest.findFirst({
+    where: {
+      employeeId,
+      status: 'APPROVED',
+      fromDate: { lte: today },
+      toDate: { gte: today },
+    },
+  });
+  const nextStatus: HrEmploymentStatus = activeLeave ? 'ON_LEAVE' : 'ACTIVE';
+  if (emp.employmentStatus !== nextStatus) {
+    await db.hrEmployee.update({
+      where: { id: employeeId },
+      data: { employmentStatus: nextStatus },
+    });
+  }
+};
+
+const linkOfferLetterToEmployee = async (
+  tx: typeof prisma,
+  employeeId: number,
+  tenantId: number | null,
+  offer: HrOfferLetter,
+) => {
+  const storedName = `offer-letter-${offer.id}.html`;
+  const html =
+    offer.renderedHtml ||
+    `<html><body><h1>Offer Letter</h1><p>${offer.candidateName} — ${offer.jobTitle}</p><p>Department: ${offer.department}</p></body></html>`;
+  const relativePath = `uploads/hr/employees/${employeeId}/${storedName}`;
+  const { ref: fileUrl } = await storeUploadedFile({
+    relativePath,
+    buffer: Buffer.from(html, 'utf8'),
+    contentType: 'text/html',
+  });
+
+  const existing = await tx.hrEmployeeDocument.findFirst({
+    where: { employeeId, sourceOfferLetterId: offer.id },
+  });
+  if (existing) return existing;
+
+  return tx.hrEmployeeDocument.create({
+    data: {
+      tenantId: tenantId ?? undefined,
+      employeeId,
+      type: 'OFFER_LETTER',
+      fileName: `Offer Letter - ${offer.jobTitle}.html`,
+      fileUrl,
+      mimeType: 'text/html',
+      fileSize: Buffer.byteLength(html, 'utf8'),
+      sourceOfferLetterId: offer.id,
+      notes: 'Linked from accepted recruitment offer',
+    },
+  });
 };
 
 const mapDevice = (d: HrAttendanceDevice): Device => ({
@@ -234,6 +340,55 @@ const mapOnboardingItem = (i: HrOnboardingItem): OnboardingItem => ({
   status: i.status,
   completedAt: i.completedAt?.toISOString(),
   completedBy: i.completedBy ?? undefined,
+  dueDate: i.dueDate ?? undefined,
+  assignee: i.assignee ?? undefined,
+  attachmentUrl: i.attachmentUrl ?? undefined,
+  attachmentFileName: i.attachmentFileName ?? undefined,
+});
+
+const mapOnboardingTemplateItem = (i: HrOnboardingTemplateItem): OnboardingTemplateItem => ({
+  id: sid(i.id),
+  category: i.category,
+  title: i.title,
+  description: i.description ?? undefined,
+  dueOffsetDays: i.dueOffsetDays,
+  assigneeRole: i.assigneeRole ?? undefined,
+  sortOrder: i.sortOrder,
+});
+
+const mapOnboardingTemplate = (
+  t: HrOnboardingTemplate & { items: HrOnboardingTemplateItem[] },
+): OnboardingTemplate => ({
+  id: sid(t.id),
+  name: t.name,
+  description: t.description ?? undefined,
+  isDefault: t.isDefault,
+  role: t.role ?? undefined,
+  items: t.items.map(mapOnboardingTemplateItem),
+  createdAt: t.createdAt.toISOString(),
+});
+
+const mapOfferLetterTemplate = (t: HrOfferLetterTemplate): OfferLetterTemplate => ({
+  id: sid(t.id),
+  name: t.name,
+  description: t.description ?? undefined,
+  bodyHtml: t.bodyHtml,
+  isDefault: t.isDefault,
+  createdAt: t.createdAt.toISOString(),
+  updatedAt: t.updatedAt.toISOString(),
+});
+
+const mapCandidateStageEvent = (
+  e: HrCandidateStageEvent & { changedBy?: { id: number; fullName: string } | null },
+): CandidateStageEvent => ({
+  id: sid(e.id),
+  candidateId: sid(e.candidateId),
+  fromStage: e.fromStage ?? undefined,
+  toStage: e.toStage,
+  changedById: e.changedById ? sid(e.changedById) : undefined,
+  changedByName: e.changedBy?.fullName,
+  notes: e.notes ?? undefined,
+  createdAt: e.createdAt.toISOString(),
 });
 
 const mapOnboardingChecklist = (
@@ -260,6 +415,12 @@ const mapOfferLetter = (o: HrOfferLetter): OfferLetter => ({
   expiryDate: o.expiryDate,
   status: o.status,
   policyTemplate: o.policyTemplate,
+  templateId: o.templateId ? sid(o.templateId) : undefined,
+  renderedHtml: o.renderedHtml ?? undefined,
+  conditional: o.conditional,
+  acceptedAt: o.acceptedAt?.toISOString(),
+  rejectedAt: o.rejectedAt?.toISOString(),
+  employeeId: o.employeeId ? sid(o.employeeId) : undefined,
   createdAt: o.createdAt.toISOString(),
   updatedAt: o.updatedAt.toISOString(),
 });
@@ -387,9 +548,23 @@ const resolveNumericId = (id: string): number | null => {
 // 1. Employees & Admin Roles
 // ---------------------------------------------------------------------------
 
-export const getEmployees = async () => {
-  const rows = await prisma.hrEmployee.findMany({ orderBy: { id: 'asc' } });
+export const getEmployees = async (opts?: { status?: HrEmploymentStatus }) => {
+  const rows = await prisma.hrEmployee.findMany({
+    where: opts?.status ? { employmentStatus: opts.status } : undefined,
+    orderBy: { id: 'asc' },
+    include: { manager: true },
+  });
   return rows.map(mapEmployee);
+};
+
+export const getEmployeeById = async (id: string) => {
+  const emp = await resolveEmployeeId(id);
+  if (!emp) return null;
+  const row = await prisma.hrEmployee.findUnique({
+    where: { id: emp.id },
+    include: { manager: true },
+  });
+  return row ? mapEmployee(row) : null;
 };
 
 export const getTeam = async () => getEmployees();
@@ -417,9 +592,12 @@ export const bulkImportEmployees = async (rows: Partial<Employee>[]) => {
       },
     });
     if (!exists) {
+      const { first, last } = splitName(row.name);
       await prisma.hrEmployee.create({
         data: {
           name: row.name,
+          firstName: row.firstName ?? first,
+          lastName: row.lastName ?? last,
           employeeCode: row.employeeId,
           email: row.email,
           accessRole: (row.access_role as HrAccessRole) || 'EMPLOYEE',
@@ -428,12 +606,149 @@ export const bulkImportEmployees = async (rows: Partial<Employee>[]) => {
           phone: row.phone || null,
           biometricId: row.biometricId || row.employeeId,
           location: row.location || 'HQ Office',
+          joiningDate: row.joiningDate || null,
+          employmentStatus: 'ACTIVE',
         },
       });
       importedCount++;
     }
   }
   return { success: true, count: importedCount };
+};
+
+export const updateEmployee = async (
+  employeeId: string,
+  data: {
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    email?: string;
+    phone?: string | null;
+    department?: string | null;
+    designation?: string | null;
+    location?: string | null;
+    biometricId?: string | null;
+    joiningDate?: string | null;
+    managerId?: string | null;
+    access_role?: string;
+    employmentStatus?: HrEmploymentStatus;
+    resignedAt?: string | null;
+    terminatedAt?: string | null;
+    exitReason?: string | null;
+  },
+) => {
+  const emp = await resolveEmployeeId(employeeId);
+  if (!emp) throw new Error('Employee not found');
+
+  let managerDbId: number | null | undefined;
+  if (data.managerId !== undefined) {
+    if (data.managerId === null || data.managerId === '') {
+      managerDbId = null;
+    } else {
+      const manager = await resolveEmployeeId(data.managerId);
+      if (!manager) throw new Error('Manager not found');
+      if (manager.id === emp.id) throw new Error('Employee cannot be their own manager');
+      managerDbId = manager.id;
+    }
+  }
+
+  const name =
+    data.name ??
+    (data.firstName !== undefined || data.lastName !== undefined
+      ? `${data.firstName ?? emp.firstName ?? splitName(emp.name).first} ${data.lastName ?? emp.lastName ?? splitName(emp.name).last}`.trim()
+      : undefined);
+
+  const updated = await prisma.hrEmployee.update({
+    where: { id: emp.id },
+    data: {
+      ...(name !== undefined && { name }),
+      ...(data.firstName !== undefined && { firstName: data.firstName }),
+      ...(data.lastName !== undefined && { lastName: data.lastName }),
+      ...(data.email !== undefined && { email: data.email }),
+      ...(data.phone !== undefined && { phone: data.phone }),
+      ...(data.department !== undefined && { department: data.department }),
+      ...(data.designation !== undefined && { designation: data.designation }),
+      ...(data.location !== undefined && { location: data.location }),
+      ...(data.biometricId !== undefined && { biometricId: data.biometricId }),
+      ...(data.joiningDate !== undefined && { joiningDate: data.joiningDate }),
+      ...(managerDbId !== undefined && { managerId: managerDbId }),
+      ...(data.access_role !== undefined && { accessRole: data.access_role as HrAccessRole }),
+      ...(data.employmentStatus !== undefined && { employmentStatus: data.employmentStatus }),
+      ...(data.resignedAt !== undefined && {
+        resignedAt: data.resignedAt ? new Date(data.resignedAt) : null,
+      }),
+      ...(data.terminatedAt !== undefined && {
+        terminatedAt: data.terminatedAt ? new Date(data.terminatedAt) : null,
+      }),
+      ...(data.exitReason !== undefined && { exitReason: data.exitReason }),
+    },
+    include: { manager: true },
+  });
+
+  if (data.employmentStatus === 'ACTIVE' || data.employmentStatus === 'ON_LEAVE') {
+    await syncEmployeeLeaveStatus(updated.id);
+    const refreshed = await prisma.hrEmployee.findUnique({
+      where: { id: updated.id },
+      include: { manager: true },
+    });
+    return mapEmployee(refreshed!);
+  }
+
+  return mapEmployee(updated);
+};
+
+export const getEmployeeDocuments = async (employeeId: string) => {
+  const emp = await resolveEmployeeId(employeeId);
+  if (!emp) throw new Error('Employee not found');
+  const docs = await prisma.hrEmployeeDocument.findMany({
+    where: { employeeId: emp.id },
+    orderBy: [{ type: 'asc' }, { uploadedAt: 'desc' }],
+  });
+  return docs.map(mapEmployeeDocument);
+};
+
+export const createEmployeeDocument = async (
+  employeeId: string,
+  data: {
+    type: HrEmployeeDocumentType;
+    fileName: string;
+    fileUrl: string;
+    mimeType?: string | null;
+    fileSize?: number | null;
+    expiresAt?: string | null;
+    notes?: string | null;
+    tenantId?: number | null;
+  },
+) => {
+  const emp = await resolveEmployeeId(employeeId);
+  if (!emp) throw new Error('Employee not found');
+  const doc = await prisma.hrEmployeeDocument.create({
+    data: {
+      tenantId: data.tenantId ?? emp.tenantId ?? undefined,
+      employeeId: emp.id,
+      type: data.type,
+      fileName: data.fileName,
+      fileUrl: data.fileUrl,
+      mimeType: data.mimeType ?? null,
+      fileSize: data.fileSize ?? null,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      notes: data.notes ?? null,
+    },
+  });
+  return mapEmployeeDocument(doc);
+};
+
+export const deleteEmployeeDocument = async (employeeId: string, docId: string) => {
+  const emp = await resolveEmployeeId(employeeId);
+  if (!emp) throw new Error('Employee not found');
+  const numericDocId = resolveNumericId(docId);
+  if (numericDocId === null) throw new Error('Document not found');
+  const doc = await prisma.hrEmployeeDocument.findFirst({
+    where: { id: numericDocId, employeeId: emp.id },
+  });
+  if (!doc) throw new Error('Document not found');
+  await prisma.hrEmployeeDocument.delete({ where: { id: doc.id } });
+  return { success: true };
 };
 
 // ---------------------------------------------------------------------------
@@ -1219,7 +1534,17 @@ export const createOnboardingChecklist = async (data: {
   employeeId: string;
   employeeName: string;
   startDate: string;
+  templateId?: string;
+  tenantId?: number | null;
 }) => {
+  if (data.templateId) {
+    return createOnboardingChecklistFromTemplate(data.tenantId ?? null, {
+      employeeId: data.employeeId,
+      employeeName: data.employeeName,
+      startDate: data.startDate,
+      templateId: data.templateId,
+    });
+  }
   const emp = await resolveEmployeeId(data.employeeId);
   const employeeDbId = emp?.id ?? resolveNumericId(data.employeeId);
 
@@ -1245,7 +1570,13 @@ export const createOnboardingChecklist = async (data: {
 export const updateOnboardingItem = async (
   checklistId: string,
   itemId: string,
-  data: { status: 'PENDING' | 'COMPLETED'; completedBy?: string }
+  data: {
+    status: 'PENDING' | 'COMPLETED';
+    completedBy?: string;
+    attachmentUrl?: string | null;
+    attachmentFileName?: string | null;
+    notes?: string | null;
+  },
 ) => {
   const numericChecklistId = resolveNumericId(checklistId);
   const numericItemId = resolveNumericId(itemId);
@@ -1264,6 +1595,9 @@ export const updateOnboardingItem = async (
       status: data.status,
       completedAt: data.status === 'COMPLETED' ? new Date() : null,
       completedBy: data.status === 'COMPLETED' ? data.completedBy || 'HR Manager' : null,
+      ...(data.attachmentUrl !== undefined && { attachmentUrl: data.attachmentUrl }),
+      ...(data.attachmentFileName !== undefined && { attachmentFileName: data.attachmentFileName }),
+      ...(data.notes !== undefined && { description: data.notes }),
     },
   });
 
@@ -1290,15 +1624,40 @@ export const updateOnboardingItem = async (
 // ---------------------------------------------------------------------------
 
 export const getOfferLetters = async () => {
-  const rows = await prisma.hrOfferLetter.findMany({ orderBy: { id: 'asc' } });
+  const today = new Date().toISOString().slice(0, 10);
+  await prisma.hrOfferLetter.updateMany({
+    where: { status: 'SENT', expiryDate: { lt: today } },
+    data: { status: 'EXPIRED' },
+  });
+  const rows = await prisma.hrOfferLetter.findMany({ orderBy: { id: 'desc' } });
   return rows.map(mapOfferLetter);
 };
 
-export const createOfferLetter = async (data: Omit<OfferLetter, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const candidateId = resolveNumericId(data.candidateId);
+export const getOfferLetterById = async (id: string) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) return null;
+  const row = await prisma.hrOfferLetter.findUnique({ where: { id: numericId } });
+  return row ? mapOfferLetter(row) : null;
+};
+
+const requireCandidateId = (candidateIdStr: string) => {
+  const candidateId = resolveNumericId(candidateIdStr);
+  if (candidateId === null) throw new Error('Candidate not found');
+  return candidateId;
+};
+
+export const createOfferLetter = async (
+  data: Omit<OfferLetter, 'id' | 'createdAt' | 'updatedAt' | 'conditional' | 'acceptedAt' | 'rejectedAt' | 'employeeId' | 'renderedHtml'> & {
+    conditional?: boolean;
+    templateId?: string;
+  },
+  ctx?: { tenantId?: number | null },
+) => {
+  const candidateId = requireCandidateId(data.candidateId);
+  const templateId = data.templateId ? resolveNumericId(data.templateId) : null;
   const letter = await prisma.hrOfferLetter.create({
     data: {
-      candidateId: candidateId ?? 1,
+      candidateId,
       candidateName: data.candidateName,
       candidateEmail: data.candidateEmail,
       jobTitle: data.jobTitle,
@@ -1308,19 +1667,463 @@ export const createOfferLetter = async (data: Omit<OfferLetter, 'id' | 'createdA
       expiryDate: data.expiryDate,
       status: data.status,
       policyTemplate: data.policyTemplate,
+      templateId: templateId ?? undefined,
+      conditional: data.conditional ?? false,
     },
   });
-  return mapOfferLetter(letter);
+  if (data.status === 'SENT' || templateId) {
+    try {
+      await renderOfferLetterHtml(sid(letter.id), { tenantId: ctx?.tenantId ?? null });
+    } catch {
+      // render is best-effort when no template exists yet
+    }
+  }
+  const refreshed = await prisma.hrOfferLetter.findUnique({ where: { id: letter.id } });
+  return mapOfferLetter(refreshed!);
 };
 
 export const updateOfferLetterStatus = async (id: string, status: OfferLetter['status']) => {
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Offer letter not found');
+  const patch: Record<string, unknown> = { status };
+  if (status === 'ACCEPTED') patch.acceptedAt = new Date();
+  if (status === 'REJECTED') patch.rejectedAt = new Date();
   const letter = await prisma.hrOfferLetter.update({
     where: { id: numericId },
-    data: { status },
+    data: patch,
   });
   return mapOfferLetter(letter);
+};
+
+// ---------------------------------------------------------------------------
+// Offer letter templates (tenant-configurable)
+// ---------------------------------------------------------------------------
+
+const offerTemplateScope = (tenantId: number | null) =>
+  tenantId == null ? {} : { OR: [{ tenantId }, { tenantId: null }] };
+
+export const getOfferLetterTemplates = async (tenantId: number | null = null) => {
+  const rows = await prisma.hrOfferLetterTemplate.findMany({
+    where: offerTemplateScope(tenantId),
+    orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+  });
+  return rows.map(mapOfferLetterTemplate);
+};
+
+export const getOfferLetterTemplate = async (id: string) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) return null;
+  const row = await prisma.hrOfferLetterTemplate.findUnique({ where: { id: numericId } });
+  return row ? mapOfferLetterTemplate(row) : null;
+};
+
+export const createOfferLetterTemplate = async (
+  tenantId: number,
+  data: { name: string; description?: string; bodyHtml: string; isDefault?: boolean },
+) => {
+  if (data.isDefault) {
+    await prisma.hrOfferLetterTemplate.updateMany({
+      where: { tenantId },
+      data: { isDefault: false },
+    });
+  }
+  const row = await prisma.hrOfferLetterTemplate.create({
+    data: {
+      tenantId,
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      bodyHtml: data.bodyHtml,
+      isDefault: data.isDefault ?? false,
+    },
+  });
+  return mapOfferLetterTemplate(row);
+};
+
+export const updateOfferLetterTemplate = async (
+  tenantId: number,
+  id: string,
+  data: { name?: string; description?: string | null; bodyHtml?: string; isDefault?: boolean },
+) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Offer template not found');
+  const existing = await prisma.hrOfferLetterTemplate.findFirst({
+    where: { id: numericId, OR: [{ tenantId }, { tenantId: null }] },
+  });
+  if (!existing) throw new Error('Offer template not found');
+  if (data.isDefault) {
+    await prisma.hrOfferLetterTemplate.updateMany({
+      where: { tenantId, NOT: { id: numericId } },
+      data: { isDefault: false },
+    });
+  }
+  const row = await prisma.hrOfferLetterTemplate.update({
+    where: { id: numericId },
+    data: {
+      ...(data.name != null ? { name: data.name.trim() } : {}),
+      ...(data.description !== undefined ? { description: data.description?.trim() || null } : {}),
+      ...(data.bodyHtml != null ? { bodyHtml: data.bodyHtml } : {}),
+      ...(data.isDefault != null ? { isDefault: data.isDefault } : {}),
+    },
+  });
+  return mapOfferLetterTemplate(row);
+};
+
+export const deleteOfferLetterTemplate = async (tenantId: number, id: string) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Offer template not found');
+  const existing = await prisma.hrOfferLetterTemplate.findFirst({
+    where: { id: numericId, tenantId },
+  });
+  if (!existing) throw new Error('Offer template not found or not editable');
+  await prisma.hrOfferLetterTemplate.delete({ where: { id: numericId } });
+  return { id };
+};
+
+// Variable substitution. Keep it simple: {{key}} or {{key|fallback}}.
+const formatCurrency = (amount: number) =>
+  amount.toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+const renderVariables = (body: string, vars: Record<string, string>) =>
+  body.replace(/\{\{\s*([a-zA-Z0-9_]+)(?:\s*\|\s*([^}]+))?\s*\}\}/g, (_, key: string, fallback?: string) => {
+    const v = vars[key];
+    if (v != null && v !== '') return v;
+    return fallback?.trim() ?? '';
+  });
+
+export const renderOfferLetterHtml = async (
+  offerId: string,
+  ctx: { tenantId?: number | null; companyName?: string } = {},
+) => {
+  const numericId = resolveNumericId(offerId);
+  if (numericId === null) throw new Error('Offer letter not found');
+  const offer = await prisma.hrOfferLetter.findUnique({
+    where: { id: numericId },
+    include: { template: true, candidate: { include: { job: true } } },
+  });
+  if (!offer) throw new Error('Offer letter not found');
+
+  // Prefer the explicit template; else the tenant default; else any global default.
+  let template = offer.template;
+  if (!template) {
+    template = await prisma.hrOfferLetterTemplate.findFirst({
+      where: { OR: [{ tenantId: ctx.tenantId ?? null }, { tenantId: null }], isDefault: true },
+      orderBy: { tenantId: 'desc' },
+    });
+  }
+  if (!template) throw new Error('No offer letter template available');
+
+  let companyName = ctx.companyName;
+  if (!companyName && ctx.tenantId != null) {
+    const tenant = await prisma.tenant.findUnique({ where: { id: ctx.tenantId }, select: { name: true } });
+    companyName = tenant?.name;
+  }
+  companyName = companyName || 'The Company';
+
+  const variables: Record<string, string> = {
+    candidateName: offer.candidateName,
+    candidateEmail: offer.candidateEmail,
+    jobTitle: offer.jobTitle,
+    department: offer.department,
+    offeredSalary: formatCurrency(offer.offeredSalary),
+    joiningDate: offer.joiningDate,
+    expiryDate: offer.expiryDate,
+    companyName,
+    today: new Date().toLocaleDateString(),
+    conditionalClause: offer.conditional
+      ? 'This offer is conditional on satisfactory completion of reference and background checks.'
+      : 'This offer is unconditional.',
+  };
+
+  const html = renderVariables(template.bodyHtml, variables);
+  // Persist the rendered snapshot so historical offers remain stable even if
+  // the template later changes.
+  await prisma.hrOfferLetter.update({
+    where: { id: numericId },
+    data: { renderedHtml: html, templateId: template.id },
+  });
+  return { html, template: mapOfferLetterTemplate(template), offer: mapOfferLetter(offer) };
+};
+
+// ---------------------------------------------------------------------------
+// Onboarding templates
+// ---------------------------------------------------------------------------
+
+const onboardingTemplateScope = (tenantId: number | null) =>
+  tenantId == null ? {} : { OR: [{ tenantId }, { tenantId: null }] };
+
+export const getOnboardingTemplates = async (tenantId: number | null = null) => {
+  const rows = await prisma.hrOnboardingTemplate.findMany({
+    where: onboardingTemplateScope(tenantId),
+    include: { items: { orderBy: { sortOrder: 'asc' } } },
+    orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+  });
+  return rows.map(mapOnboardingTemplate);
+};
+
+export const createOnboardingTemplate = async (
+  tenantId: number,
+  data: {
+    name: string;
+    description?: string;
+    role?: string;
+    isDefault?: boolean;
+    items: Array<{
+      category: 'DOCUMENTS' | 'ACCESS' | 'TRAINING';
+      title: string;
+      description?: string;
+      dueOffsetDays?: number;
+      assigneeRole?: string;
+      sortOrder?: number;
+    }>;
+  },
+) => {
+  if (data.isDefault) {
+    await prisma.hrOnboardingTemplate.updateMany({
+      where: { tenantId },
+      data: { isDefault: false },
+    });
+  }
+  const row = await prisma.hrOnboardingTemplate.create({
+    data: {
+      tenantId,
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      role: data.role?.trim() || null,
+      isDefault: data.isDefault ?? false,
+      items: {
+        create: data.items.map((item, idx) => ({
+          category: item.category,
+          title: item.title.trim(),
+          description: item.description?.trim() || null,
+          dueOffsetDays: item.dueOffsetDays ?? 0,
+          assigneeRole: item.assigneeRole?.trim() || null,
+          sortOrder: item.sortOrder ?? idx,
+        })),
+      },
+    },
+    include: { items: { orderBy: { sortOrder: 'asc' } } },
+  });
+  return mapOnboardingTemplate(row);
+};
+
+export const deleteOnboardingTemplate = async (tenantId: number, id: string) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Onboarding template not found');
+  const existing = await prisma.hrOnboardingTemplate.findFirst({
+    where: { id: numericId, tenantId },
+  });
+  if (!existing) throw new Error('Onboarding template not found or not editable');
+  await prisma.hrOnboardingTemplate.delete({ where: { id: numericId } });
+  return { id };
+};
+
+const spawnChecklistFromTemplate = async (
+  tx: typeof prisma,
+  args: { employeeId: number; employeeName: string; joiningDate: string; templateId?: number | null; tenantId: number | null },
+) => {
+  let template = args.templateId
+    ? await tx.hrOnboardingTemplate.findUnique({
+        where: { id: args.templateId },
+        include: { items: { orderBy: { sortOrder: 'asc' } } },
+      })
+    : null;
+  if (!template) {
+    template = await tx.hrOnboardingTemplate.findFirst({
+      where: { OR: [{ tenantId: args.tenantId ?? null }, { tenantId: null }], isDefault: true },
+      orderBy: { tenantId: 'desc' },
+      include: { items: { orderBy: { sortOrder: 'asc' } } },
+    });
+  }
+  const joining = new Date(args.joiningDate);
+  const computeDue = (offsetDays: number) => {
+    if (!Number.isFinite(joining.getTime())) return null;
+    const d = new Date(joining);
+    d.setDate(d.getDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+  const items = template?.items?.length
+    ? template.items.map((i) => ({
+        category: i.category,
+        title: i.title,
+        description: i.description,
+        dueDate: computeDue(i.dueOffsetDays),
+        assignee: i.assigneeRole,
+        status: 'PENDING' as const,
+      }))
+    : defaultOnboardingItems().map((i) => ({
+        category: i.category,
+        title: i.title,
+        status: 'PENDING' as const,
+      }));
+
+  return tx.hrOnboardingChecklist.create({
+    data: {
+      employeeId: args.employeeId,
+      employeeName: args.employeeName,
+      startDate: args.joiningDate,
+      status: 'PENDING',
+      items: { create: items },
+    },
+    include: { items: { orderBy: { id: 'asc' } } },
+  });
+};
+
+export const createOnboardingChecklistFromTemplate = async (
+  tenantId: number | null,
+  data: { employeeId: string; employeeName: string; startDate: string; templateId?: string },
+) => {
+  const emp = await resolveEmployeeId(data.employeeId);
+  const employeeDbId = emp?.id ?? resolveNumericId(data.employeeId);
+  if (!employeeDbId) throw new Error('Employee not found');
+  const checklist = await spawnChecklistFromTemplate(prisma, {
+    employeeId: employeeDbId,
+    employeeName: data.employeeName,
+    joiningDate: data.startDate,
+    templateId: data.templateId ? resolveNumericId(data.templateId) : null,
+    tenantId,
+  });
+  return mapOnboardingChecklist(checklist);
+};
+
+// ---------------------------------------------------------------------------
+// Offer ACCEPT side-effects: create employee + spawn onboarding checklist
+// ---------------------------------------------------------------------------
+
+export const acceptOfferLetter = async (
+  offerId: string,
+  ctx: { tenantId: number | null; onboardingTemplateId?: string },
+) => {
+  const numericId = resolveNumericId(offerId);
+  if (numericId === null) throw new Error('Offer letter not found');
+
+  return prisma.$transaction(async (tx) => {
+    const offer = await tx.hrOfferLetter.findUnique({
+      where: { id: numericId },
+      include: { candidate: { include: { job: true } } },
+    });
+    if (!offer) throw new Error('Offer letter not found');
+    if (offer.status === 'ACCEPTED' && offer.employeeId) {
+      return {
+        offer: mapOfferLetter(offer),
+        employeeId: sid(offer.employeeId),
+        checklistId: null,
+        alreadyAccepted: true,
+      };
+    }
+
+    // 1. Ensure HrEmployee row for the candidate (idempotent on email).
+    let employee = await tx.hrEmployee.findFirst({
+      where: { tenantId: ctx.tenantId ?? undefined, email: offer.candidateEmail },
+    });
+    if (!employee) {
+      const baseCode = `EMP-${Date.now().toString().slice(-6)}`;
+      const { first, last } = splitName(offer.candidateName);
+      employee = await tx.hrEmployee.create({
+        data: {
+          tenantId: ctx.tenantId ?? undefined,
+          name: offer.candidateName,
+          firstName: first,
+          lastName: last,
+          email: offer.candidateEmail,
+          phone: offer.candidate?.phone ?? '',
+          employeeCode: baseCode,
+          designation: offer.jobTitle,
+          department: offer.department,
+          joiningDate: offer.joiningDate,
+          accessRole: 'EMPLOYEE',
+          employmentStatus: 'ACTIVE',
+        },
+      });
+    } else {
+      employee = await tx.hrEmployee.update({
+        where: { id: employee.id },
+        data: {
+          designation: offer.jobTitle,
+          department: offer.department,
+          joiningDate: offer.joiningDate,
+        },
+      });
+    }
+
+    // 2. Spawn onboarding checklist from the chosen / default template.
+    const templateId = ctx.onboardingTemplateId ? resolveNumericId(ctx.onboardingTemplateId) : null;
+    const checklist = await spawnChecklistFromTemplate(tx as unknown as typeof prisma, {
+      employeeId: employee.id,
+      employeeName: offer.candidateName,
+      joiningDate: offer.joiningDate,
+      templateId,
+      tenantId: ctx.tenantId,
+    });
+
+    await linkOfferLetterToEmployee(tx as unknown as typeof prisma, employee.id, ctx.tenantId, offer);
+
+    // 3. Mark offer ACCEPTED, link to employee, set timestamp.
+    const updated = await tx.hrOfferLetter.update({
+      where: { id: numericId },
+      data: { status: 'ACCEPTED', acceptedAt: new Date(), employeeId: employee.id },
+    });
+
+    // 4. Move the candidate to HIRED status.
+    await tx.hrCandidate.update({
+      where: { id: offer.candidateId },
+      data: { status: 'HIRED', currentStage: 'hired' },
+    });
+    await tx.hrCandidateStageEvent.create({
+      data: {
+        candidateId: offer.candidateId,
+        fromStage: offer.candidate?.currentStage ?? null,
+        toStage: 'hired',
+        notes: 'Offer accepted — candidate hired',
+      },
+    });
+
+    return {
+      offer: mapOfferLetter(updated),
+      employeeId: sid(employee.id),
+      checklistId: sid(checklist.id),
+      alreadyAccepted: false,
+    };
+  });
+};
+
+export const rejectOfferLetter = async (offerId: string, notes?: string) => {
+  const numericId = resolveNumericId(offerId);
+  if (numericId === null) throw new Error('Offer letter not found');
+  return prisma.$transaction(async (tx) => {
+    const offer = await tx.hrOfferLetter.findUnique({
+      where: { id: numericId },
+      include: { candidate: true },
+    });
+    if (!offer) throw new Error('Offer letter not found');
+    const updated = await tx.hrOfferLetter.update({
+      where: { id: numericId },
+      data: { status: 'REJECTED', rejectedAt: new Date() },
+    });
+    await tx.hrCandidateStageEvent.create({
+      data: {
+        candidateId: offer.candidateId,
+        fromStage: offer.candidate?.currentStage ?? null,
+        toStage: offer.candidate?.currentStage ?? 'offer_rejected',
+        notes: notes || 'Offer rejected',
+      },
+    });
+    return mapOfferLetter(updated);
+  });
+};
+
+// ---------------------------------------------------------------------------
+// Candidate stage events
+// ---------------------------------------------------------------------------
+
+export const getCandidateStageEvents = async (candidateId: string) => {
+  const numericId = resolveNumericId(candidateId);
+  if (numericId === null) return [];
+  const events = await prisma.hrCandidateStageEvent.findMany({
+    where: { candidateId: numericId },
+    include: { changedBy: { select: { id: true, fullName: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+  return events.map(mapCandidateStageEvent);
 };
 
 // ---------------------------------------------------------------------------
@@ -1333,10 +2136,10 @@ export const getInterviews = async () => {
 };
 
 export const scheduleInterview = async (data: Omit<Interview, 'id' | 'createdAt' | 'feedback'>) => {
-  const candidateId = resolveNumericId(data.candidateId);
+  const candidateId = requireCandidateId(data.candidateId);
   const interview = await prisma.hrInterview.create({
     data: {
-      candidateId: candidateId ?? 1,
+      candidateId,
       candidateName: data.candidateName,
       jobTitle: data.jobTitle,
       round: data.round,
@@ -1346,6 +2149,23 @@ export const scheduleInterview = async (data: Omit<Interview, 'id' | 'createdAt'
       interviewers: data.interviewers,
       meetingLink: data.meetingLink,
       status: data.status,
+    },
+  });
+  return mapInterview(interview);
+};
+
+export const rescheduleInterview = async (
+  id: string,
+  data: { scheduledAt: string; meetingLink?: string },
+) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Interview not found');
+  const interview = await prisma.hrInterview.update({
+    where: { id: numericId },
+    data: {
+      scheduledAt: new Date(data.scheduledAt),
+      ...(data.meetingLink !== undefined && { meetingLink: data.meetingLink }),
+      status: 'SCHEDULED',
     },
   });
   return mapInterview(interview);
@@ -1364,6 +2184,9 @@ export const updateInterviewStatus = async (id: string, status: Interview['statu
 export const submitInterviewFeedback = async (id: string, feedback: InterviewFeedback) => {
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Interview not found');
+  const existing = await prisma.hrInterview.findUnique({ where: { id: numericId } });
+  if (!existing) throw new Error('Interview not found');
+
   const interview = await prisma.hrInterview.update({
     where: { id: numericId },
     data: {
@@ -1371,6 +2194,27 @@ export const submitInterviewFeedback = async (id: string, feedback: InterviewFee
       status: 'COMPLETED',
     },
   });
+
+  if (feedback.recommendation === 'NO_HIRE') {
+    const candidate = await prisma.hrCandidate.findUnique({ where: { id: existing.candidateId } });
+    await updateCandidateStage(
+      sid(existing.candidateId),
+      candidate?.currentStage ?? 'screening',
+      'REJECTED',
+      null,
+      'Interview feedback: No hire',
+    );
+  } else if (feedback.recommendation === 'STRONG_HIRE' || feedback.recommendation === 'HIRE') {
+    const candidate = await prisma.hrCandidate.findUnique({ where: { id: existing.candidateId } });
+    if (candidate && candidate.status === 'ACTIVE') {
+      const stages = ['application', 'screening', 'hr_round', 'tech_round', 'manager_round', 'offer_generation', 'onboarding'];
+      const idx = stages.indexOf(candidate.currentStage);
+      if (idx >= 0 && idx < stages.indexOf('offer_generation')) {
+        await updateCandidateStage(sid(candidate.id), 'offer_generation', 'ACTIVE', null, 'Interview feedback: Hire recommendation');
+      }
+    }
+  }
+
   return mapInterview(interview);
 };
 
@@ -1416,6 +2260,40 @@ export const updateJobPostingStatus = async (id: string, status: JobPosting['sta
   return mapJobPosting(posting, count);
 };
 
+export const updateJobPosting = async (
+  id: string,
+  data: {
+    title?: string;
+    department?: string;
+    location?: string;
+    type?: JobPosting['type'];
+    description?: string;
+    requirements?: string;
+    salaryRange?: string;
+    hiringManager?: string;
+    closingDate?: string | null;
+  },
+) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Job posting not found');
+  const posting = await prisma.hrJobPosting.update({
+    where: { id: numericId },
+    data: {
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.department !== undefined && { department: data.department }),
+      ...(data.location !== undefined && { location: data.location }),
+      ...(data.type !== undefined && { type: data.type }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.requirements !== undefined && { requirements: data.requirements }),
+      ...(data.salaryRange !== undefined && { salaryRange: data.salaryRange }),
+      ...(data.hiringManager !== undefined && { hiringManager: data.hiringManager }),
+      ...(data.closingDate !== undefined && { closingDate: data.closingDate }),
+    },
+  });
+  const count = await prisma.hrCandidate.count({ where: { jobId: numericId } });
+  return mapJobPosting(posting, count);
+};
+
 export const getCandidates = async (jobId?: string) => {
   const numericJobId = jobId ? resolveNumericId(jobId) : null;
   const rows = await prisma.hrCandidate.findMany({
@@ -1427,9 +2305,10 @@ export const getCandidates = async (jobId?: string) => {
 
 export const addCandidate = async (data: Omit<Candidate, 'id' | 'appliedAt'>) => {
   const jobId = resolveNumericId(data.jobId);
+  if (jobId === null) throw new Error('Job not found');
   const candidate = await prisma.hrCandidate.create({
     data: {
-      jobId: jobId ?? 1,
+      jobId,
       name: data.name,
       email: data.email,
       phone: data.phone,
@@ -1439,24 +2318,81 @@ export const addCandidate = async (data: Omit<Candidate, 'id' | 'appliedAt'>) =>
       appliedAt: new Date().toISOString().split('T')[0],
     },
   });
+  await prisma.hrCandidateStageEvent.create({
+    data: {
+      candidateId: candidate.id,
+      fromStage: null,
+      toStage: data.currentStage,
+      notes: 'Candidate added to pipeline',
+    },
+  });
   return mapCandidate(candidate);
 };
 
-export const updateCandidateStage = async (
+export const updateCandidate = async (
   id: string,
-  stage: string,
-  status?: Candidate['status']
+  data: { name?: string; phone?: string; resumeUrl?: string | null },
 ) => {
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Candidate not found');
   const candidate = await prisma.hrCandidate.update({
     where: { id: numericId },
     data: {
-      currentStage: stage,
-      ...(status ? { status } : {}),
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.phone !== undefined && { phone: data.phone }),
+      ...(data.resumeUrl !== undefined && { resumeUrl: data.resumeUrl }),
     },
   });
   return mapCandidate(candidate);
+};
+
+export const updateCandidateStatus = async (
+  id: string,
+  status: Candidate['status'],
+  changedById?: number | null,
+  notes?: string,
+) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Candidate not found');
+  const existing = await prisma.hrCandidate.findUnique({ where: { id: numericId } });
+  if (!existing) throw new Error('Candidate not found');
+  const stage =
+    status === 'HIRED' ? 'hired' : status === 'REJECTED' ? existing.currentStage : existing.currentStage;
+  return updateCandidateStage(id, stage, status, changedById, notes);
+};
+
+export const updateCandidateStage = async (
+  id: string,
+  stage: string,
+  status?: Candidate['status'],
+  changedById?: number | null,
+  notes?: string,
+) => {
+  const numericId = resolveNumericId(id);
+  if (numericId === null) throw new Error('Candidate not found');
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.hrCandidate.findUnique({ where: { id: numericId } });
+    if (!existing) throw new Error('Candidate not found');
+    const candidate = await tx.hrCandidate.update({
+      where: { id: numericId },
+      data: {
+        currentStage: stage,
+        ...(status ? { status } : {}),
+      },
+    });
+    if (existing.currentStage !== stage) {
+      await tx.hrCandidateStageEvent.create({
+        data: {
+          candidateId: numericId,
+          fromStage: existing.currentStage,
+          toStage: stage,
+          changedById: changedById ?? null,
+          notes: notes || null,
+        },
+      });
+    }
+    return mapCandidate(candidate);
+  });
 };
 
 // ---------------------------------------------------------------------------
@@ -1924,6 +2860,7 @@ export const processLeaveRequest = async (
     },
     include: { employee: true },
   });
+  await syncEmployeeLeaveStatus(row.employeeId);
   return mapLeaveRequest(row);
 };
 
@@ -1945,6 +2882,7 @@ export const cancelLeaveRequest = async (id: string, userEmail: string) => {
     data: { status: 'CANCELLED' },
     include: { employee: true },
   });
+  await syncEmployeeLeaveStatus(row.employeeId);
   return mapLeaveRequest(row);
 };
 

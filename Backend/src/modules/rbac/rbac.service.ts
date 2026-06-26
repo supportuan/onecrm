@@ -78,7 +78,9 @@ export const getPermissionsForRole = async (
 };
 
 /**
- * SUPER_ADMIN: gets every permission, no tenant lookup.
+ * SUPER_ADMIN: gets every permission, no tenant lookup (cross-tenant).
+ * GLOBAL_ADMIN: tenant administrator — full access inside its own tenant.
+ *   (Still subject to per-tenant module gating in requirePermission.)
  * Anyone else: looked up against the per-tenant cache.
  */
 export const hasPermission = async (
@@ -88,6 +90,7 @@ export const hasPermission = async (
 ): Promise<boolean> => {
   if (role === 'SUPER_ADMIN') return true;
   if (tenantId == null) return false;
+  if (role === 'GLOBAL_ADMIN') return true;
   const perms = await getPermissionsForRole(role, tenantId);
   return required.some((p) => perms.includes(p));
 };

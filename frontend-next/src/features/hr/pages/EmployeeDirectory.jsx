@@ -21,12 +21,17 @@ import {
   ClipboardCheck,
 } from 'lucide-react';
 import { getEmployees, assignAccessRole, bulkImportEmployees } from '@/services/hrApi';
+import EmployeeDetailModal, { statusBadgeClass } from './EmployeeDetailModal';
 
 export default function EmployeeDirectory() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailEmployee, setDetailEmployee] = useState(null);
 
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState(null);
@@ -48,18 +53,19 @@ export default function EmployeeDirectory() {
     designation: 'Staff Member',
     location: 'HQ Office',
     phone: '',
+    joiningDate: '',
     access_role: 'EMPLOYEE',
   });
   const [createFeedback, setCreateFeedback] = useState(null);
 
   useEffect(() => {
     fetchDirectory();
-  }, []);
+  }, [statusFilter]);
 
   const fetchDirectory = async () => {
     setLoading(true);
     try {
-      const res = await getEmployees();
+      const res = await getEmployees(statusFilter === 'ALL' ? undefined : statusFilter);
       if (res.success) setEmployees(res.data || []);
     } catch (err) {
       console.error('Failed to fetch Employee directory:', err);
@@ -167,6 +173,7 @@ export default function EmployeeDirectory() {
           designation: 'Staff Member',
           location: 'HQ Office',
           phone: '',
+          joiningDate: '',
           access_role: 'EMPLOYEE',
         });
         await fetchDirectory();
@@ -270,8 +277,19 @@ export default function EmployeeDirectory() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-700 shrink-0"
+              >
+                <option value="ALL">All statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="ON_LEAVE">On leave</option>
+                <option value="RESIGNED">Resigned</option>
+                <option value="TERMINATED">Terminated</option>
+              </select>
               <div className="px-5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[10px] font-semibold text-neutral-600 shrink-0">
-                {employees.length} active accounts
+                {employees.length} personnel
               </div>
             </div>
 
@@ -286,6 +304,7 @@ export default function EmployeeDirectory() {
                       <th className="px-6 py-4">Contact</th>
                       <th className="px-6 py-4">Organization</th>
                       <th className="px-6 py-4">Biometric ID</th>
+                      <th className="px-6 py-4">Status</th>
                       <th className="px-6 py-4">Access role</th>
                       <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
@@ -293,7 +312,7 @@ export default function EmployeeDirectory() {
                   <tbody className="divide-y divide-neutral-100">
                     {loading ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center">
+                        <td colSpan={8} className="px-6 py-12 text-center">
                           <Loader2 className="animate-spin text-neutral-700 mx-auto" size={24} />
                           <p className="text-[10px] font-semibold text-neutral-500 mt-2">loading directory...</p>
                         </td>
@@ -342,6 +361,15 @@ export default function EmployeeDirectory() {
                           </td>
                           <td className="px-6 py-5">
                             <span
+                              className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border inline-flex items-center w-fit ${statusBadgeClass(
+                                emp.employmentStatus || 'ACTIVE',
+                              )}`}
+                            >
+                              {(emp.employmentStatus || 'ACTIVE').replace('_', ' ').toLowerCase()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span
                               className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border inline-flex items-center gap-1 w-fit ${
                                 emp.access_role?.includes('ADMIN')
                                   ? 'bg-neutral-100 text-neutral-900 border-neutral-200'
@@ -355,22 +383,33 @@ export default function EmployeeDirectory() {
                             </span>
                           </td>
                           <td className="px-6 py-5 text-right">
-                            <button
-                              onClick={() => {
-                                setSelectedEmp(emp);
-                                setNewRole(emp.access_role || 'EMPLOYEE');
-                                setShowRoleModal(true);
-                              }}
-                              className="px-3.5 py-1.5 bg-white border border-neutral-200 hover:border-neutral-900 text-neutral-600 hover:text-neutral-700 rounded-xl text-[10px] font-semibold transition-all"
-                            >
-                              edit role
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setDetailEmployee(emp);
+                                  setShowDetailModal(true);
+                                }}
+                                className="px-3.5 py-1.5 bg-white border border-neutral-200 hover:border-neutral-900 text-neutral-600 hover:text-neutral-700 rounded-xl text-[10px] font-semibold transition-all"
+                              >
+                                view
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedEmp(emp);
+                                  setNewRole(emp.access_role || 'EMPLOYEE');
+                                  setShowRoleModal(true);
+                                }}
+                                className="px-3.5 py-1.5 bg-white border border-neutral-200 hover:border-neutral-900 text-neutral-600 hover:text-neutral-700 rounded-xl text-[10px] font-semibold transition-all"
+                              >
+                                edit role
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-xs text-neutral-500">
+                        <td colSpan={8} className="px-6 py-12 text-center text-xs text-neutral-500">
                           no personnel registered.
                         </td>
                       </tr>
@@ -635,6 +674,16 @@ export default function EmployeeDirectory() {
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">Joining date</label>
+                  <input
+                    type="date"
+                    value={createForm.joiningDate}
+                    onChange={(e) => setCreateForm({ ...createForm, joiningDate: e.target.value })}
+                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-[10px] font-semibold text-neutral-500 ml-1">Access role</label>
                   <select
                     value={createForm.access_role}
@@ -681,6 +730,22 @@ export default function EmployeeDirectory() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Employee Detail Modal */}
+      {showDetailModal && detailEmployee && (
+        <EmployeeDetailModal
+          employee={detailEmployee}
+          allEmployees={employees}
+          onClose={() => {
+            setShowDetailModal(false);
+            setDetailEmployee(null);
+          }}
+          onSaved={(updated) => {
+            setEmployees((prev) => prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e)));
+            setDetailEmployee((prev) => (prev ? { ...prev, ...updated } : prev));
+          }}
+        />
       )}
 
       {/* Access Role Modal */}

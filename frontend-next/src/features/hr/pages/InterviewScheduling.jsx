@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Calendar, Plus, Video, MapPin, Phone, Star, CheckCircle2, X,
-  Clock, Users, MessageSquare, Save, ThumbsUp, ThumbsDown
+  Clock, Users, MessageSquare, Save, ThumbsUp, ThumbsDown, RefreshCw,
 } from 'lucide-react';
-import { getInterviews, scheduleInterview, updateInterviewStatus, submitInterviewFeedback } from '@/services/hrApi';
+import {
+  getInterviews, scheduleInterview, updateInterviewStatus,
+  submitInterviewFeedback, rescheduleInterview, getCandidates, getJobPostings,
+} from '@/services/hrApi';
+import CandidateSelect from '@/features/hr/components/CandidateSelect';
 
 const TYPE_META = {
   VIRTUAL: { label: 'Virtual', icon: Video, color: 'text-blue-500' },
@@ -35,10 +40,16 @@ const emptyForm = {
 const emptyFeedback = { rating: 5, technicalScore: '', communicationScore: '', recommendation: 'HIRE', notes: '', submittedBy: '' };
 
 export default function InterviewScheduling() {
+  const searchParams = useSearchParams();
+  const prefillCandidateId = searchParams.get('candidateId');
+
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState(null);
+  const [rescheduleModal, setRescheduleModal] = useState(null);
+  const [rescheduleAt, setRescheduleAt] = useState('');
+  const [rescheduleLink, setRescheduleLink] = useState('');
   const [form, setForm] = useState(emptyForm);
   const [feedback, setFeedback] = useState(emptyFeedback);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +57,57 @@ export default function InterviewScheduling() {
   const [filterStatus, setFilterStatus] = useState('ALL');
 
   useEffect(() => { fetchInterviews(); }, []);
+
+  useEffect(() => {
+    if (!prefillCandidateId) return;
+    (async () => {
+      const [candRes, jobsRes] = await Promise.all([getCandidates(), getJobPostings()]);
+      const c = (candRes.data || []).find((x) => x.id === prefillCandidateId);
+      const job = (jobsRes.data || []).find((j) => j.id === c?.jobId);
+      if (c) {
+        setForm((f) => ({
+          ...f,
+          candidateId: c.id,
+          candidateName: c.name,
+          jobTitle: job?.title || f.jobTitle,
+        }));
+        setShowScheduleModal(true);
+      }
+    })();
+  }, [prefillCandidateId]);
+
+  const handleCandidatePick = (id, candidate) => {
+    if (!candidate) {
+      setForm((f) => ({ ...f, candidateId: '', candidateName: '' }));
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      candidateId: id,
+      candidateName: candidate.name,
+      jobTitle: candidate.jobTitle || f.jobTitle,
+    }));
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleModal || !rescheduleAt) return;
+    setSubmitting(true);
+    try {
+      const res = await rescheduleInterview(rescheduleModal.id, {
+        scheduledAt: rescheduleAt,
+        meetingLink: rescheduleLink || undefined,
+      });
+      if (res.success) {
+        setInterviews((prev) => prev.map((i) => (i.id === rescheduleModal.id ? res.data : i)));
+        setRescheduleModal(null);
+        flash('Interview rescheduled');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const fetchInterviews = async () => {
     setLoading(true);
@@ -215,6 +277,16 @@ export default function InterviewScheduling() {
                     {interview.status === 'SCHEDULED' && (
                       <>
                         <button
+                          onClick={() => {
+                            setRescheduleModal(interview);
+                            setRescheduleAt(interview.scheduledAt?.slice(0, 16) || '');
+                            setRescheduleLink(interview.meetingLink || '');
+                          }}
+                          className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-100 flex items-center gap-1 text-gray-600"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Reschedule
+                        </button>
+                        <button
                           onClick={() => { setFeedbackModal(interview); }}
                           className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-100 flex items-center gap-1 text-gray-600"
                         >
@@ -248,9 +320,11 @@ export default function InterviewScheduling() {
               <button onClick={() => setShowScheduleModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-gray-600 block mb-1">Candidate</label>
+                <CandidateSelect value={form.candidateId} onChange={handleCandidatePick} />
+              </div>
               {[
-                { key: 'candidateId', label: 'Candidate ID', placeholder: 'cand_001' },
-                { key: 'candidateName', label: 'Candidate Name', placeholder: 'Full name' },
                 { key: 'jobTitle', label: 'Job Title', placeholder: 'e.g. Senior Developer' },
                 { key: 'round', label: 'Round', placeholder: 'e.g. Technical Round' },
                 { key: 'scheduledAt', label: 'Date & Time', type: 'datetime-local' },
@@ -350,6 +424,31 @@ export default function InterviewScheduling() {
                 className="flex-1 bg-neutral-700 text-white rounded-lg py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50">
                 Submit Feedback
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rescheduleModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h2 className="font-semibold text-gray-900 mb-4">Reschedule interview</h2>
+            <p className="text-sm text-gray-500 mb-4">{rescheduleModal.candidateName} — {rescheduleModal.round}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">New date & time</label>
+                <input type="datetime-local" value={rescheduleAt} onChange={(e) => setRescheduleAt(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Meeting link</label>
+                <input value={rescheduleLink} onChange={(e) => setRescheduleLink(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setRescheduleModal(null)} className="flex-1 border rounded-lg py-2 text-sm">Cancel</button>
+              <button onClick={handleReschedule} disabled={submitting} className="flex-1 bg-neutral-700 text-white rounded-lg py-2 text-sm">Save</button>
             </div>
           </div>
         </div>

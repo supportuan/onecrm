@@ -5,13 +5,6 @@ import {
   UserRole,
   LeadStatus,
   LeadRating,
-  HrAccessRole,
-  HrAttendanceStatus,
-  HrRegularizationStatus,
-  HrPayslipStatus,
-  HrOnboardingCategory,
-  HrOnboardingItemStatus,
-  HrOnboardingChecklistStatus,
   HrOfferLetterStatus,
   HrInterviewType,
   HrInterviewStatus,
@@ -19,19 +12,11 @@ import {
   HrJobStatus,
   HrCandidateStatus,
   HrKpiFrequency,
-  HrReviewStatus,
-  ApplicationStage,
-  DocumentStatus,
   ApplicationStage,
   DocumentStatus,
 } from '@prisma/client';
 import { hashPassword, comparePasswords } from '../src/utils/password.js';
 import { getDefaultTenantId } from '../src/utils/tenant-default.js';
-import {
-  employeeSelfServiceModuleAccess,
-  employeeSelfServicePermissions,
-  slugifyRoleName,
-} from '../src/utils/role-permissions.js';
 
 dotenv.config();
 
@@ -241,7 +226,7 @@ async function main() {
     }
   );
 
-  await seedHrData(hrUser.id, defaultPassword, tenantId);
+  await seedHrData(tenantId);
   const crmSettings = await seedCrmSettings();
   await seedStudentCrmData(counsellor.id, crmSettings);
   console.log(`Default password for seeded users: ${defaultPassword}`);
@@ -639,104 +624,8 @@ async function seedStudentCrmData(
   console.log(`✅ Student CRM ready (${studentCount} students, ${appCount} applications)`);
 }
 
-async function seedHrData(hrUserId: number, defaultPassword: string, tenantId: number) {
-  console.log('Seeding HR module data...');
-
-  const employeeSpecs = [
-    {
-      name: 'Raju Kalla',
-      employeeCode: 'E001',
-      email: 'raju.kalla@onecrm.com',
-      accessRole: HrAccessRole.EMPLOYEE,
-      department: 'Engineering',
-      designation: 'Senior Developer',
-      biometricId: 'E001',
-      location: 'Chicago Office',
-    },
-    {
-      name: 'Jane Admin',
-      employeeCode: 'E002',
-      email: 'jane.admin@onecrm.com',
-      accessRole: HrAccessRole.SUPER_ADMIN,
-      department: 'Operations',
-      designation: 'Operations Lead',
-      biometricId: 'E002',
-      location: 'Chicago Office',
-    },
-    {
-      name: 'Alice Smith',
-      employeeCode: 'E003',
-      email: 'alice.smith@onecrm.com',
-      accessRole: HrAccessRole.HR_MANAGER,
-      department: 'Human Resources',
-      designation: 'HR Manager',
-      biometricId: 'E003',
-      location: 'New York Office',
-    },
-    {
-      name: 'Bob Johnson',
-      employeeCode: 'E004',
-      email: 'bob.johnson@onecrm.com',
-      accessRole: HrAccessRole.HR_MANAGER,
-      department: 'Finance',
-      designation: 'Payroll Admin',
-      biometricId: 'E004',
-      location: 'New York Office',
-    },
-  ];
-
-  const employees = [];
-  for (const spec of employeeSpecs) {
-    const emp = await prisma.hrEmployee.upsert({
-      where: { email: spec.email },
-      create: spec,
-      update: spec,
-    });
-    employees.push(emp);
-  }
-
-  await prisma.hrEmployee.update({
-    where: { id: employees[2].id },
-    data: { userId: hrUserId },
-  });
-
-  const selfServiceAccess = employeeSelfServiceModuleAccess() as Record<string, Record<string, string[]>>;
-  const selfServicePerms = employeeSelfServicePermissions();
-
-  for (const emp of employees) {
-    if (emp.id === employees[2].id) continue;
-
-    const roleLabel = emp.designation || 'Employee';
-    const permissionRole = slugifyRoleName(`EMP_${emp.employeeCode}`);
-    const loginUser = await ensureUser(
-      emp.email,
-      emp.name,
-      UserRole.COUNSELLOR,
-      defaultPassword,
-      '+919000000099',
-      {
-        tenantId,
-        roleLabel,
-        permissionRole,
-        moduleAccess: selfServiceAccess,
-      }
-    );
-
-    await prisma.hrEmployee.update({
-      where: { id: emp.id },
-      data: { userId: loginUser.id, tenantId },
-    });
-
-    await prisma.rolePermission.upsert({
-      where: { tenantId_role: { tenantId, role: permissionRole } },
-      create: { tenantId, role: permissionRole, permissions: selfServicePerms },
-      update: { permissions: selfServicePerms },
-    });
-
-    console.log(`✅ Employee login ready: ${emp.email} / ${defaultPassword}`);
-  }
-
-  console.log(`✅ HR employees ready (${employees.length})`);
+async function seedHrData(tenantId: number) {
+  console.log('Seeding HR module data (tenant-level config only — no demo employees)...');
 
   await prisma.hrAttendanceSetting.upsert({
     where: { tenantId },
@@ -784,71 +673,6 @@ async function seedHrData(hrUserId: number, defaultPassword: string, tenantId: n
     }
   }
 
-  const attendanceSpecs = [
-    {
-      employeeId: employees[0].id,
-      date: '2026-05-20',
-      checkIn: new Date('2026-05-20T09:00:00.000Z'),
-      checkOut: new Date('2026-05-20T18:00:00.000Z'),
-      status: HrAttendanceStatus.PRESENT,
-      deviceRef: String(devices[0].id),
-      deviceDbId: devices[0].id,
-    },
-    {
-      employeeId: employees[0].id,
-      date: '2026-05-21',
-      checkIn: new Date('2026-05-21T09:15:00.000Z'),
-      checkOut: new Date('2026-05-21T18:00:00.000Z'),
-      status: HrAttendanceStatus.LATE,
-      deviceRef: String(devices[0].id),
-      deviceDbId: devices[0].id,
-    },
-    {
-      employeeId: employees[1].id,
-      date: '2026-05-20',
-      checkIn: new Date('2026-05-20T08:45:00.000Z'),
-      checkOut: new Date('2026-05-20T17:30:00.000Z'),
-      status: HrAttendanceStatus.PRESENT,
-      deviceRef: String(devices[0].id),
-      deviceDbId: devices[0].id,
-    },
-    {
-      employeeId: employees[2].id,
-      date: '2026-05-20',
-      checkIn: new Date('2026-05-20T09:05:00.000Z'),
-      checkOut: new Date('2026-05-20T18:10:00.000Z'),
-      status: HrAttendanceStatus.LATE,
-      deviceRef: String(devices[1].id),
-      deviceDbId: devices[1].id,
-    },
-  ];
-
-  for (const spec of attendanceSpecs) {
-    const existing = await prisma.hrAttendanceRecord.findFirst({
-      where: { employeeId: spec.employeeId, date: spec.date },
-    });
-    if (!existing) {
-      await prisma.hrAttendanceRecord.create({ data: spec });
-    }
-  }
-
-  const existingReg = await prisma.hrRegularization.findFirst({
-    where: { employeeId: employees[0].id, date: '2026-05-18' },
-  });
-  if (!existingReg) {
-    await prisma.hrRegularization.create({
-      data: {
-        employeeId: employees[0].id,
-        name: employees[0].name,
-        date: '2026-05-18',
-        type: 'check-in',
-        time: '09:00',
-        reason: 'Office scanner was disconnected',
-        status: HrRegularizationStatus.PENDING,
-      },
-    });
-  }
-
   const leavePlan = await prisma.hrLeavePlan.upsert({
     where: { id: 1 },
     create: {
@@ -890,14 +714,6 @@ async function seedHrData(hrUserId: number, defaultPassword: string, tenantId: n
     });
   }
 
-  for (const emp of employees.slice(0, 3)) {
-    await prisma.hrLeavePlanAssignment.upsert({
-      where: { planId_employeeId: { planId: leavePlan.id, employeeId: emp.id } },
-      create: { planId: leavePlan.id, employeeId: emp.id },
-      update: {},
-    });
-  }
-
   const holidaySpecs = [
     { name: 'New Year Day', date: '2026-01-01', isRestricted: false },
     { name: 'Independence Day', date: '2026-08-15', isRestricted: false },
@@ -910,126 +726,6 @@ async function seedHrData(hrUserId: number, defaultPassword: string, tenantId: n
     if (!existing) {
       await prisma.hrHoliday.create({ data: spec });
     }
-  }
-
-  const salarySpecs = [
-    { employeeId: employees[0].id, basicSalary: 4500, allowances: 800, deductions: 300 },
-    { employeeId: employees[1].id, basicSalary: 6500, allowances: 1200, deductions: 400 },
-    { employeeId: employees[2].id, basicSalary: 5200, allowances: 900, deductions: 350 },
-    { employeeId: employees[3].id, basicSalary: 4800, allowances: 850, deductions: 320 },
-  ];
-
-  for (const spec of salarySpecs) {
-    await prisma.hrSalaryStructure.upsert({
-      where: { employeeId: spec.employeeId },
-      create: spec,
-      update: {
-        basicSalary: spec.basicSalary,
-        allowances: spec.allowances,
-        deductions: spec.deductions,
-      },
-    });
-  }
-
-  const payslipSpecs = [
-    {
-      employeeId: employees[0].id,
-      name: employees[0].name,
-      month: 4,
-      year: 2026,
-      basicSalary: 4500,
-      allowances: 800,
-      deductions: 300,
-      netSalary: 5000,
-      status: HrPayslipStatus.PAID,
-    },
-    {
-      employeeId: employees[1].id,
-      name: employees[1].name,
-      month: 4,
-      year: 2026,
-      basicSalary: 6500,
-      allowances: 1200,
-      deductions: 400,
-      netSalary: 7300,
-      status: HrPayslipStatus.PAID,
-    },
-  ];
-
-  for (const spec of payslipSpecs) {
-    await prisma.hrPayslip.upsert({
-      where: {
-        employeeId_month_year: {
-          employeeId: spec.employeeId,
-          month: spec.month,
-          year: spec.year,
-        },
-      },
-      create: spec,
-      update: spec,
-    });
-  }
-
-  const payrollDeductionSpecs = [
-    {
-      employeeId: employees[0].id,
-      month: 5,
-      year: 2026,
-      leaveDays: 2,
-      leaveDeduction: 300,
-      taxAmount: 450,
-      otherDeductions: 50,
-      totalDeductions: 800,
-    },
-    {
-      employeeId: employees[1].id,
-      month: 5,
-      year: 2026,
-      leaveDays: 0,
-      leaveDeduction: 0,
-      taxAmount: 1200,
-      otherDeductions: 0,
-      totalDeductions: 1200,
-    },
-  ];
-
-  for (const spec of payrollDeductionSpecs) {
-    await prisma.hrPayrollDeduction.upsert({
-      where: {
-        employeeId_month_year: {
-          employeeId: spec.employeeId,
-          month: spec.month,
-          year: spec.year,
-        },
-      },
-      create: spec,
-      update: spec,
-    });
-  }
-
-  const existingOnboarding = await prisma.hrOnboardingChecklist.findFirst({
-    where: { employeeId: employees[0].id },
-  });
-  if (!existingOnboarding) {
-    await prisma.hrOnboardingChecklist.create({
-      data: {
-        employeeId: employees[0].id,
-        employeeName: employees[0].name,
-        startDate: '2026-06-01',
-        status: HrOnboardingChecklistStatus.IN_PROGRESS,
-        items: {
-          create: [
-            { category: HrOnboardingCategory.DOCUMENTS, title: 'Offer Letter Signed', status: HrOnboardingItemStatus.COMPLETED, completedAt: new Date('2026-06-01T10:00:00Z'), completedBy: 'HR Manager' },
-            { category: HrOnboardingCategory.DOCUMENTS, title: 'ID Proof Submitted', status: HrOnboardingItemStatus.COMPLETED, completedAt: new Date('2026-06-01T10:30:00Z'), completedBy: 'HR Manager' },
-            { category: HrOnboardingCategory.DOCUMENTS, title: 'Bank Details Form', status: HrOnboardingItemStatus.PENDING },
-            { category: HrOnboardingCategory.ACCESS, title: 'Email Account Created', status: HrOnboardingItemStatus.COMPLETED, completedAt: new Date('2026-06-02T09:00:00Z'), completedBy: 'IT Admin' },
-            { category: HrOnboardingCategory.ACCESS, title: 'HRMS Access Granted', status: HrOnboardingItemStatus.PENDING },
-            { category: HrOnboardingCategory.TRAINING, title: 'Orientation Session', status: HrOnboardingItemStatus.PENDING },
-            { category: HrOnboardingCategory.TRAINING, title: 'Compliance Training', status: HrOnboardingItemStatus.PENDING },
-          ],
-        },
-      },
-    });
   }
 
   const jobSpecs = [
@@ -1241,21 +937,6 @@ async function seedHrData(hrUserId: number, defaultPassword: string, tenantId: n
       create: spec,
       update: spec,
     });
-  }
-
-  const reviewSpecs = [
-    { employeeId: employees[0].id, name: 'Raju Kalla', employeeCode: 'E001', department: 'Engineering', cycle: 'FY26 H1 Review', manager: 'Jane Admin', rating: 4.5, status: HrReviewStatus.COMPLETED, reviewDate: '2026-05-10' },
-    { employeeId: employees[2].id, name: 'Alice Smith', employeeCode: 'E003', department: 'Human Resources', cycle: 'FY26 H1 Review', manager: 'Jane Admin', rating: 4.8, status: HrReviewStatus.COMPLETED, reviewDate: '2026-05-14' },
-    { employeeId: employees[3].id, name: 'Bob Johnson', employeeCode: 'E004', department: 'Finance', cycle: 'FY26 H1 Review', manager: 'Alice Smith', rating: 0, status: HrReviewStatus.MANAGER_REVIEW, reviewDate: '2026-05-22' },
-  ];
-
-  for (const spec of reviewSpecs) {
-    const existing = await prisma.hrPerformanceReview.findFirst({
-      where: { employeeCode: spec.employeeCode, cycle: spec.cycle },
-    });
-    if (!existing) {
-      await prisma.hrPerformanceReview.create({ data: spec });
-    }
   }
 
   console.log('✅ HR module data seeded');

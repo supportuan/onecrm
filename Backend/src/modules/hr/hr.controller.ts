@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as hrService from './hr.service.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
+import { resolveFileRefsDeep, safeUploadFilename, storeUploadedFile } from '../../lib/file-storage.js';
 import {
   createDeviceSchema,
   createNetworkSchema,
@@ -18,14 +19,21 @@ import {
   createOnboardingChecklistSchema,
   updateOnboardingItemSchema,
   createOfferLetterSchema,
+  createOfferLetterTemplateSchema,
+  updateOfferLetterTemplateSchema,
   updateOfferLetterStatusSchema,
   scheduleInterviewSchema,
+  rescheduleInterviewSchema,
   updateInterviewStatusSchema,
   submitInterviewFeedbackSchema,
   createJobPostingSchema,
+  updateJobPostingSchema,
   updateJobPostingStatusSchema,
   addCandidateSchema,
+  updateCandidateSchema,
+  updateCandidateStatusSchema,
   updateCandidateStageSchema,
+  createOnboardingTemplateSchema,
   addProcessingMetricSchema,
   createKPIDefinitionSchema,
   recordKPIMetricSchema,
@@ -36,8 +44,11 @@ import {
   updatePerformanceReviewSchema,
   createLeaveRequestSchema,
   processLeaveRequestSchema,
+  updateEmployeeSchema,
+  createEmployeeDocumentSchema,
 } from './hr.validation.js';
 import { notifyRoles } from '../notifications/recipients.js';
+import { employeeDocUpload, recruitmentFileUpload } from './hr.upload.js';
 import { UserRole } from '@prisma/client';
 
 // ==========================================
@@ -46,8 +57,103 @@ import { UserRole } from '@prisma/client';
 
 export const getEmployees = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await hrService.getEmployees();
+    const status = req.query.status as string | undefined;
+    const validStatuses = ['ACTIVE', 'ON_LEAVE', 'RESIGNED', 'TERMINATED'];
+    const data = await hrService.getEmployees(
+      status && validStatuses.includes(status) ? { status: status as any } : undefined,
+    );
     return sendSuccess(res, 'Employees retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getEmployeeById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const data = await hrService.getEmployeeById(id);
+    if (!data) return sendError(res, 'Employee not found', null, 404);
+    return sendSuccess(res, 'Employee retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateEmployee = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validated = updateEmployeeSchema.parse(req.body);
+    const data = await hrService.updateEmployee(id, validated);
+    return sendSuccess(res, 'Employee updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getEmployeeDocuments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const data = await resolveFileRefsDeep(await hrService.getEmployeeDocuments(id));
+    return sendSuccess(res, 'Employee documents retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadEmployeeDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const file = req.file;
+    if (!file) {
+      return sendError(res, 'file is required (jpg, png, pdf, doc, docx, html, max 20MB)', null, 400);
+    }
+    const type = (req.body.type as string) || 'OTHER';
+    const validTypes = ['OFFER_LETTER', 'ID_PROOF', 'CONTRACT', 'OTHER'];
+    if (!validTypes.includes(type)) {
+      return sendError(res, 'Invalid document type', null, 400);
+    }
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/hr/employees/${id}/${storedName}`;
+    const { ref: fileUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const data = await resolveFileRefsDeep(await hrService.createEmployeeDocument(id, {
+      type: type as any,
+      fileName: file.originalname,
+      fileUrl,
+      mimeType: file.mimetype,
+      fileSize: file.size,
+      expiresAt: req.body.expiresAt || null,
+      notes: req.body.notes || null,
+      tenantId,
+    }));
+    return sendSuccess(res, 'Document uploaded successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createEmployeeDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validated = createEmployeeDocumentSchema.parse(req.body);
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const data = await resolveFileRefsDeep(await hrService.createEmployeeDocument(id, { ...validated, tenantId }));
+    return sendSuccess(res, 'Document created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteEmployeeDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const docId = req.params.docId as string;
+    await hrService.deleteEmployeeDocument(id, docId);
+    return sendSuccess(res, 'Document deleted successfully', { success: true });
   } catch (error) {
     next(error);
   }
@@ -506,7 +612,7 @@ export const calculatePayroll = async (req: Request, res: Response, next: NextFu
 
 export const getOnboardingChecklists = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await hrService.getOnboardingChecklists();
+    const data = await resolveFileRefsDeep(await hrService.getOnboardingChecklists());
     return sendSuccess(res, 'Onboarding checklists retrieved successfully', data);
   } catch (error) {
     next(error);
@@ -516,7 +622,7 @@ export const getOnboardingChecklists = async (req: Request, res: Response, next:
 export const getOnboardingChecklist = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    const data = await hrService.getOnboardingChecklist(id);
+    const data = await resolveFileRefsDeep(await hrService.getOnboardingChecklist(id));
     return sendSuccess(res, 'Onboarding checklist retrieved successfully', data);
   } catch (error) {
     next(error);
@@ -526,8 +632,67 @@ export const getOnboardingChecklist = async (req: Request, res: Response, next: 
 export const createOnboardingChecklist = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createOnboardingChecklistSchema.parse(req.body);
-    const data = await hrService.createOnboardingChecklist(validatedData);
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const data = await hrService.createOnboardingChecklist({ ...validatedData, tenantId });
     return sendSuccess(res, 'Onboarding checklist created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOnboardingTemplates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const data = await hrService.getOnboardingTemplates(tenantId);
+    return sendSuccess(res, 'Onboarding templates retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createOnboardingTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const validatedData = createOnboardingTemplateSchema.parse(req.body);
+    const data = await hrService.createOnboardingTemplate(tenantId, validatedData);
+    return sendSuccess(res, 'Onboarding template created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteOnboardingTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const id = req.params.id as string;
+    await hrService.deleteOnboardingTemplate(tenantId, id);
+    return sendSuccess(res, 'Onboarding template deleted successfully', { success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadOnboardingItemAttachment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const checklistId = req.params.checklistId as string;
+    const itemId = req.params.itemId as string;
+    const file = req.file;
+    if (!file) return sendError(res, 'file is required', null, 400);
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/hr/recruitment/${storedName}`;
+    const { ref: attachmentUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+    const data = await resolveFileRefsDeep(await hrService.updateOnboardingItem(checklistId, itemId, {
+      status: 'PENDING',
+      attachmentUrl,
+      attachmentFileName: file.originalname,
+    }));
+    return sendSuccess(res, 'Attachment uploaded successfully', data);
   } catch (error) {
     next(error);
   }
@@ -538,7 +703,7 @@ export const updateOnboardingItem = async (req: Request, res: Response, next: Ne
     const checklistId = req.params.checklistId as string;
     const itemId = req.params.itemId as string;
     const validatedData = updateOnboardingItemSchema.parse(req.body);
-    const data = await hrService.updateOnboardingItem(checklistId, itemId, validatedData);
+    const data = await resolveFileRefsDeep(await hrService.updateOnboardingItem(checklistId, itemId, validatedData));
     return sendSuccess(res, 'Onboarding item updated successfully', data);
   } catch (error) {
     next(error);
@@ -561,8 +726,78 @@ export const getOfferLetters = async (req: Request, res: Response, next: NextFun
 export const createOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createOfferLetterSchema.parse(req.body);
-    const data = await hrService.createOfferLetter(validatedData);
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const data = await hrService.createOfferLetter(validatedData, { tenantId });
     return sendSuccess(res, 'Offer letter created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOfferLetterById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const data = await hrService.getOfferLetterById(id);
+    if (!data) return sendError(res, 'Offer letter not found', null, 404);
+    return sendSuccess(res, 'Offer letter retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const renderOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const data = await hrService.renderOfferLetterHtml(id, { tenantId });
+    return sendSuccess(res, 'Offer letter rendered successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOfferLetterTemplates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const data = await hrService.getOfferLetterTemplates(tenantId);
+    return sendSuccess(res, 'Offer letter templates retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createOfferLetterTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const validatedData = createOfferLetterTemplateSchema.parse(req.body);
+    const data = await hrService.createOfferLetterTemplate(tenantId, validatedData);
+    return sendSuccess(res, 'Offer letter template created successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOfferLetterTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const id = req.params.id as string;
+    const validatedData = updateOfferLetterTemplateSchema.parse(req.body);
+    const data = await hrService.updateOfferLetterTemplate(tenantId, id, validatedData);
+    return sendSuccess(res, 'Offer letter template updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteOfferLetterTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = req.tenantId ?? req.user?.tenantId;
+    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
+    const id = req.params.id as string;
+    await hrService.deleteOfferLetterTemplate(tenantId, id);
+    return sendSuccess(res, 'Offer letter template deleted successfully', { success: true });
   } catch (error) {
     next(error);
   }
@@ -572,8 +807,43 @@ export const updateOfferLetterStatus = async (req: Request, res: Response, next:
   try {
     const id = req.params.id as string;
     const { status } = updateOfferLetterStatusSchema.parse(req.body);
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    if (status === 'SENT') {
+      await hrService.renderOfferLetterHtml(id, { tenantId });
+    }
+    if (status === 'ACCEPTED') {
+      const result = await hrService.acceptOfferLetter(id, { tenantId });
+      return sendSuccess(res, 'Offer letter accepted — employee created', result);
+    }
+    if (status === 'REJECTED') {
+      const result = await hrService.rejectOfferLetter(id);
+      return sendSuccess(res, 'Offer letter rejected', result);
+    }
     const data = await hrService.updateOfferLetterStatus(id, status);
     return sendSuccess(res, 'Offer letter status updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const acceptOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
+    const onboardingTemplateId = req.body?.onboardingTemplateId as string | undefined;
+    const result = await hrService.acceptOfferLetter(id, { tenantId, onboardingTemplateId });
+    return sendSuccess(res, 'Offer letter accepted — employee created', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const notes = req.body?.notes as string | undefined;
+    const result = await hrService.rejectOfferLetter(id, notes);
+    return sendSuccess(res, 'Offer letter rejected', result);
   } catch (error) {
     next(error);
   }
@@ -597,6 +867,41 @@ export const scheduleInterview = async (req: Request, res: Response, next: NextF
     const validatedData = scheduleInterviewSchema.parse(req.body);
     const data = await hrService.scheduleInterview(validatedData);
     return sendSuccess(res, 'Interview scheduled successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rescheduleInterview = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validatedData = rescheduleInterviewSchema.parse(req.body);
+    const data = await hrService.rescheduleInterview(id, validatedData);
+    return sendSuccess(res, 'Interview rescheduled successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadRecruitmentFile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const file = req.file;
+    if (!file) return sendError(res, 'file is required', null, 400);
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/hr/recruitment/${storedName}`;
+    const { ref, url } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+    const payload = await resolveFileRefsDeep({
+      url,
+      ref,
+      filename: file.originalname,
+      storedAs: storedName,
+      size: file.size,
+    });
+    return sendSuccess(res, 'File uploaded', payload, 201);
   } catch (error) {
     next(error);
   }
@@ -647,6 +952,17 @@ export const createJobPosting = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const updateJobPosting = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validatedData = updateJobPostingSchema.parse(req.body);
+    const data = await hrService.updateJobPosting(id, validatedData);
+    return sendSuccess(res, 'Job posting updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateJobPostingStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
@@ -661,7 +977,7 @@ export const updateJobPostingStatus = async (req: Request, res: Response, next: 
 export const getCandidates = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const jobId = req.query.jobId as string | undefined;
-    const data = await hrService.getCandidates(jobId);
+    const data = await resolveFileRefsDeep(await hrService.getCandidates(jobId));
     return sendSuccess(res, 'Candidates retrieved successfully', data);
   } catch (error) {
     next(error);
@@ -678,11 +994,74 @@ export const addCandidate = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const updateCandidate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validatedData = updateCandidateSchema.parse(req.body);
+    const data = await resolveFileRefsDeep(await hrService.updateCandidate(id, validatedData));
+    return sendSuccess(res, 'Candidate updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadCandidateResume = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const file = req.file;
+    if (!file) return sendError(res, 'file is required', null, 400);
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/hr/recruitment/${storedName}`;
+    const { ref: resumeUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+    const data = await resolveFileRefsDeep(await hrService.updateCandidate(id, { resumeUrl }));
+    return sendSuccess(res, 'Resume uploaded successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateCandidateStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const validatedData = updateCandidateStatusSchema.parse(req.body);
+    const changedById = req.user?.id ?? null;
+    const data = await resolveFileRefsDeep(
+      await hrService.updateCandidateStatus(id, validatedData.status, changedById, validatedData.notes),
+    );
+    return sendSuccess(res, 'Candidate status updated successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCandidateStageEvents = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const data = await hrService.getCandidateStageEvents(id);
+    return sendSuccess(res, 'Candidate stage history retrieved successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateCandidateStage = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const validatedData = updateCandidateStageSchema.parse(req.body);
-    const data = await hrService.updateCandidateStage(id, validatedData.stage, validatedData.status);
+    const changedById = req.user?.id ?? null;
+    const data = await resolveFileRefsDeep(
+      await hrService.updateCandidateStage(
+        id,
+        validatedData.stage,
+        validatedData.status,
+        changedById,
+        validatedData.notes,
+      ),
+    );
     return sendSuccess(res, 'Candidate stage updated successfully', data);
   } catch (error) {
     next(error);

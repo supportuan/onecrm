@@ -28,8 +28,48 @@ const tenantFetch = async (url, options = {}) => {
 // 1. Employees & Directory Service
 // ==========================================
 
-export const getEmployees = async () => {
-  const res = await tenantFetch(`${API_URL}/employees`);
+export const getEmployees = async (status) => {
+  const params = status ? `?status=${encodeURIComponent(status)}` : '';
+  const res = await tenantFetch(`${API_URL}/employees${params}`);
+  return handleResponse(res);
+};
+
+export const getEmployeeById = async (id) => {
+  const res = await tenantFetch(`${API_URL}/employees/${id}`);
+  return handleResponse(res);
+};
+
+export const updateEmployee = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/employees/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const getEmployeeDocuments = async (employeeId) => {
+  const res = await tenantFetch(`${API_URL}/employees/${employeeId}/documents`);
+  return handleResponse(res);
+};
+
+export const uploadEmployeeDocument = async (employeeId, file, meta = {}) => {
+  const form = new FormData();
+  form.append('file', file);
+  if (meta.type) form.append('type', meta.type);
+  if (meta.notes) form.append('notes', meta.notes);
+  if (meta.expiresAt) form.append('expiresAt', meta.expiresAt);
+  const res = await tenantFetch(`${API_URL}/employees/${employeeId}/documents/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  return handleResponse(res);
+};
+
+export const deleteEmployeeDocument = async (employeeId, docId) => {
+  const res = await tenantFetch(`${API_URL}/employees/${employeeId}/documents/${docId}`, {
+    method: 'DELETE',
+  });
   return handleResponse(res);
 };
 
@@ -467,6 +507,64 @@ export const updateOfferLetterStatus = async (id, status) => {
   return handleResponse(res);
 };
 
+export const acceptOfferLetter = async (id, onboardingTemplateId) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/${id}/accept`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(onboardingTemplateId ? { onboardingTemplateId } : {}),
+  });
+  return handleResponse(res);
+};
+
+export const rejectOfferLetter = async (id, notes) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/${id}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(notes ? { notes } : {}),
+  });
+  return handleResponse(res);
+};
+
+export const getOfferLetterById = async (id) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/${id}`);
+  return handleResponse(res);
+};
+
+export const renderOfferLetter = async (id) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/${id}/render`);
+  return handleResponse(res);
+};
+
+export const getOfferLetterTemplates = async () => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/templates`);
+  return handleResponse(res);
+};
+
+export const createOfferLetterTemplate = async (data) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/templates`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateOfferLetterTemplate = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/templates/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const deleteOfferLetterTemplate = async (id) => {
+  const res = await tenantFetch(`${API_URL}/offer-letters/templates/${id}`, {
+    method: "DELETE",
+  });
+  return handleResponse(res);
+};
+
 // ==========================================
 // 13. Interview Scheduling & Feedback
 // ==========================================
@@ -503,6 +601,25 @@ export const submitInterviewFeedback = async (id, feedback) => {
   return handleResponse(res);
 };
 
+export const rescheduleInterview = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/interviews/${id}/reschedule`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const uploadRecruitmentFile = async (file) => {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await tenantFetch(`${API_URL}/recruitment/upload`, {
+    method: "POST",
+    body: form,
+  });
+  return handleResponse(res);
+};
+
 // ==========================================
 // 14. Job Postings & Candidate Tracking
 // ==========================================
@@ -530,6 +647,15 @@ export const updateJobPostingStatus = async (id, status) => {
   return handleResponse(res);
 };
 
+export const updateJobPosting = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/jobs/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
 export const getCandidates = async (jobId) => {
   const params = new URLSearchParams();
   if (jobId) params.append("jobId", jobId);
@@ -546,12 +672,76 @@ export const addCandidate = async (data) => {
   return handleResponse(res);
 };
 
-export const updateCandidateStage = async (id, stage, status) => {
+export const updateCandidateStage = async (id, stage, status, notes) => {
   const res = await tenantFetch(`${API_URL}/candidates/${id}/stage`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ stage, status }),
+    body: JSON.stringify({ stage, status, notes }),
   });
+  return handleResponse(res);
+};
+
+export const updateCandidate = async (id, data) => {
+  const res = await tenantFetch(`${API_URL}/candidates/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const updateCandidateStatus = async (id, status, notes) => {
+  const res = await tenantFetch(`${API_URL}/candidates/${id}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status, notes }),
+  });
+  return handleResponse(res);
+};
+
+export const uploadCandidateResume = async (candidateId, file) => {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await tenantFetch(`${API_URL}/candidates/${candidateId}/resume`, {
+    method: "POST",
+    body: form,
+  });
+  return handleResponse(res);
+};
+
+export const getCandidateStageEvents = async (candidateId) => {
+  const res = await tenantFetch(`${API_URL}/candidates/${candidateId}/stage-events`);
+  return handleResponse(res);
+};
+
+export const getOnboardingTemplates = async () => {
+  const res = await tenantFetch(`${API_URL}/onboarding/templates`);
+  return handleResponse(res);
+};
+
+export const createOnboardingTemplate = async (data) => {
+  const res = await tenantFetch(`${API_URL}/onboarding/templates`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
+export const deleteOnboardingTemplate = async (id) => {
+  const res = await tenantFetch(`${API_URL}/onboarding/templates/${id}`, {
+    method: "DELETE",
+  });
+  return handleResponse(res);
+};
+
+export const uploadOnboardingItemAttachment = async (checklistId, itemId, file) => {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await tenantFetch(
+    `${API_URL}/onboarding/${checklistId}/items/${itemId}/attachment`,
+    { method: "POST", body: form },
+  );
   return handleResponse(res);
 };
 

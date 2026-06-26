@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as controller from './hr.controller.js';
+import { employeeDocUpload, recruitmentFileUpload } from './hr.upload.js';
 import { requireHrAuth, requirePermission } from './hr.auth.js';
 
 const router = Router();
@@ -8,9 +9,20 @@ router.use(requireHrAuth);
 
 // Employees & team
 router.get('/employees', requirePermission('VIEW_ALL_EMPLOYEES', 'VIEW_TEAM'), controller.getEmployees);
+router.get('/employees/:id', requirePermission('VIEW_ALL_EMPLOYEES', 'VIEW_TEAM'), controller.getEmployeeById);
+router.put('/employees/:id', requirePermission('MANAGE_EMPLOYEES'), controller.updateEmployee);
 router.get('/team', requirePermission('VIEW_TEAM', 'VIEW_ALL_EMPLOYEES'), controller.getTeam);
 router.put('/employees/:id/role', requirePermission('MANAGE_EMPLOYEES'), controller.assignAccessRole);
 router.post('/employees/bulk', requirePermission('MANAGE_EMPLOYEES'), controller.bulkImportEmployees);
+router.get('/employees/:id/documents', requirePermission('VIEW_ALL_EMPLOYEES', 'VIEW_TEAM'), controller.getEmployeeDocuments);
+router.post(
+  '/employees/:id/documents/upload',
+  requirePermission('MANAGE_EMPLOYEES'),
+  employeeDocUpload.single('file'),
+  controller.uploadEmployeeDocument,
+);
+router.post('/employees/:id/documents', requirePermission('MANAGE_EMPLOYEES'), controller.createEmployeeDocument);
+router.delete('/employees/:id/documents/:docId', requirePermission('MANAGE_EMPLOYEES'), controller.deleteEmployeeDocument);
 
 // Attendance settings
 router.get('/attendance/settings', requirePermission('VIEW_ATTENDANCE'), controller.getAttendanceSettings);
@@ -73,28 +85,64 @@ router.get('/payroll/deductions', requirePermission('MANAGE_PAYROLL'), controlle
 router.post('/payroll/deductions', requirePermission('MANAGE_PAYROLL'), controller.upsertPayrollDeduction);
 
 // Onboarding
+router.get('/onboarding/templates', requirePermission('MANAGE_EMPLOYEES'), controller.getOnboardingTemplates);
+router.post('/onboarding/templates', requirePermission('MANAGE_EMPLOYEES'), controller.createOnboardingTemplate);
+router.delete('/onboarding/templates/:id', requirePermission('MANAGE_EMPLOYEES'), controller.deleteOnboardingTemplate);
 router.get('/onboarding', requirePermission('MANAGE_EMPLOYEES'), controller.getOnboardingChecklists);
 router.post('/onboarding', requirePermission('MANAGE_EMPLOYEES'), controller.createOnboardingChecklist);
 router.get('/onboarding/:id', requirePermission('MANAGE_EMPLOYEES'), controller.getOnboardingChecklist);
 router.put('/onboarding/:checklistId/items/:itemId', requirePermission('MANAGE_EMPLOYEES'), controller.updateOnboardingItem);
+router.post(
+  '/onboarding/:checklistId/items/:itemId/attachment',
+  requirePermission('MANAGE_EMPLOYEES'),
+  recruitmentFileUpload.single('file'),
+  controller.uploadOnboardingItemAttachment,
+);
+
+// Recruitment file upload (resumes, etc.)
+router.post(
+  '/recruitment/upload',
+  requirePermission('MANAGE_EMPLOYEES'),
+  recruitmentFileUpload.single('file'),
+  controller.uploadRecruitmentFile,
+);
 
 // Offer letters
+router.get('/offer-letters/templates', requirePermission('MANAGE_EMPLOYEES'), controller.getOfferLetterTemplates);
+router.post('/offer-letters/templates', requirePermission('MANAGE_EMPLOYEES'), controller.createOfferLetterTemplate);
+router.put('/offer-letters/templates/:id', requirePermission('MANAGE_EMPLOYEES'), controller.updateOfferLetterTemplate);
+router.delete('/offer-letters/templates/:id', requirePermission('MANAGE_EMPLOYEES'), controller.deleteOfferLetterTemplate);
 router.get('/offer-letters', requirePermission('MANAGE_EMPLOYEES'), controller.getOfferLetters);
+router.get('/offer-letters/:id', requirePermission('MANAGE_EMPLOYEES'), controller.getOfferLetterById);
+router.get('/offer-letters/:id/render', requirePermission('MANAGE_EMPLOYEES'), controller.renderOfferLetter);
 router.post('/offer-letters', requirePermission('MANAGE_EMPLOYEES'), controller.createOfferLetter);
 router.put('/offer-letters/:id/status', requirePermission('MANAGE_EMPLOYEES'), controller.updateOfferLetterStatus);
+router.post('/offer-letters/:id/accept', requirePermission('MANAGE_EMPLOYEES'), controller.acceptOfferLetter);
+router.post('/offer-letters/:id/reject', requirePermission('MANAGE_EMPLOYEES'), controller.rejectOfferLetter);
 
 // Interviews
 router.get('/interviews', requirePermission('MANAGE_EMPLOYEES'), controller.getInterviews);
 router.post('/interviews', requirePermission('MANAGE_EMPLOYEES'), controller.scheduleInterview);
+router.put('/interviews/:id/reschedule', requirePermission('MANAGE_EMPLOYEES'), controller.rescheduleInterview);
 router.put('/interviews/:id/status', requirePermission('MANAGE_EMPLOYEES'), controller.updateInterviewStatus);
 router.post('/interviews/:id/feedback', requirePermission('MANAGE_EMPLOYEES'), controller.submitInterviewFeedback);
 
 // Jobs & candidates
 router.get('/jobs', requirePermission('MANAGE_EMPLOYEES'), controller.getJobPostings);
 router.post('/jobs', requirePermission('MANAGE_EMPLOYEES'), controller.createJobPosting);
+router.put('/jobs/:id', requirePermission('MANAGE_EMPLOYEES'), controller.updateJobPosting);
 router.put('/jobs/:id/status', requirePermission('MANAGE_EMPLOYEES'), controller.updateJobPostingStatus);
 router.get('/candidates', requirePermission('MANAGE_EMPLOYEES'), controller.getCandidates);
 router.post('/candidates', requirePermission('MANAGE_EMPLOYEES'), controller.addCandidate);
+router.put('/candidates/:id', requirePermission('MANAGE_EMPLOYEES'), controller.updateCandidate);
+router.post(
+  '/candidates/:id/resume',
+  requirePermission('MANAGE_EMPLOYEES'),
+  recruitmentFileUpload.single('file'),
+  controller.uploadCandidateResume,
+);
+router.put('/candidates/:id/status', requirePermission('MANAGE_EMPLOYEES'), controller.updateCandidateStatus);
+router.get('/candidates/:id/stage-events', requirePermission('MANAGE_EMPLOYEES'), controller.getCandidateStageEvents);
 router.put('/candidates/:id/stage', requirePermission('MANAGE_EMPLOYEES'), controller.updateCandidateStage);
 
 // Performance metrics

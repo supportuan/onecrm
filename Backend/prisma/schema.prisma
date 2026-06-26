@@ -154,6 +154,7 @@ model Tenant {
   audits          SuperAdminAudit[]
 
   hrEmployees              HrEmployee[]
+  hrEmployeeDocuments      HrEmployeeDocument[]
   hrAttendanceDevices      HrAttendanceDevice[]
   hrAttendanceSetting      HrAttendanceSetting?
   hrAttendanceRecords      HrAttendanceRecord[]
@@ -171,6 +172,8 @@ model Tenant {
   hrMarketingPerformances  HrMarketingPerformance[]
   hrCounsellorPerformances HrCounsellorPerformance[]
   hrPerformanceReviews     HrPerformanceReview[]
+  hrOnboardingTemplates    HrOnboardingTemplate[]
+  hrOfferLetterTemplates   HrOfferLetterTemplate[]
 }
 
 // Per-tenant module enablement. If a row is missing, the module is OFF.
@@ -206,6 +209,20 @@ enum HrAccessRole {
   SUPER_ADMIN
   HR_MANAGER
   PAYROLL_ADMIN
+}
+
+enum HrEmploymentStatus {
+  ACTIVE
+  ON_LEAVE
+  RESIGNED
+  TERMINATED
+}
+
+enum HrEmployeeDocumentType {
+  OFFER_LETTER
+  ID_PROOF
+  CONTRACT
+  OTHER
 }
 
 enum HrDeviceStatus {
@@ -596,6 +613,7 @@ model User {
   applicationsAssigned    Application[]           @relation("ApplicationAssignee")
   applicationStageChanges ApplicationStageEvent[] @relation("StageChangedBy")
   agencyPartner           AgencyPartner?
+  hrCandidateStageChanges HrCandidateStageEvent[] @relation("HrCandidateStageChangedBy")
 }
 
 model Notification {
@@ -1151,23 +1169,33 @@ model PasswordResetToken {
 // -----------------------------------------------------------------------------
 
 model HrEmployee {
-  id           Int          @id @default(autoincrement())
-  tenantId     Int?
-  name         String
-  employeeCode String       @unique
-  email        String       @unique
-  accessRole   HrAccessRole @default(EMPLOYEE)
-  department   String?
-  designation  String?
-  phone        String?
-  biometricId  String?
-  location     String?
-  userId       Int?         @unique
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id               Int                @id @default(autoincrement())
+  tenantId         Int?
+  name             String
+  firstName        String?
+  lastName         String?
+  employeeCode     String             @unique
+  email            String             @unique
+  accessRole       HrAccessRole       @default(EMPLOYEE)
+  department       String?
+  designation      String?
+  phone            String?
+  biometricId      String?
+  location         String?
+  joiningDate      String?
+  managerId        Int?
+  employmentStatus HrEmploymentStatus @default(ACTIVE)
+  resignedAt       DateTime?
+  terminatedAt     DateTime?
+  exitReason       String?
+  userId           Int?               @unique
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   tenant               Tenant?                 @relation(fields: [tenantId], references: [id])
   user                 User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  manager              HrEmployee?             @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports        HrEmployee[]            @relation("EmployeeManager")
   attendanceRecords    HrAttendanceRecord[]
   regularizations      HrRegularization[]
   leavePlanAssignments HrLeavePlanAssignment[]
@@ -1177,7 +1205,33 @@ model HrEmployee {
   payrollDeductions    HrPayrollDeduction[]
   onboardingChecklists HrOnboardingChecklist[]
   performanceReviews   HrPerformanceReview[]
+  documents            HrEmployeeDocument[]
 
+  @@index([tenantId])
+  @@index([employmentStatus])
+  @@index([managerId])
+}
+
+model HrEmployeeDocument {
+  id                  Int                   @id @default(autoincrement())
+  tenantId            Int?
+  employeeId          Int
+  type                HrEmployeeDocumentType
+  fileName            String
+  fileUrl             String
+  mimeType            String?
+  fileSize            Int?
+  uploadedAt          DateTime              @default(now())
+  expiresAt           DateTime?
+  notes               String?
+  sourceOfferLetterId Int?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  tenant   Tenant?    @relation(fields: [tenantId], references: [id])
+  employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, type])
   @@index([tenantId])
 }
 
@@ -1426,18 +1480,91 @@ model HrOnboardingChecklist {
 }
 
 model HrOnboardingItem {
-  id          Int                    @id @default(autoincrement())
-  checklistId Int
-  category    HrOnboardingCategory
-  title       String
-  description String?
-  status      HrOnboardingItemStatus @default(PENDING)
-  completedAt DateTime?
-  completedBy String?
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
+  id                 Int                    @id @default(autoincrement())
+  checklistId        Int
+  category           HrOnboardingCategory
+  title              String
+  description        String?
+  status             HrOnboardingItemStatus @default(PENDING)
+  completedAt        DateTime?
+  completedBy        String?
+  dueDate            String?
+  assignee           String?
+  attachmentUrl      String?
+  attachmentFileName String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
 
   checklist HrOnboardingChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+}
+
+// Reusable onboarding playbook. Each tenant can keep several (e.g. "Engineering",
+// "Sales"). On hire, an HrOnboardingChecklist is spawned from the chosen template
+// and per-item dueDate is computed as joiningDate + dueOffsetDays.
+model HrOnboardingTemplate {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int?
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  role        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant?                    @relation(fields: [tenantId], references: [id])
+  items  HrOnboardingTemplateItem[]
+
+  @@index([tenantId])
+}
+
+model HrOnboardingTemplateItem {
+  id             Int                  @id @default(autoincrement())
+  templateId     Int
+  category       HrOnboardingCategory
+  title          String
+  description    String?
+  dueOffsetDays  Int                  @default(0)
+  assigneeRole   String?
+  sortOrder      Int                  @default(0)
+  createdAt      DateTime             @default(now())
+
+  template HrOnboardingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
+
+// Tenant-configurable offer letter template. bodyHtml may contain {{variable}}
+// placeholders that the render endpoint substitutes from candidate + offer + tenant data.
+model HrOfferLetterTemplate {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int?
+  name        String
+  description String?
+  bodyHtml    String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant?         @relation(fields: [tenantId], references: [id])
+  offers HrOfferLetter[]
+
+  @@index([tenantId])
+}
+
+// Audit trail of candidate pipeline-stage transitions.
+model HrCandidateStageEvent {
+  id          Int      @id @default(autoincrement())
+  candidateId Int
+  fromStage   String?
+  toStage     String
+  changedById Int?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  candidate HrCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  changedBy User?       @relation("HrCandidateStageChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([candidateId])
 }
 
 model HrJobPosting {
@@ -1476,9 +1603,10 @@ model HrCandidate {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
-  job          HrJobPosting    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job          HrJobPosting            @relation(fields: [jobId], references: [id], onDelete: Cascade)
   offerLetters HrOfferLetter[]
   interviews   HrInterview[]
+  stageEvents  HrCandidateStageEvent[]
 }
 
 model HrOfferLetter {
@@ -1493,10 +1621,17 @@ model HrOfferLetter {
   expiryDate     String
   status         HrOfferLetterStatus @default(DRAFT)
   policyTemplate String
+  templateId     Int?
+  renderedHtml   String?
+  conditional    Boolean             @default(false)
+  acceptedAt     DateTime?
+  rejectedAt     DateTime?
+  employeeId     Int?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
-  candidate HrCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidate HrCandidate            @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  template  HrOfferLetterTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 }
 
 model HrInterview {
