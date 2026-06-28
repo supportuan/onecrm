@@ -691,38 +691,7 @@ const Campaigns = () => {
 
       await fetchCampaignsList();
 
-      // if (payload.status === 'ACTIVE' && createdCampaign?.id) {
-      //   const leadsResponse = await getLeads({ limit: 1000 });
-
-      //   const leads = leadsResponse?.data?.items || [];
-
-      //   const filteredLeads =
-      //     payload.audienceType === 'ALL'
-      //       ? leads
-      //       : leads.filter((lead) => getLeadAudienceValue(lead) === payload.audienceType);
-
-      //   const leadIds = filteredLeads.map((lead) => lead.id);
-
-      //   console.log('Leads selected for campaign:', leadIds.length);
-
-      //   if (leadIds.length === 0) {
-      //     alert(`Campaign created, but no ${payload.audienceType} leads found.`);
-      //     return;
-      //   }
-
-      //   const associateResponse = await associateCampaignLeads(createdCampaign.id, {
-      //     leadIds,
-      //     status: 'PENDING',
-      //     engagement: 'new',
-      //   });
-
-      //   if (!associateResponse.success) {
-      //     alert('Campaign created, but failed to attach leads.');
-      //     return;
-      //   }
-
-      //   await handleLaunchCampaign(createdCampaign.id, payload.audienceType);
-      // }
+      
       if (payload.status === 'ACTIVE' && createdCampaign?.id) {
         // Social Media campaigns do not send leads; launch directly with NOT_APPLICABLE audience
         if (payload.type === 'SOCIAL_MEDIA') {

@@ -11,116 +11,62 @@ const getLaunchDetails = (campaign: any) => {
   return campaign.launchDetails || campaign.metadata || campaign.config || {};
 };
 
+// const normalizeCountry = (country?: string) => {
+//   const value = String(country || 'IN').trim().toUpperCase();
 
-const mapMetaObjective = (objective?: string) => {
-  switch (String(objective || '').toUpperCase()) {
-    case 'TRAFFIC':
-      return 'OUTCOME_TRAFFIC';
+//   const map: Record<string, string> = {
+//     INDIA: 'IN',
+//     IN: 'IN',
+//     USA: 'US',
+//     US: 'US',
+//     'UNITED STATES': 'US',
+//     'UNITED STATES OF AMERICA': 'US',
+//     UK: 'GB',
+//     GB: 'GB',
+//     'UNITED KINGDOM': 'GB',
+//     ENGLAND: 'GB',
+//     AUSTRALIA: 'AU',
+//     AU: 'AU',
+//     CANADA: 'CA',
+//     CA: 'CA',
+//   };
 
-    case 'LEAD_GENERATION':
-      return 'OUTCOME_LEADS';
-
-    case 'ENGAGEMENT':
-      return 'OUTCOME_ENGAGEMENT';
-
-    case 'CONVERSIONS':
-      return 'OUTCOME_SALES';
-
-    default:
-      return 'OUTCOME_TRAFFIC';
-  }
-};
-
-const mapOptimizationGoal = (objective?: string) => {
-  switch (String(objective || '').toUpperCase()) {
-    case 'OUTCOME_TRAFFIC':
-      return 'LINK_CLICKS';
-    case 'OUTCOME_LEADS':
-      return 'LEAD_GENERATION';
-    case 'OUTCOME_ENGAGEMENT':
-      return 'POST_ENGAGEMENT';
-    case 'OUTCOME_SALES':
-      return 'OFFSITE_CONVERSIONS';
-    default:
-      return 'LINK_CLICKS';
-  }
-};
+//   return map[value] || value;
+// };
 
 const normalizeCountry = (country?: string) => {
-  const value = String(country || 'IN').trim().toUpperCase();
+  const value = String(country || "IN").trim().toUpperCase();
 
   const map: Record<string, string> = {
-    INDIA: 'IN',
-    IN: 'IN',
+    INDIA: "IN",
+    IN: "IN",
 
-    USA: 'US',
-    US: 'US',
-    'UNITED STATES': 'US',
-    'UNITED STATES OF AMERICA': 'US',
+    USA: "US",
+    US: "US",
 
-    UK: 'GB',
-    GB: 'GB',
-    'UNITED KINGDOM': 'GB',
-    ENGLAND: 'GB',
+    "UNITED STATES": "US",
 
-    AUSTRALIA: 'AU',
-    AU: 'AU',
+    UK: "GB",
+    GB: "GB",
 
-    CANADA: 'CA',
-    CA: 'CA',
+    AUSTRALIA: "AU",
+    AU: "AU",
+
+    CANADA: "CA",
+    CA: "CA",
   };
 
-  return map[value] || value;
+  return map[value] || "IN";
 };
-
-const parseAgeRange = (value?: string) => {
-  const raw = String(value || '18-35').trim();
-
-  if (!raw.includes('-')) {
-    const age = Number(raw) || 18;
-
-    return {
-      ageMin: age,
-      ageMax: age + 10,
-    };
-  }
-
-  const [minRaw, maxRaw] = raw.split('-');
-
-  const ageMin = Number(minRaw) || 18;
-  const parsedMax = Number(maxRaw) || 35;
-
-  return {
-    ageMin,
-    ageMax: parsedMax >= ageMin ? parsedMax : ageMin + 10,
-  };
-};
-
 
 const buildMetaAdTemplate = (campaign: any) => {
   const details = getLaunchDetails(campaign);
   const postTemplate = buildSocialMediaPostTemplate(campaign);
 
-  const objectiveMap: Record<string, string> = {
-    TRAFFIC: 'OUTCOME_TRAFFIC',
-    LEAD_GENERATION: 'OUTCOME_LEADS',
-    ENGAGEMENT: 'OUTCOME_ENGAGEMENT',
-    CONVERSIONS: 'OUTCOME_SALES',
-  };
-
-  const metaObjective =
-    objectiveMap[String(details.objective || '').toUpperCase()] ||
-    mapMetaObjective(details.objective);
-
   return {
-    platform: details.platform || 'FACEBOOK',
-    objective: metaObjective,
-    optimizationGoal: mapOptimizationGoal(metaObjective),
     targetCountry: normalizeCountry(details.targetCountry || 'IN'),
-    targetAgeRange: details.targetAgeRange || '18-35',
-
-    adHeadline: postTemplate.headline,
-    primaryText: postTemplate.primaryText,
+    adHeadline: postTemplate.headline || `${campaign.name} Ad`,
+    primaryText: postTemplate.primaryText || `${campaign.name} - Apply Today`,
     ctaButtonText: postTemplate.ctaButtonText || 'LEARN_MORE',
     landingPageUrl:
       postTemplate.landingPageUrl ||
@@ -141,49 +87,31 @@ export const execute = async (campaign: any, leads: any[] = []) => {
   if (!accessToken || !adAccountId || !pageId) {
     return {
       success: false,
-      channel: 'META',
+      channel: 'SOCIAL_MEDIA',
       message: 'Meta Ads account is not configured',
     };
   }
 
   const template = buildMetaAdTemplate(campaign);
-  const { ageMin, ageMax } = parseAgeRange(template.targetAgeRange);
+  const baseUrl = 'https://graph.facebook.com/v25.0';
 
   console.log('META ACCOUNT ID:', adAccountId);
   console.log('META PAGE ID:', pageId);
 
   try {
-    const baseUrl = 'https://graph.facebook.com/v19.0';
-
     // ===========================
     // CREATE CAMPAIGN
     // ===========================
-
-    // const campaignPayload = {
-    //   name: campaign.name,
-    //   objective: template.objective,
-    //   status: 'PAUSED',
-    //   special_ad_categories: [],
-    //   access_token: accessToken,
-    // };
-
     const campaignPayload = {
       name: campaign.name,
-      objective: template.objective,
+      objective: 'OUTCOME_TRAFFIC',
       status: 'PAUSED',
-
       special_ad_categories: [],
-
-      // REQUIRED IN META API V25
       is_adset_budget_sharing_enabled: false,
-
       access_token: accessToken,
     };
 
-    console.log(
-      'Campaign Payload:',
-      JSON.stringify(campaignPayload, null, 2)
-    );
+    console.log('Campaign Payload:', JSON.stringify(campaignPayload, null, 2));
 
     const campaignRes = await axios.post(
       `${baseUrl}/${adAccountId}/campaigns`,
@@ -197,119 +125,111 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     // ===========================
     // CREATE ADSET
     // ===========================
-
-    // const adSetPayload = {
-    //   name: `${campaign.name} Ad Set`,
-    //   campaign_id: metaCampaignId,
-
-    //   daily_budget: Math.max(
-    //     Number(campaign.budget || 100) * 100,
-    //     100
-    //   ),
-
-    //   billing_event: 'IMPRESSIONS',
-
-    //   optimization_goal: template.optimizationGoal,
-
-    //   targeting: {
-    //     geo_locations: {
-    //       countries: [template.targetCountry],
-    //     },
-    //     age_min: ageMin,
-    //     age_max: ageMax,
-    //   },
-
-    //   status: 'PAUSED',
-    //   access_token: accessToken,
-    // };
-
     const adSetPayload = {
       name: `${campaign.name} Ad Set`,
       campaign_id: metaCampaignId,
 
-      daily_budget: Math.max(
-        Number(campaign.budget || 100) * 100,
-        100
-      ),
+      daily_budget: Math.max(Number(campaign.budget || 100) * 100, 10000),
 
       billing_event: 'IMPRESSIONS',
-      // Added bid constraints required by Meta API for certain optimization goals
-      bid_strategy: 'LOWEST_COST_WITH_BID_CAP',
-      bid_amount: Math.max(Number(campaign.budget || 100) * 100, 100),
-
-      optimization_goal: template.optimizationGoal,
-
+      optimization_goal: 'LINK_CLICKS',
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       destination_type: 'WEBSITE',
 
       targeting: {
         geo_locations: {
-          countries: [template.targetCountry]
+          countries: [template.targetCountry || 'IN'],
         },
-        age_min: ageMin,
-        age_max: ageMax,
-        // Advantage audience flag required by Meta API (0 = disabled, 1 = enabled)
-        targeting_automation: { advantage_audience: 0 }
+        targeting_automation: {
+          advantage_audience: 0,
+        },
       },
 
       status: 'PAUSED',
-      access_token: accessToken
+      access_token: accessToken,
     };
 
-    console.log(
-      'AdSet Payload:',
-      JSON.stringify(adSetPayload, null, 2)
-    );
+    console.log('AdSet Payload:', JSON.stringify(adSetPayload, null, 2));
 
     const adSetRes = await axios.post(
       `${baseUrl}/${adAccountId}/adsets`,
       adSetPayload
     );
 
-    // Upload placeholder image to get image_hash for the creative
-    const placeholderImageUrl = 'https://via.placeholder.com/1200x628.png';
-    const imageUploadRes = await axios.post(
-      `${baseUrl}/${adAccountId}/adimages`,
-      {
-        url: placeholderImageUrl,
-        access_token: accessToken,
-      }
-    );
-    const imageHash = imageUploadRes.data?.images?.[0]?.hash || imageUploadRes.data?.hash;
-
-
     console.log('AdSet Created:', adSetRes.data);
 
     const metaAdSetId = adSetRes.data.id;
 
     // ===========================
+    // UPLOAD IMAGE
+    // ===========================
+    const placeholderImageUrl = 'https://via.placeholder.com/1200x628.png';
+    let imageHash = '';
+
+    try {
+      const imageUploadRes = await axios.post(
+        `${baseUrl}/${adAccountId}/adimages`,
+        {
+          url: placeholderImageUrl,
+          access_token: accessToken,
+        }
+      );
+
+      imageHash =
+        imageUploadRes.data?.images?.[placeholderImageUrl]?.hash ||
+        Object.values(imageUploadRes.data?.images || {})?.[0]?.['hash'];
+    } catch (uploadError: any) {
+      console.warn(
+        '[Meta Campaign Service] Image upload failed or restricted. Attempting to fetch existing images...',
+        uploadError.message
+      );
+
+      try {
+        const existingImagesRes = await axios.get(
+          `${baseUrl}/${adAccountId}/adimages`,
+          {
+            params: {
+              access_token: accessToken,
+              limit: 5,
+            },
+          }
+        );
+
+        const existingImages = existingImagesRes.data?.data || [];
+        if (existingImages.length > 0) {
+          imageHash = existingImages[0].hash;
+          console.log('[Meta Campaign Service] Found existing image in account. Using hash:', imageHash);
+        } else {
+          throw new Error('No existing images found in ad account to fallback to.');
+        }
+      } catch (fallbackError: any) {
+        console.error('[Meta Campaign Service] Fallback fetch failed:', fallbackError.message);
+        throw uploadError;
+      }
+    }
+
+    if (!imageHash) {
+      throw new Error('Meta image upload failed: image hash not found');
+    }
+
+    console.log('Image Hash to use:', imageHash);
+
+    // ===========================
     // CREATE CREATIVE
     // ===========================
-
     const creativePayload = {
       name: `${campaign.name} Creative`,
       object_story_spec: {
         page_id: pageId,
         link_data: {
-
-          message:
-            template.primaryText ||
-            `${campaign.name} - Apply Today`,
-          // Use the uploaded image hash instead of unsupported image_url
-
-          link:
-            template.landingPageUrl ||
-            'https://example.com',
-
-          name:
-            template.adHeadline ||
-            `${campaign.name} Ad`,
-
+          message: template.primaryText,
+          link: template.landingPageUrl,
+          name: template.adHeadline,
+          image_hash: imageHash,
           call_to_action: {
-            type: template.ctaButtonText || 'LEARN_MORE',
+            type: template.ctaButtonText,
             value: {
-              link:
-                template.landingPageUrl ||
-                'https://example.com',
+              link: template.landingPageUrl,
             },
           },
         },
@@ -317,10 +237,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
       access_token: accessToken,
     };
 
-    console.log(
-      'Creative Payload:',
-      JSON.stringify(creativePayload, null, 2)
-    );
+    console.log('Creative Payload:', JSON.stringify(creativePayload, null, 2));
 
     const creativeRes = await axios.post(
       `${baseUrl}/${adAccountId}/adcreatives`,
@@ -334,7 +251,6 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     // ===========================
     // CREATE AD
     // ===========================
-
     const adPayload = {
       name: `${campaign.name} Ad`,
       adset_id: metaAdSetId,
@@ -345,15 +261,9 @@ export const execute = async (campaign: any, leads: any[] = []) => {
       access_token: accessToken,
     };
 
-    console.log(
-      'Ad Payload:',
-      JSON.stringify(adPayload, null, 2)
-    );
+    console.log('Ad Payload:', JSON.stringify(adPayload, null, 2));
 
-    const adRes = await axios.post(
-      `${baseUrl}/${adAccountId}/ads`,
-      adPayload
-    );
+    const adRes = await axios.post(`${baseUrl}/${adAccountId}/ads`, adPayload);
 
     console.log('Ad Created:', adRes.data);
 
@@ -369,29 +279,23 @@ export const execute = async (campaign: any, leads: any[] = []) => {
       metaAdId,
     };
   } catch (apiError: any) {
-    console.error(
-      'META FULL ERROR:',
-      JSON.stringify(apiError.response?.data, null, 2)
-    );
+    console.error('META ERROR MESSAGE:', apiError.message);
+    console.error('META ERROR STACK:', apiError.stack);
 
-    console.error(
-      'META STATUS:',
-      apiError.response?.status
-    );
-
-    console.error(
-      'META HEADERS:',
-      apiError.response?.headers
-    );
+    if (apiError.response) {
+      console.error(
+        'META FULL ERROR:',
+        JSON.stringify(apiError.response.data, null, 2)
+      );
+      console.error('META STATUS:', apiError.response.status);
+      console.error('META HEADERS:', apiError.response.headers);
+    }
 
     return {
       success: false,
       channel: 'SOCIAL_MEDIA',
-      message:
-        apiError.response?.data?.error?.message ||
-        apiError.message,
+      message: apiError.response?.data?.error?.message || apiError.message,
       details: apiError.response?.data || {},
     };
   }
 };
-
