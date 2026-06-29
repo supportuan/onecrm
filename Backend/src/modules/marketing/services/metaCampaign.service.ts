@@ -11,28 +11,21 @@ const getLaunchDetails = (campaign: any) => {
   return campaign.launchDetails || campaign.metadata || campaign.config || {};
 };
 
-// const normalizeCountry = (country?: string) => {
-//   const value = String(country || 'IN').trim().toUpperCase();
+const getMetaStatus = (status?: string) => {
+  switch ((status || "").toUpperCase()) {
+    case "ACTIVE":
+      return "ACTIVE";
 
-//   const map: Record<string, string> = {
-//     INDIA: 'IN',
-//     IN: 'IN',
-//     USA: 'US',
-//     US: 'US',
-//     'UNITED STATES': 'US',
-//     'UNITED STATES OF AMERICA': 'US',
-//     UK: 'GB',
-//     GB: 'GB',
-//     'UNITED KINGDOM': 'GB',
-//     ENGLAND: 'GB',
-//     AUSTRALIA: 'AU',
-//     AU: 'AU',
-//     CANADA: 'CA',
-//     CA: 'CA',
-//   };
+    case "PAUSED":
+      return "PAUSED";
 
-//   return map[value] || value;
-// };
+    case "DRAFT":
+    case "COMPLETED":
+    case "CANCELLED":
+    default:
+      return "PAUSED";
+  }
+};
 
 const normalizeCountry = (country?: string) => {
   const value = String(country || "IN").trim().toUpperCase();
@@ -93,6 +86,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
   }
 
   const template = buildMetaAdTemplate(campaign);
+  const metaStatus = getMetaStatus(campaign.status);
   const baseUrl = 'https://graph.facebook.com/v25.0';
 
   console.log('META ACCOUNT ID:', adAccountId);
@@ -105,7 +99,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     const campaignPayload = {
       name: campaign.name,
       objective: 'OUTCOME_TRAFFIC',
-      status: 'PAUSED',
+      status: metaStatus,
       special_ad_categories: [],
       is_adset_budget_sharing_enabled: false,
       access_token: accessToken,
@@ -145,7 +139,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
         },
       },
 
-      status: 'PAUSED',
+      status: metaStatus,
       access_token: accessToken,
     };
 
@@ -257,7 +251,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
       creative: {
         creative_id: metaCreativeId,
       },
-      status: 'PAUSED',
+      status: metaStatus,
       access_token: accessToken,
     };
 
