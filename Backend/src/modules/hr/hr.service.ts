@@ -401,6 +401,7 @@ export {
   deleteLeaveDefinition,
   getLeavePlanEmployees,
   assignLeavePlanEmployees,
+  removeLeavePlanEmployee,
   getHolidays,
   createHoliday,
   deleteHoliday,

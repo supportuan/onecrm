@@ -278,6 +278,24 @@ const mapLeaveType = (t: HrLeaveType): LeaveType => ({
   code: t.code,
 });
 
+type AccrualLeaveDef = Pick<HrLeaveDefinition, 'annualQuota' | 'accrualType' | 'accrualRate'>;
+
+/** Days an employee may use as of `asOf` based on accrual policy. */
+export const computeLeaveEntitlement = (def: AccrualLeaveDef, asOf = new Date()): number => {
+  const month = asOf.getMonth() + 1;
+  const accrualType = def.accrualType || 'yearly';
+  const rate = def.accrualRate ?? 0;
+
+  if (accrualType === 'monthly' && rate > 0) {
+    return Math.min(def.annualQuota, rate * month);
+  }
+  if (accrualType === 'quarterly' && rate > 0) {
+    const quarters = Math.ceil(month / 3);
+    return Math.min(def.annualQuota, rate * quarters);
+  }
+  return def.annualQuota;
+};
+
 const mapLeaveDefinition = (
   d: HrLeaveDefinition & { leaveType?: { code: string; name: string } | null },
 ): LeaveDefinition => ({
@@ -294,9 +312,9 @@ const mapLeaveDefinition = (
   leave_type_code: d.leaveType?.code ?? '',
   leave_type_name: d.leaveType?.name ?? d.name,
   is_unlimited: false,
-  accrual_type: 'monthly',
-  accrual_rate: 1,
-  year_end_policy: d.carryForward ? 'carry_forward' : 'lapse',
+  accrual_type: d.accrualType ?? 'yearly',
+  accrual_rate: d.accrualRate ?? 0,
+  year_end_policy: d.carryForward ? 'carry_forward' : 'reset',
   carry_forward_max: d.carryForward ? d.annualQuota : 0,
   min_days_per_request: 0.5,
   max_days_per_request: d.annualQuota,
@@ -1274,7 +1292,13 @@ export const getLeaveDefinitions = async (planId: string) => {
 
 export const addLeaveDefinition = async (
   planId: string,
-  data: { leaveTypeId: string; annual_quota: number; carry_forward?: boolean }
+  data: {
+    leaveTypeId: string;
+    annual_quota: number;
+    carry_forward?: boolean;
+    accrual_type?: string;
+    accrual_rate?: number;
+  }
 ) => {
   const numericPlanId = resolveNumericId(planId);
   if (numericPlanId === null) throw new Error('Leave plan not found');
@@ -1299,11 +1323,15 @@ export const addLeaveDefinition = async (
       name: lt.name,
       annualQuota: data.annual_quota ?? 10,
       carryForward: data.carry_forward ?? false,
+      accrualType: data.accrual_type ?? 'yearly',
+      accrualRate: data.accrual_rate ?? 0,
     },
     update: {
       name: lt.name,
       annualQuota: data.annual_quota ?? 10,
       carryForward: data.carry_forward ?? false,
+      accrualType: data.accrual_type ?? 'yearly',
+      accrualRate: data.accrual_rate ?? 0,
     },
     include: { leaveType: { select: { code: true, name: true } } },
   });
@@ -1352,6 +1380,19 @@ export const assignLeavePlanEmployees = async (planId: string, employeeIds: stri
       update: {},
     });
   }
+  return { success: true };
+};
+
+export const removeLeavePlanEmployee = async (planId: string, employeeId: string) => {
+  const numericPlanId = resolveNumericId(planId);
+  if (numericPlanId === null) throw new Error('Leave plan not found');
+
+  const emp = await resolveEmployeeId(employeeId);
+  if (!emp) throw new Error('Employee not found');
+
+  await prisma.hrLeavePlanAssignment.deleteMany({
+    where: { planId: numericPlanId, employeeId: emp.id },
+  });
   return { success: true };
 };
 
@@ -2893,10 +2934,20 @@ export const cancelLeaveRequest = async (id: string, userEmail: string) => {
 export const getHrMe = async (userId: number, userEmail: string | null | undefined) => {
   const employee = await resolveEmployeeForUser(userId, userEmail);
 
+  const now = new Date();
+
   if (!employee) {
     return {
       employee: null,
       leaveBalances: [],
+      leaveSummary: { totalQuota: 0, totalUsed: 0, totalRemaining: 0, totalPending: 0, pendingRequests: 0 },
+      attendanceSummary: {
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        presentDays: 0,
+        lateDays: 0,
+        leaveDaysThisYear: 0,
+      },
       recentLeaveRequests: [],
       recentPayslips: [],
       pendingRegularizations: 0,
@@ -2905,30 +2956,38 @@ export const getHrMe = async (userId: number, userEmail: string | null | undefin
   }
 
   const todayStr = todayDateString();
-  const yearStart = `${new Date().getFullYear()}-01-01`;
+  const yearStart = `${now.getFullYear()}-01-01`;
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  const [planAssignment, leaveRequests, payslips, pendingRegs, todayRecord] = await Promise.all([
-    prisma.hrLeavePlanAssignment.findFirst({
-      where: { employeeId: employee.id },
-      include: { plan: { include: { definitions: { include: { leaveType: true } } } } },
-    }),
-    prisma.hrLeaveRequest.findMany({
-      where: { employeeId: employee.id },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    }),
-    prisma.hrPayslip.findMany({
-      where: { employeeId: employee.id },
-      orderBy: [{ year: 'desc' }, { month: 'desc' }],
-      take: 6,
-    }),
-    prisma.hrRegularization.count({
-      where: { employeeId: employee.id, status: 'PENDING' },
-    }),
-    prisma.hrAttendanceRecord.findFirst({
-      where: { employeeId: employee.id, date: todayStr },
-    }),
-  ]);
+  const [planAssignment, leaveRequests, payslips, pendingRegs, todayRecord, pendingLeaveRequests, monthAttendance] =
+    await Promise.all([
+      prisma.hrLeavePlanAssignment.findFirst({
+        where: { employeeId: employee.id },
+        include: { plan: { include: { definitions: { include: { leaveType: true } } } } },
+      }),
+      prisma.hrLeaveRequest.findMany({
+        where: { employeeId: employee.id },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      prisma.hrPayslip.findMany({
+        where: { employeeId: employee.id },
+        orderBy: [{ year: 'desc' }, { month: 'desc' }],
+        take: 6,
+      }),
+      prisma.hrRegularization.count({
+        where: { employeeId: employee.id, status: 'PENDING' },
+      }),
+      prisma.hrAttendanceRecord.findFirst({
+        where: { employeeId: employee.id, date: todayStr },
+      }),
+      prisma.hrLeaveRequest.findMany({
+        where: { employeeId: employee.id, status: 'PENDING' },
+      }),
+      prisma.hrAttendanceRecord.findMany({
+        where: { employeeId: employee.id, date: { startsWith: monthPrefix } },
+      }),
+    ]);
 
   const approvedThisYear = await prisma.hrLeaveRequest.findMany({
     where: {
@@ -2943,17 +3002,62 @@ export const getHrMe = async (userId: number, userEmail: string | null | undefin
     usedByType[req.leaveTypeName] = (usedByType[req.leaveTypeName] || 0) + req.days;
   }
 
-  const leaveBalances =
-    planAssignment?.plan.definitions.map((def) => ({
+  const pendingByType: Record<string, number> = {};
+  for (const req of pendingLeaveRequests) {
+    pendingByType[req.leaveTypeName] = (pendingByType[req.leaveTypeName] || 0) + req.days;
+  }
+
+  // Prefer the employee's explicit plan assignment; otherwise fall back to the
+  // tenant's default leave plan so the user always sees their entitlements
+  // (auto-scoped to the active tenant by the Prisma extension).
+  let definitions = planAssignment?.plan.definitions ?? [];
+  if (definitions.length === 0) {
+    const fallbackPlan = await prisma.hrLeavePlan.findFirst({
+      orderBy: { id: 'asc' },
+      include: { definitions: { include: { leaveType: true } } },
+    });
+    definitions = fallbackPlan?.definitions ?? [];
+  }
+
+  const leaveBalances = definitions.map((def) => {
+    const used = usedByType[def.leaveType.name] || 0;
+    const pending = pendingByType[def.leaveType.name] || 0;
+    const entitled = computeLeaveEntitlement(def, now);
+    const remaining = Math.max(0, entitled - used);
+    return {
       leaveType: def.leaveType.name,
       annualQuota: def.annualQuota,
-      used: usedByType[def.leaveType.name] || 0,
-      remaining: Math.max(0, def.annualQuota - (usedByType[def.leaveType.name] || 0)),
-    })) || [];
+      entitled,
+      used,
+      pending,
+      remaining,
+      accrualType: def.accrualType,
+      accrualRate: def.accrualRate,
+      carryForward: def.carryForward,
+    };
+  });
+
+  const leaveSummary = {
+    totalQuota: leaveBalances.reduce((s, b) => s + b.entitled, 0),
+    totalUsed: leaveBalances.reduce((s, b) => s + b.used, 0),
+    totalRemaining: leaveBalances.reduce((s, b) => s + b.remaining, 0),
+    totalPending: leaveBalances.reduce((s, b) => s + b.pending, 0),
+    pendingRequests: pendingLeaveRequests.length,
+  };
+
+  const attendanceSummary = {
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+    presentDays: monthAttendance.filter((r) => r.checkIn).length,
+    lateDays: monthAttendance.filter((r) => r.status === 'LATE').length,
+    leaveDaysThisYear: Object.values(usedByType).reduce((s, v) => s + v, 0),
+  };
 
   return {
     employee: mapEmployee(employee),
     leaveBalances,
+    leaveSummary,
+    attendanceSummary,
     recentLeaveRequests: leaveRequests.map(mapLeaveRequest),
     recentPayslips: payslips.map(mapPayslip),
     pendingRegularizations: pendingRegs,

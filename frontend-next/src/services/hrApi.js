@@ -370,6 +370,14 @@ export const assignLeavePlanEmployees = async (planId, employeeIds) => {
   return handleResponse(res);
 };
 
+export const removeLeavePlanEmployee = async (planId, employeeId) => {
+  const res = await tenantFetch(
+    `${API_URL}/leave/plans/${planId}/employees/${employeeId}`,
+    { method: "DELETE" },
+  );
+  return handleResponse(res);
+};
+
 // ==========================================
 // 8. Holidays Management
 // ==========================================

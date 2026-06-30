@@ -1355,6 +1355,10 @@ model HrLeaveDefinition {
   name         String
   annualQuota  Int
   carryForward Boolean  @default(false)
+  /// none | monthly | quarterly | yearly — how leave is credited over time
+  accrualType  String   @default("yearly")
+  /// Days credited per accrual period (e.g. 2 per month when accrualType = monthly)
+  accrualRate  Float    @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

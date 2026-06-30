@@ -490,7 +490,9 @@ export const addLeaveDefinition = async (req: Request, res: Response, next: Next
     const data = await hrService.addLeaveDefinition(planId, {
       leaveTypeId: validatedData.leaveTypeId,
       annual_quota: validatedData.annual_quota ?? 12,
-      carry_forward: validatedData.carry_forward
+      carry_forward: validatedData.carry_forward,
+      accrual_type: validatedData.accrual_type,
+      accrual_rate: validatedData.accrual_rate,
     });
     return sendSuccess(res, 'Leave definition added successfully', data);
   } catch (error) {
@@ -525,6 +527,17 @@ export const assignLeavePlanEmployees = async (req: Request, res: Response, next
     const validatedData = assignLeaveEmployeesSchema.parse(req.body);
     const result = await hrService.assignLeavePlanEmployees(planId, validatedData.employeeIds);
     return sendSuccess(res, 'Employees assigned to leave plan successfully', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeLeavePlanEmployee = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const planId = req.params.planId as string;
+    const employeeId = req.params.employeeId as string;
+    const result = await hrService.removeLeavePlanEmployee(planId, employeeId);
+    return sendSuccess(res, 'Employee removed from leave plan successfully', result);
   } catch (error) {
     next(error);
   }

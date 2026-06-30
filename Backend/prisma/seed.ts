@@ -16,11 +16,82 @@ import {
   DocumentStatus,
 } from '@prisma/client';
 import { hashPassword, comparePasswords } from '../src/utils/password.js';
-import { getDefaultTenantId } from '../src/utils/tenant-default.js';
+import {
+  DEFAULT_ROLE_PERMISSIONS,
+  DEFAULT_TENANT_MODULES,
+  MODULE_CATALOG,
+} from '../src/modules/rbac/rbac.constants.js';
 
 dotenv.config();
 
 const prisma = new PrismaClient();
+
+const defaultPassword = 'Welcome@123';
+
+// Guarantee the "default" tenant exists with baseline modules + RBAC rows so
+// seeded staff/students can actually log in (the auth gate requires an ACTIVE
+// tenant). Mirrors ensureDefaultTenantSeeded() but uses the plain client.
+async function ensureDefaultTenant() {
+  let tenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
+  if (!tenant) {
+    tenant = await prisma.tenant.create({
+      data: { name: 'Default Organization', slug: 'default', status: 'ACTIVE' },
+    });
+    console.log('✅ Default tenant created');
+  } else {
+    console.log('ℹ️ Default tenant already exists');
+  }
+
+  for (const mod of MODULE_CATALOG) {
+    await prisma.tenantModule.upsert({
+      where: { tenantId_moduleKey: { tenantId: tenant.id, moduleKey: mod.key } },
+      create: {
+        tenantId: tenant.id,
+        moduleKey: mod.key,
+        enabled: DEFAULT_TENANT_MODULES.includes(mod.key),
+      },
+      update: {},
+    });
+  }
+
+  for (const [role, permissions] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+    await prisma.rolePermission.upsert({
+      where: { tenantId_role: { tenantId: tenant.id, role } },
+      create: { tenantId: tenant.id, role, permissions },
+      update: {},
+    });
+  }
+
+  return tenant;
+}
+
+// Ensure a staff user has a linked HrEmployee row (so self-service + leave work).
+async function ensureEmployeeForUser(
+  tenantId: number,
+  user: { id: number; fullName: string; email: string; phone: string | null },
+  accessRole: 'HR_MANAGER' | 'EMPLOYEE' = 'EMPLOYEE',
+) {
+  const existing = await prisma.hrEmployee.findFirst({
+    where: { OR: [{ userId: user.id }, { email: user.email }] },
+  });
+  if (existing) {
+    if (existing.userId == null) {
+      await prisma.hrEmployee.update({ where: { id: existing.id }, data: { userId: user.id } });
+    }
+    return existing;
+  }
+  return prisma.hrEmployee.create({
+    data: {
+      tenantId,
+      userId: user.id,
+      name: user.fullName,
+      email: user.email,
+      employeeCode: `EMP-T${tenantId}-U${user.id}`,
+      phone: user.phone,
+      accessRole,
+    },
+  });
+}
 
 async function ensureUser(
   email: string,
@@ -87,8 +158,8 @@ async function main() {
   await prisma.$queryRaw`SELECT 1`;
   console.log('Database connection successful.');
 
-  const defaultPassword = 'Welcome@123';
-  const tenantId = await getDefaultTenantId();
+  const tenant = await ensureDefaultTenant();
+  const tenantId = tenant.id;
 
   const superAdmin = await ensureUser(
     'superadmin@onecrm.com',
@@ -227,6 +298,12 @@ async function main() {
   );
 
   await seedHrData(tenantId);
+
+  // Link staff users to HrEmployee rows so HR self-service + leave work for them.
+  await ensureEmployeeForUser(tenantId, hrUser, 'HR_MANAGER');
+  await ensureEmployeeForUser(tenantId, counsellor, 'EMPLOYEE');
+  console.log('✅ HR employee records ensured for seeded staff');
+
   const crmSettings = await seedCrmSettings();
   await seedStudentCrmData(counsellor.id, crmSettings);
   console.log(`Default password for seeded users: ${defaultPassword}`);
@@ -673,17 +750,18 @@ async function seedHrData(tenantId: number) {
     }
   }
 
-  const leavePlan = await prisma.hrLeavePlan.upsert({
-    where: { id: 1 },
-    create: {
-      name: 'Standard FTE Leave Plan',
-      description: 'Applicable for all full-time regular employees.',
-    },
-    update: {
-      name: 'Standard FTE Leave Plan',
-      description: 'Applicable for all full-time regular employees.',
-    },
+  const existingLeavePlan = await prisma.hrLeavePlan.findFirst({
+    where: { tenantId, name: 'Standard FTE Leave Plan' },
   });
+  const leavePlan = existingLeavePlan
+    ? existingLeavePlan
+    : await prisma.hrLeavePlan.create({
+        data: {
+          tenantId,
+          name: 'Standard FTE Leave Plan',
+          description: 'Applicable for all full-time regular employees.',
+        },
+      });
 
   const leaveTypeSpecs = [
     { name: 'Casual Leave', code: 'CL' },
@@ -694,8 +772,8 @@ async function seedHrData(tenantId: number) {
   const leaveTypes = [];
   for (const spec of leaveTypeSpecs) {
     const lt = await prisma.hrLeaveType.upsert({
-      where: { code: spec.code },
-      create: spec,
+      where: { tenantId_code: { tenantId, code: spec.code } },
+      create: { ...spec, tenantId },
       update: spec,
     });
     leaveTypes.push(lt);
@@ -709,7 +787,7 @@ async function seedHrData(tenantId: number) {
   for (const spec of leaveDefSpecs) {
     await prisma.hrLeaveDefinition.upsert({
       where: { planId_leaveTypeId: { planId: spec.planId, leaveTypeId: spec.leaveTypeId } },
-      create: spec,
+      create: { ...spec, tenantId },
       update: { name: spec.name, annualQuota: spec.annualQuota, carryForward: spec.carryForward },
     });
   }
@@ -868,8 +946,8 @@ async function seedHrData(tenantId: number) {
 
   for (const spec of processingMetricSpecs) {
     await prisma.hrProcessingMetric.upsert({
-      where: { period: spec.period },
-      create: spec,
+      where: { tenantId_period: { tenantId, period: spec.period } },
+      create: { ...spec, tenantId },
       update: spec,
     });
   }
