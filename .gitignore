@@ -1,10 +1,18 @@
 node_modules/
 dist/
 build/
+.next/
 .DS_Store
+*.pem
+
+# Env files — never commit secrets. Only the example template is allowed.
 .env
+.env.*
+!.env.production.example
 Frontend/node_modules/
 Frontend/dist/
 Frontend/.env
 Backend/node_modules/
 Backend/.env
+Backend/.env.*
+!Backend/.env.production.example
