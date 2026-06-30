@@ -166,6 +166,9 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     let imageHash = '';
     let isVideo = mediaType === 'VIDEO';
 
+    console.log('[Meta Campaign Service] launchDetails from DB:', JSON.stringify(details));
+    console.log('[Meta Campaign Service] mediaHash:', mediaHash, '| mediaType:', mediaType, '| isVideo:', isVideo);
+
     if (mediaHash) {
       if (isVideo) {
         console.log('[Meta Campaign Service] Using uploaded video ID:', mediaHash);
