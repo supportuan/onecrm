@@ -171,7 +171,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
 
       imageHash =
         imageUploadRes.data?.images?.[placeholderImageUrl]?.hash ||
-        Object.values(imageUploadRes.data?.images || {})?.[0]?.['hash'];
+        (Object.values(imageUploadRes.data?.images || {})?.[0] as any)?.['hash'];
     } catch (uploadError: any) {
       console.warn(
         '[Meta Campaign Service] Image upload failed or restricted. Attempting to fetch existing images...',
