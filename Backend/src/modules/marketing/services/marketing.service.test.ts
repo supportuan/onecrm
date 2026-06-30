@@ -195,7 +195,7 @@
 import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 
 // Mock BEFORE imports
-const mockCreate = jest.fn().mockResolvedValue({ id: 1 });
+const mockCreate = (jest.fn() as any).mockResolvedValue({ id: 1 });
 
 const mockBuildCampaignEmailTemplate = jest
   .fn()

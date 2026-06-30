@@ -10,7 +10,8 @@ import {
   deleteCampaign,
   associateCampaignLeads,
   getLeads,
-  launchCampaign
+  launchCampaign,
+  uploadMedia
 } from '../../services/marketingApi';
 import {
   Search,
@@ -34,7 +35,8 @@ import {
   TrendingUp,
   PieChart,
   Megaphone,
-  Briefcase
+  Briefcase,
+  Upload
 } from 'lucide-react';
 
 const mapTypeLabel = (type) => {
@@ -123,6 +125,39 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
     onChange({ ...launchDetails, [key]: value });
   };
 
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      const res = await uploadMedia(file);
+      if (res.success && res.data) {
+        // Merge all three fields in ONE onChange call to avoid stale-closure
+        // overwrite (three sequential updateDetails calls each read the same
+        // stale launchDetails prop, so only the last one survives).
+        onChange({
+          ...launchDetails,
+          mediaHash: res.data.hash,
+          mediaType: res.data.type,   // 'IMAGE' or 'VIDEO'
+          fileName: file.name,
+        });
+      } else {
+        setUploadError(res.message || 'Upload failed.');
+      }
+    } catch (err) {
+      console.error(err);
+      setUploadError('Connection error during upload.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (type === 'SOCIAL_MEDIA') {
     return (
       <div className="space-y-4 pt-4 border-t border-neutral-100 mt-4">
@@ -176,6 +211,55 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             />
           </div>
         </div>
+
+        <div className="space-y-2 mt-2">
+          <label className="block text-xs font-bold text-neutral-700">Ad Creative Media (Image / Video)</label>
+          <div className="border border-dashed border-neutral-300 hover:border-neutral-800 rounded-xl p-4 transition flex flex-col items-center justify-center bg-neutral-50/50 cursor-pointer relative group">
+            <input
+              type="file"
+              accept="image/*,video/*"
+              onChange={handleFileChange}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              disabled={uploading}
+            />
+            <div className="flex flex-col items-center gap-1 text-center">
+              {uploading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-neutral-500" />
+              ) : (
+                <Upload className="w-6 h-6 text-neutral-400 group-hover:text-neutral-700 transition" />
+              )}
+              <span className="text-xs font-semibold text-neutral-600 group-hover:text-neutral-900 transition">
+                {uploading ? 'Uploading to Meta...' : 'Drag & drop or click to upload'}
+              </span>
+              <span className="text-[10px] text-neutral-400">
+                Supports JPEG, PNG, GIF, MP4, MOV up to 100MB
+              </span>
+            </div>
+          </div>
+          {launchDetails.fileName && (
+            <div className="text-xs text-neutral-600 bg-neutral-100/80 p-2 rounded-lg flex items-center justify-between">
+              <span className="truncate max-w-[250px] font-medium">{launchDetails.fileName}</span>
+              {launchDetails.mediaType && (
+                <span className="text-[10px] bg-neutral-200 text-neutral-700 px-1.5 py-0.5 rounded font-bold uppercase">
+                  {launchDetails.mediaType}
+                </span>
+              )}
+            </div>
+          )}
+          {launchDetails.mediaHash && (
+            <div className="text-[10px] text-emerald-600 flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" />
+              Synced with Meta (Hash: {launchDetails.mediaHash.substring(0, 10)}...)
+            </div>
+          )}
+          {uploadError && (
+            <div className="text-[10px] text-rose-500 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5" />
+              {uploadError}
+            </div>
+          )}
+        </div>
+
         <div className="mt-2 text-xs text-neutral-500 bg-blue-50/50 border border-blue-100 p-3 rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
           <p>Social Media campaigns use leads to create a Custom Audience. No direct messages are sent.</p>
@@ -341,6 +425,9 @@ const filterLaunchDetailsByType = (type, details) => {
         objective: details.objective,
         targetCountry: details.targetCountry,
         targetAgeRange: details.targetAgeRange,
+        mediaHash: details.mediaHash,
+        mediaType: details.mediaType,
+        fileName: details.fileName,
       };
     case 'SMS':
       return { smsContent: details.smsContent };

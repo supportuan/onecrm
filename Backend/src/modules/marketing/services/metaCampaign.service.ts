@@ -76,6 +76,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
   const accessToken = process.env.META_ACCESS_TOKEN;
   const adAccountId = normalizeAdAccountId(process.env.META_AD_ACCOUNT_ID);
   const pageId = process.env.META_PAGE_ID;
+  const instagramActorId = process.env.META_INSTAGRAM_ACTOR_ID;
 
   if (!accessToken || !adAccountId || !pageId) {
     return {
@@ -155,66 +156,106 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     const metaAdSetId = adSetRes.data.id;
 
     // ===========================
-    // UPLOAD IMAGE
+    // UPLOAD IMAGE / VIDEO SELECT
     // ===========================
-    const placeholderImageUrl = 'https://via.placeholder.com/1200x628.png';
+    const details = getLaunchDetails(campaign);
+    const mediaHash = details.mediaHash;
+    // Normalise to uppercase so both 'VIDEO' and 'video' are accepted
+    const mediaType = String(details.mediaType || '').toUpperCase();
+
     let imageHash = '';
+    let isVideo = mediaType === 'VIDEO';
 
-    try {
-      const imageUploadRes = await axios.post(
-        `${baseUrl}/${adAccountId}/adimages`,
-        {
-          url: placeholderImageUrl,
-          access_token: accessToken,
-        }
-      );
+    console.log('[Meta Campaign Service] launchDetails from DB:', JSON.stringify(details));
+    console.log('[Meta Campaign Service] mediaHash:', mediaHash, '| mediaType:', mediaType, '| isVideo:', isVideo);
 
-      imageHash =
-        imageUploadRes.data?.images?.[placeholderImageUrl]?.hash ||
-        Object.values(imageUploadRes.data?.images || {})?.[0]?.['hash'];
-    } catch (uploadError: any) {
-      console.warn(
-        '[Meta Campaign Service] Image upload failed or restricted. Attempting to fetch existing images...',
-        uploadError.message
-      );
-
+    if (mediaHash) {
+      if (isVideo) {
+        console.log('[Meta Campaign Service] Using uploaded video ID:', mediaHash);
+      } else {
+        imageHash = mediaHash;
+        console.log('[Meta Campaign Service] Using uploaded image hash:', imageHash);
+      }
+    } else {
+      // Fallback to placeholder image upload
+      const placeholderImageUrl = 'https://via.placeholder.com/1200x628.png';
       try {
-        const existingImagesRes = await axios.get(
+        const imageUploadRes = await axios.post(
           `${baseUrl}/${adAccountId}/adimages`,
           {
-            params: {
-              access_token: accessToken,
-              limit: 5,
-            },
+            url: placeholderImageUrl,
+            access_token: accessToken,
           }
         );
 
-        const existingImages = existingImagesRes.data?.data || [];
-        if (existingImages.length > 0) {
-          imageHash = existingImages[0].hash;
-          console.log('[Meta Campaign Service] Found existing image in account. Using hash:', imageHash);
-        } else {
-          throw new Error('No existing images found in ad account to fallback to.');
+        imageHash =
+          imageUploadRes.data?.images?.[placeholderImageUrl]?.hash ||
+          (Object.values(imageUploadRes.data?.images || {})?.[0] as any)?.hash;
+      } catch (uploadError: any) {
+        console.warn(
+          '[Meta Campaign Service] Image upload failed or restricted. Attempting to fetch existing images...',
+          uploadError.message
+        );
+
+        try {
+          const existingImagesRes = await axios.get(
+            `${baseUrl}/${adAccountId}/adimages`,
+            {
+              params: {
+                access_token: accessToken,
+                limit: 5,
+              },
+            }
+          );
+
+          const existingImages = existingImagesRes.data?.data || [];
+          if (existingImages.length > 0) {
+            imageHash = existingImages[0].hash;
+            console.log('[Meta Campaign Service] Found existing image in account. Using hash:', imageHash);
+          } else {
+            throw new Error('No existing images found in ad account to fallback to.');
+          }
+        } catch (fallbackError: any) {
+          console.error('[Meta Campaign Service] Fallback fetch failed:', fallbackError.message);
+          throw uploadError;
         }
-      } catch (fallbackError: any) {
-        console.error('[Meta Campaign Service] Fallback fetch failed:', fallbackError.message);
-        throw uploadError;
       }
-    }
 
-    if (!imageHash) {
-      throw new Error('Meta image upload failed: image hash not found');
-    }
+      if (!imageHash) {
+        throw new Error('Meta image upload failed: image hash not found');
+      }
 
-    console.log('Image Hash to use:', imageHash);
+      console.log('Image Hash to use:', imageHash);
+    }
 
     // ===========================
     // CREATE CREATIVE
     // ===========================
-    const creativePayload = {
+    let creativePayload: any = {
       name: `${campaign.name} Creative`,
-      object_story_spec: {
+      access_token: accessToken,
+    };
+
+    if (isVideo) {
+      creativePayload.object_story_spec = {
         page_id: pageId,
+        ...(instagramActorId ? { instagram_actor_id: instagramActorId } : {}),
+        video_data: {
+          video_id: mediaHash,
+          title: template.adHeadline,
+          message: template.primaryText,
+          call_to_action: {
+            type: template.ctaButtonText,
+            value: {
+              link: template.landingPageUrl,
+            },
+          },
+        },
+      };
+    } else {
+      creativePayload.object_story_spec = {
+        page_id: pageId,
+        ...(instagramActorId ? { instagram_actor_id: instagramActorId } : {}),
         link_data: {
           message: template.primaryText,
           link: template.landingPageUrl,
@@ -227,9 +268,8 @@ export const execute = async (campaign: any, leads: any[] = []) => {
             },
           },
         },
-      },
-      access_token: accessToken,
-    };
+      };
+    }
 
     console.log('Creative Payload:', JSON.stringify(creativePayload, null, 2));
 
@@ -291,5 +331,62 @@ export const execute = async (campaign: any, leads: any[] = []) => {
       message: apiError.response?.data?.error?.message || apiError.message,
       details: apiError.response?.data || {},
     };
+  }
+};
+
+export const uploadMediaToMeta = async (file: any): Promise<{ hash: string; type: 'IMAGE' | 'VIDEO' }> => {
+  const accessToken = process.env.META_ACCESS_TOKEN;
+  const adAccountId = normalizeAdAccountId(process.env.META_AD_ACCOUNT_ID);
+  
+  if (!accessToken || !adAccountId) {
+    throw new Error('Meta Ads account is not configured in environment variables');
+  }
+
+  const isVideo = file.mimetype.startsWith('video/');
+  const baseUrl = 'https://graph.facebook.com/v25.0';
+
+  if (isVideo) {
+    const formData = new globalThis.FormData();
+    const blob = new globalThis.Blob([file.buffer], { type: file.mimetype });
+    formData.append('source', blob, file.originalname);
+    formData.append('access_token', accessToken);
+
+    console.log(`[Meta Campaign Service] Uploading video to act_${adAccountId}/advideos...`);
+    const response = await axios.post(`${baseUrl}/${adAccountId}/advideos`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    const videoId = response.data.id;
+    if (!videoId) {
+      throw new Error('Meta video upload failed: video ID not returned from Graph API');
+    }
+
+    console.log(`[Meta Campaign Service] Video uploaded successfully. ID: ${videoId}`);
+    return { hash: videoId, type: 'VIDEO' };
+  } else {
+    const formData = new globalThis.FormData();
+    const blob = new globalThis.Blob([file.buffer], { type: file.mimetype });
+    formData.append('filename', blob, file.originalname);
+    formData.append('access_token', accessToken);
+
+    console.log(`[Meta Campaign Service] Uploading image to act_${adAccountId}/adimages...`);
+    const response = await axios.post(`${baseUrl}/${adAccountId}/adimages`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    const images = response.data?.images || {};
+    const firstImage = Object.values(images)[0] as any;
+    const imageHash = firstImage?.hash;
+
+    if (!imageHash) {
+      throw new Error('Meta image upload failed: image hash not found in response');
+    }
+
+    console.log(`[Meta Campaign Service] Image uploaded successfully. Hash: ${imageHash}`);
+    return { hash: imageHash, type: 'IMAGE' };
   }
 };

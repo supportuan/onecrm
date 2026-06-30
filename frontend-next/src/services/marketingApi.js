@@ -485,3 +485,15 @@ export const bulkUploadLeads = async (file) => {
 
   return res.json();
 };
+
+export const uploadMedia = async (file) => {
+  const formData = new FormData();
+  formData.append("media", file);
+
+  const res = await authFetch(`${API_URL}/social-media/upload-media`, {
+    method: "POST",
+    body: formData,
+  });
+
+  return res.json();
+};

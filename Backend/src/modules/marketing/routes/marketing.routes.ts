@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as controller from '../controllers/marketing.controller.js';
 import metaRoutes from './meta.routes.js';
-import { uploadExcel } from '../../../middleware/upload.middleware.js';
+import { uploadExcel, uploadMedia } from '../../../middleware/upload.middleware.js';
 import leadActivityRoutes from './lead-activity.routes.js';
 import leadReplyRoutes from './lead-reply.routes.js';
 import { authenticateToken } from '../../../middleware/authenticate.js';
@@ -14,6 +14,13 @@ router.post(
     '/leads/bulk-upload',
     uploadExcel.single('file'),
     controller.bulkUploadLeads
+);
+
+router.post(
+    '/social-media/upload-media',
+    authenticateToken,
+    uploadMedia.single('media'),
+    controller.uploadSocialMediaMedia
 );
 
 router.use('/', leadReplyRoutes);

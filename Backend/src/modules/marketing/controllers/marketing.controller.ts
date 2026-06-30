@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as marketingService from '../services/marketing.service.js';
 import * as campaignLaunchService from '../services/campaignLaunch.service.js';
+import * as metaCampaignService from '../services/metaCampaign.service.js';
 import { sendSuccess, sendError } from '../../../utils/response.js';
 import {
   createLeadSchema,
@@ -894,5 +895,23 @@ export const convertStudentToLead = async (
     return sendSuccess(res, 'Student converted to lead successfully', lead, 201);
   } catch (error) {
     next(error);
+  }
+};
+
+export const uploadSocialMediaMedia = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.file) {
+      return sendError(res, 'No file uploaded', null, 400);
+    }
+
+    const uploadResult = await metaCampaignService.uploadMediaToMeta(req.file);
+    return sendSuccess(res, 'Media uploaded to Meta successfully', uploadResult, 201);
+  } catch (error: any) {
+    console.error('[Marketing Controller] Media upload error:', error);
+    return sendError(res, error.message || 'Failed to upload media to Meta', error, 500);
   }
 };
