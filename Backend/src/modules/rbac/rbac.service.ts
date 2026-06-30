@@ -1,5 +1,6 @@
 import { prisma } from '../../prisma.js';
-import { ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS } from './rbac.constants.js';
+import { ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS, DEFAULT_TENANT_MODULES } from './rbac.constants.js';
+import { setTenantModules } from './tenant-modules.service.js';
 
 /**
  * Per-tenant in-memory cache: tenantId -> (role -> permissions).
@@ -136,12 +137,23 @@ export const invalidateTenant = (tenantId: number): void => {
 // };
 
 export const ensureDefaultTenantSeeded = async (): Promise<void> => {
-  // console.log("Prisma Models:", Object.keys(prisma));
+  // Guarantee a "default" tenant exists. Every non-super-admin user must belong
+  // to an ACTIVE tenant (see auth.service login gate) and getDefaultTenantId()
+  // resolves by slug 'default'. Without this, a fresh database leaves all
+  // staff/student logins broken with "User is not associated with any tenant".
+  let defaultTenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
+  if (!defaultTenant) {
+    defaultTenant = await prisma.tenant.create({
+      data: { name: 'Default Organization', slug: 'default', status: 'ACTIVE' },
+    });
+    // Enable the baseline modules so the default tenant lands on a usable UI and
+    // the HR seed backfill (which keys off enabled modules) can run for it.
+    await setTenantModules(defaultTenant.id, DEFAULT_TENANT_MODULES);
+    console.log('[rbac] created default tenant');
+  }
 
-  const tenants = await prisma.tenant.findMany({
-    select: { id: true }
-  });
-
+  // Heal RBAC role rows for every tenant (idempotent — preserves customized rows).
+  const tenants = await prisma.tenant.findMany({ select: { id: true } });
   for (const t of tenants) {
     try {
       await seedTenantDefaults(t.id);

@@ -70,6 +70,7 @@ router.post('/leave/plans/:planId/definitions', requirePermission('MANAGE_LEAVE'
 router.delete('/leave/plans/:planId/definitions/:leaveTypeId', requirePermission('MANAGE_LEAVE'), controller.deleteLeaveDefinition);
 router.get('/leave/plans/:planId/employees', requirePermission('VIEW_LEAVE'), controller.getLeavePlanEmployees);
 router.post('/leave/plans/:planId/employees', requirePermission('MANAGE_LEAVE'), controller.assignLeavePlanEmployees);
+router.delete('/leave/plans/:planId/employees/:employeeId', requirePermission('MANAGE_LEAVE'), controller.removeLeavePlanEmployee);
 
 // Holidays
 router.get('/holidays', requirePermission('VIEW_ATTENDANCE'), controller.getHolidays);

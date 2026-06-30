@@ -1,4 +1,5 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 
 interface JWTPayload {
     id: number;
@@ -19,7 +20,10 @@ export const generateRefreshToken = (payload: JWTPayload): string => {
     const secret = process.env.JWT_REFRESH_SECRET || 'default_refresh_secret_key_change_in_production';
     const expiresIn = (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as SignOptions['expiresIn'];
 
-    return jwt.sign(payload, secret, { expiresIn });
+    // jwtid (jti) guarantees a unique token string per call. Without it, two
+    // logins by the same user within the same second produce identical JWTs,
+    // which collide on the RefreshToken.token unique constraint and crash login.
+    return jwt.sign(payload, secret, { expiresIn, jwtid: randomUUID() });
 };
 
 export const verifyAccessToken = (token: string): JWTPayload => {
