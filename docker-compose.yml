@@ -1,0 +1,29 @@
+# One CRM — single-container deployment (frontend + backend).
+#
+# Usage:
+#   cp Backend/.env.production.example prod.env   # fill secrets, never commit
+#   ENV_FILE=./prod.env docker compose up -d --build
+#
+# Or with the helper script:
+#   ENV_FILE=./prod.env ./scripts/docker-run.sh
+
+services:
+  onecrm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BACKEND_INTERNAL_URL: http://127.0.0.1:4000
+    image: ${IMAGE_NAME:-onecrm}:${IMAGE_TAG:-latest}
+    container_name: ${CONTAINER_NAME:-onecrm}
+    env_file:
+      - ${ENV_FILE:-./Backend/.env}
+    environment:
+      BACKEND_PORT: ${BACKEND_PORT:-4000}
+      FRONTEND_PORT: ${FRONTEND_PORT:-3000}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      NODE_ENV: production
+    ports:
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
+      - "${BACKEND_PORT:-4000}:${BACKEND_PORT:-4000}"
+    restart: unless-stopped
