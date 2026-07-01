@@ -11,13 +11,8 @@
 
 export const dynamic = 'force-dynamic';
 
-// Tell Next.js NOT to parse the body at all for this route.
-// Without this, Next.js buffers the whole request and aborts large uploads.
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// App Router passes request.body as a raw ReadableStream (no bodyParser).
+// Forwarding the stream directly supports large uploads without buffering.
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
 
