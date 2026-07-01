@@ -24,6 +24,13 @@ router.post(
   controller.uploadSocialMediaMedia
 );
 
+router.post(
+    '/social-media/upload-media',
+    authenticateToken,
+    uploadMedia.single('media'),
+    controller.uploadSocialMediaMedia
+);
+
 router.use('/', leadReplyRoutes);
 
 router.use('/', leadActivityRoutes);

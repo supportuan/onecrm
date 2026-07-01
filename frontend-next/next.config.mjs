@@ -7,13 +7,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:4000";
 
 const nextConfig = {
-  // Emit a self-contained server bundle so the runtime image needs no source.
-  output: "standalone",
-  // Pin tracing to this app so standalone output is flat (server.js at root),
-  // instead of nesting under the monorepo root's lockfile location.
-  outputFileTracingRoot: __dirname,
-  // Skip lint/type errors blocking a production build; CI/dev already cover these.
-  eslint: { ignoreDuringBuilds: true },
+  // Allow large file uploads (videos up to 100MB) via the rewrite proxy
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+  },
   async rewrites() {
     return [
       {
