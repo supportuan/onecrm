@@ -166,24 +166,6 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     let imageHash = '';
     let isVideo = mediaType === 'VIDEO';
 
-    try {
-      const imageUploadRes = await axios.post(
-        `${baseUrl}/${adAccountId}/adimages`,
-        {
-          url: placeholderImageUrl,
-          access_token: accessToken,
-        }
-      );
-
-      imageHash =
-        imageUploadRes.data?.images?.[placeholderImageUrl]?.hash ||
-        (Object.values(imageUploadRes.data?.images || {})?.[0] as any)?.['hash'];
-    } catch (uploadError: any) {
-      console.warn(
-        '[Meta Campaign Service] Image upload failed or restricted. Attempting to fetch existing images...',
-        uploadError.message
-      );
-
     if (mediaHash) {
       if (isVideo) {
         console.log('[Meta Campaign Service] Using uploaded video ID:', mediaHash);
