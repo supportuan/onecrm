@@ -330,7 +330,15 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
                       ? "bg-neutral-100 text-neutral-900"
                       : "text-neutral-600 hover:bg-neutral-50"
                       }`}
-                    onClick={() => toggleSection(item.label)}
+                    // onClick={() => toggleSection(item.label)}
+                    onClick={() => {
+                      if (item.label === "Marketing") {
+                        router.push(item.path);
+                        onClose?.();
+                      }
+
+                      toggleSection(item.label);
+                    }}
                   >
                     <span className="flex gap-3 text-neutral-800 items-center">
                       <item.icon className="h-4 w-4 text-neutral-500" />

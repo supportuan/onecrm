@@ -16,11 +16,11 @@ import {
   createStudentLogin,
   assignLeadCounsellor,
   updateLeadRating,
-  bulkUploadLeads,
   updateLeadStatus,
 } from '../../services/marketingApi';
 import { getCounsellors } from '../../services/userApi';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useLeadBulkUpload } from '../../hooks/useLeadBulkUpload';
 
 import {
   Search,
@@ -40,7 +40,71 @@ import {
 } from 'lucide-react';
 
 const LEAD_RATING_OPTIONS = ['HOT', 'WARM', 'COLD', 'MAYBE'];
+const LEAD_STATUS_OPTIONS = [
+  'NEW',
+  'CONTACTED',
+  'QUALIFIED',
+  'PROPOSED',
+  'CONVERTED',
+  'LOST',
+];
 
+const DATE_FILTER_OPTIONS = [
+  { label: 'All Time', value: 'all' },
+  { label: 'Today', value: 'today' },
+  { label: 'This Week', value: 'week' },
+  { label: 'This Month', value: 'month' },
+  { label: 'Quarterly', value: 'quarter' },
+  { label: 'Half Yearly', value: 'halfyear' },
+  { label: 'Annually', value: 'year' },
+];
+
+const getStartDateByFilter = (filter) => {
+  const now = new Date();
+  const start = new Date(now);
+
+  if (filter === 'today') {
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+
+  if (filter === 'week') {
+    start.setDate(now.getDate() - 7);
+    return start;
+  }
+
+  if (filter === 'month') {
+    start.setMonth(now.getMonth() - 1);
+    return start;
+  }
+
+  if (filter === 'quarter') {
+    start.setMonth(now.getMonth() - 3);
+    return start;
+  }
+
+  if (filter === 'halfyear') {
+    start.setMonth(now.getMonth() - 6);
+    return start;
+  }
+
+  if (filter === 'year') {
+    start.setFullYear(now.getFullYear() - 1);
+    return start;
+  }
+
+  return null;
+};
+
+const isWithinDateFilter = (dateValue, filter) => {
+  if (filter === 'all') return true;
+  if (!dateValue) return false;
+
+  const startDate = getStartDateByFilter(filter);
+  const date = new Date(dateValue);
+
+  return date >= startDate;
+};
 const formatRelativeTime = (createdAtString) => {
   if (!createdAtString) return '';
   const date = new Date(createdAtString);
@@ -94,6 +158,7 @@ const LeadManagement = () => {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
 
+
   const [pagination, setPagination] = useState({
     page: 1,
     total: 0,
@@ -109,21 +174,73 @@ const LeadManagement = () => {
   const [submittingLead, setSubmittingLead] = useState(false);
   const [sendingAction, setSendingAction] = useState(false);
 
+  const [dateFilter, setDateFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('');
+  const [ratingFilter, setRatingFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [counsellorFilter, setCounsellorFilter] = useState('');
+
   const activityEndRef = useRef(null);
 
   const isAdminOrSuperAdmin = useMemo(() => {
     return user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN');
   }, [user]);
 
-  const displayedLeads = useMemo(() => {
-    if (!user) return leads;
+  // const displayedLeads = useMemo(() => {
+  //   if (!user) return leads;
 
-    if (user.role === 'COUNSELLOR') {
-      return leads.filter((l) => l.assignedCounsellor?.id === user.id);
+  //   if (user.role === 'COUNSELLOR') {
+  //     return leads.filter((l) => l.assignedCounsellor?.id === user.id);
+  //   }
+
+  //   return leads;
+  // }, [leads, user]);
+
+  const displayedLeads = useMemo(() => {
+    let filtered = [...leads];
+
+    if (user?.role === 'COUNSELLOR') {
+      filtered = filtered.filter((lead) => lead.assignedCounsellor?.id === user.id);
     }
 
-    return leads;
-  }, [leads, user]);
+    if (dateFilter !== 'all') {
+      filtered = filtered.filter((lead) =>
+        isWithinDateFilter(lead.createdAt, dateFilter)
+      );
+    }
+
+    if (sourceFilter) {
+      filtered = filtered.filter(
+        (lead) => String(lead.source?.id || lead.sourceId || '') === sourceFilter
+      );
+    }
+
+    if (ratingFilter) {
+      filtered = filtered.filter((lead) => lead.rating === ratingFilter);
+    }
+
+    if (statusFilter) {
+      filtered = filtered.filter((lead) => lead.status === statusFilter);
+    }
+
+    if (counsellorFilter) {
+      filtered = filtered.filter(
+        (lead) =>
+          String(lead.assignedCounsellor?.id || lead.assignedCounsellorId || '') ===
+          counsellorFilter
+      );
+    }
+
+    return filtered;
+  }, [
+    leads,
+    user,
+    dateFilter,
+    sourceFilter,
+    ratingFilter,
+    statusFilter,
+    counsellorFilter,
+  ]);
 
   const [intakeForm, setIntakeForm] = useState({
     fullName: '',
@@ -144,7 +261,7 @@ const LeadManagement = () => {
   });
 
   const fileInputRef = useRef(null);
-  const [uploadingLeads, setUploadingLeads] = useState(false);
+  // const [uploadingLeads, setUploadingLeads] = useState(false);
 
   const handleLeadStatusChange = async (leadId, status) => {
     try {
@@ -158,39 +275,6 @@ const LeadManagement = () => {
     } catch (err) {
       console.error(err);
       alert('Error occurred while updating lead status.');
-    }
-  };
-
-  const handleBulkUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedExtensions = ['xlsx', 'xls', 'csv'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-
-    if (!allowedExtensions.includes(fileExtension)) {
-      alert('Please upload only Excel or CSV file.');
-      e.target.value = '';
-      return;
-    }
-
-    setUploadingLeads(true);
-
-    try {
-      const response = await bulkUploadLeads(file);
-
-      if (response.success) {
-        alert(response.message || 'Leads uploaded successfully.');
-        fetchLeadsList();
-      } else {
-        alert(response.message || 'Bulk upload failed.');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error occurred while uploading leads.');
-    } finally {
-      setUploadingLeads(false);
-      e.target.value = '';
     }
   };
 
@@ -257,6 +341,8 @@ const LeadManagement = () => {
       setLoading(false);
     }
   };
+  const { uploadingLeads, handleBulkUpload } =
+    useLeadBulkUpload(fetchLeadsList);
 
   useEffect(() => {
     fetchLeadsList();
@@ -655,9 +741,19 @@ ApplyUniNow`
     }
   };
 
+  const handleResetFilters = () => {
+    setSearch('');
+    setDateFilter('all');
+    setSourceFilter('');
+    setRatingFilter('');
+    setStatusFilter('');
+    setCounsellorFilter('');
+    setPage(1);
+  };
+
   return (
     <div className="space-y-6 w-full">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-1 py-1 rounded-2xl">
+      {/* <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-1 py-1 rounded-2xl">
         <div className="flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 sm:max-w-md shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#0084ff]/20 focus-within:border-[#0084ff]/60">
           <Search className="h-5 w-5 text-slate-400 flex-shrink-0" />
 
@@ -720,9 +816,164 @@ ApplyUniNow`
             Add Lead
           </button>
         </div>
+      </div> */}
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#0084ff]/20 focus-within:border-[#0084ff]/60 xl:max-w-md">
+            <Search className="h-5 w-5 text-slate-400 flex-shrink-0" />
+
+            <input
+              type="text"
+              placeholder="Search leads..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 font-semibold"
+            />
+
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleBulkUpload}
+              className="hidden"
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingLeads}
+              className="border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+            >
+              {uploadingLeads ? (
+                <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 text-slate-600 stroke-[2.5]" />
+              )}
+              {uploadingLeads ? 'Uploading...' : 'Upload'}
+            </button>
+
+            <button
+              onClick={handleExport}
+              className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+            >
+              <Download className="h-4 w-4 text-slate-600 stroke-[2.5]" />
+              Export
+            </button>
+
+            <button
+              onClick={() => setIsIntakeOpen(true)}
+              className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
+            >
+              <Plus className="h-4 w-4 stroke-[3]" />
+              Add Lead
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
+          <select
+            value={dateFilter}
+            onChange={(e) => {
+              setDateFilter(e.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
+          >
+            {DATE_FILTER_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sourceFilter}
+            onChange={(e) => {
+              setSourceFilter(e.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
+          >
+            <option value="">All Sources</option>
+            {sourcesList.map((source) => (
+              <option key={source.id} value={String(source.id)}>
+                {source.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={ratingFilter}
+            onChange={(e) => {
+              setRatingFilter(e.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
+          >
+            <option value="">All Ratings</option>
+            {LEAD_RATING_OPTIONS.map((rating) => (
+              <option key={rating} value={rating}>
+                {rating}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
+          >
+            <option value="">All Stages</option>
+            {LEAD_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={counsellorFilter}
+            onChange={(e) => {
+              setCounsellorFilter(e.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
+          >
+            <option value="">All Counsellors</option>
+            {counsellorsList.map((c) => (
+              <option key={c.id} value={String(c.id)}>
+                {c.fullName}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={handleResetFilters}
+            className="h-11 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-4 text-sm font-bold text-slate-700 transition"
+          >
+            Reset Filters
+          </button>
+        </div>
       </div>
 
-      {loading && leads.length === 0 ? (
+      {loading && displayedLeads.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200 shadow-sm">
           <Loader2 className="h-10 w-10 text-[#0084ff] animate-spin" />
           <p className="text-sm text-slate-400 font-semibold mt-4">
@@ -741,7 +992,7 @@ ApplyUniNow`
             Retry Connection
           </button>
         </div>
-      ) : leads.length === 0 ? (
+      ) : displayedLeads.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
           <AlertCircle className="h-12 w-12 text-slate-300 mb-3" />
           <h3 className="text-lg font-semibold text-slate-800">No leads found</h3>
@@ -750,67 +1001,9 @@ ApplyUniNow`
           </p>
         </div>
       ) : (
-        // <div className="border border-slate-200 rounded-[24px] overflow-hidden bg-white shadow-sm w-full">
         <div className="border border-slate-200 rounded-[24px] bg-white shadow-sm w-full overflow-hidden">
           <div className="w-full overflow-x-auto">
-            {/* <table className="min-w-[1200px] w-full border-collapse text-left"> */}
-            {/* <table className="w-full table-fixed border-collapse text-left"> */}
             <table className="min-w-full border-collapse text-left">
-              {/* <thead>
-                <tr className="bg-[#f8fafc] border-b border-slate-100">
-                  <th
-                    onClick={() => handleSort('fullName')}
-                    className="cursor-pointer select-none px-6 py-4 text-sm font-semibold text-[#556987] hover:text-slate-800 transition"
-                  >
-                    <div className="flex items-center gap-1">
-                      Lead
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                    </div>
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Contact
-                  </th>
-
-                  <th
-                    onClick={() => handleSort('sourceId')}
-                    className="cursor-pointer select-none px-6 py-4 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Source
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                    </div>
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Interested In
-                  </th>
-
-                  <th
-                    onClick={() => handleSort('rating')}
-                    className="cursor-pointer select-none px-6 py-4 text-sm font-semibold text-[#556987] hover:text-slate-800 text-center transition"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      Lead Status
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                    </div>
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Assigned By
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Assigned To
-
-                  </th>
-
-                  <th className="px-6 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Action
-                  </th>
-                </tr>
-              </thead> */}
-
               <thead>
                 <tr className="bg-[#f8fafc] border-b border-slate-100">
                   <th
@@ -956,31 +1149,6 @@ ApplyUniNow`
                       </span>
                     </td>
 
-                    {/* <td className="px-3 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      {isAdminOrSuperAdmin ? (
-                        <select
-                          value={lead.assignedCounsellor?.id || ''}
-                          onChange={(e) =>
-                            handleAssignCounsellor(lead.id, e.target.value)
-                          }
-                          className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm w-36"
-                        >
-                          <option value="">Unassigned</option>
-                          {counsellorsList.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.fullName}
-                            </option>
-                          ))}
-                          
-                        </select>
-                      ) : (
-                        <span className="font-semibold text-slate-700 text-sm">
-                          {lead.assignedCounsellor?.name || 'Unassigned'}
-                        </span>
-                      )}
-                    </td> */}
-
-
                     <td
                       className="px-3 py-4 text-center"
                       onClick={(e) => e.stopPropagation()}
@@ -1031,12 +1199,6 @@ ApplyUniNow`
                         <option value="LOST">Lost</option>
                       </select>
                     </td>
-                    {/* <td className="px-3 py-4 text-center max-w-[200px] truncate">
-                      <span className="font-semibold text-slate-600 text-sm">
-                        {lead.remark || 'No remarks'}
-                      </span>
-                    </td> */}
-
                     <td className="px-4 py-5 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
                         {!lead.isStudentLoginCreated ? (
@@ -1077,10 +1239,12 @@ ApplyUniNow`
               to{' '}
               <span className="font-bold text-slate-900">
                 {Math.min(page * pagination.limit, pagination.total)}
+                
               </span>{' '}
               of{' '}
               <span className="font-bold text-slate-900">
-                {pagination.total}
+                {/* {pagination.total} */}
+                {displayedLeads.length}
               </span>{' '}
               records
             </div>
