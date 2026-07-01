@@ -79,6 +79,17 @@ export const updateLead = async (id, leadData) => {
   return res.json();
 };
 
+export const updateLeadStatus = async (leadId, status) => {
+  const res = await authFetch(`${API_URL}/leads/${leadId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+
+  return res.json();
+};
+
+
 export const deleteLead = async (id) => {
   const res = await authFetch(`${API_URL}/leads/${id}`, {
     method: "DELETE",

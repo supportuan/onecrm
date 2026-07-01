@@ -6,21 +6,22 @@ import leadActivityRoutes from './lead-activity.routes.js';
 import leadReplyRoutes from './lead-reply.routes.js';
 import { authenticateToken } from '../../../middleware/authenticate.js';
 import { authorizeRole, authorizePermission } from '../../../middleware/authorize.js';
+import {updateLeadStatusController } from "../controllers/marketing.controller.js";   
 
 
 const router = Router();
 
 router.post(
-    '/leads/bulk-upload',
-    uploadExcel.single('file'),
-    controller.bulkUploadLeads
+  '/leads/bulk-upload',
+  uploadExcel.single('file'),
+  controller.bulkUploadLeads
 );
 
 router.post(
-    '/social-media/upload-media',
-    authenticateToken,
-    uploadMedia.single('media'),
-    controller.uploadSocialMediaMedia
+  '/social-media/upload-media',
+  authenticateToken,
+  uploadMedia.single('media'),
+  controller.uploadSocialMediaMedia
 );
 
 router.use('/', leadReplyRoutes);
@@ -274,10 +275,10 @@ router.put('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Le
  */
 router.delete('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.deleteLead);
 router.patch(
-    '/leads/:leadId/rating',
-    authenticateToken,
-    authorizePermission('Marketing', 'Lead Management', 'EDIT'),
-    controller.updateLeadRating
+  '/leads/:leadId/rating',
+  authenticateToken,
+  authorizePermission('Marketing', 'Lead Management', 'EDIT'),
+  controller.updateLeadRating
 );
 router.patch('/leads/:leadId/assign-counsellor', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.assignCounsellor);
 
@@ -1084,7 +1085,7 @@ router.get('/analytics/summary', controller.getAnalyticsSummary);
  *         description: Successfully upserted dashboard metric
  */
 router.post('/dashboard/metrics', controller.upsertDashboardMetric);
-
+router.patch('/leads/:id/status', authenticateToken, updateLeadStatusController);
 /**
  * @swagger
  * /api/marketing/dashboard/metrics/{id}:
@@ -1494,17 +1495,17 @@ router.put('/analytics/agency-funnel/:id', controller.updateAgencyFunnelAnalytic
 router.use('/meta', metaRoutes);
 
 router.post(
-    '/leads/:leadId/create-student-login',
-    authenticateToken,
-    authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
-    controller.createStudentLogin
+  '/leads/:leadId/create-student-login',
+  authenticateToken,
+  authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
+  controller.createStudentLogin
 );
 
 router.post(
-    '/students/:userId/convert-to-lead',
-    authenticateToken,
-    authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
-    controller.convertStudentToLead
+  '/students/:userId/convert-to-lead',
+  authenticateToken,
+  authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
+  controller.convertStudentToLead
 );
 
 export default router;

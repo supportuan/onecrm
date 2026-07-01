@@ -36,6 +36,7 @@ import { bulkUploadLeadsFromExcel } from '../services/lead-upload.service.js';
 
 
 
+
 // ==========================================
 // 1. Dashboard & General Analytics Controllers
 // ==========================================
@@ -73,6 +74,35 @@ export const getAnalytics = async (req: Request, res: Response, next: NextFuncti
     return sendSuccess(res, 'Marketing analytics report generated successfully', data);
   } catch (error) {
     next(error);
+  }
+};
+
+export const updateLeadStatusController = async (req, res) => {
+  try {
+    const leadId = Number(req.params.id);
+    const { status } = req.body;
+
+    const allowed = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSED', 'CONVERTED', 'LOST'];
+
+    if (!allowed.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid lead status',
+      });
+    }
+
+    const data = await marketingService.updateLeadStatus(leadId, status);
+
+    return res.json({
+      success: true,
+      message: 'Lead status updated successfully',
+      data,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update lead status',
+    });
   }
 };
 

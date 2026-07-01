@@ -218,11 +218,11 @@ export const navMenu = [
       //   path: "/marketing/landing-pages-forms",
       //   icon: FileText,
       // },
-      // {
-      //   label: "Marketing Analytics",
-      //   path: "/marketing/marketing-analytics",
-      //   icon: BarChart2,
-      // },
+      {
+        label: "Marketing Analytics",
+        path: "/marketing/marketing-analytics",
+        icon: BarChart2,
+      },
     ],
   },
   {
