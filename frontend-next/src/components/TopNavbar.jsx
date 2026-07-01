@@ -246,7 +246,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
 
 
     return (
-        <div className="flex flex-col gap-4 border-b-[3px] border-[#0084ff] bg-white px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex flex-col bg-white gap-4 px-4 py-3 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <button

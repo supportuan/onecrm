@@ -79,6 +79,17 @@ export const updateLead = async (id, leadData) => {
   return res.json();
 };
 
+export const updateLeadStatus = async (leadId, status) => {
+  const res = await authFetch(`${API_URL}/leads/${leadId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+
+  return res.json();
+};
+
+
 export const deleteLead = async (id) => {
   const res = await authFetch(`${API_URL}/leads/${id}`, {
     method: "DELETE",
@@ -479,6 +490,18 @@ export const bulkUploadLeads = async (file) => {
   formData.append("file", file);
 
   const res = await authFetch("/api/marketing/leads/bulk-upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  return res.json();
+};
+
+export const uploadMedia = async (file) => {
+  const formData = new FormData();
+  formData.append("media", file);
+
+  const res = await authFetch(`${API_URL}/social-media/upload-media`, {
     method: "POST",
     body: formData,
   });

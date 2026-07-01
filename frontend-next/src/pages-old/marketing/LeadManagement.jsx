@@ -16,7 +16,8 @@ import {
   createStudentLogin,
   assignLeadCounsellor,
   updateLeadRating,
-  bulkUploadLeads
+  bulkUploadLeads,
+  updateLeadStatus,
 } from '../../services/marketingApi';
 import { getCounsellors } from '../../services/userApi';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -145,6 +146,21 @@ const LeadManagement = () => {
   const fileInputRef = useRef(null);
   const [uploadingLeads, setUploadingLeads] = useState(false);
 
+  const handleLeadStatusChange = async (leadId, status) => {
+    try {
+      const res = await updateLeadStatus(leadId, status);
+
+      if (res.success) {
+        fetchLeadsList();
+      } else {
+        alert(res.message || 'Failed to update lead status');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error occurred while updating lead status.');
+    }
+  };
+
   const handleBulkUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -198,6 +214,7 @@ const LeadManagement = () => {
       try {
         const res = await getCounsellors();
         if (res.success) setCounsellorsList(res.data || []);
+        console.log("counsellorsList____", counsellorsList);
       } catch (err) {
         console.error('Failed to load counsellors', err);
       }
@@ -832,6 +849,9 @@ ApplyUniNow`
                   <th className="w-[16%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
                     Assigned To
                   </th>
+                  <th className="w-[12%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
+                    Stage
+                  </th>
 
                   <th className="w-[8%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
                     Action
@@ -960,6 +980,7 @@ ApplyUniNow`
                       )}
                     </td> */}
 
+
                     <td
                       className="px-3 py-4 text-center"
                       onClick={(e) => e.stopPropagation()}
@@ -996,6 +1017,20 @@ ApplyUniNow`
                       )}
                     </td>
 
+                    <td className="px-3 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <select
+                        value={lead.status || 'NEW'}
+                        onChange={(e) => handleLeadStatusChange(lead.id, e.target.value)}
+                        className="border border-slate-200 bg-white px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+                      >
+                        <option value="NEW">New</option>
+                        <option value="CONTACTED">Contacted</option>
+                        <option value="QUALIFIED">Qualified</option>
+                        <option value="PROPOSED">Proposed</option>
+                        <option value="CONVERTED">Converted</option>
+                        <option value="LOST">Lost</option>
+                      </select>
+                    </td>
                     {/* <td className="px-3 py-4 text-center max-w-[200px] truncate">
                       <span className="font-semibold text-slate-600 text-sm">
                         {lead.remark || 'No remarks'}

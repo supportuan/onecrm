@@ -356,6 +356,13 @@ model Lead {
   status                LeadStatus @default(NEW)
   rating                LeadRating @default(WARM)
   remark                String?
+  
+  contactedAt           DateTime?
+  qualifiedAt           DateTime?
+  proposedAt            DateTime?
+  convertedAt           DateTime?
+  lostAt                DateTime?
+
   utmSource             String?
   utmMedium             String?
   utmCampaign           String?

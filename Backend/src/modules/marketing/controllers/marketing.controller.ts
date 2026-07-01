@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as marketingService from '../services/marketing.service.js';
 import * as campaignLaunchService from '../services/campaignLaunch.service.js';
+import * as metaCampaignService from '../services/metaCampaign.service.js';
 import { sendSuccess, sendError } from '../../../utils/response.js';
 import {
   createLeadSchema,
@@ -31,6 +32,7 @@ import {
 } from '../validations/marketing.validation.js';
 import { LeadStatus, CampaignType, CampaignStatus, UserRole } from '@prisma/client';
 import { bulkUploadLeadsFromExcel } from '../services/lead-upload.service.js';
+
 
 
 
@@ -72,6 +74,35 @@ export const getAnalytics = async (req: Request, res: Response, next: NextFuncti
     return sendSuccess(res, 'Marketing analytics report generated successfully', data);
   } catch (error) {
     next(error);
+  }
+};
+
+export const updateLeadStatusController = async (req, res) => {
+  try {
+    const leadId = Number(req.params.id);
+    const { status } = req.body;
+
+    const allowed = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSED', 'CONVERTED', 'LOST'];
+
+    if (!allowed.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid lead status',
+      });
+    }
+
+    const data = await marketingService.updateLeadStatus(leadId, status);
+
+    return res.json({
+      success: true,
+      message: 'Lead status updated successfully',
+      data,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update lead status',
+    });
   }
 };
 
@@ -894,5 +925,23 @@ export const convertStudentToLead = async (
     return sendSuccess(res, 'Student converted to lead successfully', lead, 201);
   } catch (error) {
     next(error);
+  }
+};
+
+export const uploadSocialMediaMedia = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.file) {
+      return sendError(res, 'No file uploaded', null, 400);
+    }
+
+    const uploadResult = await metaCampaignService.uploadMediaToMeta(req.file);
+    return sendSuccess(res, 'Media uploaded to Meta successfully', uploadResult, 201);
+  } catch (error: any) {
+    console.error('[Marketing Controller] Media upload error:', error);
+    return sendError(res, error.message || 'Failed to upload media to Meta', error, 500);
   }
 };

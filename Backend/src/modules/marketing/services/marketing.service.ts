@@ -198,6 +198,11 @@ export const getLeads = async (filters: {
       remark: lead.remark,
       isStudentLoginCreated: lead.isStudentLoginCreated,
       studentUserId: lead.studentUserId,
+      contactedAt: lead.contactedAt,
+      qualifiedAt: lead.qualifiedAt,
+      proposedAt: lead.proposedAt,
+      convertedAt: lead.convertedAt,
+      lostAt: lead.lostAt,
     };
   });
 
@@ -413,10 +418,66 @@ export const assignCounsellor = async (
   });
 };
 
+// export const updateLeadRating = async (leadId: number, rating: string) => {
+//   return await prisma.lead.update({
+//     where: { id: leadId },
+//     data: { rating: rating as any },
+//     include: {
+//       source: true,
+//       assignedCounsellor: true,
+//       assignedBy: true,
+//     },
+//   });
+// };
+
+// export const updateLeadRating = async (leadId: number, rating: string) => {
+//   const isQualified = ['HOT', 'WARM'].includes(String(rating).toUpperCase());
+
+//   return await prisma.lead.update({
+//     where: { id: leadId },
+//     data: {
+//       rating: rating as any,
+//       ...(isQualified
+//         ? {
+//           status: 'QUALIFIED',
+//           qualifiedAt: new Date(),
+//         }
+//         : {}),
+//     },
+//     include: {
+//       source: true,
+//       assignedCounsellor: true,
+//       assignedBy: true,
+//     },
+//   });
+// };
+
 export const updateLeadRating = async (leadId: number, rating: string) => {
+  const isQualified = ['HOT', 'WARM'].includes(String(rating).toUpperCase());
+
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    select: {
+      status: true,
+      qualifiedAt: true,
+    },
+  });
+
+  const canMoveToQualified =
+    isQualified &&
+    (lead?.status === LeadStatus.NEW || lead?.status === LeadStatus.CONTACTED);
+
   return await prisma.lead.update({
     where: { id: leadId },
-    data: { rating: rating as any },
+    data: {
+      rating: rating as any,
+      ...(canMoveToQualified
+        ? {
+          status: LeadStatus.QUALIFIED,
+          qualifiedAt: lead?.qualifiedAt || new Date(),
+        }
+        : {}),
+    },
     include: {
       source: true,
       assignedCounsellor: true,
@@ -424,7 +485,26 @@ export const updateLeadRating = async (leadId: number, rating: string) => {
     },
   });
 };
+export const updateLeadStatus = async (leadId: number, status: LeadStatus) => {
+  const now = new Date();
+  const data: any = { status };
 
+  if (status === 'CONTACTED') data.contactedAt = now;
+  if (status === 'QUALIFIED') data.qualifiedAt = now;
+  if (status === 'PROPOSED') data.proposedAt = now;
+  if (status === 'CONVERTED') data.convertedAt = now;
+  if (status === 'LOST') data.lostAt = now;
+
+  return await prisma.lead.update({
+    where: { id: leadId },
+    data,
+    include: {
+      source: true,
+      assignedCounsellor: true,
+      assignedBy: true,
+    },
+  });
+};
 export const deleteLead = async (id: number) => {
   // Soft delete
   return await prisma.lead.update({
@@ -440,16 +520,51 @@ export const getLeadActivities = async (leadId: number) => {
   });
 };
 
-export const createLeadActivity = async (leadId: number, data: {
-  activityType: ActivityType;
-  comment?: string | null;
-  metadata?: any;
-}) => {
-  return await prisma.leadActivity.create({
-    data: {
-      leadId,
-      ...data,
-    },
+// export const createLeadActivity = async (leadId: number, data: {
+//   activityType: ActivityType;
+//   comment?: string | null;
+//   metadata?: any;
+// }) => {
+//   return await prisma.leadActivity.create({
+//     data: {
+//       leadId,
+//       ...data,
+//     },
+//   });
+// };
+
+export const createLeadActivity = async (leadId: number, data: any) => {
+  return await prisma.$transaction(async (tx) => {
+    const activity = await tx.leadActivity.create({
+      data: {
+        leadId,
+        ...data,
+      },
+    });
+
+    const contactTypes = ['CALL', 'EMAIL', 'SMS', 'WHATSAPP', 'MEETING'];
+
+    if (contactTypes.includes(String(data.activityType))) {
+      const lead = await tx.lead.findUnique({
+        where: { id: leadId },
+        select: {
+          status: true,
+          contactedAt: true,
+        },
+      });
+
+      await tx.lead.update({
+        where: { id: leadId },
+        data: {
+          ...(lead?.status === LeadStatus.NEW && {
+            status: LeadStatus.CONTACTED,
+          }),
+          contactedAt: lead?.contactedAt || new Date(),
+        },
+      });
+    }
+
+    return activity;
   });
 };
 
@@ -1649,11 +1764,20 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
   });
 
   // 5️⃣ Update lead with reference and flag
+  // await prisma.lead.update({
+  //   where: { id: leadId },
+  //   data: {
+  //     studentUserId: user.id,
+  //     isStudentLoginCreated: true,
+  //   },
+  // });
   await prisma.lead.update({
     where: { id: leadId },
     data: {
       studentUserId: user.id,
       isStudentLoginCreated: true,
+      status: LeadStatus.CONVERTED,
+      convertedAt: new Date(),
     },
   });
 
