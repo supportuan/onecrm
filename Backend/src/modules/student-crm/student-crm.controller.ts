@@ -3,7 +3,8 @@ import { sendError, sendSuccess } from '../../utils/response.js';
 import * as service from './student-crm.service.js';
 import { getDefaultChecklist } from './checklists.js';
 import { getFormOptions as loadFormOptions } from '../crm-settings/crm-settings.service.js';
-import { resolveFileRefsDeep } from '../../lib/file-storage.js';
+import { resolveFileRefsDeep, safeUploadFilename, storeUploadedFile } from '../../lib/file-storage.js';
+import { isStudentRole } from './scoping.js';
 
 const numId = (raw: any) => {
   const n = Number(raw);
@@ -13,6 +14,12 @@ const numId = (raw: any) => {
 // -------------------- Students --------------------
 
 const actor = (req: Request) => ({ id: req.user?.id, role: req.user?.role });
+
+const assertApplicationAccess = async (req: Request, applicationId: number) => {
+  const app = await service.getApplication(applicationId, actor(req));
+  if (!app) return null;
+  return app;
+};
 
 export const listStudents = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -97,7 +104,7 @@ export const updateMyStudent = async (req: Request, res: Response, next: NextFun
 export const listMyApplications = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
-    const items = await service.listMyApplications(req.user.id);
+    const items = await resolveFileRefsDeep(await service.listMyApplications(req.user.id));
     return sendSuccess(res, 'my applications', items);
   } catch (err) {
     next(err);
@@ -284,8 +291,67 @@ export const upsertDocument = async (req: Request, res: Response, next: NextFunc
     const applicationId = numId(req.params.id);
     if (!applicationId) return sendError(res, 'invalid application id', null, 400);
     const docId = req.params.docId ? numId(req.params.docId) : null;
-    const item = await service.upsertDocument(applicationId, docId, req.body || {});
+
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+
+    const body = { ...(req.body || {}) };
+    if (isStudentRole(req.user?.role)) {
+      return sendError(res, 'forbidden', null, 403);
+    }
+
+    const item = await resolveFileRefsDeep(await service.upsertDocument(applicationId, docId, body));
     return sendSuccess(res, 'document saved', item);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const uploadApplicationDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    const docId = numId(req.params.docId);
+    if (!applicationId || !docId) return sendError(res, 'invalid application or document id', null, 400);
+
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+
+    const doc = (app.documents || []).find((d: { id: number }) => d.id === docId);
+    if (!doc) return sendError(res, 'document not found on this application', null, 404);
+
+    if (isStudentRole(req.user?.role)) {
+      if (!['PENDING', 'REJECTED'].includes(doc.status)) {
+        return sendError(res, 'this document cannot be uploaded right now', null, 403);
+      }
+    }
+
+    const file = req.file;
+    if (!file) {
+      return sendError(res, 'file is required (jpg, png, pdf, doc, docx, max 20MB)', null, 400);
+    }
+
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/student-crm/applications/${applicationId}/documents/${docId}/${storedName}`;
+    const { ref: fileUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    const item = await resolveFileRefsDeep(
+      await service.upsertDocument(applicationId, docId, {
+        filename: file.originalname,
+        fileUrl,
+        status: 'UPLOADED',
+        ...(isStudentRole(req.user?.role) ? { notes: '' } : {}),
+      }),
+    );
+
+    if (isStudentRole(req.user?.role) && app.assignedToId) {
+      await service.notifyDocumentUploaded(applicationId, docId, req.user?.id);
+    }
+
+    return sendSuccess(res, 'document uploaded', item, 201);
   } catch (err) {
     next(err);
   }
@@ -319,8 +385,39 @@ export const upsertOffer = async (req: Request, res: Response, next: NextFunctio
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const item = await service.upsertOfferLetter(id, req.body || {});
+    const item = await resolveFileRefsDeep(await service.upsertOfferLetter(id, req.body || {}));
     return sendSuccess(res, 'offer saved', item);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const uploadOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId) return sendError(res, 'invalid application id', null, 400);
+
+    const file = req.file;
+    if (!file) {
+      return sendError(res, 'file is required (jpg, png, pdf, doc, docx, max 20MB)', null, 400);
+    }
+
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/student-crm/applications/${applicationId}/offer/${storedName}`;
+    const { ref: fileUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    const item = await resolveFileRefsDeep(
+      await service.upsertOfferLetter(applicationId, {
+        filename: file.originalname,
+        fileUrl,
+        receivedAt: new Date().toISOString().slice(0, 10),
+      }),
+    );
+    return sendSuccess(res, 'offer letter uploaded', item, 201);
   } catch (err) {
     next(err);
   }

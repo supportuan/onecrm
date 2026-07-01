@@ -103,6 +103,29 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
     },
   },
 
+  'application.document_uploaded': {
+    key: 'application.document_uploaded',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Document uploaded`;
+      const body = `${fallbackVar(v.studentName, 'A student')} uploaded "${fallbackVar(v.documentName)}" for application ${fallbackVar(v.applicationCode, '')}.`;
+      const link = v.applicationId ? `/student-crm/applications/${v.applicationId}` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'Review document'), link };
+    },
+  },
+
+  'application.document_rejected': {
+    key: 'application.document_rejected',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Document needs re-upload`;
+      const reason = v.notes ? ` Reason: ${v.notes}` : '';
+      const body = `"${fallbackVar(v.documentName)}" for application ${fallbackVar(v.applicationCode, '')} was rejected.${reason}`;
+      const link = v.applicationId ? `/applicant/applications/${v.applicationId}` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'Re-upload document'), link };
+    },
+  },
+
   'application.offer_received': {
     key: 'application.offer_received',
     defaultChannels: ['IN_APP', 'EMAIL'],
