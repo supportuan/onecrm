@@ -77,7 +77,7 @@ export const getAnalytics = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const updateLeadStatusController = async (req, res) => {
+export const updateLeadStatusController = async (req: Request, res: Response) => {
   try {
     const leadId = Number(req.params.id);
     const { status } = req.body;
