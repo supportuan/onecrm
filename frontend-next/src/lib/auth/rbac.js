@@ -134,15 +134,7 @@ export const MODULE_KEY_MAP = {
 // Fallback defaults — mirror Backend/src/modules/rbac/rbac.constants.ts
 export const ROLE_PERMISSIONS = {
   SUPER_ADMIN: [...ALL_PERMISSIONS],
-  GLOBAL_ADMIN: [
-    'VIEW_MARKETING', 'MANAGE_MARKETING',
-    'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
-    'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM',
-    'VIEW_HR', 'VIEW_ADMIN',
-    'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
-    'MANAGE_BIOMETRICS', 'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE',
-    'VIEW_LEAVE', 'MANAGE_LEAVE', 'MANAGE_SUPPORT_REQUESTS', 'MANAGE_SYSTEM', 'VIEW_REPORTS',
-  ],
+  GLOBAL_ADMIN: [...ALL_PERMISSIONS],
   HR: [
     'VIEW_HR',
     'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
@@ -178,6 +170,9 @@ const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_'
 export function hasPermission(role, permission, permissionMap) {
   if (!role || !permission) return false;
   const normalizedRole = normalizeRole(role);
+  // SUPER_ADMIN (platform) and GLOBAL_ADMIN (tenant administrator) have full
+  // access; never gate them behind individual permission strings.
+  if (normalizedRole === 'SUPER_ADMIN' || normalizedRole === 'GLOBAL_ADMIN') return true;
   const source = permissionMap && permissionMap[normalizedRole]
     ? permissionMap[normalizedRole]
     : ROLE_PERMISSIONS[normalizedRole] || [];

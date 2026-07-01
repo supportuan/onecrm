@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   Settings,
   Palmtree,
+  Tag,
+  Check,
 } from 'lucide-react';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import LeaveMyRequests from './LeaveMyRequests';
@@ -34,7 +36,11 @@ import {
   createHoliday,
   deleteHoliday,
   getEmployees,
+  createLeaveType,
+  updateLeaveType,
+  deleteLeaveType,
 } from '@/services/hrApi';
+
 
 export default function LeaveManagement() {
   const searchParams = useSearchParams();
@@ -44,7 +50,14 @@ export default function LeaveManagement() {
   const [workspaceTab, setWorkspaceTab] = useState(
     initialTab === 'approvals' && canManageLeave ? 'approvals' : initialTab === 'policies' && canManageLeave ? 'policies' : 'my'
   );
-  const [activeMainTab, setActiveMainTab] = useState('plans'); // 'plans' | 'holidays'
+  const [activeMainTab, setActiveMainTab] = useState('plans'); // 'plans' | 'holidays' | 'categories'
+
+  // Leave categories (HrLeaveType) CRUD state
+  const [categoryForm, setCategoryForm] = useState({ name: '', code: '' });
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [categorySubmitting, setCategorySubmitting] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [categoryFeedback, setCategoryFeedback] = useState(null);
 
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -94,16 +107,20 @@ export default function LeaveManagement() {
     setLoading(true);
     try {
       const [plansRes, typesRes, empRes] = await Promise.all([getLeavePlans(), getLeaveTypes(), getEmployees()]);
+      // Backend wraps every response as { success, message, data }.
+      const plans = plansRes?.data || [];
+      const types = typesRes?.data || [];
+      const employees = empRes?.data || [];
       if (plansRes.success) {
-        setPlans(plansRes.plans || []);
-        if (plansRes.plans && plansRes.plans.length > 0) {
-          const firstPlan = plansRes.plans[0];
+        setPlans(plans);
+        if (plans.length > 0) {
+          const firstPlan = plans[0];
           setSelectedPlan(firstPlan);
           await fetchPlanDetails(firstPlan.id);
         }
       }
-      if (typesRes.success) setLeaveTypes(typesRes.types || []);
-      if (empRes.success) setAllEmployees(empRes.employees || []);
+      if (typesRes.success) setLeaveTypes(types);
+      if (empRes.success) setAllEmployees(employees);
     } catch (err) {
       console.error('Failed to load initial leave data:', err);
     } finally {
@@ -114,8 +131,8 @@ export default function LeaveManagement() {
   const fetchPlanDetails = async (planId) => {
     try {
       const [defRes, empRes] = await Promise.all([getLeaveDefinitions(planId), getLeavePlanEmployees(planId)]);
-      if (defRes.success) setDefinitions(defRes.definitions || []);
-      if (empRes.success) setAssignedEmployees(empRes.employees || []);
+      if (defRes.success) setDefinitions(defRes.data || []);
+      if (empRes.success) setAssignedEmployees(empRes.data || []);
     } catch (err) {
       console.error(`Failed to fetch plan details for ${planId}:`, err);
     }
@@ -130,13 +147,14 @@ export default function LeaveManagement() {
     e.preventDefault();
     try {
       const res = await createLeavePlan(newPlan);
-      if (res.success) {
-        setPlans([...plans, res.plan]);
+      if (res.success && res.data) {
+        const created = res.data;
+        setPlans([...plans, created]);
         setNewPlan({ name: '', cycle: 'Apr - Mar' });
         setShowPlanModal(false);
         if (!selectedPlan) {
-          setSelectedPlan(res.plan);
-          fetchPlanDetails(res.plan.id);
+          setSelectedPlan(created);
+          fetchPlanDetails(created.id);
         }
       }
     } catch (err) {
@@ -203,8 +221,9 @@ export default function LeaveManagement() {
     try {
       const res = await getHolidays();
       if (res.success) {
-        setHolidays(res.holidays || []);
-        const types = (res.holidays || []).map((h) => h.type).filter(Boolean);
+        const list = res.data || [];
+        setHolidays(list);
+        const types = list.map((h) => h.type).filter(Boolean);
         setHolidayFolders(Array.from(new Set([...holidayFolders, ...types])));
       }
     } catch (err) {
@@ -252,6 +271,77 @@ export default function LeaveManagement() {
     if (!holidayFolders.includes(clean)) setHolidayFolders([...holidayFolders, clean]);
     setNewHoliday({ ...newHoliday, type: clean });
   };
+
+  const refreshCategories = async () => {
+    try {
+      const res = await getLeaveTypes();
+      if (res.success) setLeaveTypes(res.data || []);
+    } catch (err) {
+      console.error('Failed to refresh leave categories:', err);
+    }
+  };
+
+  const resetCategoryForm = () => {
+    setCategoryForm({ name: '', code: '' });
+    setEditingCategoryId(null);
+  };
+
+  const handleSubmitCategory = async (e) => {
+    e.preventDefault();
+    if (!categoryForm.name.trim() || !categoryForm.code.trim()) return;
+    setCategorySubmitting(true);
+    setCategoryFeedback(null);
+    try {
+      const payload = {
+        name: categoryForm.name.trim(),
+        code: categoryForm.code.trim().toUpperCase(),
+      };
+      const res = editingCategoryId
+        ? await updateLeaveType(editingCategoryId, payload)
+        : await createLeaveType(payload);
+      if (res.success) {
+        setCategoryFeedback({
+          type: 'success',
+          text: editingCategoryId ? 'category updated' : 'category added',
+        });
+        resetCategoryForm();
+        await refreshCategories();
+      } else {
+        setCategoryFeedback({ type: 'error', text: res.error || 'failed to save category' });
+      }
+    } catch (err) {
+      setCategoryFeedback({ type: 'error', text: err?.message || 'connection error' });
+    } finally {
+      setCategorySubmitting(false);
+    }
+  };
+
+  const handleEditCategory = (cat) => {
+    setEditingCategoryId(cat.id);
+    setCategoryForm({ name: cat.name, code: cat.code });
+    setCategoryFeedback(null);
+  };
+
+  const handleDeleteCategory = async (cat) => {
+    if (!confirm(`Delete category "${cat.name}"? This cannot be undone.`)) return;
+    try {
+      const res = await deleteLeaveType(cat.id);
+      if (res.success) {
+        if (editingCategoryId === cat.id) resetCategoryForm();
+        await refreshCategories();
+      } else {
+        alert(res.error || 'failed to delete category');
+      }
+    } catch (err) {
+      alert(err?.message || 'failed to delete category');
+    }
+  };
+
+  const filteredCategories = leaveTypes.filter(
+    (c) =>
+      c.name.toLowerCase().includes(categorySearch.toLowerCase()) ||
+      c.code.toLowerCase().includes(categorySearch.toLowerCase()),
+  );
 
   const filteredPlans = plans.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredHolidays = holidays.filter((h) => h.name.toLowerCase().includes(holidaySearchQuery.toLowerCase()));
@@ -303,6 +393,15 @@ export default function LeaveManagement() {
           >
             <CalendarIcon size={12} />
             Holiday calendar
+          </button>
+          <button
+            onClick={() => setActiveMainTab('categories')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+              activeMainTab === 'categories' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
+            }`}
+          >
+            <Tag size={12} />
+            Categories
           </button>
         </div>
       </div>
@@ -796,6 +895,186 @@ export default function LeaveManagement() {
             </div>
           </div>
         )}
+        {activeMainTab === 'categories' && (
+          <div className="animate-in fade-in duration-300">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
+              {/* Categories list */}
+              <div className="bg-white border border-neutral-200/80 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                <div className="px-7 pt-7 pb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-neutral-100">
+                  <div>
+                    <h3 className="text-[17px] font-semibold tracking-tight text-neutral-900 leading-tight">
+                      Leave categories
+                    </h3>
+                    <p className="text-[12px] text-neutral-500 mt-1.5 leading-relaxed">
+                      The catalog of leave types your plans draw from. Add categories manually below.
+                    </p>
+                  </div>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" size={14} />
+                    <input
+                      type="text"
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      placeholder="Search"
+                      className="w-full pl-10 pr-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-neutral-800 placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  {filteredCategories.length === 0 ? (
+                    <div className="py-16 flex flex-col items-center justify-center text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center justify-center mb-4">
+                        <Tag size={18} className="text-neutral-400" />
+                      </div>
+                      <p className="text-[13px] font-medium text-neutral-700">No categories yet</p>
+                      <p className="text-[12px] text-neutral-500 mt-1 max-w-xs">
+                        Use the panel on the right to add your first leave category.
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
+                      {filteredCategories.map((cat) => {
+                        const isEditing = editingCategoryId === cat.id;
+                        return (
+                          <li
+                            key={cat.id}
+                            className={`group relative bg-white border rounded-2xl px-5 py-4 transition-all ${
+                              isEditing
+                                ? 'border-neutral-900 shadow-[0_0_0_3px_rgba(0,0,0,0.04)]'
+                                : 'border-neutral-200/80 hover:border-neutral-300 hover:shadow-[0_1px_3px_rgba(0,0,0,0.05)]'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3.5">
+                              <div className="shrink-0 w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center text-[11px] font-semibold tracking-wide">
+                                {cat.code.slice(0, 3).toUpperCase()}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[14px] font-semibold text-neutral-900 leading-snug truncate">
+                                  {cat.name}
+                                </p>
+                                <p className="text-[11px] font-medium text-neutral-500 mt-0.5 tracking-wide uppercase">
+                                  {cat.code}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleEditCategory(cat)}
+                                className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-neutral-700 hover:bg-neutral-100 transition-all flex items-center gap-1.5"
+                              >
+                                <Edit2 size={11} /> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCategory(cat)}
+                                className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-all flex items-center gap-1.5"
+                              >
+                                <Trash2 size={11} /> Delete
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              {/* Add / edit card */}
+              <div className="bg-white border border-neutral-200/80 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+                <div className="px-7 pt-7 pb-5 border-b border-neutral-100">
+                  <h3 className="text-[15px] font-semibold tracking-tight text-neutral-900">
+                    {editingCategoryId ? 'Edit category' : 'Add category'}
+                  </h3>
+                  <p className="text-[12px] text-neutral-500 mt-1.5 leading-relaxed">
+                    Categories are reusable across all entitlement plans.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmitCategory} className="px-7 py-6 space-y-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-medium text-neutral-500 tracking-tight">
+                      Display name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={80}
+                      value={categoryForm.name}
+                      onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                      placeholder="e.g. Paternity leave"
+                      className="w-full px-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-neutral-900 placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-medium text-neutral-500 tracking-tight">
+                      Short code
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={20}
+                      value={categoryForm.code}
+                      onChange={(e) =>
+                        setCategoryForm({
+                          ...categoryForm,
+                          code: e.target.value.replace(/[^A-Za-z0-9_-]/g, '').toUpperCase(),
+                        })
+                      }
+                      placeholder="e.g. PAT"
+                      className="w-full px-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] font-medium tracking-wide text-neutral-900 placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all uppercase"
+                    />
+                    <p className="text-[10.5px] text-neutral-400 pl-0.5">Letters, numbers, dash, underscore.</p>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={categorySubmitting}
+                      className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[12.5px] font-medium tracking-tight transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {categorySubmitting ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : editingCategoryId ? (
+                        <Check size={14} />
+                      ) : (
+                        <Plus size={14} />
+                      )}
+                      {editingCategoryId ? 'Save changes' : 'Add category'}
+                    </button>
+                    {editingCategoryId && (
+                      <button
+                        type="button"
+                        onClick={resetCategoryForm}
+                        className="px-4 py-3 border border-neutral-200 rounded-xl text-[12.5px] font-medium text-neutral-600 hover:bg-neutral-50 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+
+                  {categoryFeedback && (
+                    <div
+                      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-medium border ${
+                        categoryFeedback.type === 'success'
+                          ? 'bg-emerald-50/70 text-emerald-700 border-emerald-100'
+                          : 'bg-rose-50/70 text-rose-700 border-rose-100'
+                      }`}
+                    >
+                      {categoryFeedback.type === 'success' ? (
+                        <CheckCircle2 size={14} className="shrink-0" />
+                      ) : (
+                        <ShieldAlert size={14} className="shrink-0" />
+                      )}
+                      {categoryFeedback.text}
+                    </div>
+                  )}
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Plan modal */}
@@ -876,6 +1155,20 @@ export default function LeaveManagement() {
                           </option>
                         ))}
                     </select>
+                    {!isEditingType &&
+                      leaveTypes.length > 0 &&
+                      leaveTypes.every((lt) => definitions.find((d) => d.leave_type_id === lt.id)) && (
+                        <p className="text-[10px] text-amber-600 mt-1">
+                          Every leave type is already attached to this plan. Edit an existing
+                          definition above, or create a new leave type first.
+                        </p>
+                      )}
+                    {leaveTypes.length === 0 && (
+                      <p className="text-[10px] text-amber-600 mt-1">
+                        No leave types configured for this tenant. Ask the system to seed defaults
+                        or create them via the API.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -1084,12 +1377,8 @@ export default function LeaveManagement() {
 
 function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave }) {
   return (
-    <div className="bg-white border-b border-neutral-200 px-6 md:px-8 py-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-semibold text-neutral-500 leading-none">HR · time</p>
-          <h1 className="text-lg font-semibold text-neutral-900 mt-1">Leave</h1>
-        </div>
+    <div className="bg-white border-b border-neutral-200 px-6 md:px-8 py-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <div className="flex flex-wrap bg-neutral-50 border border-neutral-200 rounded-lg p-1 gap-0.5">
           <button
             type="button"

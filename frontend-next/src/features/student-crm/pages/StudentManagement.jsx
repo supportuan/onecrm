@@ -27,11 +27,18 @@ import {
   updateChecklistValue,
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
+import { resolveStudyCascades, studyIdsFromProfile, toNumOrNull } from '../studyFormOptions';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { getStageLabel, stageBadgeClass } from '../constants';
 
 const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
+const SELECT =
+  "w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none appearance-none cursor-pointer bg-[length:16px] bg-[right_12px_center] bg-no-repeat pr-10";
+const SELECT_BG = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+};
 
 const emptyAcademic = () => ({ degree: '', institution: '', year: '', grade: '' });
 const emptyEducation = () => ({
@@ -162,6 +169,7 @@ export default function StudentManagement() {
         ? [profile.asstExamSections]
         : [emptyExam()];
 
+    const ids = studyIdsFromProfile(profile);
     setForm({
       firstName: profile.firstName || '',
       lastName: profile.lastName || '',
@@ -172,10 +180,10 @@ export default function StudentManagement() {
       nationality: profile.nationality || '',
       preferredCountry: profile.preferredCountry || '',
       level: profile.level || '',
-      countryId: profile.countryId ?? '',
-      industryId: profile.industryId ?? '',
-      subIndustryId: profile.subIndustryId ?? '',
-      studyAreaId: profile.studyAreaId ?? '',
+      countryId: ids.countryId,
+      industryId: ids.industryId,
+      subIndustryId: ids.subIndustryId,
+      studyAreaId: ids.studyAreaId,
       intakeMonth: profile.intakeMonth || '',
       intakeYear: profile.intakeYear || '',
       studyMode: profile.studyMode || '',
@@ -212,10 +220,10 @@ export default function StudentManagement() {
         nationality: form.nationality || null,
         preferredCountry: form.preferredCountry || null,
         level: form.level || null,
-        countryId: form.countryId === '' ? null : Number(form.countryId),
-        industryId: form.industryId === '' ? null : Number(form.industryId),
-        subIndustryId: form.subIndustryId === '' ? null : Number(form.subIndustryId),
-        studyAreaId: form.studyAreaId === '' ? null : Number(form.studyAreaId),
+        countryId: toNumOrNull(form.countryId),
+        industryId: toNumOrNull(form.industryId),
+        subIndustryId: toNumOrNull(form.subIndustryId),
+        studyAreaId: toNumOrNull(form.studyAreaId),
         intakeMonth: form.intakeMonth || null,
         intakeYear: form.intakeYear || null,
         studyMode: form.studyMode || null,
@@ -250,9 +258,11 @@ export default function StudentManagement() {
     }
   };
 
-  const selectedIndustry = formOptions.industries?.find((i) => i.id === Number(form?.industryId));
-  const subIndustries = selectedIndustry?.subIndustries || [];
-  const studyAreas = selectedIndustry?.studyAreas || [];
+  const { subIndustries, studyAreas } = resolveStudyCascades(
+    formOptions.industries,
+    form?.industryId,
+    form?.subIndustryId
+  );
 
   const markEnrolled = async (value) => {
     if (!selectedId) return;
@@ -523,7 +533,8 @@ export default function StudentManagement() {
                   <div className="ui-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Field label="Study level">
                       <select
-                        className={INPUT}
+                        className={SELECT}
+                        style={SELECT_BG}
                         value={form.level}
                         disabled={!canManage || profile.isEnrolled}
                         onChange={(e) => setForm({ ...form, level: e.target.value })}
@@ -538,14 +549,15 @@ export default function StudentManagement() {
                     </Field>
                     <Field label="Destination country">
                       <select
-                        className={INPUT}
+                        className={SELECT}
+                        style={SELECT_BG}
                         value={form.countryId}
                         disabled={!canManage || profile.isEnrolled}
                         onChange={(e) => setForm({ ...form, countryId: e.target.value })}
                       >
                         <option value="">Select country</option>
                         {formOptions.countries?.map((c) => (
-                          <option key={c.id} value={c.id}>
+                          <option key={c.id} value={String(c.id)}>
                             {c.name}
                           </option>
                         ))}
@@ -553,16 +565,17 @@ export default function StudentManagement() {
                     </Field>
                     <Field label="Industry">
                       <select
-                        className={INPUT}
+                        className={SELECT}
+                        style={SELECT_BG}
                         value={form.industryId}
                         disabled={!canManage || profile.isEnrolled}
                         onChange={(e) =>
                           setForm({ ...form, industryId: e.target.value, subIndustryId: '', studyAreaId: '' })
                         }
                       >
-                        <option value="">Select</option>
+                        <option value="">Select industry</option>
                         {formOptions.industries?.map((i) => (
-                          <option key={i.id} value={i.id}>
+                          <option key={i.id} value={String(i.id)}>
                             {i.name}
                           </option>
                         ))}
@@ -570,14 +583,15 @@ export default function StudentManagement() {
                     </Field>
                     <Field label="Sub-industry">
                       <select
-                        className={INPUT}
+                        className={SELECT}
+                        style={SELECT_BG}
                         value={form.subIndustryId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, subIndustryId: e.target.value })}
+                        disabled={!canManage || profile.isEnrolled || !subIndustries.length}
+                        onChange={(e) => setForm({ ...form, subIndustryId: e.target.value, studyAreaId: '' })}
                       >
-                        <option value="">Select</option>
+                        <option value="">{subIndustries.length ? 'Select sub-industry' : 'No sub-industries'}</option>
                         {subIndustries.map((s) => (
-                          <option key={s.id} value={s.id}>
+                          <option key={s.id} value={String(s.id)}>
                             {s.name}
                           </option>
                         ))}
@@ -585,14 +599,15 @@ export default function StudentManagement() {
                     </Field>
                     <Field label="Study area">
                       <select
-                        className={INPUT}
+                        className={SELECT}
+                        style={SELECT_BG}
                         value={form.studyAreaId}
-                        disabled={!canManage || profile.isEnrolled}
+                        disabled={!canManage || profile.isEnrolled || !studyAreas.length}
                         onChange={(e) => setForm({ ...form, studyAreaId: e.target.value })}
                       >
-                        <option value="">Select</option>
+                        <option value="">{studyAreas.length ? 'Select study area' : 'No study areas'}</option>
                         {studyAreas.map((a) => (
-                          <option key={a.id} value={a.id}>
+                          <option key={a.id} value={String(a.id)}>
                             {a.name}
                           </option>
                         ))}

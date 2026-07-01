@@ -16,7 +16,7 @@ import { getEnabledModules } from './tenant-modules.service.js';
  */
 export const requirePermission = (...required: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const role = req.user?.role;
+    const role = req.user?.permissionRole ?? req.user?.role;
     if (!role) {
       return sendError(res, 'Forbidden: no role assigned', null, 403);
     }

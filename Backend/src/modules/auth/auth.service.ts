@@ -4,6 +4,7 @@ import { hashPassword, comparePasswords } from '../../utils/password.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt.js';
 import { adminAgentNotification, adminStudentNotification, sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
+import { getDefaultTenantId } from '../../utils/tenant-default.js';
 
 interface RegisterData {
   fullName: string;
@@ -35,6 +36,7 @@ export const register = async (data: RegisterData) => {
   // Import default permissions for the role
   const { getDefaultModuleAccessByRole } = await import('../users/user.service.js');
   const moduleAccess = getDefaultModuleAccessByRole(data.role);
+  const tenantId = await getDefaultTenantId();
 
   const user = await prisma.user.create({
     data: {
@@ -43,6 +45,7 @@ export const register = async (data: RegisterData) => {
       phone: data.phone || null,
       passwordHash,
       role: data.role,
+      tenantId,
       isActive: true,
       isApproved,
       agencyDetails: data.agencyDetails || null,
@@ -111,7 +114,7 @@ export const register = async (data: RegisterData) => {
   return user;
 };
 
-export const login = async (email: string, password: string) => {
+export const login = async (email: string, password: string, loginType?: 'student' | 'staff') => {
   const user = await prisma.user.findUnique({
     where: { email },
     include: { tenant: true },
@@ -120,6 +123,13 @@ export const login = async (email: string, password: string) => {
 
   const isValid = await comparePasswords(password, user.passwordHash);
   if (!isValid) throw new Error('Invalid credentials');
+
+  if (loginType === 'student' && user.role !== UserRole.STUDENT) {
+    throw new Error('Invalid credentials');
+  }
+  if (loginType === 'staff' && user.role === UserRole.STUDENT) {
+    throw new Error('Please use the student login page');
+  }
 
   if (user.role === UserRole.AGENT && !user.isApproved) {
     throw new Error('Agent account has not been approved by an administrator yet');
@@ -138,6 +148,7 @@ export const login = async (email: string, password: string) => {
 
   const isFirstLogin = user.lastLogin === null;
   const mustChangePassword = user.mustChangePassword;
+  const showPolicyModal = user.role === UserRole.STUDENT && !user.policyAcceptedAt;
 
   await prisma.user.update({
     where: { id: user.id },
@@ -149,6 +160,7 @@ export const login = async (email: string, password: string) => {
     email: user.email,
     role: user.role,
     tenantId: user.tenantId ?? null,
+    permissionRole: user.permissionRole ?? null,
   };
 
   const accessToken = generateAccessToken(payload);
@@ -162,7 +174,7 @@ export const login = async (email: string, password: string) => {
     },
   });
 
-  return { user, accessToken, refreshToken, isFirstLogin, mustChangePassword };
+  return { user, accessToken, refreshToken, isFirstLogin, mustChangePassword, showPolicyModal };
 };
 
 export const refreshToken = async (token: string) => {
@@ -176,7 +188,13 @@ export const refreshToken = async (token: string) => {
   const user = await prisma.user.findUnique({ where: { id: payload.id } });
   if (!user || !user.isActive) throw new Error('Invalid refresh token');
 
-  const tokenPayload = { id: user.id, email: user.email, role: user.role, tenantId: user.tenantId ?? null };
+  const tokenPayload = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    tenantId: user.tenantId ?? null,
+    permissionRole: user.permissionRole ?? null,
+  };
   const accessToken = generateAccessToken(tokenPayload);
   const refreshToken = generateRefreshToken(tokenPayload);
 
@@ -208,9 +226,12 @@ export const getUserProfile = async (id: number) => {
       email: true,
       phone: true,
       role: true,
+      roleLabel: true,
+      permissionRole: true,
       tenantId: true,
       isActive: true,
       mustChangePassword: true,
+      policyAcceptedAt: true,
       lastLogin: true,
       createdAt: true,
       updatedAt: true,
@@ -230,6 +251,21 @@ export const changePassword = async (userId: number, currentPassword: string, ne
   return prisma.user.update({
     where: { id: userId },
     data: { passwordHash, mustChangePassword: false },
+  });
+};
+
+export const acceptPolicy = async (userId: number) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error('User not found');
+  if (user.role !== UserRole.STUDENT) throw new Error('Policy acceptance is only required for students');
+
+  return prisma.user.update({
+    where: { id: userId },
+    data: { policyAcceptedAt: new Date() },
+    select: {
+      id: true,
+      policyAcceptedAt: true,
+    },
   });
 };
 

@@ -17,6 +17,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
             email: payload.email,
             role: payload.role as any,
             tenantId: payload.tenantId ?? null,
+            permissionRole: payload.permissionRole ?? null,
         };
         req.tenantId = payload.tenantId ?? null;
         next();

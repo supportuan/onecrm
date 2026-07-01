@@ -2,7 +2,12 @@
 export interface Employee {
   id: string;
   name: string;
+  first_name: string;
+  last_name: string;
+  firstName?: string | null;
+  lastName?: string | null;
   employeeId: string;
+  employee_id: string;
   email: string;
   access_role: string;
   department?: string | null;
@@ -10,6 +15,27 @@ export interface Employee {
   phone?: string | null;
   biometricId?: string | null;
   location?: string | null;
+  joiningDate?: string | null;
+  managerId?: string | null;
+  managerName?: string | null;
+  employmentStatus: 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED' | 'TERMINATED';
+  resignedAt?: string | null;
+  terminatedAt?: string | null;
+  exitReason?: string | null;
+}
+
+export interface EmployeeDocument {
+  id: string;
+  employeeId: string;
+  type: 'OFFER_LETTER' | 'ID_PROOF' | 'CONTRACT' | 'OTHER';
+  fileName: string;
+  fileUrl: string;
+  mimeType?: string | null;
+  fileSize?: number | null;
+  uploadedAt: string;
+  expiresAt?: string | null;
+  notes?: string | null;
+  sourceOfferLetterId?: string | null;
 }
 
 export interface Device {
@@ -55,6 +81,7 @@ export interface Regularization {
 export interface LeavePlan {
   id: string;
   name: string;
+  cycle: string;
   description?: string;
 }
 
@@ -65,11 +92,26 @@ export interface LeaveType {
 }
 
 export interface LeaveDefinition {
+  id: string;
   plan_id: string;
   leave_type_id: string;
   name: string;
   annual_quota: number;
   carry_forward: boolean;
+  // Display fields surfaced from the joined HrLeaveType row.
+  type_code: string;
+  type_name: string;
+  leave_type_code: string;
+  leave_type_name: string;
+  // Frontend-only metadata (not currently persisted; safe defaults).
+  is_unlimited: boolean;
+  accrual_type: string;
+  accrual_rate: number;
+  year_end_policy: string;
+  carry_forward_max: number;
+  min_days_per_request: number;
+  max_days_per_request: number;
+  gender_restriction: string;
 }
 
 export interface Holiday {
@@ -108,6 +150,30 @@ export interface OnboardingItem {
   status: 'PENDING' | 'COMPLETED';
   completedAt?: string;
   completedBy?: string;
+  dueDate?: string;
+  assignee?: string;
+  attachmentUrl?: string;
+  attachmentFileName?: string;
+}
+
+export interface OnboardingTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  isDefault: boolean;
+  role?: string;
+  items: OnboardingTemplateItem[];
+  createdAt: string;
+}
+
+export interface OnboardingTemplateItem {
+  id: string;
+  category: 'DOCUMENTS' | 'ACCESS' | 'TRAINING';
+  title: string;
+  description?: string;
+  dueOffsetDays: number;
+  assigneeRole?: string;
+  sortOrder: number;
 }
 
 export interface OnboardingChecklist {
@@ -132,8 +198,35 @@ export interface OfferLetter {
   expiryDate: string;
   status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
   policyTemplate: string;
+  templateId?: string;
+  renderedHtml?: string;
+  conditional: boolean;
+  acceptedAt?: string;
+  rejectedAt?: string;
+  employeeId?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OfferLetterTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  bodyHtml: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CandidateStageEvent {
+  id: string;
+  candidateId: string;
+  fromStage?: string;
+  toStage: string;
+  changedById?: string;
+  changedByName?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface InterviewFeedback {
@@ -273,9 +366,14 @@ export interface PerformanceReview {
 // Re-export all service functions from Prisma implementation
 export {
   getEmployees,
+  getEmployeeById,
   getTeam,
   assignAccessRole,
+  updateEmployee,
   bulkImportEmployees,
+  getEmployeeDocuments,
+  createEmployeeDocument,
+  deleteEmployeeDocument,
   getAttendanceSettings,
   updateAttendanceSettings,
   getDevices,
@@ -295,6 +393,9 @@ export {
   getLeavePlans,
   createLeavePlan,
   getLeaveTypes,
+  createLeaveType,
+  updateLeaveType,
+  deleteLeaveType,
   getLeaveDefinitions,
   addLeaveDefinition,
   deleteLeaveDefinition,
@@ -312,18 +413,36 @@ export {
   createOnboardingChecklist,
   updateOnboardingItem,
   getOfferLetters,
+  getOfferLetterById,
   createOfferLetter,
   updateOfferLetterStatus,
+  acceptOfferLetter,
+  rejectOfferLetter,
+  getOfferLetterTemplates,
+  getOfferLetterTemplate,
+  createOfferLetterTemplate,
+  updateOfferLetterTemplate,
+  deleteOfferLetterTemplate,
+  renderOfferLetterHtml,
   getInterviews,
   scheduleInterview,
+  rescheduleInterview,
   updateInterviewStatus,
   submitInterviewFeedback,
   getJobPostings,
   createJobPosting,
+  updateJobPosting,
   updateJobPostingStatus,
   getCandidates,
   addCandidate,
+  updateCandidate,
   updateCandidateStage,
+  updateCandidateStatus,
+  getCandidateStageEvents,
+  getOnboardingTemplates,
+  createOnboardingTemplate,
+  deleteOnboardingTemplate,
+  createOnboardingChecklistFromTemplate,
   getProcessingMetrics,
   addProcessingMetric,
   getKPIDefinitions,

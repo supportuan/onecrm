@@ -56,14 +56,42 @@ export const processLeaveRequestSchema = z.object({
   reviewerNote: z.string().optional(),
 });
 
-export const createLeaveDefinitionSchema = z.object({
-  leaveTypeId: z.string(),
-  annual_quota: z.number().int().optional(),
-  carry_forward: z.boolean().optional(),
-});
+// Accepts both snake_case (legacy) and camelCase (current frontend) field
+// names so the LeaveManagement form's annualQuota / yearEndPolicy / etc.
+// values stop being silently ignored.
+export const createLeaveDefinitionSchema = z
+  .object({
+    leaveTypeId: z.string(),
+    annual_quota: z.number().optional(),
+    annualQuota: z.number().optional(),
+    carry_forward: z.boolean().optional(),
+    yearEndPolicy: z.string().optional(),
+    isUnlimited: z.boolean().optional(),
+    accrualType: z.string().optional(),
+    accrualRate: z.number().optional(),
+    carryForwardMax: z.number().optional(),
+    minDays: z.number().optional(),
+    maxDays: z.number().optional(),
+    gender: z.string().optional(),
+  })
+  .transform((d) => ({
+    leaveTypeId: d.leaveTypeId,
+    annual_quota: d.annualQuota ?? d.annual_quota,
+    carry_forward: d.carry_forward ?? d.yearEndPolicy === 'carry_forward',
+  }));
 
 export const assignLeaveEmployeesSchema = z.object({
   employeeIds: z.array(z.string()),
+});
+
+export const createLeaveTypeSchema = z.object({
+  name: z.string().min(1).max(80),
+  code: z.string().min(1).max(20).regex(/^[A-Za-z0-9_-]+$/),
+});
+
+export const updateLeaveTypeSchema = z.object({
+  name: z.string().min(1).max(80).optional(),
+  code: z.string().min(1).max(20).regex(/^[A-Za-z0-9_-]+$/).optional(),
 });
 
 export const createHolidaySchema = z.object({
@@ -90,15 +118,19 @@ export const createOnboardingChecklistSchema = z.object({
   employeeId: z.string(),
   employeeName: z.string(),
   startDate: z.string(),
+  templateId: z.string().optional(),
 });
 
 export const updateOnboardingItemSchema = z.object({
   status: z.enum(['PENDING', 'COMPLETED']),
   completedBy: z.string().optional(),
+  attachmentUrl: z.string().optional().nullable(),
+  attachmentFileName: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 export const createOfferLetterSchema = z.object({
-  candidateId: z.string(),
+  candidateId: z.string().min(1),
   candidateName: z.string(),
   candidateEmail: z.string().email(),
   jobTitle: z.string(),
@@ -108,10 +140,34 @@ export const createOfferLetterSchema = z.object({
   expiryDate: z.string(),
   status: z.enum(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED']).default('DRAFT'),
   policyTemplate: z.string().default('standard'),
+  templateId: z.string().optional(),
+  conditional: z.boolean().optional(),
+});
+
+export const createOfferLetterTemplateSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  bodyHtml: z.string().min(1),
+  isDefault: z.boolean().optional(),
+});
+
+export const updateOfferLetterTemplateSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional().nullable(),
+  bodyHtml: z.string().min(1).optional(),
+  isDefault: z.boolean().optional(),
 });
 
 export const updateOfferLetterStatusSchema = z.object({
   status: z.enum(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED']),
+});
+
+export const acceptOfferLetterSchema = z.object({
+  onboardingTemplateId: z.string().optional(),
+});
+
+export const rejectOfferLetterSchema = z.object({
+  notes: z.string().optional(),
 });
 
 export const scheduleInterviewSchema = z.object({
@@ -129,6 +185,11 @@ export const scheduleInterviewSchema = z.object({
 
 export const updateInterviewStatusSchema = z.object({
   status: z.enum(['SCHEDULED', 'COMPLETED', 'CANCELLED', 'RESCHEDULED']),
+});
+
+export const rescheduleInterviewSchema = z.object({
+  scheduledAt: z.string(),
+  meetingLink: z.string().optional(),
 });
 
 export const submitInterviewFeedbackSchema = z.object({
@@ -158,6 +219,29 @@ export const updateJobPostingStatusSchema = z.object({
   status: z.enum(['DRAFT', 'OPEN', 'PAUSED', 'CLOSED']),
 });
 
+export const updateJobPostingSchema = z.object({
+  title: z.string().optional(),
+  department: z.string().optional(),
+  location: z.string().optional(),
+  type: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP']).optional(),
+  description: z.string().optional(),
+  requirements: z.string().optional(),
+  salaryRange: z.string().optional(),
+  hiringManager: z.string().optional(),
+  closingDate: z.string().optional().nullable(),
+});
+
+export const updateCandidateSchema = z.object({
+  name: z.string().optional(),
+  phone: z.string().optional(),
+  resumeUrl: z.string().optional().nullable(),
+});
+
+export const updateCandidateStatusSchema = z.object({
+  status: z.enum(['ACTIVE', 'REJECTED', 'HIRED', 'WITHDRAWN']),
+  notes: z.string().optional(),
+});
+
 export const addCandidateSchema = z.object({
   jobId: z.string(),
   name: z.string(),
@@ -171,6 +255,24 @@ export const addCandidateSchema = z.object({
 export const updateCandidateStageSchema = z.object({
   stage: z.string(),
   status: z.enum(['ACTIVE', 'REJECTED', 'HIRED', 'WITHDRAWN']).optional(),
+  notes: z.string().optional(),
+});
+
+export const createOnboardingTemplateSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  role: z.string().optional(),
+  isDefault: z.boolean().optional(),
+  items: z.array(
+    z.object({
+      category: z.enum(['DOCUMENTS', 'ACCESS', 'TRAINING']),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      dueOffsetDays: z.number().int().optional(),
+      assigneeRole: z.string().optional(),
+      sortOrder: z.number().int().optional(),
+    }),
+  ),
 });
 
 export const addProcessingMetricSchema = z.object({
@@ -249,4 +351,33 @@ export const updatePerformanceReviewSchema = z.object({
   cycle: z.string().optional(),
   department: z.string().optional(),
   date: z.string().optional(),
+});
+
+export const updateEmployeeSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional().nullable(),
+  department: z.string().optional().nullable(),
+  designation: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
+  biometricId: z.string().optional().nullable(),
+  joiningDate: z.string().optional().nullable(),
+  managerId: z.string().optional().nullable(),
+  access_role: z.enum(['EMPLOYEE', 'SUPER_ADMIN', 'HR_MANAGER', 'PAYROLL_ADMIN']).optional(),
+  employmentStatus: z.enum(['ACTIVE', 'ON_LEAVE', 'RESIGNED', 'TERMINATED']).optional(),
+  resignedAt: z.string().optional().nullable(),
+  terminatedAt: z.string().optional().nullable(),
+  exitReason: z.string().optional().nullable(),
+});
+
+export const createEmployeeDocumentSchema = z.object({
+  type: z.enum(['OFFER_LETTER', 'ID_PROOF', 'CONTRACT', 'OTHER']),
+  fileName: z.string().min(1),
+  fileUrl: z.string().url(),
+  mimeType: z.string().optional().nullable(),
+  fileSize: z.number().int().optional().nullable(),
+  expiresAt: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });

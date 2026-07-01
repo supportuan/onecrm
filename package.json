@@ -2,6 +2,9 @@
   "name": "one-crm",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=26.4.0"
+  },
   "scripts": {
     "frontend": "npm run dev --prefix frontend-next",
     "backend": "npm run dev --prefix Backend",

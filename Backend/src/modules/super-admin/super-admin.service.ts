@@ -61,6 +61,18 @@ export const createTenant = async (input: CreateTenantInput) => {
   // Module-specific seed data so the tenant lands on a usable, non-empty UI.
   if (input.modules.includes('HR' as ModuleKey)) {
     await seedHrDefaults(tenant.id);
+    // Provision the primary admin's HrEmployee row so they can clock in.
+    await prisma.hrEmployee.create({
+      data: {
+        tenantId: tenant.id,
+        userId: adminUser.id,
+        name: adminUser.fullName,
+        email: adminUser.email,
+        employeeCode: `EMP-T${tenant.id}-U${adminUser.id}`,
+        phone: adminUser.phone,
+        accessRole: 'HR_MANAGER',
+      },
+    });
   }
 
   return { tenant, adminUserId: adminUser.id };
@@ -68,7 +80,7 @@ export const createTenant = async (input: CreateTenantInput) => {
 
 // Minimum data a fresh HR tenant needs before screens stop being empty.
 // Holidays are intentionally skipped — every org has its own calendar.
-const seedHrDefaults = async (tenantId: number) => {
+export const seedHrDefaults = async (tenantId: number) => {
   // 1. Attendance setting row
   await prisma.hrAttendanceSetting.upsert({
     where: { tenantId },

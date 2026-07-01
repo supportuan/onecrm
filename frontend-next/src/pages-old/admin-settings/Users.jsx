@@ -16,8 +16,8 @@ import {
   updateUser,
   getCounsellors,
 } from "../../services/userApi";
+import { useAuth } from "@/lib/auth/AuthContext";
 
-const creatableRoles = ["ADMIN", "COUNSELLOR", "HR", "STUDENT", "AGENT"];
 const DEFAULT_SELECTED_ACTIONS = ["VIEW", "EDIT"];
 
 const MODULE_ACCESS_OPTIONS = [
@@ -114,7 +114,7 @@ const getDefaultModuleAccessByRole = (role) => {
     giveModuleAccess("Student CRM");
   }
 
-  if (role === "ADMIN") {
+  if (role === "ADMIN" || role === "GLOBAL_ADMIN") {
     giveModuleAccess("Marketing");
     giveModuleAccess("Student CRM");
     giveModuleAccess("Agency CRM");
@@ -169,6 +169,9 @@ const getCleanModuleAccess = (access) => {
 };
 
 export default function UserManagementPage() {
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -193,9 +196,9 @@ export default function UserManagementPage() {
     lastName: "",
     email: "",
     phone: "",
-    role: "ADMIN",
+    roleName: "Staff Member",
     isActive: true,
-    moduleAccess: getDefaultModuleAccessByRole("ADMIN"),
+    moduleAccess: createEmptyModuleAccess(),
   });
 
   const selectedModuleData = MODULE_ACCESS_OPTIONS.find(
@@ -293,9 +296,9 @@ export default function UserManagementPage() {
       lastName: "",
       email: "",
       phone: "",
-      role: "ADMIN",
+      roleName: "Staff Member",
       isActive: true,
-      moduleAccess: getDefaultModuleAccessByRole("ADMIN"),
+      moduleAccess: createEmptyModuleAccess(),
     });
   };
 
@@ -323,7 +326,7 @@ export default function UserManagementPage() {
       lastName: user.fullName?.split(" ").slice(1).join(" ") || "",
       email: user.email || "",
       phone: user.phone || "",
-      role: user.role || "ADMIN",
+      roleName: user.roleLabel || user.role || "Staff Member",
       isActive: user.isActive ?? true,
       moduleAccess: normalizeModuleAccess(user.moduleAccess),
     });
@@ -331,15 +334,15 @@ export default function UserManagementPage() {
     setShowCreateModal(true);
   };
 
-  const handleRoleChange = (role) => {
+  const handleRoleNameChange = (roleName) => {
     setForm((prev) => ({
       ...prev,
-      role,
-      moduleAccess: getDefaultModuleAccessByRole(role),
+      roleName,
     }));
-
     setSelectedModule("Marketing");
   };
+
+  const displayRole = (user) => user.roleLabel || user.role;
 
   const toggleOptionSelection = (moduleName, optionName) => {
     setForm((prev) => {
@@ -385,7 +388,7 @@ export default function UserManagementPage() {
   };
 
   const handleSaveUser = async () => {
-    if (!form.firstName || !form.email || !form.role) {
+    if (!form.firstName || !form.email || (!isSuperAdmin && !form.roleName?.trim())) {
       alert("Please fill required fields");
       return;
     }
@@ -397,12 +400,23 @@ export default function UserManagementPage() {
         fullName: `${form.firstName} ${form.lastName}`.trim(),
         email: form.email,
         phone: form.phone || undefined,
-        role: form.role,
         isActive: form.isActive,
         moduleAccess: getCleanModuleAccess(form.moduleAccess),
       };
 
+      if (isSuperAdmin) {
+        userPayload.role = "GLOBAL_ADMIN";
+        userPayload.moduleAccess = getCleanModuleAccess(
+          getDefaultModuleAccessByRole("GLOBAL_ADMIN")
+        );
+      } else {
+        userPayload.roleName = form.roleName.trim();
+      }
+
       if (modalMode === "edit") {
+        if (!isSuperAdmin) {
+          userPayload.roleName = form.roleName.trim();
+        }
         res = await updateUser(editingUser.id, userPayload);
       } else {
         res = await createUser(userPayload);
@@ -717,7 +731,7 @@ export default function UserManagementPage() {
                         <>
                           <td className="px-5 py-4">
                             <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
-                              {user.role}
+                              {displayRole(user)}
                             </span>
                           </td>
 
@@ -756,7 +770,7 @@ export default function UserManagementPage() {
                         <>
                           <td className="px-5 py-4">
                             <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                              {user.role}
+                              {displayRole(user)}
                             </span>
                           </td>
 
@@ -955,21 +969,21 @@ export default function UserManagementPage() {
                 </h3>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="relative">
-                    <select
-                      value={form.role}
-                      onChange={(e) => handleRoleChange(e.target.value)}
-                      className="w-full appearance-none rounded-2xl border border-slate-200 px-4 py-3 pr-10 text-sm outline-none focus:border-indigo-500"
-                    >
-                      {creatableRoles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  </div>
+                  {isSuperAdmin ? (
+                    <div className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
+                      <span className="font-semibold">Role:</span> Global Admin
+                      <p className="mt-1 text-xs text-slate-500">
+                        Super admin can only create Global Admin accounts.
+                      </p>
+                    </div>
+                  ) : (
+                    <input
+                      value={form.roleName}
+                      onChange={(e) => handleRoleNameChange(e.target.value)}
+                      placeholder="Role name (e.g. Payroll Manager) *"
+                      className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+                    />
+                  )}
 
                   <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
                     <input
