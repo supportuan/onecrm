@@ -20,6 +20,7 @@ import {
   TrendingUp,
   MapPin,
   Wifi,
+  CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { hasPermission } from '@/lib/auth/rbac';
@@ -65,6 +66,7 @@ export default function HrDashboard() {
     employeeCount: null,
     scheduledInterviews: null,
     todayClockIns: null,
+    upcomingHolidays: [],
   });
 
   const showToast = (kind, msg) => {
@@ -109,6 +111,7 @@ export default function HrDashboard() {
           pendingRegularizations: res.data.pendingRegularizations ?? 0,
           employeeCount: res.data.employeeCount ?? 0,
           scheduledInterviews: res.data.scheduledInterviews ?? 0,
+          upcomingHolidays: Array.isArray(res.data.upcomingHolidays) ? res.data.upcomingHolidays : [],
         }));
       } catch (_) {
         // ignore
@@ -309,6 +312,51 @@ export default function HrDashboard() {
                   Review attendance
                 </Link>
               )}
+            </div>
+          </div>
+        )}
+
+        {showKpiRow && kpi.upcomingHolidays.length > 0 && (
+          <div className="bg-white border border-neutral-200/80 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+            <div className="px-6 pt-6 pb-4 flex items-end justify-between gap-4 border-b border-neutral-100">
+              <div>
+                <h3 className="text-[15px] font-semibold tracking-tight text-neutral-900">Upcoming holidays</h3>
+                <p className="text-[12px] text-neutral-500 mt-1">Public and restricted holidays in the next 90 days.</p>
+              </div>
+              {can('VIEW_ATTENDANCE') && (
+                <Link
+                  href="/hr/leave-management?tab=holidays"
+                  className="text-[12px] font-medium text-neutral-600 hover:text-neutral-900"
+                >
+                  Manage calendar
+                </Link>
+              )}
+            </div>
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {kpi.upcomingHolidays.map((holiday) => (
+                <div
+                  key={holiday.id}
+                  className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-neutral-100 bg-neutral-50/50"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-white border border-neutral-200 flex items-center justify-center shrink-0">
+                    <CalendarDays size={15} className="text-neutral-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-neutral-900 truncate">{holiday.name}</p>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">
+                      {new Date(`${holiday.date}T12:00:00`).toLocaleDateString([], {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                      {holiday.is_restricted && (
+                        <span className="ml-1.5 text-amber-600 font-medium">Restricted</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

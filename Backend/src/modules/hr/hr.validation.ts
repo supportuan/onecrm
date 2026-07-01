@@ -74,11 +74,23 @@ export const createLeaveDefinitionSchema = z
     maxDays: z.number().optional(),
     gender: z.string().optional(),
   })
-  .transform((d) => ({
-    leaveTypeId: d.leaveTypeId,
-    annual_quota: d.annualQuota ?? d.annual_quota,
-    carry_forward: d.carry_forward ?? d.yearEndPolicy === 'carry_forward',
-  }));
+  .transform((d) => {
+    const accrualType = d.accrualType ?? 'yearly';
+    const accrualRate = d.accrualRate ?? 0;
+    let annual_quota = d.annualQuota ?? d.annual_quota;
+    if (annual_quota == null || Number.isNaN(annual_quota)) {
+      if (accrualType === 'monthly' && accrualRate > 0) annual_quota = Math.round(accrualRate * 12);
+      else if (accrualType === 'quarterly' && accrualRate > 0) annual_quota = Math.round(accrualRate * 4);
+      else annual_quota = 12;
+    }
+    return {
+      leaveTypeId: d.leaveTypeId,
+      annual_quota,
+      carry_forward: d.carry_forward ?? d.yearEndPolicy === 'carry_forward',
+      accrual_type: accrualType,
+      accrual_rate: accrualRate,
+    };
+  });
 
 export const assignLeaveEmployeesSchema = z.object({
   employeeIds: z.array(z.string()),

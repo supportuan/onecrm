@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import {
   buildS3Key,
+  deleteObject,
   getObjectBuffer,
   getPresignedGetUrl,
   isS3Configured,
@@ -78,6 +79,20 @@ export async function readStoredFile(refOrUrl: string): Promise<Buffer> {
   }
 
   throw new Error(`File not found for ref: ${refOrUrl}`);
+}
+
+/** Delete a stored file from S3 or local disk. */
+export async function deleteStoredFile(refOrUrl: string): Promise<void> {
+  const s3Key = parseS3Ref(refOrUrl);
+  if (s3Key && isS3Configured()) {
+    await deleteObject(s3Key);
+    return;
+  }
+  const relative = uploadsRelativeFromLocalUrl(refOrUrl);
+  if (relative) {
+    const abs = localPathFromUploadsRelative(relative);
+    if (fs.existsSync(abs)) fs.unlinkSync(abs);
+  }
 }
 
 /** Resolve a stored ref to a browser-accessible URL (presigned for S3). */

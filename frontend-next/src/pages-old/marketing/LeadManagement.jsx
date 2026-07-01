@@ -214,7 +214,6 @@ const LeadManagement = () => {
       try {
         const res = await getCounsellors();
         if (res.success) setCounsellorsList(res.data || []);
-        console.log("counsellorsList____", counsellorsList);
       } catch (err) {
         console.error('Failed to load counsellors', err);
       }

@@ -32,6 +32,7 @@ import {
   deleteLeaveDefinition,
   getLeavePlanEmployees,
   assignLeavePlanEmployees,
+  removeLeavePlanEmployee,
   getHolidays,
   createHoliday,
   deleteHoliday,
@@ -41,6 +42,53 @@ import {
   deleteLeaveType,
 } from '@/services/hrApi';
 
+const DEFAULT_TYPE_FORM = {
+  leaveTypeId: '',
+  annualQuota: 24,
+  isUnlimited: false,
+  accrualType: 'monthly',
+  yearEndPolicy: 'reset',
+  carryForwardMax: 0,
+  minDays: 0.5,
+  maxDays: 30,
+  gender: 'all',
+  accrualRate: 2,
+};
+
+function formatPolicyQuota(def) {
+  if (def.is_unlimited) return 'unlimited';
+  if (def.accrual_type === 'monthly' && def.accrual_rate > 0) {
+    return `${def.accrual_rate}/mo · max ${def.annual_quota}/yr`;
+  }
+  if (def.accrual_type === 'quarterly' && def.accrual_rate > 0) {
+    return `${def.accrual_rate}/qtr · max ${def.annual_quota}/yr`;
+  }
+  return `${def.annual_quota} days/yr`;
+}
+
+function formatAccrualCycle(def) {
+  if (def.accrual_type === 'none') return 'Fixed at year start';
+  if (def.accrual_type === 'monthly' && def.accrual_rate > 0) return `${def.accrual_rate} days each month`;
+  if (def.accrual_type === 'quarterly' && def.accrual_rate > 0) return `${def.accrual_rate} days each quarter`;
+  if (def.accrual_type === 'yearly') return 'Once per year';
+  return def.accrual_type || '—';
+}
+
+function formatYearEndPolicy(def) {
+  if (def.year_end_policy === 'carry_forward') {
+    return `Carry forward (max ${def.carry_forward_max || def.annual_quota})`;
+  }
+  if (def.year_end_policy === 'encash') return 'Encashment';
+  return 'No carry forward';
+}
+
+function resolveAnnualQuota(typeForm) {
+  if (typeForm.isUnlimited) return 999;
+  if (typeForm.accrualType === 'monthly') return Math.round((typeForm.accrualRate || 0) * 12);
+  if (typeForm.accrualType === 'quarterly') return Math.round((typeForm.accrualRate || 0) * 4);
+  return typeForm.annualQuota;
+}
+
 
 export default function LeaveManagement() {
   const searchParams = useSearchParams();
@@ -48,9 +96,15 @@ export default function LeaveManagement() {
   const canManageLeave = can('MANAGE_LEAVE');
   const initialTab = searchParams.get('tab');
   const [workspaceTab, setWorkspaceTab] = useState(
-    initialTab === 'approvals' && canManageLeave ? 'approvals' : initialTab === 'policies' && canManageLeave ? 'policies' : 'my'
+    initialTab === 'approvals' && canManageLeave
+      ? 'approvals'
+      : (initialTab === 'policies' || initialTab === 'holidays') && canManageLeave
+        ? 'policies'
+        : 'my',
   );
-  const [activeMainTab, setActiveMainTab] = useState('plans'); // 'plans' | 'holidays' | 'categories'
+  const [activeMainTab, setActiveMainTab] = useState(
+    initialTab === 'holidays' && canManageLeave ? 'holidays' : 'plans',
+  ); // 'plans' | 'holidays' | 'categories'
 
   // Leave categories (HrLeaveType) CRUD state
   const [categoryForm, setCategoryForm] = useState({ name: '', code: '' });
@@ -78,18 +132,7 @@ export default function LeaveManagement() {
   const [selectedEmployees, setSelectedEmployees] = useState([]);
 
   const [newPlan, setNewPlan] = useState({ name: '', cycle: 'Apr - Mar' });
-  const [typeForm, setTypeForm] = useState({
-    leaveTypeId: '',
-    annualQuota: 12,
-    isUnlimited: false,
-    accrualType: 'monthly',
-    yearEndPolicy: 'carry_forward',
-    carryForwardMax: 5,
-    minDays: 0.5,
-    maxDays: 30,
-    gender: 'all',
-    accrualRate: 1.0,
-  });
+  const [typeForm, setTypeForm] = useState({ ...DEFAULT_TYPE_FORM });
 
   const [holidays, setHolidays] = useState([]);
   const [holidaysLoading, setHolidaysLoading] = useState(true);
@@ -100,8 +143,15 @@ export default function LeaveManagement() {
   const [feedbackMsg, setFeedbackMsg] = useState(null);
 
   useEffect(() => {
-    fetchInitialData();
-  }, []);
+    // Plans/types/employees power the manager-only Policies tab. Non-managers
+    // (e.g. counsellors) can VIEW_LEAVE but not employees, so skip the admin
+    // fetch for them — otherwise getEmployees() 403s and breaks "My leave".
+    if (canManageLeave) {
+      fetchInitialData();
+    } else {
+      setLoading(false);
+    }
+  }, [canManageLeave]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -166,22 +216,19 @@ export default function LeaveManagement() {
     e.preventDefault();
     if (!selectedPlan) return;
     try {
-      const res = await addLeaveDefinition(selectedPlan.id, typeForm);
+      const annualQuota = resolveAnnualQuota(typeForm);
+      const res = await addLeaveDefinition(selectedPlan.id, {
+        leaveTypeId: typeForm.leaveTypeId,
+        annualQuota,
+        accrualType: typeForm.accrualType,
+        accrualRate: typeForm.accrualRate,
+        yearEndPolicy: typeForm.yearEndPolicy,
+        isUnlimited: typeForm.isUnlimited,
+      });
       if (res.success) {
         await fetchPlanDetails(selectedPlan.id);
         setShowTypeModal(false);
-        setTypeForm({
-          leaveTypeId: '',
-          annualQuota: 12,
-          isUnlimited: false,
-          accrualType: 'monthly',
-          yearEndPolicy: 'carry_forward',
-          carryForwardMax: 5,
-          minDays: 0.5,
-          maxDays: 30,
-          gender: 'all',
-          accrualRate: 1.0,
-        });
+        setTypeForm({ ...DEFAULT_TYPE_FORM });
       }
     } catch (err) {
       console.error(err);
@@ -207,6 +254,28 @@ export default function LeaveManagement() {
         setShowAssignModal(false);
         setSelectedEmployees([]);
       }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleOpenAssignModal = async () => {
+    setSelectedEmployees([]);
+    setShowAssignModal(true);
+    try {
+      const res = await getEmployees();
+      if (res.success) setAllEmployees(res.data || []);
+    } catch (err) {
+      console.error('Failed to refresh employees:', err);
+    }
+  };
+
+  const handleRemoveEmployee = async (employeeId) => {
+    if (!selectedPlan) return;
+    if (!confirm('Remove this employee from the leave plan?')) return;
+    try {
+      const res = await removeLeavePlanEmployee(selectedPlan.id, employeeId);
+      if (res.success) await fetchPlanDetails(selectedPlan.id);
     } catch (err) {
       console.error(err);
     }
@@ -369,8 +438,8 @@ export default function LeaveManagement() {
       <LeaveWorkspaceHeader workspaceTab={workspaceTab} setWorkspaceTab={setWorkspaceTab} canManageLeave={canManageLeave} />
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-neutral-900">Policies & holidays</h2>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h2 className="text-[17px] font-semibold tracking-tight text-neutral-900">Policies & holidays</h2>
+          <p className="text-neutral-500 text-[13px] mt-1">
             Configure leave policies, entitlement plans, employee assignments, and the holiday calendar.
           </p>
         </div>
@@ -378,7 +447,7 @@ export default function LeaveManagement() {
         <div className="flex bg-neutral-50 border border-neutral-200 rounded-lg p-1 shrink-0">
           <button
             onClick={() => setActiveMainTab('plans')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
               activeMainTab === 'plans' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
             }`}
           >
@@ -387,7 +456,7 @@ export default function LeaveManagement() {
           </button>
           <button
             onClick={() => setActiveMainTab('holidays')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
               activeMainTab === 'holidays' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
             }`}
           >
@@ -396,7 +465,7 @@ export default function LeaveManagement() {
           </button>
           <button
             onClick={() => setActiveMainTab('categories')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
               activeMainTab === 'categories' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
             }`}
           >
@@ -413,7 +482,7 @@ export default function LeaveManagement() {
             <div className="w-full lg:w-80 bg-white border border-neutral-200 rounded-lg flex flex-col overflow-hidden shadow-sm shrink-0">
               <div className="p-6 border-b border-neutral-200 bg-neutral-50">
                 <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-[10px] font-semibold text-neutral-500">Entitlement plans</h4>
+                  <h4 className="text-[11px] font-semibold text-neutral-500">Entitlement plans</h4>
                   <button
                     onClick={() => {
                       setIsEditingPlan(false);
@@ -430,7 +499,7 @@ export default function LeaveManagement() {
                   <input
                     type="text"
                     placeholder="search plans..."
-                    className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-medium text-neutral-800 placeholder-slate-400 outline-none focus:border-neutral-900 transition-all"
+                    className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[13px] font-medium text-neutral-800 placeholder-slate-400 outline-none focus:border-neutral-900 transition-all"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -441,7 +510,7 @@ export default function LeaveManagement() {
                 {loading ? (
                   <div className="p-12 text-center text-neutral-500 flex flex-col items-center justify-center gap-3">
                     <Loader2 className="animate-spin text-neutral-700" size={24} />
-                    <span className="text-xs">Loading plans...</span>
+                    <span className="text-[13px]">Loading plans...</span>
                   </div>
                 ) : filteredPlans.length > 0 ? (
                   filteredPlans.map((plan) => (
@@ -454,13 +523,13 @@ export default function LeaveManagement() {
                     >
                       <div>
                         <p
-                          className={`text-xs font-semibold ${
+                          className={`text-[13px] font-semibold ${
                             selectedPlan?.id === plan.id ? 'text-neutral-900' : 'text-neutral-800'
                           }`}
                         >
                           {plan.name}
                         </p>
-                        <p className="text-[10px] font-semibold text-neutral-500 mt-1 flex items-center gap-1.5">
+                        <p className="text-[11px] font-semibold text-neutral-500 mt-1 flex items-center gap-1.5">
                           <CalendarIcon size={10} className="text-neutral-500" />
                           cycle: {plan.cycle || 'Apr - Mar'}
                         </p>
@@ -476,7 +545,7 @@ export default function LeaveManagement() {
                     </button>
                   ))
                 ) : (
-                  <div className="p-12 text-center text-neutral-500 text-xs">No entitlement plans found.</div>
+                  <div className="p-12 text-center text-neutral-500 text-[13px]">No entitlement plans found.</div>
                 )}
               </div>
             </div>
@@ -487,10 +556,10 @@ export default function LeaveManagement() {
                 <>
                   <header className="px-8 py-6 border-b border-neutral-200 flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-neutral-50">
                     <div>
-                      <h3 className="text-lg font-semibold text-neutral-800">{selectedPlan.name}</h3>
+                      <h3 className="text-[15px] font-semibold text-neutral-800">{selectedPlan.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] font-semibold text-neutral-500">
+                        <span className="text-[11px] font-semibold text-neutral-500">
                           active policy plan · cycle: {selectedPlan.cycle || 'Apr - Mar'}
                         </span>
                       </div>
@@ -507,7 +576,7 @@ export default function LeaveManagement() {
                         <button
                           key={tab.id}
                           onClick={() => setActiveInnerTab(tab.id)}
-                          className={`py-4 text-[10px] font-semibold border-b-2 transition-all flex items-center gap-2 ${
+                          className={`py-4 text-[11px] font-semibold border-b-2 transition-all flex items-center gap-2 ${
                             activeInnerTab === tab.id
                               ? 'border-neutral-900 text-neutral-700'
                               : 'border-transparent text-neutral-500 hover:text-neutral-800'
@@ -525,29 +594,18 @@ export default function LeaveManagement() {
                       <div className="space-y-6">
                         <div className="flex justify-between items-center">
                           <div>
-                            <h4 className="text-xs font-semibold text-neutral-600">Policy rules</h4>
-                            <p className="text-[10px] text-neutral-500 mt-1">
+                            <h4 className="text-[13px] font-semibold text-neutral-600">Policy rules</h4>
+                            <p className="text-[11px] text-neutral-500 mt-1">
                               define limits, accruals, Gender restrictions, and roll-over behavior.
                             </p>
                           </div>
                           <button
                             onClick={() => {
                               setIsEditingType(false);
-                              setTypeForm({
-                                leaveTypeId: '',
-                                annualQuota: 12,
-                                isUnlimited: false,
-                                accrualType: 'monthly',
-                                yearEndPolicy: 'carry_forward',
-                                carryForwardMax: 5,
-                                minDays: 0.5,
-                                maxDays: 30,
-                                gender: 'all',
-                                accrualRate: 1.0,
-                              });
+                              setTypeForm({ ...DEFAULT_TYPE_FORM });
                               setShowTypeModal(true);
                             }}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[10px] font-semibold transition-all"
+                            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[11px] font-semibold transition-all"
                           >
                             <Plus size={14} /> add definition
                           </button>
@@ -556,7 +614,7 @@ export default function LeaveManagement() {
                         <div className="ui-panel overflow-hidden">
                           <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
-                              <thead className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-semibold text-neutral-500">
+                              <thead className="bg-neutral-50 border-b border-neutral-200 text-[11px] font-semibold text-neutral-500">
                                 <tr>
                                   <th className="px-6 py-4">Leave type</th>
                                   <th className="px-6 py-4">Quota</th>
@@ -571,41 +629,36 @@ export default function LeaveManagement() {
                                     <tr key={def.id} className="hover:bg-neutral-50/50 transition-all">
                                       <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                          <div className="w-8 h-8 rounded-lg bg-neutral-100 text-neutral-900 flex items-center justify-center font-semibold text-[10px] border border-neutral-200">
+                                          <div className="w-8 h-8 rounded-lg bg-neutral-100 text-neutral-900 flex items-center justify-center font-semibold text-[11px] border border-neutral-200">
                                             {def.type_code || def.leave_type_code || 'LV'}
                                           </div>
                                           <div>
-                                            <span className="text-xs font-semibold text-neutral-800">
+                                            <span className="text-[13px] font-semibold text-neutral-800">
                                               {def.type_name || def.leave_type_name}
                                             </span>
-                                            <span className="block text-[9px] font-semibold text-neutral-500 mt-0.5">
+                                            <span className="block text-[11px] font-semibold text-neutral-500 mt-0.5">
                                               gender: {def.gender_restriction}
                                             </span>
                                           </div>
                                         </div>
                                       </td>
-                                      <td className="px-6 py-4 text-xs font-semibold text-neutral-700">
+                                      <td className="px-6 py-4 text-[13px] font-semibold text-neutral-700">
                                         {def.is_unlimited ? (
-                                          <span className="px-2 py-0.5 bg-sky-50 text-sky-700 rounded-md text-[10px] font-semibold border border-sky-200">
+                                          <span className="px-2 py-0.5 bg-sky-50 text-sky-700 rounded-md text-[11px] font-semibold border border-sky-200">
                                             unlimited
                                           </span>
                                         ) : (
-                                          `${def.annual_quota} days`
+                                          formatPolicyQuota(def)
                                         )}
                                       </td>
-                                      <td className="px-6 py-4 text-[10px] font-semibold text-neutral-500">
-                                        {def.accrual_type} {def.accrual_rate && def.accrual_type !== 'none' ? `(${def.accrual_rate}/period)` : ''}
+                                      <td className="px-6 py-4 text-[11px] font-semibold text-neutral-500">
+                                        {formatAccrualCycle(def)}
                                       </td>
                                       <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                          <span className="text-[10px] font-semibold text-neutral-500">
-                                            {def.year_end_policy?.replace('_', ' ')}
+                                          <span className="text-[11px] font-semibold text-neutral-500">
+                                            {formatYearEndPolicy(def)}
                                           </span>
-                                          {def.year_end_policy === 'carry_forward' && (
-                                            <span className="text-[9px] text-neutral-500 font-semibold">
-                                              max: {def.carry_forward_max} days
-                                            </span>
-                                          )}
                                         </div>
                                       </td>
                                       <td className="px-6 py-4 text-right">
@@ -643,7 +696,7 @@ export default function LeaveManagement() {
                                   ))
                                 ) : (
                                   <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-neutral-500 text-xs">
+                                    <td colSpan={5} className="px-6 py-12 text-center text-neutral-500 text-[13px]">
                                       no Leave types configured. click "add definition" to set one up.
                                     </td>
                                   </tr>
@@ -659,17 +712,14 @@ export default function LeaveManagement() {
                       <div className="space-y-6">
                         <div className="flex justify-between items-center">
                           <div>
-                            <h4 className="text-xs font-semibold text-neutral-600">Assigned employees</h4>
-                            <p className="text-[10px] text-neutral-500 mt-1">
+                            <h4 className="text-[13px] font-semibold text-neutral-600">Assigned employees</h4>
+                            <p className="text-[11px] text-neutral-500 mt-1">
                               personnel covered by the cycle and Policy rules of this plan.
                             </p>
                           </div>
                           <button
-                            onClick={() => {
-                              setSelectedEmployees([]);
-                              setShowAssignModal(true);
-                            }}
-                            className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[10px] font-semibold transition-all"
+                            onClick={handleOpenAssignModal}
+                            className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[11px] font-semibold transition-all"
                           >
                             assign employees
                           </button>
@@ -677,12 +727,13 @@ export default function LeaveManagement() {
 
                         <div className="ui-panel overflow-hidden">
                           <table className="w-full text-left border-collapse">
-                            <thead className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-semibold text-neutral-500">
+                            <thead className="bg-neutral-50 border-b border-neutral-200 text-[11px] font-semibold text-neutral-500">
                               <tr>
                                 <th className="px-6 py-4">Employee</th>
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Department / designation</th>
                                 <th className="px-6 py-4 text-right">Status</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100">
@@ -690,27 +741,36 @@ export default function LeaveManagement() {
                                 assignedEmployees.map((emp) => (
                                   <tr key={emp.id} className="hover:bg-neutral-50/50 transition-all">
                                     <td className="px-6 py-4">
-                                      <span className="text-xs font-semibold text-neutral-800">
+                                      <span className="text-[13px] font-semibold text-neutral-800">
                                         {emp.first_name} {emp.last_name}
                                       </span>
                                     </td>
                                     <td className="px-6 py-4 text-[11px] font-mono text-neutral-500 font-semibold">
                                       {emp.employee_id || `EMP-${(emp.id || '').toString().substring(0, 4)}`}
                                     </td>
-                                    <td className="px-6 py-4 text-xs font-semibold text-neutral-500">
+                                    <td className="px-6 py-4 text-[13px] font-semibold text-neutral-500">
                                       {emp.designation || 'specialist'} ·{' '}
-                                      <span className="text-[10px] font-semibold text-neutral-500">{emp.department_name || 'operations'}</span>
+                                      <span className="text-[11px] font-semibold text-neutral-500">{emp.department_name || 'operations'}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[9px] font-semibold border border-emerald-200">
+                                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-200">
                                         enrolled
                                       </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                      <button
+                                        onClick={() => handleRemoveEmployee(emp.id)}
+                                        title="Remove from plan"
+                                        className="p-1.5 bg-white hover:bg-rose-50 border border-neutral-200 rounded-lg text-neutral-500 hover:text-rose-500 transition-all"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
                                     </td>
                                   </tr>
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={4} className="px-6 py-12 text-center text-neutral-500 text-xs">
+                                  <td colSpan={5} className="px-6 py-12 text-center text-neutral-500 text-[13px]">
                                     no employees mapped to this entitlement plan.
                                   </td>
                                 </tr>
@@ -725,8 +785,8 @@ export default function LeaveManagement() {
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 space-y-4 py-20 opacity-50">
                   <Palmtree size={48} className="text-neutral-700 opacity-70" />
-                  <p className="text-xs font-semibold text-neutral-800">No entitlement plan selected</p>
-                  <p className="text-[10px] text-neutral-500 max-w-xs text-center font-medium">
+                  <p className="text-[13px] font-semibold text-neutral-800">No entitlement plan selected</p>
+                  <p className="text-[11px] text-neutral-500 max-w-xs text-center font-medium">
                     Create a new plan in the sidebar or select an existing one to configure policies.
                   </p>
                 </div>
@@ -743,7 +803,7 @@ export default function LeaveManagement() {
                 <input
                   type="text"
                   placeholder="filter holidays by name..."
-                  className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-medium text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
                   value={holidaySearchQuery}
                   onChange={(e) => setHolidaySearchQuery(e.target.value)}
                 />
@@ -753,12 +813,12 @@ export default function LeaveManagement() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 ui-panel overflow-hidden flex flex-col">
                 <div className="px-8 py-5 border-b border-neutral-200 bg-neutral-50">
-                  <h3 className="text-xs font-semibold text-neutral-600">Holiday calendar</h3>
+                  <h3 className="text-[13px] font-semibold text-neutral-600">Holiday calendar</h3>
                 </div>
                 <div className="flex-1 overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-semibold text-neutral-500">
+                      <tr className="bg-neutral-50 border-b border-neutral-200 text-[11px] font-semibold text-neutral-500">
                         <th className="px-8 py-4 text-left">Holiday</th>
                         <th className="px-8 py-4 text-left">Date</th>
                         <th className="px-8 py-4 text-left">Category</th>
@@ -770,7 +830,7 @@ export default function LeaveManagement() {
                         <tr>
                           <td colSpan={4} className="px-8 py-12 text-center">
                             <Loader2 className="w-6 h-6 animate-spin text-neutral-700 mx-auto" />
-                            <p className="text-[10px] font-semibold text-neutral-500 mt-2">Loading calendar...</p>
+                            <p className="text-[11px] font-semibold text-neutral-500 mt-2">Loading calendar...</p>
                           </td>
                         </tr>
                       ) : filteredHolidays.length > 0 ? (
@@ -781,14 +841,14 @@ export default function LeaveManagement() {
                                 <div className="p-2 bg-neutral-100 text-neutral-700 border border-neutral-200 rounded-xl">
                                   <CalendarIcon size={15} />
                                 </div>
-                                <span className="text-xs font-semibold text-neutral-800">{holiday.name}</span>
+                                <span className="text-[13px] font-semibold text-neutral-800">{holiday.name}</span>
                               </div>
                             </td>
-                            <td className="px-8 py-4 text-xs font-semibold text-neutral-500">
+                            <td className="px-8 py-4 text-[13px] font-semibold text-neutral-500">
                               {new Date(holiday.date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </td>
                             <td className="px-8 py-4">
-                              <span className="px-2.5 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-[9px] font-semibold text-neutral-700">
+                              <span className="px-2.5 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-[11px] font-semibold text-neutral-700">
                                 {holiday.type || 'public'}
                               </span>
                             </td>
@@ -804,7 +864,7 @@ export default function LeaveManagement() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={4} className="px-8 py-12 text-center text-xs text-neutral-500">
+                          <td colSpan={4} className="px-8 py-12 text-center text-[13px] text-neutral-500">
                             no holidays registered.
                           </td>
                         </tr>
@@ -816,11 +876,11 @@ export default function LeaveManagement() {
 
               <div className="ui-card space-y-6 h-fit">
                 <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
-                  <h3 className="text-xs font-semibold text-neutral-800">Add holiday</h3>
+                  <h3 className="text-[13px] font-semibold text-neutral-800">Add holiday</h3>
                   <button
                     type="button"
                     onClick={handleAddHolidayFolder}
-                    className="text-[10px] font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
+                    className="text-[11px] font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
                   >
                     + custom category
                   </button>
@@ -828,11 +888,11 @@ export default function LeaveManagement() {
 
                 <form onSubmit={handleCreateHolidaySubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Name</label>
+                    <label className="text-[11px] font-semibold text-neutral-500 ml-1">Name</label>
                     <input
                       required
                       type="text"
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
                       placeholder="e.g. independence day"
                       value={newHoliday.name}
                       onChange={(e) => setNewHoliday({ ...newHoliday, name: e.target.value })}
@@ -840,20 +900,20 @@ export default function LeaveManagement() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Date</label>
+                    <label className="text-[11px] font-semibold text-neutral-500 ml-1">Date</label>
                     <input
                       required
                       type="date"
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
                       value={newHoliday.date}
                       onChange={(e) => setNewHoliday({ ...newHoliday, date: e.target.value })}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Category</label>
+                    <label className="text-[11px] font-semibold text-neutral-500 ml-1">Category</label>
                     <select
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
                       value={newHoliday.type}
                       onChange={(e) => setNewHoliday({ ...newHoliday, type: e.target.value })}
                     >
@@ -868,7 +928,7 @@ export default function LeaveManagement() {
                   <button
                     type="submit"
                     disabled={holidaysSubmitting}
-                    className="w-full py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-neutral-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-neutral-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {holidaysSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={14} />}
                     add to calendar
@@ -888,7 +948,7 @@ export default function LeaveManagement() {
                     ) : (
                       <ShieldAlert size={16} className="shrink-0" />
                     )}
-                    <p className="text-[10px] font-semibold">{feedbackMsg.text}</p>
+                    <p className="text-[11px] font-semibold">{feedbackMsg.text}</p>
                   </div>
                 )}
               </div>
@@ -1082,27 +1142,27 @@ export default function LeaveManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="ui-modal scale-100 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50">
-              <h2 className="text-xs font-semibold text-neutral-800">{isEditingPlan ? 'update plan' : 'create new plan'}</h2>
+              <h2 className="text-[13px] font-semibold text-neutral-800">{isEditingPlan ? 'update plan' : 'create new plan'}</h2>
               <button onClick={() => setShowPlanModal(false)} className="text-neutral-500 hover:text-neutral-700 transition-colors">
                 <X size={20} />
               </button>
             </div>
             <form onSubmit={handleCreatePlanSubmit} className="p-8 space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-neutral-500 ml-1">Plan name</label>
+                <label className="text-[11px] font-semibold text-neutral-500 ml-1">Plan name</label>
                 <input
                   required
                   type="text"
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
                   placeholder="e.g. interns policy plan"
                   value={newPlan.name}
                   onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-neutral-500 ml-1">Default cycle</label>
+                <label className="text-[11px] font-semibold text-neutral-500 ml-1">Default cycle</label>
                 <select
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
                   value={newPlan.cycle}
                   onChange={(e) => setNewPlan({ ...newPlan, cycle: e.target.value })}
                 >
@@ -1112,7 +1172,7 @@ export default function LeaveManagement() {
               </div>
               <button
                 type="submit"
-                className="w-full py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-neutral-800 transition-all"
+                className="w-full py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-neutral-800 transition-all"
               >
                 save plan
               </button>
@@ -1126,7 +1186,7 @@ export default function LeaveManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="ui-modal scale-100 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50">
-              <h2 className="text-xs font-semibold text-neutral-800">
+              <h2 className="text-[13px] font-semibold text-neutral-800">
                 {isEditingType ? 'edit definition' : 'add policy definition'}
               </h2>
               <button onClick={() => setShowTypeModal(false)} className="text-neutral-500 hover:text-neutral-700 transition-colors">
@@ -1138,11 +1198,11 @@ export default function LeaveManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Leave category</label>
+                    <label className="text-[11px] font-semibold text-neutral-500 ml-1">Leave category</label>
                     <select
                       required
                       disabled={isEditingType}
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
                       value={typeForm.leaveTypeId}
                       onChange={(e) => setTypeForm({ ...typeForm, leaveTypeId: e.target.value })}
                     >
@@ -1158,13 +1218,13 @@ export default function LeaveManagement() {
                     {!isEditingType &&
                       leaveTypes.length > 0 &&
                       leaveTypes.every((lt) => definitions.find((d) => d.leave_type_id === lt.id)) && (
-                        <p className="text-[10px] text-amber-600 mt-1">
+                        <p className="text-[11px] text-amber-600 mt-1">
                           Every leave type is already attached to this plan. Edit an existing
                           definition above, or create a new leave type first.
                         </p>
                       )}
                     {leaveTypes.length === 0 && (
-                      <p className="text-[10px] text-amber-600 mt-1">
+                      <p className="text-[11px] text-amber-600 mt-1">
                         No leave types configured for this tenant. Ask the system to seed defaults
                         or create them via the API.
                       </p>
@@ -1172,63 +1232,92 @@ export default function LeaveManagement() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Annual quota</label>
-                    <div className="flex gap-4">
-                      <input
-                        type="number"
-                        disabled={typeForm.isUnlimited}
-                        className="flex-1 px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all disabled:opacity-30"
-                        value={typeForm.annualQuota}
-                        onChange={(e) => setTypeForm({ ...typeForm, annualQuota: parseFloat(e.target.value) })}
-                      />
-                      <label className="flex items-center gap-2 cursor-pointer bg-neutral-50 px-5 rounded-lg border border-neutral-200 hover:border-slate-300 transition-all select-none">
+                    {['monthly', 'quarterly'].includes(typeForm.accrualType) ? (
+                      <>
+                        <label className="text-[11px] font-semibold text-neutral-500 ml-1">
+                          Days per {typeForm.accrualType === 'monthly' ? 'month' : 'quarter'}
+                        </label>
                         <input
-                          type="checkbox"
-                          className="rounded text-neutral-700 bg-white border-slate-300"
-                          checked={typeForm.isUnlimited}
-                          onChange={(e) => setTypeForm({ ...typeForm, isUnlimited: e.target.checked })}
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                          value={typeForm.accrualRate}
+                          onChange={(e) => {
+                            const rate = parseFloat(e.target.value) || 0;
+                            const multiplier = typeForm.accrualType === 'monthly' ? 12 : 4;
+                            setTypeForm({
+                              ...typeForm,
+                              accrualRate: rate,
+                              annualQuota: Math.round(rate * multiplier),
+                            });
+                          }}
                         />
-                        <span className="text-[9px] font-semibold text-neutral-600">Unlimited</span>
-                      </label>
-                    </div>
+                        <p className="text-[11px] text-neutral-500 ml-1">
+                          Annual cap: {resolveAnnualQuota(typeForm)} days · unused balance does not roll over
+                          when year-end is set to reset.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <label className="text-[11px] font-semibold text-neutral-500 ml-1">Annual quota</label>
+                        <div className="flex gap-4">
+                          <input
+                            type="number"
+                            disabled={typeForm.isUnlimited}
+                            className="flex-1 px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all disabled:opacity-30"
+                            value={typeForm.annualQuota}
+                            onChange={(e) => setTypeForm({ ...typeForm, annualQuota: parseFloat(e.target.value) })}
+                          />
+                          <label className="flex items-center gap-2 cursor-pointer bg-neutral-50 px-5 rounded-lg border border-neutral-200 hover:border-slate-300 transition-all select-none">
+                            <input
+                              type="checkbox"
+                              className="rounded text-neutral-700 bg-white border-slate-300"
+                              checked={typeForm.isUnlimited}
+                              onChange={(e) => setTypeForm({ ...typeForm, isUnlimited: e.target.checked })}
+                            />
+                            <span className="text-[11px] font-semibold text-neutral-600">Unlimited</span>
+                          </label>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Accrual mode & rate</label>
-                    <div className="flex gap-3">
-                      <select
-                        className="flex-1 px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
-                        value={typeForm.accrualType}
-                        onChange={(e) => setTypeForm({ ...typeForm, accrualType: e.target.value })}
-                      >
-                        <option value="none">Fixed / advance allotment</option>
-                        <option value="monthly">Monthly accrual</option>
-                        <option value="quarterly">Quarterly accrual</option>
-                        <option value="yearly">Annual accrual</option>
-                      </select>
-                      {['monthly', 'quarterly'].includes(typeForm.accrualType) && (
-                        <input
-                          type="number"
-                          step="0.1"
-                          className="w-24 px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
-                          placeholder="rate"
-                          value={typeForm.accrualRate}
-                          onChange={(e) => setTypeForm({ ...typeForm, accrualRate: parseFloat(e.target.value) })}
-                        />
-                      )}
-                    </div>
+                    <label className="text-[11px] font-semibold text-neutral-500 ml-1">Accrual mode</label>
+                    <select
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      value={typeForm.accrualType}
+                      onChange={(e) => {
+                        const accrualType = e.target.value;
+                        const next = { ...typeForm, accrualType };
+                        if (accrualType === 'monthly') {
+                          next.accrualRate = next.accrualRate || 2;
+                          next.annualQuota = Math.round(next.accrualRate * 12);
+                        } else if (accrualType === 'quarterly') {
+                          next.accrualRate = next.accrualRate || 3;
+                          next.annualQuota = Math.round(next.accrualRate * 4);
+                        }
+                        setTypeForm(next);
+                      }}
+                    >
+                      <option value="none">Fixed / advance allotment</option>
+                      <option value="monthly">Monthly accrual</option>
+                      <option value="quarterly">Quarterly accrual</option>
+                      <option value="yearly">Annual accrual</option>
+                    </select>
                   </div>
                 </div>
 
                 <div className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Year-end rule</label>
+                    <label className="text-[11px] font-semibold text-neutral-500 ml-1">Year-end rule</label>
                     <select
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
                       value={typeForm.yearEndPolicy}
                       onChange={(e) => setTypeForm({ ...typeForm, yearEndPolicy: e.target.value })}
                     >
-                      <option value="reset">Clear / reset balance</option>
+                      <option value="reset">No carry forward (reset balance)</option>
                       <option value="carry_forward">Carry forward roll-over</option>
                       <option value="encash">Encashment option</option>
                     </select>
@@ -1236,10 +1325,10 @@ export default function LeaveManagement() {
 
                   {typeForm.yearEndPolicy === 'carry_forward' && (
                     <div className="space-y-2 animate-in slide-in-from-top-1 duration-200">
-                      <label className="text-[10px] font-semibold text-neutral-500 ml-1">Max carry-forward</label>
+                      <label className="text-[11px] font-semibold text-neutral-500 ml-1">Max carry-forward</label>
                       <input
                         type="number"
-                        className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                        className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
                         placeholder="max days to carry over"
                         value={typeForm.carryForwardMax}
                         onChange={(e) => setTypeForm({ ...typeForm, carryForwardMax: parseFloat(e.target.value) })}
@@ -1248,14 +1337,14 @@ export default function LeaveManagement() {
                   )}
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Gender restriction</label>
+                    <label className="text-[11px] font-semibold text-neutral-500 ml-1">Gender restriction</label>
                     <div className="flex gap-2.5">
                       {['all', 'male', 'female'].map((g) => (
                         <button
                           key={g}
                           type="button"
                           onClick={() => setTypeForm({ ...typeForm, gender: g })}
-                          className={`flex-1 py-3.5 rounded-lg text-[10px] font-semibold border transition-all ${
+                          className={`flex-1 py-3.5 rounded-lg text-[11px] font-semibold border transition-all ${
                             typeForm.gender === g
                               ? 'bg-neutral-900 text-white border-transparent shadow-sm'
                               : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:text-neutral-800 hover:bg-slate-100'
@@ -1273,13 +1362,13 @@ export default function LeaveManagement() {
                 <button
                   type="button"
                   onClick={() => setShowTypeModal(false)}
-                  className="px-5 py-3 border border-neutral-200 rounded-lg text-[10px] font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
+                  className="px-5 py-3 border border-neutral-200 rounded-lg text-[11px] font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
                 >
                   discard
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-neutral-900 text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-neutral-800 transition-all flex items-center gap-2"
+                  className="px-6 py-3 bg-neutral-900 text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-neutral-800 transition-all flex items-center gap-2"
                 >
                   <Save size={13} />
                   save definition
@@ -1295,14 +1384,14 @@ export default function LeaveManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="ui-modal scale-100 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50">
-              <h2 className="text-xs font-semibold text-neutral-800">Assign employees to plan</h2>
+              <h2 className="text-[13px] font-semibold text-neutral-800">Assign employees to plan</h2>
               <button onClick={() => setShowAssignModal(false)} className="text-neutral-500 hover:text-neutral-700 transition-colors">
                 <X size={20} />
               </button>
             </div>
 
             <div className="p-8">
-              <p className="text-[10px] font-semibold text-neutral-500 mb-4">
+              <p className="text-[11px] font-semibold text-neutral-500 mb-4">
                 select employees to enrol in "{selectedPlan?.name}":
               </p>
 
@@ -1333,14 +1422,14 @@ export default function LeaveManagement() {
                           }}
                         />
                         <div>
-                          <p className="text-xs font-semibold text-neutral-800">
+                          <p className="text-[13px] font-semibold text-neutral-800">
                             {emp.first_name} {emp.last_name}
                           </p>
-                          <p className="text-[10px] font-semibold text-neutral-500 mt-1">
+                          <p className="text-[11px] font-semibold text-neutral-500 mt-1">
                             {emp.employee_id || `EMP-${(emp.id || '').toString().substring(0, 4)}`} ·{' '}
                             {emp.department_name || 'operations'}
                             {isAlreadyAssigned && (
-                              <span className="text-[9px] font-semibold text-neutral-700 ml-1.5">(enrolled)</span>
+                              <span className="text-[11px] font-semibold text-neutral-700 ml-1.5">(enrolled)</span>
                             )}
                           </p>
                         </div>
@@ -1348,21 +1437,21 @@ export default function LeaveManagement() {
                     );
                   })
                 ) : (
-                  <p className="text-center text-neutral-500 text-xs">No personnel found.</p>
+                  <p className="text-center text-neutral-500 text-[13px]">No personnel found.</p>
                 )}
               </div>
 
               <div className="flex gap-3 border-t border-neutral-200 pt-6">
                 <button
                   onClick={() => setShowAssignModal(false)}
-                  className="flex-1 py-3.5 border border-neutral-200 rounded-lg text-[10px] font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
+                  className="flex-1 py-3.5 border border-neutral-200 rounded-lg text-[11px] font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
                 >
                   discard
                 </button>
                 <button
                   onClick={handleAssignEmployeesSubmit}
                   disabled={selectedEmployees.length === 0}
-                  className="flex-1 py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-neutral-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-neutral-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   enrol employees
                 </button>
@@ -1377,13 +1466,12 @@ export default function LeaveManagement() {
 
 function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave }) {
   return (
-    <div className="bg-white border-b border-neutral-200 px-6 md:px-8 py-3">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
-        <div className="flex flex-wrap bg-neutral-50 border border-neutral-200 rounded-lg p-1 gap-0.5">
+    <div className="mb-6 flex border-b border-neutral-200 pb-4">
+      <div className="flex flex-wrap bg-neutral-50 border border-neutral-200 rounded-lg p-1 gap-0.5">
           <button
             type="button"
             onClick={() => setWorkspaceTab('my')}
-            className={`px-4 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+            className={`px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
               workspaceTab === 'my' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
             }`}
           >
@@ -1393,7 +1481,7 @@ function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave })
             <button
               type="button"
               onClick={() => setWorkspaceTab('approvals')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+              className={`px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
                 workspaceTab === 'approvals' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
               }`}
             >
@@ -1404,7 +1492,7 @@ function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave })
             <button
               type="button"
               onClick={() => setWorkspaceTab('policies')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-semibold transition-all ${
+              className={`px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
                 workspaceTab === 'policies' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
               }`}
             >
@@ -1412,7 +1500,6 @@ function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave })
             </button>
           )}
         </div>
-      </div>
     </div>
   );
 }

@@ -62,12 +62,30 @@ export const updateDocument = async (applicationId, docId, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/documents/${docId}`, putJson(payload)));
 export const deleteDocument = async (applicationId, docId) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/documents/${docId}`, { method: 'DELETE' }));
+export const uploadApplicationDocument = async (applicationId, docId, file) => {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await tenantFetch(`${API_URL}/applications/${applicationId}/documents/${docId}/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  return handleResponse(res);
+};
 export const notifyMissingDocs = async (applicationId) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/notify-missing-docs`, { method: 'POST' }));
 
 // -------------------- Offer / Visa --------------------
 export const upsertOffer = async (applicationId, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/offer`, putJson(payload)));
+export const uploadOfferLetter = async (applicationId, file) => {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await tenantFetch(`${API_URL}/applications/${applicationId}/offer/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  return handleResponse(res);
+};
 export const upsertVisa = async (applicationId, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/visa`, putJson(payload)));
 

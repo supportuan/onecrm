@@ -10,13 +10,13 @@ import {
   Wallet,
   FileText,
   Fingerprint,
-  CheckCircle2,
   AlertCircle,
   Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getHrMe, submitRemoteClockIn } from '@/services/hrApi';
 import { sentenceCase } from '@/lib/text';
+import { LeaveAnalyticsStats, LeaveBalanceCards } from '../components/LeaveBalanceSummary';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -92,7 +92,7 @@ export default function EmployeeSelfService() {
   return (
     <div className="ui-page text-neutral-800 font-sans">
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white px-4 py-2.5 rounded-xl text-[13px] font-medium shadow-lg">
           {toast}
         </div>
       )}
@@ -102,15 +102,21 @@ export default function EmployeeSelfService() {
           Hello, {emp?.name || user?.fullName || user?.name || 'there'} — attendance, leave, and payslips in one place.
         </p>
 
+        {/* Analytics */}
+        <LeaveAnalyticsStats
+          leaveSummary={data?.leaveSummary}
+          attendanceSummary={data?.attendanceSummary}
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Clock */}
           <div className="ui-panel p-6 space-y-4">
             <div className="flex items-center gap-2">
               <Fingerprint size={18} className="text-neutral-700" />
-              <h2 className="text-sm font-semibold text-neutral-900">Attendance today</h2>
+              <h2 className="text-[15px] font-semibold text-neutral-900">Attendance today</h2>
             </div>
             <span
-              className={`inline-block px-2.5 py-1 text-[10px] font-bold tracking-wide rounded-lg border ${
+              className={`inline-block px-2.5 py-1 text-[11px] font-bold tracking-wide rounded-lg border ${
                 status === 'clocked_in'
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   : status === 'clocked_out'
@@ -125,7 +131,7 @@ export default function EmployeeSelfService() {
                 type="button"
                 onClick={() => handleClock(false)}
                 disabled={clockBusy || status === 'clocked_in'}
-                className="flex items-center justify-center gap-2 py-3 rounded-lg bg-neutral-900 text-white text-xs font-semibold disabled:opacity-40"
+                className="flex items-center justify-center gap-2 py-3 rounded-lg bg-neutral-900 text-white text-[13px] font-semibold disabled:opacity-40"
               >
                 <LogIn size={14} /> Clock in
               </button>
@@ -133,7 +139,7 @@ export default function EmployeeSelfService() {
                 type="button"
                 onClick={() => handleClock(true)}
                 disabled={clockBusy || status !== 'clocked_in'}
-                className="flex items-center justify-center gap-2 py-3 rounded-lg border border-neutral-200 text-xs font-semibold disabled:opacity-40"
+                className="flex items-center justify-center gap-2 py-3 rounded-lg border border-neutral-200 text-[13px] font-semibold disabled:opacity-40"
               >
                 <LogOut size={14} /> Clock out
               </button>
@@ -159,7 +165,7 @@ export default function EmployeeSelfService() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-neutral-700" />
-                <h2 className="text-sm font-semibold text-neutral-900">Leave balance</h2>
+                <h2 className="text-[15px] font-semibold text-neutral-900">Leave balance</h2>
               </div>
               <Link
                 href="/hr/leave-management"
@@ -168,21 +174,7 @@ export default function EmployeeSelfService() {
                 Apply for leave →
               </Link>
             </div>
-            {data?.leaveBalances?.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {data.leaveBalances.map((b) => (
-                  <div key={b.leaveType} className="bg-neutral-50 border border-neutral-100 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-neutral-700">{b.leaveType}</p>
-                    <p className="text-2xl font-semibold text-neutral-900 mt-1">{b.remaining}</p>
-                    <p className="text-[10px] text-neutral-500 mt-0.5">
-                      of {b.annualQuota} days · {b.used} used
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-neutral-500">No leave plan assigned yet.</p>
-            )}
+            <LeaveBalanceCards balances={data?.leaveBalances} />
           </div>
         </div>
 
@@ -191,24 +183,24 @@ export default function EmployeeSelfService() {
           <div className="ui-panel overflow-hidden">
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center gap-2">
               <Calendar size={16} className="text-neutral-700" />
-              <h2 className="text-sm font-semibold">Recent leave requests</h2>
+              <h2 className="text-[15px] font-semibold">Recent leave requests</h2>
             </div>
             {data?.recentLeaveRequests?.length > 0 ? (
               <ul className="divide-y divide-neutral-100">
                 {data.recentLeaveRequests.map((r) => (
                   <li key={r.id} className="px-5 py-3 flex justify-between items-center gap-2">
                     <div>
-                      <p className="text-xs font-semibold text-neutral-800">{r.leaveTypeName}</p>
-                      <p className="text-[10px] text-neutral-500">
+                      <p className="text-[13px] font-semibold text-neutral-800">{r.leaveTypeName}</p>
+                      <p className="text-[11px] text-neutral-500">
                         {r.fromDate} → {r.toDate}
                       </p>
                     </div>
-                    <span className="text-[9px] font-bold text-neutral-500">{sentenceCase(r.status)}</span>
+                    <span className="text-[11px] font-bold text-neutral-500">{sentenceCase(r.status)}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="p-8 text-center text-sm text-neutral-500">No leave requests yet.</p>
+              <p className="p-8 text-center text-[13px] text-neutral-500">No leave requests yet.</p>
             )}
           </div>
 
@@ -217,7 +209,7 @@ export default function EmployeeSelfService() {
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wallet size={16} className="text-neutral-700" />
-                <h2 className="text-sm font-semibold">My payslips</h2>
+                <h2 className="text-[15px] font-semibold">My payslips</h2>
               </div>
               <Link href="/hr/payroll?tab=run" className="text-[11px] font-semibold text-neutral-700">
                 View all →
@@ -229,18 +221,18 @@ export default function EmployeeSelfService() {
                   <li key={p.id} className="px-5 py-3 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <FileText size={14} className="text-neutral-500" />
-                      <span className="text-xs font-medium text-neutral-800">
+                      <span className="text-[13px] font-medium text-neutral-800">
                         {MONTHS[(p.month || 1) - 1]} {p.year}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold text-neutral-900">
+                    <span className="text-[15px] font-semibold text-neutral-900">
                       {typeof p.netSalary === 'number' ? p.netSalary.toLocaleString() : '—'}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="p-8 text-center text-sm text-neutral-500">No payslips available yet.</p>
+              <p className="p-8 text-center text-[13px] text-neutral-500">No payslips available yet.</p>
             )}
           </div>
         </div>
@@ -248,7 +240,7 @@ export default function EmployeeSelfService() {
         {(data?.pendingRegularizations > 0) && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
             <AlertCircle size={18} className="text-amber-600 shrink-0" />
-            <p className="text-sm text-amber-900">
+            <p className="text-[13px] text-amber-900">
               you have {data.pendingRegularizations} pending regularization request(s).{' '}
               <Link href="/hr/attendance" className="font-semibold text-neutral-900 underline">
                 view attendance

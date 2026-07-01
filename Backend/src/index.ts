@@ -18,7 +18,7 @@ import agencyCrmRouter from './modules/agency-crm/agency-crm.routes.js';
 import superAdminRouter from './modules/super-admin/super-admin.routes.js';
 import path from 'path';
 import { ensureDefaultTenantSeeded } from './modules/rbac/rbac.service.js';
-import { backfillHrSeedsForExistingTenants } from './modules/super-admin/hr-seed-backfill.js';
+import { backfillHrSeedsForExistingTenants, backfillStaffEmployees } from './modules/super-admin/hr-seed-backfill.js';
 import { startNotificationScheduler } from './modules/notifications/scheduler.js';
 
 const app = express();
@@ -62,6 +62,8 @@ app.listen(port, async () => {
     console.log('[One CRM] RBAC seeded for default tenant');
     await backfillHrSeedsForExistingTenants();
     console.log('[One CRM] HR defaults backfilled where missing');
+    await backfillStaffEmployees();
+    console.log('[One CRM] HR employee records ensured for staff users');
     startNotificationScheduler();
     console.log('[One CRM] Notification scheduler started');
   } catch (err) {
