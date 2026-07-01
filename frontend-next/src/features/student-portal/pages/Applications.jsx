@@ -1,9 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Circle } from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle2, Circle, FileText, ChevronRight } from 'lucide-react';
 import { getMyStudent, listMyApplications } from '@/services/studentCrmApi';
 import { PROCESS_STAGES, STAGE_LABELS } from '../constants';
+
+const docProgress = (app) => {
+  const docs = app.documents || [];
+  const required = docs.filter((d) => d.required);
+  const done = required.filter((d) => ['UPLOADED', 'VERIFIED'].includes(d.status)).length;
+  const rejected = docs.filter((d) => d.status === 'REJECTED').length;
+  return { required: required.length, done, rejected };
+};
 
 export default function ApplicationsPage() {
   const [profile, setProfile] = useState(null);
@@ -83,10 +92,14 @@ export default function ApplicationsPage() {
                   <th className="px-5 py-3 font-medium">Course</th>
                   <th className="px-5 py-3 font-medium">Country</th>
                   <th className="px-5 py-3 font-medium">Stage</th>
+                  <th className="px-5 py-3 font-medium">Documents</th>
+                  <th className="px-5 py-3 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-                {apps.map((a) => (
+                {apps.map((a) => {
+                  const { required, done, rejected } = docProgress(a);
+                  return (
                   <tr key={a.id} className="hover:bg-neutral-50/80">
                     <td className="px-5 py-3 font-medium">{a.applicationCode}</td>
                     <td className="px-5 py-3">{a.university}</td>
@@ -97,8 +110,32 @@ export default function ApplicationsPage() {
                         {a.stage}
                       </span>
                     </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2 text-xs text-neutral-600">
+                        <FileText size={12} className="text-neutral-400" />
+                        {required > 0 ? (
+                          <span>
+                            {done}/{required} uploaded
+                            {rejected > 0 && (
+                              <span className="text-rose-600 ml-1">· {rejected} rejected</span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-neutral-400">No checklist yet</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <Link
+                        href={`/applicant/applications/${a.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-neutral-700 hover:text-neutral-900"
+                      >
+                        Manage docs <ChevronRight size={12} />
+                      </Link>
+                    </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

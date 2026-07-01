@@ -3073,6 +3073,9 @@ export const getHrMe = async (userId: number, userEmail: string | null | undefin
 };
 
 export const getHrDashboardSummary = async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const ninetyDaysOut = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
   const [
     openJobs,
     candidates,
@@ -3080,6 +3083,7 @@ export const getHrDashboardSummary = async () => {
     pendingRegularizations,
     employeeCount,
     openInterviews,
+    upcomingHolidays,
   ] = await Promise.all([
     prisma.hrJobPosting.count({ where: { status: 'OPEN' } }),
     prisma.hrCandidate.count({ where: { status: 'ACTIVE' } }),
@@ -3087,6 +3091,11 @@ export const getHrDashboardSummary = async () => {
     prisma.hrRegularization.count({ where: { status: 'PENDING' } }),
     prisma.hrEmployee.count(),
     prisma.hrInterview.count({ where: { status: 'SCHEDULED' } }),
+    prisma.hrHoliday.findMany({
+      where: { date: { gte: today, lte: ninetyDaysOut } },
+      orderBy: { date: 'asc' },
+      take: 6,
+    }),
   ]);
 
   return {
@@ -3096,5 +3105,6 @@ export const getHrDashboardSummary = async () => {
     pendingRegularizations,
     employeeCount,
     scheduledInterviews: openInterviews,
+    upcomingHolidays: upcomingHolidays.map(mapHoliday),
   };
 };

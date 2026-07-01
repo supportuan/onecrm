@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { authenticateToken } from '../../middleware/authenticate.js';
 import { requirePermission } from '../rbac/rbac.middleware.js';
 import * as controller from './student-crm.controller.js';
+import { applicationDocUpload } from './student-crm.upload.js';
 
 const router = Router();
 
@@ -52,11 +53,23 @@ router.post('/applications/:id/advance', manage, controller.advanceStage);
 // Application documents
 router.post('/applications/:id/documents', manage, controller.upsertDocument);
 router.put('/applications/:id/documents/:docId', manage, controller.upsertDocument);
+router.post(
+  '/applications/:id/documents/:docId/upload',
+  studentSelfOr('MANAGE_STUDENT_CRM'),
+  applicationDocUpload.single('file'),
+  controller.uploadApplicationDocument,
+);
 router.delete('/applications/:id/documents/:docId', manage, controller.deleteDocument);
 router.post('/applications/:id/notify-missing-docs', manage, controller.notifyMissing);
 
 // Offer / visa
 router.put('/applications/:id/offer', manage, controller.upsertOffer);
+router.post(
+  '/applications/:id/offer/upload',
+  manage,
+  applicationDocUpload.single('file'),
+  controller.uploadOfferLetter,
+);
 router.put('/applications/:id/visa', manage, controller.upsertVisa);
 
 // Checklist defaults (used by UI before docs exist)

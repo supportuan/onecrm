@@ -96,9 +96,15 @@ export default function LeaveManagement() {
   const canManageLeave = can('MANAGE_LEAVE');
   const initialTab = searchParams.get('tab');
   const [workspaceTab, setWorkspaceTab] = useState(
-    initialTab === 'approvals' && canManageLeave ? 'approvals' : initialTab === 'policies' && canManageLeave ? 'policies' : 'my'
+    initialTab === 'approvals' && canManageLeave
+      ? 'approvals'
+      : (initialTab === 'policies' || initialTab === 'holidays') && canManageLeave
+        ? 'policies'
+        : 'my',
   );
-  const [activeMainTab, setActiveMainTab] = useState('plans'); // 'plans' | 'holidays' | 'categories'
+  const [activeMainTab, setActiveMainTab] = useState(
+    initialTab === 'holidays' && canManageLeave ? 'holidays' : 'plans',
+  ); // 'plans' | 'holidays' | 'categories'
 
   // Leave categories (HrLeaveType) CRUD state
   const [categoryForm, setCategoryForm] = useState({ name: '', code: '' });

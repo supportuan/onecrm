@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { UserRole } from '@prisma/client';
 import { prisma } from '../../prisma.js';
 import { hashPassword } from '../../utils/password.js';
+import { deleteStoredFile } from '../../lib/file-storage.js';
 import { getDefaultChecklist, type ChecklistItem } from './checklists.js';
 import { safeNotify } from '../notifications/recipients.js';
 import { getDefaultTenantId } from '../../utils/tenant-default.js';
@@ -548,8 +549,15 @@ export const upsertDocument = async (
   docId: number | null,
   data: Partial<{ name: string; required: boolean; filename: string; fileUrl: string; status: string; notes: string }>
 ) => {
+  let previousStatus: string | undefined;
   if (docId) {
-    return prisma.applicationDocument.update({
+    const existing = await prisma.applicationDocument.findUnique({ where: { id: docId } });
+    previousStatus = existing?.status;
+  }
+
+  let result;
+  if (docId) {
+    result = await prisma.applicationDocument.update({
       where: { id: docId },
       data: {
         ...(data.name && { name: data.name }),
@@ -561,21 +569,39 @@ export const upsertDocument = async (
         ...((data.status === 'UPLOADED' || data.fileUrl) && { uploadedAt: new Date() }),
       },
     });
+  } else {
+    result = await prisma.applicationDocument.create({
+      data: {
+        applicationId,
+        name: data.name || 'document',
+        required: data.required ?? true,
+        filename: data.filename || null,
+        fileUrl: data.fileUrl || null,
+        status: (data.status as any) || 'PENDING',
+        notes: data.notes || null,
+        ...(data.fileUrl && { uploadedAt: new Date() }),
+      },
+    });
   }
-  return prisma.applicationDocument.create({
-    data: {
-      applicationId,
-      name: data.name || 'document',
-      required: data.required ?? true,
-      filename: data.filename || null,
-      fileUrl: data.fileUrl || null,
-      status: (data.status as any) || 'PENDING',
-      notes: data.notes || null,
-    },
-  });
+
+  if (docId && data.status === 'REJECTED' && previousStatus !== 'REJECTED') {
+    await notifyDocumentRejected(applicationId, docId, data.notes);
+  }
+
+  return result;
 };
 
-export const deleteDocument = (docId: number) => prisma.applicationDocument.delete({ where: { id: docId } });
+export const deleteDocument = async (docId: number) => {
+  const doc = await prisma.applicationDocument.findUnique({ where: { id: docId } });
+  if (doc?.fileUrl) {
+    try {
+      await deleteStoredFile(doc.fileUrl);
+    } catch {
+      // File may already be gone; still remove the DB row.
+    }
+  }
+  return prisma.applicationDocument.delete({ where: { id: docId } });
+};
 
 /** Fires a `document_missing` notification if any required docs are still PENDING. */
 export const notifyMissingDocs = async (applicationId: number) => {
@@ -593,6 +619,48 @@ export const notifyMissingDocs = async (applicationId: number) => {
       applicationCode: app.applicationCode,
       missing,
       applicationId,
+    },
+  });
+};
+
+/** Notify counsellor when a student uploads a document for review. */
+export const notifyDocumentUploaded = async (applicationId: number, docId: number, _studentUserId?: number) => {
+  const app = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: { documents: true, student: true },
+  });
+  if (!app?.assignedToId) return;
+  const doc = app.documents.find((d) => d.id === docId);
+  if (!doc) return;
+  await safeNotify({
+    recipientId: app.assignedToId,
+    templateKey: 'application.document_uploaded',
+    vars: {
+      applicationCode: app.applicationCode,
+      applicationId,
+      documentName: doc.name,
+      studentName: app.student?.fullName,
+    },
+  });
+};
+
+/** Notify student when counsellor rejects a document. */
+export const notifyDocumentRejected = async (applicationId: number, docId: number, notes?: string) => {
+  const app = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: { documents: true, student: true },
+  });
+  if (!app?.student?.userId) return;
+  const doc = app.documents.find((d) => d.id === docId);
+  if (!doc) return;
+  await safeNotify({
+    recipientId: app.student.userId,
+    templateKey: 'application.document_rejected',
+    vars: {
+      applicationCode: app.applicationCode,
+      applicationId,
+      documentName: doc.name,
+      notes: notes || doc.notes,
     },
   });
 };

@@ -20,6 +20,8 @@ import {
   addDocument,
   updateDocument,
   deleteDocument,
+  uploadApplicationDocument,
+  uploadOfferLetter,
   notifyMissingDocs,
   upsertOffer,
   upsertVisa,
@@ -54,6 +56,8 @@ export default function ApplicationDetail({ applicationId }) {
   const [loading, setLoading] = useState(true);
   const [counsellors, setCounsellors] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [uploadingDocId, setUploadingDocId] = useState(null);
+  const [offerUploading, setOfferUploading] = useState(false);
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const flash = (kind, msg) => {
     setToast({ kind, msg });
@@ -137,6 +141,28 @@ export default function ApplicationDetail({ applicationId }) {
     }
   };
 
+  const handleDocApprove = async (docId) => {
+    if (!app) return;
+    try {
+      await updateDocument(app.id, docId, { status: 'VERIFIED' });
+      flash('ok', 'Document approved');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'failed to approve document');
+    }
+  };
+
+  const handleDocReject = async (docId, notes) => {
+    if (!app) return;
+    try {
+      await updateDocument(app.id, docId, { status: 'REJECTED', notes: notes || null });
+      flash('ok', 'Document rejected — student notified');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'failed to reject document');
+    }
+  };
+
   const handleDocDelete = async (docId) => {
     if (!app) return;
     try {
@@ -159,6 +185,34 @@ export default function ApplicationDetail({ applicationId }) {
     }
   };
 
+  const handleDocUpload = async (docId, file) => {
+    if (!app || !file) return;
+    setUploadingDocId(docId);
+    try {
+      await uploadApplicationDocument(app.id, docId, file);
+      flash('ok', 'Document uploaded');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'upload failed');
+    } finally {
+      setUploadingDocId(null);
+    }
+  };
+
+  const handleOfferUpload = async (file) => {
+    if (!app || !file) return;
+    setOfferUploading(true);
+    try {
+      await uploadOfferLetter(app.id, file);
+      flash('ok', 'Offer letter uploaded');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'upload failed');
+    } finally {
+      setOfferUploading(false);
+    }
+  };
+
   const handleNotifyMissing = async () => {
     if (!app) return;
     try {
@@ -171,9 +225,10 @@ export default function ApplicationDetail({ applicationId }) {
 
   const handleSaveOffer = async (payload) => {
     if (!app) return;
+    const { fileUrl: _url, filename: _name, ...meta } = payload;
     try {
-      await upsertOffer(app.id, payload);
-      flash('ok', 'Offer saved');
+      await upsertOffer(app.id, meta);
+      flash('ok', 'Offer details saved');
       fetchDetail();
     } catch (e) {
       flash('err', e?.message || 'failed to save offer');
@@ -296,13 +351,25 @@ export default function ApplicationDetail({ applicationId }) {
                 app={app}
                 canManage={canManage}
                 onStatus={handleDocStatus}
+                onApprove={handleDocApprove}
+                onReject={handleDocReject}
                 onDelete={handleDocDelete}
                 onAdd={handleAddDoc}
+                onUpload={handleDocUpload}
+                uploadingDocId={uploadingDocId}
                 missingCount={missingRequiredCount}
                 onNotifyMissing={handleNotifyMissing}
               />
             )}
-            {activeTab === 'offer' && <OfferLetterPanel app={app} canManage={canManage} onSave={handleSaveOffer} />}
+            {activeTab === 'offer' && (
+              <OfferLetterPanel
+                app={app}
+                canManage={canManage}
+                onSave={handleSaveOffer}
+                onUpload={handleOfferUpload}
+                uploading={offerUploading}
+              />
+            )}
             {activeTab === 'visa' && <VisaPanel app={app} canManage={canManage} onSave={handleSaveVisa} />}
             {activeTab === 'history' && <AuditTimeline app={app} />}
           </div>

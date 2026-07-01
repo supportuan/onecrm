@@ -15,6 +15,12 @@ import {
   Check,
   ArrowRight,
   AlertCircle,
+  Upload,
+  FileText,
+  Download,
+  Eye,
+  Loader2,
+  Paperclip,
 } from 'lucide-react';
 import {
   APPLICATION_STAGES,
@@ -295,86 +301,272 @@ export const StageStepper = ({ app, onJump }) => {
 
 /* -------------------- Document checklist -------------------- */
 
-export const DocumentChecklist = ({ app, canManage, onStatus, onDelete, onAdd, missingCount, onNotifyMissing }) => {
+const docStatusStyle = (status) => {
+  if (status === 'VERIFIED') return 'bg-emerald-50 border-emerald-200 text-emerald-700';
+  if (status === 'UPLOADED') return 'bg-sky-50 border-sky-200 text-sky-700';
+  if (status === 'REJECTED') return 'bg-rose-50 border-rose-200 text-rose-700';
+  return 'bg-amber-50 border-amber-200 text-amber-700';
+};
+
+const fileExt = (name) => (name?.split('.').pop() || '').toUpperCase();
+
+export const DocumentChecklist = ({
+  app,
+  canManage,
+  canUpload: canUploadProp,
+  onStatus,
+  onApprove,
+  onReject,
+  onDelete,
+  onAdd,
+  onUpload,
+  uploadingDocId,
+  missingCount,
+  onNotifyMissing,
+}) => {
   const [addName, setAddName] = useState('');
+  const [rejectingId, setRejectingId] = useState(null);
+  const [rejectNotes, setRejectNotes] = useState('');
+  const canUpload = canUploadProp ?? canManage;
+  const docs = app.documents || [];
+  const required = docs.filter((d) => d.required);
+  const done = required.filter((d) => ['UPLOADED', 'VERIFIED'].includes(d.status)).length;
+  const pct = required.length ? Math.round((done / required.length) * 100) : 0;
+
+  const studentMayUpload = (d) => canUpload && ['PENDING', 'REJECTED'].includes(d.status);
+
+  const submitReject = (docId) => {
+    onReject?.(docId, rejectNotes.trim() || undefined);
+    setRejectingId(null);
+    setRejectNotes('');
+  };
+
   return (
-    <div className="ui-surface px-6 py-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="ui-text-h3">Documents</h4>
-          <p className="ui-text-meta mt-0.5">
-            {app.documents?.length || 0} items · {missingCount} required missing
-          </p>
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="ui-surface px-6 py-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h4 className="ui-text-h3">Document management</h4>
+            <p className="ui-text-meta mt-0.5">
+              {docs.length} items · {done}/{required.length} required uploaded
+            </p>
+          </div>
+          {canManage && missingCount > 0 && (
+            <button
+              onClick={onNotifyMissing}
+              className="text-[12px] font-medium text-rose-600 hover:text-rose-700 flex items-center gap-1"
+            >
+              <AlertCircle size={12} /> Notify missing ({missingCount})
+            </button>
+          )}
         </div>
-        {canManage && missingCount > 0 && (
-          <button
-            onClick={onNotifyMissing}
-            className="text-[12px] font-medium text-rose-600 hover:text-rose-700 flex items-center gap-1"
-          >
-            <AlertCircle size={12} /> Notify missing
-          </button>
-        )}
-      </div>
-      <div className="border border-neutral-100 rounded-xl overflow-hidden divide-y divide-neutral-100">
-        {(app.documents || []).length === 0 ? (
-          <div className="p-6 text-center ui-text-meta">No documents listed.</div>
-        ) : (
-          (app.documents || []).map((d) => (
-            <div key={d.id} className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-neutral-50/60 transition">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="ui-text-strong">{d.name}</p>
-                  {d.required && <span className="text-[10px] font-semibold text-rose-600">required</span>}
-                </div>
-                {d.notes && <p className="text-[11px] text-neutral-500 mt-0.5">{d.notes}</p>}
-                {d.filename && <p className="text-[11px] text-neutral-500 mt-0.5 font-mono">{d.filename}</p>}
-              </div>
-              <div className="flex items-center gap-2">
-                {canManage ? (
-                  <select
-                    value={d.status}
-                    onChange={(e) => onStatus(d.id, e.target.value)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wide border outline-none ${
-                      d.status === 'VERIFIED'
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                        : d.status === 'UPLOADED'
-                        ? 'bg-sky-50 border-sky-200 text-sky-700'
-                        : d.status === 'REJECTED'
-                        ? 'bg-rose-50 border-rose-200 text-rose-700'
-                        : 'bg-amber-50 border-amber-200 text-amber-700'
-                    }`}
-                  >
-                    {DOC_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s.toLowerCase()}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide rounded-lg border bg-neutral-50 border-neutral-200 text-neutral-600">
-                    {d.status}
-                  </span>
-                )}
-                {canManage && (
-                  <button
-                    onClick={() => onDelete(d.id)}
-                    className="p-1.5 text-neutral-500 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                )}
-              </div>
+        {required.length > 0 && (
+          <div className="mt-4">
+            <div className="flex justify-between ui-text-caption mb-1.5">
+              <span>Required progress</span>
+              <span>{pct}%</span>
             </div>
-          ))
+            <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+              <div className="h-full rounded-full bg-neutral-900 transition-all" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Document list */}
+      <div className="ui-surface overflow-hidden">
+        {docs.length === 0 ? (
+          <div className="p-10 text-center ui-text-meta">No documents in checklist yet.</div>
+        ) : (
+          <div className="divide-y divide-neutral-100">
+            {docs.map((d) => {
+              const hasFile = Boolean(d.fileUrl);
+              const isUploading = uploadingDocId === d.id;
+              return (
+                <div key={d.id} className="px-5 py-4 hover:bg-neutral-50/50 transition">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    {/* Icon + name */}
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div
+                        className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border ${
+                          hasFile ? 'bg-sky-50 border-sky-100 text-sky-600' : 'bg-neutral-50 border-neutral-200 text-neutral-400'
+                        }`}
+                      >
+                        {hasFile ? (
+                          <span className="text-[9px] font-bold">{fileExt(d.filename) || 'FILE'}</span>
+                        ) : (
+                          <Paperclip size={14} />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="ui-text-strong">{d.name}</p>
+                          {d.required && (
+                            <span className="text-[10px] font-semibold text-rose-600 uppercase">required</span>
+                          )}
+                        </div>
+                        {d.filename ? (
+                          <p className="text-[11px] text-neutral-500 mt-0.5 truncate font-mono">{d.filename}</p>
+                        ) : (
+                          <p className="text-[11px] text-neutral-400 mt-0.5">No file uploaded</p>
+                        )}
+                        {d.uploadedAt && (
+                          <p className="text-[11px] text-neutral-400 mt-0.5">
+                            Uploaded {formatDate(d.uploadedAt)}
+                          </p>
+                        )}
+                        {d.notes && d.status === 'REJECTED' && (
+                          <p className="text-[11px] text-rose-600 mt-1 bg-rose-50 border border-rose-100 rounded-lg px-2 py-1">
+                            Rejection reason: {d.notes}
+                          </p>
+                        )}
+                        {d.notes && d.status !== 'REJECTED' && (
+                          <p className="text-[11px] text-neutral-500 mt-0.5">{d.notes}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
+                      {hasFile && d.fileUrl && (
+                        <a
+                          href={d.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition"
+                          title="View / download"
+                        >
+                          <Eye size={14} />
+                        </a>
+                      )}
+                      {(canManage || studentMayUpload(d)) && (
+                        <label
+                          className={`p-2 rounded-lg transition cursor-pointer ${
+                            isUploading
+                              ? 'text-neutral-400 bg-neutral-50'
+                              : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'
+                          }`}
+                          title={hasFile ? 'Replace file' : 'Upload file'}
+                        >
+                          {isUploading ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Upload size={14} />
+                          )}
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                            disabled={isUploading}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) onUpload(d.id, file);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                      )}
+                      {canManage && d.status === 'UPLOADED' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => onApprove?.(d.id)}
+                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wide border bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition flex items-center gap-1"
+                          >
+                            <Check size={11} /> Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRejectingId(d.id);
+                              setRejectNotes('');
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wide border bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100 transition flex items-center gap-1"
+                          >
+                            <X size={11} /> Reject
+                          </button>
+                        </>
+                      )}
+                      {canManage && d.status !== 'UPLOADED' && (
+                        <select
+                          value={d.status}
+                          onChange={(e) => onStatus(d.id, e.target.value)}
+                          className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wide border outline-none ${docStatusStyle(d.status)}`}
+                        >
+                          {DOC_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s.toLowerCase()}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {!canManage && (
+                        <span
+                          className={`px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide rounded-lg border ${docStatusStyle(d.status)}`}
+                        >
+                          {d.status}
+                        </span>
+                      )}
+                      {canManage && (
+                        <button
+                          onClick={() => onDelete(d.id)}
+                          className="p-2 text-neutral-500 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                          title="Remove from checklist"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {rejectingId === d.id && (
+                    <div className="mt-3 ml-[52px] flex flex-col sm:flex-row gap-2">
+                      <input
+                        value={rejectNotes}
+                        onChange={(e) => setRejectNotes(e.target.value)}
+                        placeholder="Reason for rejection (optional)"
+                        className="ui-field flex-1 text-[12px]"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') submitReject(d.id);
+                          if (e.key === 'Escape') setRejectingId(null);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => submitReject(d.id)}
+                        className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[12px] font-medium"
+                      >
+                        Confirm reject
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRejectingId(null)}
+                        className="px-3 py-2 border border-neutral-200 rounded-lg text-[12px] font-medium text-neutral-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {canManage && (
-        <div className="flex items-center gap-2">
+        <div className="ui-surface px-5 py-4 flex items-center gap-2">
           <input
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
-            placeholder="Add document to checklist"
-            className="ui-field"
+            placeholder="Add document to checklist (e.g. Passport copy)"
+            className="ui-field flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && addName.trim()) {
+                onAdd(addName.trim());
+                setAddName('');
+              }
+            }}
           />
           <button
             onClick={() => {
@@ -395,7 +587,7 @@ export const DocumentChecklist = ({ app, canManage, onStatus, onDelete, onAdd, m
 
 /* -------------------- Offer letter -------------------- */
 
-export const OfferLetterPanel = ({ app, canManage, onSave }) => {
+export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }) => {
   const [form, setForm] = useState(() => ({
     fileUrl: app.offerLetter?.fileUrl || '',
     filename: app.offerLetter?.filename || '',
@@ -417,12 +609,105 @@ export const OfferLetterPanel = ({ app, canManage, onSave }) => {
     });
   }, [app.id, app.offerLetter]);
 
+  const hasFile = Boolean(form.fileUrl);
+
   return (
-    <div className="ui-surface px-6 py-5 space-y-4">
+    <div className="ui-surface px-6 py-5 space-y-5">
       <div>
         <h4 className="ui-text-h3">Offer letter</h4>
-        <p className="ui-text-meta mt-0.5">Track offer details and the student's decision.</p>
+        <p className="ui-text-meta mt-0.5">Upload the offer document and track the student's decision.</p>
       </div>
+
+      {/* File upload zone */}
+      <div
+        className={`rounded-xl border-2 border-dashed p-6 transition ${
+          hasFile ? 'border-sky-200 bg-sky-50/40' : 'border-neutral-200 bg-neutral-50/40'
+        }`}
+      >
+        {hasFile ? (
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-sky-100 border border-sky-200 flex items-center justify-center text-sky-700">
+                <FileText size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="ui-text-strong truncate">{form.filename || 'Offer letter'}</p>
+                {form.receivedAt && (
+                  <p className="text-[11px] text-neutral-500">Received {formatDate(form.receivedAt)}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={form.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 ui-text-strong flex items-center gap-1.5 transition"
+              >
+                <Eye size={13} /> View
+              </a>
+              <a
+                href={form.fileUrl}
+                download={form.filename || 'offer-letter'}
+                className="px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 ui-text-strong flex items-center gap-1.5 transition"
+              >
+                <Download size={13} /> Download
+              </a>
+              {canManage && (
+                <label
+                  className={`px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white ui-text-strong !text-white flex items-center gap-1.5 cursor-pointer transition ${
+                    uploading ? 'opacity-60 pointer-events-none' : ''
+                  }`}
+                >
+                  {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                  Replace
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) onUpload(file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+        ) : canManage ? (
+          <label
+            className={`flex flex-col items-center justify-center gap-2 py-4 cursor-pointer ${
+              uploading ? 'opacity-60 pointer-events-none' : ''
+            }`}
+          >
+            {uploading ? (
+              <Loader2 size={24} className="text-neutral-400 animate-spin" />
+            ) : (
+              <Upload size={24} className="text-neutral-400" />
+            )}
+            <p className="ui-text-strong text-neutral-700">
+              {uploading ? 'Uploading to S3…' : 'Click to upload offer letter'}
+            </p>
+            <p className="ui-text-meta">PDF, JPG, PNG, DOC — max 20 MB</p>
+            <input
+              type="file"
+              className="hidden"
+              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onUpload(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+        ) : (
+          <p className="ui-text-meta text-center py-4">No offer letter uploaded yet.</p>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Received date">
           <input
@@ -439,26 +724,6 @@ export const OfferLetterPanel = ({ app, canManage, onSave }) => {
             disabled={!canManage}
             value={form.decisionDeadline}
             onChange={(e) => setForm({ ...form, decisionDeadline: e.target.value })}
-            className="ui-field"
-          />
-        </Field>
-        <Field label="Filename">
-          <input
-            type="text"
-            disabled={!canManage}
-            placeholder="offer.pdf"
-            value={form.filename}
-            onChange={(e) => setForm({ ...form, filename: e.target.value })}
-            className="ui-field"
-          />
-        </Field>
-        <Field label="File URL">
-          <input
-            type="text"
-            disabled={!canManage}
-            placeholder="https://..."
-            value={form.fileUrl}
-            onChange={(e) => setForm({ ...form, fileUrl: e.target.value })}
             className="ui-field"
           />
         </Field>
@@ -504,7 +769,7 @@ export const OfferLetterPanel = ({ app, canManage, onSave }) => {
             onClick={() => onSave(form)}
             className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white transition-all"
           >
-            Save offer
+            Save offer details
           </button>
         </div>
       )}
