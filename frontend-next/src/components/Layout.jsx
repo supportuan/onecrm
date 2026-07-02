@@ -20,11 +20,7 @@ const Layout = ({ children }) => {
     '/change-password',
   ];
 
-  const isApplicantPortal = pathname?.startsWith('/applicant');
-  // Print / document-render routes are chromeless on purpose so Ctrl+P captures
-  // only the document body. Match by suffix to keep the rule extensible.
-  const isPrintRoute = !!pathname && /\/print(\/|$)/.test(pathname);
-  const isPublicPage = publicRoutes.includes(pathname) || isApplicantPortal || isPrintRoute;
+  const isPublicPage = publicRoutes.includes(pathname);
 
   if (isPublicPage) {
     return (
@@ -35,30 +31,29 @@ const Layout = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-slate-50 text-slate-900">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+    <div className="h-screen overflow-hidden bg-slate-50 text-slate-900">
+      <div className="fixed inset-y-0 left-0 z-30">
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onToggleSidebar={() => setSidebarOpen(true)}
 
-      <div className="flex flex-1 min-h-0 flex-col lg:ml-72">
-        <div className="fixed inset-x-0 top-0 z-20 bg-slate-50 shadow-sm lg:left-72 lg:right-0">
-          <TopNavbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
-        </div>
+        />
+      </div>
 
-        <main className="flex-1 overflow-y-auto pt-[108px] px-4 pb-8 sm:px-6 lg:px-8">
+      <div className="fixed inset-x-0 top-0 z-40 bg-slate-50 shadow-sm">
+        <TopNavbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
+      </div>
+      <div
+        className="fixed top-0 right-0 bottom-0 transition-all duration-300"
+        style={{
+          left: sidebarOpen ? '288px' : '80px',
+        }}
+      >
+        <main className="h-full w-full overflow-y-auto overflow-x-hidden pt-[108px] px-4 pb-4 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>
-
-      {sidebarOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-20 bg-slate-950/30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-          aria-label="Close sidebar"
-        />
-      )}
     </div>
   );
 };

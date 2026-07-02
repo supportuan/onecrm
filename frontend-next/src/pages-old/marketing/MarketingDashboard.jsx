@@ -1302,7 +1302,7 @@ const MarketingDashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-8 animate-pulse ui-page">
+      <div className="p-4 space-y-8 animate-pulse ui-page">
         <div className="flex items-center justify-between">
           <div className="h-10 w-72 rounded-xl bg-slate-200" />
           <div className="h-10 w-28 rounded-xl bg-slate-200" />

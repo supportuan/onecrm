@@ -348,9 +348,8 @@ export default function StudentManagement() {
                     key={s.id}
                     type="button"
                     onClick={() => setSelectedId(s.id)}
-                    className={`w-full text-left px-4 py-3 hover:bg-neutral-50 ${
-                      selectedId === s.id ? 'bg-neutral-100 border-l-4 border-l-neutral-900' : ''
-                    }`}
+                    className={`w-full text-left px-4 py-3 hover:bg-neutral-50 ${selectedId === s.id ? 'bg-neutral-100 border-l-4 border-l-neutral-900' : ''
+                      }`}
                   >
                     <p className="text-sm font-medium text-neutral-900">{s.fullName}</p>
                     <p className="text-xs text-neutral-500 truncate">{s.email}</p>
@@ -435,9 +434,8 @@ export default function StudentManagement() {
                         key={t.id}
                         type="button"
                         onClick={() => setTab(t.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium ${
-                          tab === t.id ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'
-                        }`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium ${tab === t.id ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'
+                          }`}
                       >
                         <Icon size={14} />
                         {t.label}
@@ -878,7 +876,7 @@ export default function StudentManagement() {
                         Applications ({profile.applications?.length || 0})
                       </h3>
                       <Link
-                        href={`/student-crm/applications?student=${selectedId}`}
+                        href={`/student-crm/student-applications?student=${selectedId}`}
                         className="text-xs font-medium text-neutral-700 hover:text-neutral-900 inline-flex items-center gap-1"
                       >
                         Open in tracker <ExternalLink size={12} />
@@ -907,7 +905,7 @@ export default function StudentManagement() {
                                 {getStageLabel(app.stage)}
                               </span>
                               <Link
-                                href={`/student-crm/applications?student=${selectedId}&app=${app.id}`}
+                                href={`/student-crm/student-applications?student=${selectedId}&app=${app.id}`}
                                 className="text-xs font-medium text-neutral-700 hover:underline"
                               >
                                 Manage

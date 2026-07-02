@@ -227,7 +227,7 @@ export const navMenu = [
   },
   {
     label: "Student CRM",
-    path: "/student-crm/applications",
+    path: "/student-crm/student-management",
     icon: Users,
     subItems: [
       {
@@ -249,7 +249,7 @@ export const navMenu = [
   },
   {
     label: "Agency CRM",
-    path: "/agency-crm",
+    path: "/agency-crm/agency-management",
     icon: Folder,
     subItems: [
       {
