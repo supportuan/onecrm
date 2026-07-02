@@ -1693,20 +1693,6 @@ ApplyUniNow`
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Counselor Remarks
-                    </label>
-                    <textarea
-                      placeholder="Call after 1 week. Interested in MBA programs."
-                      value={intakeForm.remark}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({ ...p, remark: e.target.value }))
-                      }
-                      rows="3"
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition resize-none"
-                    />
-                  </div>
                 </div>
               </div>
 

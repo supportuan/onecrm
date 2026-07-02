@@ -16,8 +16,8 @@ import {
   updateUser,
   getCounsellors,
 } from "../../services/userApi";
-import { useAuth } from "@/lib/auth/AuthContext";
 
+const creatableRoles = ["ADMIN", "COUNSELLOR", "HR", "STUDENT", "AGENT"];
 const DEFAULT_SELECTED_ACTIONS = ["VIEW", "EDIT"];
 
 const MODULE_ACCESS_OPTIONS = [
@@ -114,7 +114,7 @@ const getDefaultModuleAccessByRole = (role) => {
     giveModuleAccess("Student CRM");
   }
 
-  if (role === "ADMIN" || role === "GLOBAL_ADMIN") {
+  if (role === "ADMIN") {
     giveModuleAccess("Marketing");
     giveModuleAccess("Student CRM");
     giveModuleAccess("Agency CRM");
@@ -169,9 +169,6 @@ const getCleanModuleAccess = (access) => {
 };
 
 export default function UserManagementPage() {
-  const { user: currentUser } = useAuth();
-  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
-
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -196,9 +193,9 @@ export default function UserManagementPage() {
     lastName: "",
     email: "",
     phone: "",
-    roleName: "Staff Member",
+    role: "ADMIN",
     isActive: true,
-    moduleAccess: createEmptyModuleAccess(),
+    moduleAccess: getDefaultModuleAccessByRole("ADMIN"),
   });
 
   const selectedModuleData = MODULE_ACCESS_OPTIONS.find(
@@ -296,9 +293,9 @@ export default function UserManagementPage() {
       lastName: "",
       email: "",
       phone: "",
-      roleName: "Staff Member",
+      role: "ADMIN",
       isActive: true,
-      moduleAccess: createEmptyModuleAccess(),
+      moduleAccess: getDefaultModuleAccessByRole("ADMIN"),
     });
   };
 
@@ -326,7 +323,7 @@ export default function UserManagementPage() {
       lastName: user.fullName?.split(" ").slice(1).join(" ") || "",
       email: user.email || "",
       phone: user.phone || "",
-      roleName: user.roleLabel || user.role || "Staff Member",
+      role: user.role || "ADMIN",
       isActive: user.isActive ?? true,
       moduleAccess: normalizeModuleAccess(user.moduleAccess),
     });
@@ -334,15 +331,15 @@ export default function UserManagementPage() {
     setShowCreateModal(true);
   };
 
-  const handleRoleNameChange = (roleName) => {
+  const handleRoleChange = (role) => {
     setForm((prev) => ({
       ...prev,
-      roleName,
+      role,
+      moduleAccess: getDefaultModuleAccessByRole(role),
     }));
+
     setSelectedModule("Marketing");
   };
-
-  const displayRole = (user) => user.roleLabel || user.role;
 
   const toggleOptionSelection = (moduleName, optionName) => {
     setForm((prev) => {
@@ -388,7 +385,7 @@ export default function UserManagementPage() {
   };
 
   const handleSaveUser = async () => {
-    if (!form.firstName || !form.email || (!isSuperAdmin && !form.roleName?.trim())) {
+    if (!form.firstName || !form.email || !form.role) {
       alert("Please fill required fields");
       return;
     }
@@ -400,23 +397,12 @@ export default function UserManagementPage() {
         fullName: `${form.firstName} ${form.lastName}`.trim(),
         email: form.email,
         phone: form.phone || undefined,
+        role: form.role,
         isActive: form.isActive,
         moduleAccess: getCleanModuleAccess(form.moduleAccess),
       };
 
-      if (isSuperAdmin) {
-        userPayload.role = "GLOBAL_ADMIN";
-        userPayload.moduleAccess = getCleanModuleAccess(
-          getDefaultModuleAccessByRole("GLOBAL_ADMIN")
-        );
-      } else {
-        userPayload.roleName = form.roleName.trim();
-      }
-
       if (modalMode === "edit") {
-        if (!isSuperAdmin) {
-          userPayload.roleName = form.roleName.trim();
-        }
         res = await updateUser(editingUser.id, userPayload);
       } else {
         res = await createUser(userPayload);
@@ -530,8 +516,8 @@ export default function UserManagementPage() {
           <div className="flex overflow-x-auto">
             <button
               onClick={() => setActiveTab("all")}
-              className={`border-b-2 px-5 py-3 text-sm font-bold transition ${activeTab === "all"
-                ? "border-indigo-600 text-indigo-600"
+              className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition cursor-pointer ${activeTab === "all"
+                ? "border-black text-black"
                 : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
             >
@@ -540,8 +526,8 @@ export default function UserManagementPage() {
 
             <button
               onClick={() => setActiveTab("pending-agents")}
-              className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition ${activeTab === "pending-agents"
-                ? "border-indigo-600 text-indigo-600"
+              className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold cursor-pointer transition ${activeTab === "pending-agents"
+                ? "border-black text-black"
                 : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
             >
@@ -555,14 +541,14 @@ export default function UserManagementPage() {
 
             <button
               onClick={() => setActiveTab("pending-students")}
-              className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition ${activeTab === "pending-students"
-                ? "border-indigo-600 text-indigo-600"
+              className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold cursor-pointer transition ${activeTab === "pending-students"
+                ? "border-black text-black"
                 : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
             >
               Pending Students
               {pendingStudents.length > 0 && (
-                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700">
+                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-black">
                   {pendingStudents.length}
                 </span>
               )}
@@ -571,7 +557,7 @@ export default function UserManagementPage() {
 
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-black px-5 py-3 text-sm font-bold text-white shadow-lg shadow-black/20 transition hover:bg-neutral-800 cursor-pointer"
           >
             <UserPlus className="h-4 w-4" />
             Create User
@@ -621,7 +607,7 @@ export default function UserManagementPage() {
                 setStatusFilter("ALL");
                 setSearch("");
               }}
-              className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-black hover:bg-gray-100  cursor-pointer"
             >
               Clear Filters
             </button>
@@ -731,7 +717,7 @@ export default function UserManagementPage() {
                         <>
                           <td className="px-5 py-4">
                             <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
-                              {displayRole(user)}
+                              {user.role}
                             </span>
                           </td>
 
@@ -770,7 +756,7 @@ export default function UserManagementPage() {
                         <>
                           <td className="px-5 py-4">
                             <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                              {displayRole(user)}
+                              {user.role}
                             </span>
                           </td>
 
@@ -801,7 +787,7 @@ export default function UserManagementPage() {
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => handleEditUser(user)}
-                                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 cursor-pointer"
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
@@ -888,14 +874,13 @@ export default function UserManagementPage() {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
-          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+        <div className="user-modal-overlay">
+          <div className="user-modal-box">
+            <div className="user-modal-header">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">
                   {modalMode === "edit" ? "Edit User Access" : "Create User"}
                 </h2>
-
                 <p className="text-sm text-slate-500">
                   {modalMode === "edit"
                     ? "Edit role and module option access."
@@ -911,7 +896,7 @@ export default function UserManagementPage() {
               </button>
             </div>
 
-            <div className="space-y-6 p-6">
+            <div className="user-modal-body">
               {(modalMode === "create" || modalMode === "edit") && (
                 <section className="rounded-3xl border border-slate-200 p-5">
                   <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-800">
@@ -969,21 +954,21 @@ export default function UserManagementPage() {
                 </h3>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {isSuperAdmin ? (
-                    <div className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
-                      <span className="font-semibold">Role:</span> Global Admin
-                      <p className="mt-1 text-xs text-slate-500">
-                        Super admin can only create Global Admin accounts.
-                      </p>
-                    </div>
-                  ) : (
-                    <input
-                      value={form.roleName}
-                      onChange={(e) => handleRoleNameChange(e.target.value)}
-                      placeholder="Role name (e.g. Payroll Manager) *"
-                      className="rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500"
-                    />
-                  )}
+                  <div className="relative">
+                    <select
+                      value={form.role}
+                      onChange={(e) => handleRoleChange(e.target.value)}
+                      className="w-full appearance-none rounded-2xl border border-slate-200 px-4 py-3 pr-10 text-sm outline-none focus:border-indigo-500"
+                    >
+                      {creatableRoles.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  </div>
 
                   <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
                     <input
@@ -1156,7 +1141,7 @@ export default function UserManagementPage() {
               </section>
             </div>
 
-            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-white px-6 py-5">
+            <div className="user-modal-footer">
               <button
                 onClick={closeModal}
                 className="rounded-2xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
