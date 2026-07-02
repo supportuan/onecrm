@@ -100,15 +100,50 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
     }
 };
 
+// export const me = async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//         if (!req.user) return sendError(res, 'Unauthorized', null, 401);
+//         const user = await authService.getUserProfile(req.user.id);
+//         if (!user) return sendError(res, 'User not found', null, 404);
+//         const enabledModules = await resolveEnabledModules(req.user.role, req.user.tenantId);
+//         return sendSuccess(res, 'Authenticated user retrieved successfully', {
+//             ...user,
+//             tenantId: req.user.tenantId,
+//             enabledModules,
+//         });
+//     } catch (error) {
+//         next(error);
+//     }
+// };
+
 export const me = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        if (!req.user) return sendError(res, 'Unauthorized', null, 401);
+        if (!req.user) {
+            return sendError(res, 'Unauthorized', null, 401);
+        }
+
         const user = await authService.getUserProfile(req.user.id);
-        if (!user) return sendError(res, 'User not found', null, 404);
-        const enabledModules = await resolveEnabledModules(req.user.role, req.user.tenantId);
+
+        if (!user) {
+            return sendError(res, 'User not found', null, 404);
+        }
+
+        let enabledModules: string[] = [];
+
+        try {
+            enabledModules = await resolveEnabledModules(
+                req.user.role,
+                req.user.tenantId ?? user.tenantId ?? null
+            );
+        } catch (moduleError) {
+            console.error('Failed to resolve enabled modules:', moduleError);
+            enabledModules =
+                req.user.role === 'SUPER_ADMIN' ? allModuleKeys() : [];
+        }
+
         return sendSuccess(res, 'Authenticated user retrieved successfully', {
             ...user,
-            tenantId: req.user.tenantId,
+            tenantId: req.user.tenantId ?? user.tenantId ?? null,
             enabledModules,
         });
     } catch (error) {

@@ -1,5 +1,5 @@
 'use client';
-import MarketingDashboard from '@/components/marketing/MarketingDashboard';
+import MarketingDashboard from '@/pages-old/marketing/MarketingDashboard';
 
 export default function Page() {
   return <MarketingDashboard />;
