@@ -61,6 +61,7 @@ router.put('/leave/requests/:id/process', requirePermission('MANAGE_LEAVE'), con
 router.put('/leave/requests/:id/cancel', requirePermission('VIEW_LEAVE'), controller.cancelLeaveRequest);
 router.get('/leave/plans', requirePermission('VIEW_LEAVE'), controller.getLeavePlans);
 router.post('/leave/plans', requirePermission('MANAGE_LEAVE'), controller.createLeavePlan);
+router.delete('/leave/plans/:planId', requirePermission('MANAGE_LEAVE'), controller.deleteLeavePlan);
 router.get('/leave/types', requirePermission('VIEW_LEAVE'), controller.getLeaveTypes);
 router.post('/leave/types', requirePermission('MANAGE_LEAVE'), controller.createLeaveType);
 router.put('/leave/types/:id', requirePermission('MANAGE_LEAVE'), controller.updateLeaveType);

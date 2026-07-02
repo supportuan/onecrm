@@ -26,6 +26,7 @@ import LeaveApprovals from './LeaveApprovals';
 import {
   getLeavePlans,
   createLeavePlan,
+  deleteLeavePlan,
   getLeaveTypes,
   getLeaveDefinitions,
   addLeaveDefinition,
@@ -209,6 +210,34 @@ export default function LeaveManagement() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeletePlan = async (plan) => {
+    if (
+      !confirm(
+        `Delete "${plan.name}"? All leave type definitions and employee assignments on this plan will be removed.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await deleteLeavePlan(plan.id);
+      if (res.success) {
+        const remaining = plans.filter((p) => p.id !== plan.id);
+        setPlans(remaining);
+        if (selectedPlan?.id === plan.id) {
+          setSelectedPlan(remaining[0] || null);
+          if (remaining[0]) await fetchPlanDetails(remaining[0].id);
+          else {
+            setDefinitions([]);
+            setAssignedEmployees([]);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || 'Failed to delete leave plan');
     }
   };
 
@@ -564,6 +593,16 @@ export default function LeaveManagement() {
                         </span>
                       </div>
                     </div>
+                    {canManageLeave && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePlan(selectedPlan)}
+                        className="inline-flex items-center gap-2 px-3 py-2 text-[12px] font-medium text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 transition"
+                      >
+                        <Trash2 size={14} />
+                        Delete plan
+                      </button>
+                    )}
                   </header>
 
                   <nav className="px-8 flex gap-8 border-b border-neutral-200 bg-neutral-50/50">

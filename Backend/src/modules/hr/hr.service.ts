@@ -392,6 +392,7 @@ export {
   processRegularization,
   getLeavePlans,
   createLeavePlan,
+  deleteLeavePlan,
   getLeaveTypes,
   createLeaveType,
   updateLeaveType,

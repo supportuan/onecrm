@@ -1211,6 +1211,15 @@ export const createLeavePlan = async (plan: { name: string; description?: string
   return mapLeavePlan(newPlan);
 };
 
+export const deleteLeavePlan = async (planId: string) => {
+  const numericPlanId = resolveNumericId(planId);
+  if (numericPlanId === null) throw new Error('Leave plan not found');
+  const existing = await prisma.hrLeavePlan.findFirst({ where: { id: numericPlanId } });
+  if (!existing) throw new Error('Leave plan not found');
+  await prisma.hrLeavePlan.delete({ where: { id: numericPlanId } });
+  return { success: true };
+};
+
 export const getLeaveTypes = async (tenantId?: number | null) => {
   const where =
     tenantId == null

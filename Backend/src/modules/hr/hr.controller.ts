@@ -421,6 +421,18 @@ export const createLeavePlan = async (req: Request, res: Response, next: NextFun
   }
 };
 
+export const deleteLeavePlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const planId = req.params.planId as string;
+    if (!planId) return sendError(res, 'Plan id is required', null, 400);
+    await hrService.deleteLeavePlan(planId);
+    return sendSuccess(res, 'Leave plan deleted successfully', { id: planId });
+  } catch (error: any) {
+    if (error?.message?.includes('not found')) return sendError(res, error.message, null, 404);
+    next(error);
+  }
+};
+
 export const getLeaveTypes = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId ?? req.user?.tenantId ?? null;

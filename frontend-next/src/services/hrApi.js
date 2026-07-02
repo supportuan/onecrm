@@ -299,6 +299,13 @@ export const createLeavePlan = async (plan) => {
   return handleResponse(res);
 };
 
+export const deleteLeavePlan = async (planId) => {
+  const res = await tenantFetch(`${API_URL}/leave/plans/${planId}`, {
+    method: "DELETE",
+  });
+  return handleResponse(res);
+};
+
 export const getLeaveTypes = async () => {
   const res = await tenantFetch(`${API_URL}/leave/types`);
   return handleResponse(res);

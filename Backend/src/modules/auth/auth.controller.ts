@@ -5,7 +5,7 @@ import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, 
 import { getEnabledModules } from '../rbac/tenant-modules.service.js';
 import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import { createEmailTransporter, getEmailFrom } from '../../lib/email-transport.js';
 
 
 
@@ -150,18 +150,10 @@ export const sendResetEmail = async (email: string, token: string) => {
 
     console.log("resetUrl", resetUrl);
 
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: process.env.SMTP_SECURE === "true",
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
+    const transporter = createEmailTransporter();
 
     await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: getEmailFrom(),
         to: email,
         subject: "Reset your One CRM password",
         html: `
