@@ -1342,10 +1342,10 @@ const MarketingDashboard = () => {
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="h-11 appearance-none rounded-xl border border-neutral-200 bg-white pl-4 pr-10 text-sm font-bold text-neutral-700 outline-none hover:bg-neutral-50"
+                className="h-11 appearance-none rounded-xl border border-neutral-200 bg-white pl-4 pr-10 text-sm font-bold text-neutral-700 outline-none hover:bg-neutral-50 cursor-pointer"
               >
                 {DATE_FILTERS.map((item) => (
-                  <option key={item.value} value={item.value}>
+                  <option key={item.value} value={item.value}  >
                     {item.label}
                   </option>
                 ))}
@@ -1357,9 +1357,9 @@ const MarketingDashboard = () => {
 
           <button
             onClick={fetchDashboard}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1a365d] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#223f6b] active:scale-95"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1a365d] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#223f6b] active:scale-95 cursor-pointer"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-4 w-4 cursor-pointer" />
             Refresh
           </button>
         </div>

@@ -98,7 +98,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
                 <button
                     type="button"
                     onClick={onToggleSidebar}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 cursor-pointer"
                     aria-label="Toggle sidebar"
                 >
                     <Menu className="h-5 w-5" />
@@ -138,7 +138,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
             <div className="flex shrink-0 items-center gap-5">
                 <button
                     type="button"
-                    className="relative text-slate-400 transition hover:text-slate-600"
+                    className="relative text-slate-400 transition hover:text-slate-600 cursor-pointer"
                     onClick={() => router.push('/notifications')}
                 >
                     <Bell className="h-5 w-5 stroke-[1.5]" />
@@ -162,7 +162,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
                         onClick={logout}
                         title="Log out"
                     >
-                        <LogOut className="h-4 w-4" />
+                        <LogOut className="h-4 w-4 cursor-pointer" />
                     </button>
                 </div>
             </div>

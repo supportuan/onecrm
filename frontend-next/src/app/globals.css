@@ -239,3 +239,11 @@ textarea {
   justify-content: flex-end;
   gap: 12px;
 }
+
+select {
+  cursor: pointer;
+}
+
+option {
+  cursor: pointer !important;
+}
