@@ -310,7 +310,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -318,7 +318,7 @@ export default function LoginPage() {
             <div className="text-center text-sm text-neutral-500">
               <button
                 type="button"
-                className="text-neutral-700 hover:text-neutral-900"
+                className="text-neutral-700 hover:text-neutral-900 cursor-pointer"
                 onClick={() => router.push('/forgot-password')}
               >
                 Forgot your password?
@@ -329,7 +329,7 @@ export default function LoginPage() {
               Don&apos;t have an account?{' '}
               <button
                 type="button"
-                className="text-neutral-700 hover:text-neutral-900 font-semibold"
+                className="text-neutral-700 hover:text-neutral-900 font-semibold cursor-pointer"
                 onClick={() => {
                   setError('');
                   setSuccess('');
@@ -539,7 +539,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
               >
                 {loading ? 'Creating account...' : 'Register'}
               </button>
@@ -548,7 +548,7 @@ export default function LoginPage() {
                 Already have an account?{' '}
                 <button
                   type="button"
-                  className="font-semibold text-neutral-700 hover:text-neutral-900"
+                  className="font-semibold text-neutral-700 hover:text-neutral-900 cursor-pointer"
                   onClick={() => {
                     setError('');
                     setSuccess('');

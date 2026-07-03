@@ -51,12 +51,12 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
           >
             {loading ? 'Sending...' : 'Send reset link'}
           </button>
           <div className="text-center text-sm text-neutral-500">
-            <button type="button" className="text-neutral-700 hover:text-neutral-900" onClick={() => router.push('/login')}>
+            <button type="button" className="text-neutral-700 hover:text-neutral-900 cursor-pointer" onClick={() => router.push('/login')}>
               Back to sign in
             </button>
           </div>
