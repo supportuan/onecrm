@@ -68,6 +68,20 @@ const buildMetaAdTemplate = (campaign: any) => {
   };
 };
 
+const shouldUseInstagram = (campaign: any) => {
+  const details = getLaunchDetails(campaign);
+  const platform = String(details.platform || 'FACEBOOK').toUpperCase();
+
+  return platform === 'INSTAGRAM' || platform === 'BOTH';
+};
+
+const getInstagramActorId = () => {
+  return (
+    process.env.META_INSTAGRAM_ACTOR_ID ||
+    process.env.META_INSTAGRAM_BUSINESS_ID ||
+    ''
+  );
+};
 export const execute = async (campaign: any, leads: any[] = []) => {
   console.log(
     `[Meta Campaign Service] Launching campaign: ${campaign.name} for social media ads`
@@ -76,7 +90,10 @@ export const execute = async (campaign: any, leads: any[] = []) => {
   const accessToken = process.env.META_ACCESS_TOKEN;
   const adAccountId = normalizeAdAccountId(process.env.META_AD_ACCOUNT_ID);
   const pageId = process.env.META_PAGE_ID;
-  const instagramActorId = process.env.META_INSTAGRAM_ACTOR_ID;
+  // const instagramActorId = process.env.META_INSTAGRAM_ACTOR_ID;
+
+  const instagramActorId = getInstagramActorId();
+  const useInstagram = shouldUseInstagram(campaign);
 
   if (!accessToken || !adAccountId || !pageId) {
     return {
@@ -131,10 +148,30 @@ export const execute = async (campaign: any, leads: any[] = []) => {
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       destination_type: 'WEBSITE',
 
+      // targeting: {
+      //   geo_locations: {
+      //     countries: [template.targetCountry || 'IN'],
+      //   },
+      //   targeting_automation: {
+      //     advantage_audience: 0,
+      //   },
+      // },
       targeting: {
         geo_locations: {
           countries: [template.targetCountry || 'IN'],
         },
+
+        ...(useInstagram
+          ? {
+            publisher_platforms: ['facebook', 'instagram'],
+            facebook_positions: ['feed'],
+            instagram_positions: ['stream', 'story', 'reels'],
+          }
+          : {
+            publisher_platforms: ['facebook'],
+            facebook_positions: ['feed'],
+          }),
+
         targeting_automation: {
           advantage_audience: 0,
         },
@@ -236,7 +273,13 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     if (isVideo) {
       creativePayload.object_story_spec = {
         page_id: pageId,
-        ...(instagramActorId ? { instagram_actor_id: instagramActorId } : {}),
+        // ...(instagramActorId ? { instagram_actor_id: instagramActorId } : {}),
+        // ...(useInstagram && instagramActorId
+        //   ? { instagram_actor_id: instagramActorId }
+        //   : {}),
+        ...(useInstagram && instagramActorId
+          ? { instagram_user_id: instagramActorId }
+          : {}),
         video_data: {
           video_id: mediaHash,
           title: template.adHeadline,
@@ -252,7 +295,10 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     } else {
       creativePayload.object_story_spec = {
         page_id: pageId,
-        ...(instagramActorId ? { instagram_actor_id: instagramActorId } : {}),
+        // ...(instagramActorId ? { instagram_actor_id: instagramActorId } : {}),
+        ...(useInstagram && instagramActorId
+          ? { instagram_user_id: instagramActorId }
+          : {}),
         link_data: {
           message: template.primaryText,
           link: template.landingPageUrl,
@@ -270,9 +316,23 @@ export const execute = async (campaign: any, leads: any[] = []) => {
 
     console.log('Creative Payload:', JSON.stringify(creativePayload, null, 2));
 
+    // const creativeRes = await axios.post(
+    //   `${baseUrl}/${adAccountId}/adcreatives`,
+    //   creativePayload
+    // );
+
     const creativeRes = await axios.post(
       `${baseUrl}/${adAccountId}/adcreatives`,
-      creativePayload
+      new URLSearchParams({
+        name: creativePayload.name,
+        object_story_spec: JSON.stringify(creativePayload.object_story_spec),
+        access_token: accessToken,
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
     );
 
     console.log('Creative Created:', creativeRes.data);
@@ -334,7 +394,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
 export const uploadMediaToMeta = async (file: any): Promise<{ hash: string; type: 'IMAGE' | 'VIDEO' }> => {
   const accessToken = process.env.META_ACCESS_TOKEN;
   const adAccountId = normalizeAdAccountId(process.env.META_AD_ACCOUNT_ID);
-  
+
   if (!accessToken || !adAccountId) {
     throw new Error('Meta Ads account is not configured in environment variables');
   }
@@ -368,7 +428,8 @@ export const uploadMediaToMeta = async (file: any): Promise<{ hash: string; type
     formData.append('filename', blob, file.originalname);
     formData.append('access_token', accessToken);
 
-    console.log(`[Meta Campaign Service] Uploading image to act_${adAccountId}/adimages...`);
+    // console.log(`[Meta Campaign Service] Uploading image to act_${adAccountId}/adimages...`);
+    console.log(`[Meta Campaign Service] Uploading image to ${adAccountId}/adimages...`);
     const response = await axios.post(`${baseUrl}/${adAccountId}/adimages`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
