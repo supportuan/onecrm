@@ -1756,24 +1756,30 @@ model HrCounsellorPerformance {
 }
 
 model HrPerformanceReview {
-  id           Int            @id @default(autoincrement())
-  tenantId     Int?
-  employeeId   Int?
-  name         String
-  employeeCode String
-  department   String
-  cycle        String
-  manager      String
-  rating       Float          @default(0)
-  status       HrReviewStatus @default(SELF_REVIEW)
-  reviewDate   String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id             Int            @id @default(autoincrement())
+  tenantId       Int?
+  employeeId     Int?
+  name           String
+  employeeCode   String
+  department     String
+  cycle          String
+  manager        String
+  rating         Float          @default(0)
+  status         HrReviewStatus @default(SELF_REVIEW)
+  reviewDate     String
+  reviewPeriod   String?
+  leadsHandled   Int            @default(0)
+  conversions    Int            @default(0)
+  enrollments    Int            @default(0)
+  conversionRate Float          @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   tenant   Tenant?     @relation(fields: [tenantId], references: [id])
   employee HrEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
+  @@index([employeeId, cycle])
 }
 
 // -----------------------------------------------------------------------------

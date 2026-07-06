@@ -166,7 +166,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   minLength={8}
-                  className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 pr-11 text-sm text-white outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
+                  className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 pr-11 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
                   placeholder="Min. 8 characters"
                 />
                 <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute right-3.5 top-3.5 text-neutral-500 hover:text-neutral-600 transition">

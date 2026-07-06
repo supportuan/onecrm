@@ -361,6 +361,24 @@ export interface PerformanceReview {
   rating: number;
   status: string;
   date: string;
+  reviewPeriod?: string;
+  leadsHandled?: number;
+  conversions?: number;
+  enrollments?: number;
+  conversionRate?: number;
+}
+
+export interface CounsellorConversionMetric {
+  counsellorId: string;
+  counsellorName: string;
+  period: string;
+  leadsHandled: number;
+  conversions: number;
+  enrollments: number;
+  conversionRate: number;
+  revenue: number;
+  kpiTarget: number;
+  calculatedRating: number;
 }
 
 // Re-export all service functions from Prisma implementation
@@ -462,6 +480,9 @@ export {
   getPerformanceReviews,
   createPerformanceReview,
   updatePerformanceReview,
+  computeCounsellorConversionMetrics,
+  syncCounsellorPerformanceFromLeads,
+  generatePerformanceReviewsFromConversion,
   getLeaveRequests,
   createLeaveRequest,
   processLeaveRequest,

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GraduationCap } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { login as loginRequest } from '@/lib/apiService';
 
@@ -42,15 +41,12 @@ export default function StudentLoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-neutral-50 px-4 py-12">
-      <div className="ui-card w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-neutral-900 text-white">
-            <GraduationCap className="h-6 w-6" />
-          </div>
+    <main className="ui-page flex items-center justify-center">
+      <div className="ui-card">
+        <div className="mb-8">
           <p className="ui-section-title">Student portal</p>
-          <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Sign in</h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <h1 className="mt-3 ui-text-h2">Sign in</h1>
+          <p className="mt-2 ui-text-body">
             Your counsellor creates your account when your application is set up.
           </p>
         </div>

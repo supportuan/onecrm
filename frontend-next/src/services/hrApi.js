@@ -900,3 +900,19 @@ export const updatePerformanceReview = async (id, data) => {
   });
   return handleResponse(res);
 };
+
+export const getCounsellorConversionMetrics = async (period) => {
+  const params = new URLSearchParams();
+  if (period) params.append("period", period);
+  const res = await tenantFetch(`${API_URL}/performance/counsellors/computed?${params}`);
+  return handleResponse(res);
+};
+
+export const generatePerformanceReviewsFromConversion = async (data) => {
+  const res = await tenantFetch(`${API_URL}/performance-reviews/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};

@@ -28,35 +28,36 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 px-4 py-12">
-      <div className="w-auto rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">OneCRM Account Recovery</p>
-          <h1 className="mt-4 text-2xl font-semibold text-neutral-900">Forgot password?</h1>
-          <p className="mt-2 text-sm text-neutral-500">Enter your email and we will send reset instructions.</p>
+    <main className="ui-page flex items-center justify-center">
+      <div className="ui-card">
+        <div className="mb-8">
+          <p className="ui-section-title">Account recovery</p>
+          <h1 className="mt-3 ui-text-h2">Forgot password</h1>
+          <p className="mt-2 ui-text-body">We&apos;ll email reset instructions if the account exists.</p>
         </div>
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-600">Email</label>
+            <label className="ui-label">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
+              className="ui-input"
+              placeholder="you@company.com"
               required
             />
           </div>
-          {error && <div className="rounded-lg bg-red-50 border border-red-500/20 p-3 text-sm text-red-700">{error}</div>}
-          {message && <div className="rounded-lg bg-emerald-50 border border-emerald-500/20 p-3 text-sm text-emerald-700">{message}</div>}
+          {error && <div className="ui-error">{error}</div>}
+          {message && <div className="ui-success">{message}</div>}
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
+            className="ui-btn-primary w-full py-3"
           >
             {loading ? 'Sending...' : 'Send reset link'}
           </button>
-          <div className="text-center text-sm text-neutral-500">
-            <button type="button" className="text-neutral-700 hover:text-neutral-900 cursor-pointer" onClick={() => router.push('/login')}>
+          <div className="text-center">
+            <button type="button" className="ui-link" onClick={() => router.push('/login')}>
               Back to sign in
             </button>
           </div>

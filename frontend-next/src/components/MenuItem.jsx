@@ -6,31 +6,31 @@ const MenuItem = ({ icon: Icon, label, path, onClick, nested = false, children }
   const pathname = usePathname() || '';
   const active = path ? pathname.startsWith(path) : false;
 
-  const baseClasses = `flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
-    nested ? 'pl-9 text-neutral-600 hover:text-neutral-900' : 'text-neutral-700 hover:bg-neutral-50'
+  const baseClasses = `flex items-center gap-2.5 rounded-[var(--ui-radius)] py-1.5 text-[13px] transition ${
+    nested ? 'pl-8 pr-3' : 'px-3'
+  } ${
+    active
+      ? 'font-medium text-[var(--ui-text)]'
+      : 'text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]'
   }`;
 
-  const activeClasses = nested
-    ? 'bg-neutral-100 text-neutral-900 border-l-2 border-neutral-900'
-    : 'bg-neutral-100 text-neutral-900';
+  const content = (
+    <>
+      {Icon && <Icon className="h-[15px] w-[15px] shrink-0" strokeWidth={1.5} />}
+      <span className="truncate">{label}</span>
+      {children && <span className="ml-auto">{children}</span>}
+    </>
+  );
 
   return (
     <div>
       {path ? (
-        <Link
-          href={path}
-          className={`${baseClasses} ${active ? activeClasses : 'text-neutral-500 hover:bg-neutral-50'}`}
-          onClick={onClick}
-        >
-          <Icon className="h-4 w-4" />
-          <span>{label}</span>
-          <span className="ml-auto">{children}</span>
+        <Link href={path} className={baseClasses} onClick={onClick}>
+          {content}
         </Link>
       ) : (
         <button type="button" className={`${baseClasses} w-full text-left`} onClick={onClick}>
-          <Icon className="h-4 w-4" />
-          <span>{label}</span>
-          <span className="ml-auto">{children}</span>
+          {content}
         </button>
       )}
     </div>

@@ -365,6 +365,11 @@ export const updatePerformanceReviewSchema = z.object({
   date: z.string().optional(),
 });
 
+export const performancePeriodSchema = z.object({
+  period: z.string().regex(/^\d{4}-\d{2}$/, 'Period must be YYYY-MM'),
+  cycle: z.string().optional(),
+});
+
 export const updateEmployeeSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),

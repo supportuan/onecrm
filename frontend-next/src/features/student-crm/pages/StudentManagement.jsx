@@ -13,7 +13,6 @@ import {
   Save,
   ExternalLink,
   CheckCircle2,
-  AlertCircle,
   Globe,
 } from 'lucide-react';
 import {
@@ -86,11 +85,11 @@ export default function StudentManagement() {
   const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
   const [showNew, setShowNew] = useState(false);
   const [showNewApp, setShowNewApp] = useState(false);
-  const [toast, setToast] = useState('');
+  const [toast, setToast] = useState({ kind: '', msg: '' });
 
   const flash = (msg, ok = true) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
+    setToast({ kind: ok ? 'ok' : 'err', msg });
+    setTimeout(() => setToast({ kind: '', msg: '' }), 3000);
   };
 
   const loadStudents = useCallback(async () => {
@@ -294,21 +293,17 @@ export default function StudentManagement() {
   ];
 
   return (
-    <div className="ui-page text-neutral-800 font-sans">
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white px-4 py-2.5 rounded-lg text-sm shadow-lg">
-          {toast}
+    <div className="ui-container text-neutral-800">
+      {toast.msg && (
+        <div className="fixed bottom-6 right-6 z-50 ui-text-body border border-[var(--ui-border)] bg-white px-4 py-3 rounded-[var(--ui-radius)]">
+          {toast.msg}
         </div>
       )}
 
-      <div className="ui-container">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-neutral-900">Student management</h1>
-            <p className="text-sm text-neutral-500 mt-1">
-              Create and maintain student profiles, academic history, test scores, and linked applications.
-            </p>
-          </div>
+          <p className="ui-text-body max-w-xl">
+            Manage student profiles, academic history, and applications.
+          </p>
           {canManage && (
             <button
               type="button"
@@ -321,11 +316,11 @@ export default function StudentManagement() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-3 ui-panel flex flex-col max-h-[calc(100vh-200px)] overflow-hidden">
-            <div className="p-4 border-b border-neutral-200 space-y-3">
+          <div className="lg:col-span-3 ui-panel flex flex-col max-h-[calc(100vh-180px)] overflow-hidden">
+            <div className="p-4 border-b border-[var(--ui-border)] space-y-3">
               <div className="flex justify-between items-center">
-                <h2 className="text-sm font-semibold text-neutral-800">Students</h2>
-                <span className="text-xs text-neutral-500">{students.length}</span>
+                <h2 className="ui-text-strong">Students</h2>
+                <span className="ui-text-meta">{students.length}</span>
               </div>
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -333,29 +328,29 @@ export default function StudentManagement() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search name or email..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-neutral-200 rounded-lg"
+                  className="ui-field pl-9"
                 />
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto divide-y divide-neutral-100">
+            <div className="flex-1 overflow-y-auto">
               {loading && !students.length ? (
-                <p className="p-6 text-center text-sm text-neutral-500">Loading...</p>
+                <p className="p-8 text-center ui-text-meta">Loading…</p>
               ) : students.length === 0 ? (
-                <p className="p-6 text-center text-sm text-neutral-500">No students yet.</p>
+                <p className="p-8 text-center ui-text-meta">No students yet</p>
               ) : (
                 students.map((s) => (
                   <button
                     key={s.id}
                     type="button"
                     onClick={() => setSelectedId(s.id)}
-                    className={`w-full text-left px-4 py-3 hover:bg-neutral-50 ${selectedId === s.id ? 'bg-neutral-100 border-l-4 border-l-neutral-900' : ''
-                      }`}
+                    className={`w-full text-left px-4 py-3 border-b border-[var(--ui-border)] transition hover:bg-[var(--ui-bg-page)] ${
+                      selectedId === s.id ? 'bg-[var(--ui-bg-page)]' : ''
+                    }`}
                   >
-                    <p className="text-sm font-medium text-neutral-900">{s.fullName}</p>
-                    <p className="text-xs text-neutral-500 truncate">{s.email}</p>
-                    <p className="text-xs text-neutral-400 mt-1">
-                      {s.applications?.length || 0} application(s)
+                    <p className={`text-[13px] ${selectedId === s.id ? 'font-medium text-[var(--ui-text)]' : 'text-[var(--ui-text-secondary)]'}`}>
+                      {s.fullName}
                     </p>
+                    <p className="ui-text-meta truncate">{s.email}</p>
                   </button>
                 ))
               )}
@@ -876,7 +871,7 @@ export default function StudentManagement() {
                         Applications ({profile.applications?.length || 0})
                       </h3>
                       <Link
-                        href={`/student-crm/student-applications?student=${selectedId}`}
+                        href={`/student-crm/applications?student=${selectedId}`}
                         className="text-xs font-medium text-neutral-700 hover:text-neutral-900 inline-flex items-center gap-1"
                       >
                         Open in tracker <ExternalLink size={12} />
@@ -905,7 +900,7 @@ export default function StudentManagement() {
                                 {getStageLabel(app.stage)}
                               </span>
                               <Link
-                                href={`/student-crm/student-applications?student=${selectedId}&app=${app.id}`}
+                                href={`/student-crm/applications?student=${selectedId}&app=${app.id}`}
                                 className="text-xs font-medium text-neutral-700 hover:underline"
                               >
                                 Manage
@@ -921,7 +916,6 @@ export default function StudentManagement() {
             )}
           </div>
         </div>
-      </div>
 
       {showNew && (
         <NewStudentModal

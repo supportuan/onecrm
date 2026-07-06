@@ -1,13 +1,12 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Star, Target } from 'lucide-react';
 import PerformanceReviews from './PerformanceReviews';
 import KPIDashboard from './KPIDashboard';
 
 const TABS = [
-  { key: 'reviews', label: 'Reviews', icon: Star, component: PerformanceReviews },
-  { key: 'kpi', label: 'KPI dashboard', icon: Target, component: KPIDashboard },
+  { key: 'reviews', label: 'Reviews' },
+  { key: 'kpi', label: 'KPIs' },
 ];
 
 export default function Performance() {
@@ -15,40 +14,25 @@ export default function Performance() {
   const router = useRouter();
   const tabParam = searchParams.get('tab') || 'reviews';
   const active = TABS.some((t) => t.key === tabParam) ? tabParam : 'reviews';
-  const Active = TABS.find((t) => t.key === active)?.component || PerformanceReviews;
-
-  const setTab = (key) => router.push(`/hr/performance-reviews?tab=${key}`);
+  const Active = active === 'kpi' ? KPIDashboard : PerformanceReviews;
 
   return (
-    <div className="ui-page">
-      <div className="bg-white border-b border-neutral-200 sticky top-0 z-20">
-        <div className="px-8 py-4 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-semibold text-neutral-500 leading-none">HR · talent</p>
-            <h1 className="text-lg font-semibold text-neutral-900 mt-1">Performance</h1>
-          </div>
-          <div className="flex items-center gap-1 bg-neutral-50 border border-neutral-200 rounded-lg p-1">
-            {TABS.map((t) => {
-              const Icon = t.icon;
-              const isActive = active === t.key;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setTab(t.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-semibold transition-all ${
-                    isActive
-                      ? 'bg-neutral-900 text-white shadow-sm'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
-                  }`}
-                >
-                  <Icon size={12} />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+    <div className="ui-container">
+      <div className="flex items-center gap-1 border-b border-[var(--ui-border)] pb-4">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => router.push(`/hr/performance-reviews?tab=${t.key}`)}
+            className={`px-4 py-2 text-[13px] transition border-b-2 -mb-[17px] ${
+              active === t.key
+                ? 'border-[var(--ui-text)] font-medium text-[var(--ui-text)]'
+                : 'border-transparent text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       <Active />

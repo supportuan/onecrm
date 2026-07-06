@@ -30,6 +30,7 @@ import type {
   CounsellorPerformance,
   PayrollDeduction,
   PerformanceReview,
+  CounsellorConversionMetric,
 } from './hr.service.js';
 import type {
   HrEmployee,
@@ -2644,6 +2645,179 @@ export const addCounsellorPerformance = async (
 };
 
 // ---------------------------------------------------------------------------
+// 20b. Counsellor conversion metrics (computed from live CRM lead data)
+// ---------------------------------------------------------------------------
+
+const parseReviewPeriod = (period: string): { start: Date; end: Date } => {
+  const [year, month] = period.split('-').map(Number);
+  if (!year || !month || month < 1 || month > 12) {
+    throw new Error('Invalid period format. Use YYYY-MM');
+  }
+  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  return { start, end };
+};
+
+export const conversionRateToRating = (conversionRate: number, target: number): number => {
+  if (target <= 0) return 3;
+  const ratio = conversionRate / target;
+  if (ratio >= 1.2) return 5;
+  if (ratio >= 1.0) return 4.5;
+  if (ratio >= 0.9) return 4;
+  if (ratio >= 0.8) return 3.5;
+  if (ratio >= 0.7) return 3;
+  if (ratio >= 0.5) return 2.5;
+  if (ratio >= 0.3) return 2;
+  return 1;
+};
+
+const getCounsellorConversionTarget = async (): Promise<number> => {
+  const kpi = await prisma.hrKpiDefinition.findFirst({
+    where: {
+      role: 'COUNSELLOR',
+      isActive: true,
+      name: { contains: 'Conversion', mode: 'insensitive' },
+    },
+    orderBy: { id: 'asc' },
+  });
+  return kpi?.target ?? 40;
+};
+
+export const computeCounsellorConversionMetrics = async (
+  period: string
+): Promise<CounsellorConversionMetric[]> => {
+  const { start, end } = parseReviewPeriod(period);
+  const kpiTarget = await getCounsellorConversionTarget();
+
+  const counsellors = await prisma.user.findMany({
+    where: { role: 'COUNSELLOR', isActive: true },
+    select: { id: true, fullName: true, email: true },
+    orderBy: { fullName: 'asc' },
+  });
+
+  const metrics: CounsellorConversionMetric[] = [];
+
+  for (const counsellor of counsellors) {
+    const leadsHandled = await prisma.lead.count({
+      where: {
+        assignedCounsellorId: counsellor.id,
+        deletedAt: null,
+        createdAt: { gte: start, lte: end },
+      },
+    });
+
+    const conversions = await prisma.lead.count({
+      where: {
+        assignedCounsellorId: counsellor.id,
+        deletedAt: null,
+        status: 'CONVERTED',
+        convertedAt: { gte: start, lte: end },
+      },
+    });
+
+    const enrollments = await prisma.application.count({
+      where: {
+        assignedToId: counsellor.id,
+        stage: 'ENROLLED',
+        updatedAt: { gte: start, lte: end },
+      },
+    });
+
+    const conversionRate =
+      leadsHandled > 0 ? Math.round((conversions / leadsHandled) * 1000) / 10 : 0;
+
+    metrics.push({
+      counsellorId: String(counsellor.id),
+      counsellorName: counsellor.fullName || counsellor.email,
+      period,
+      leadsHandled,
+      conversions,
+      enrollments,
+      conversionRate,
+      revenue: 0,
+      kpiTarget,
+      calculatedRating: conversionRateToRating(conversionRate, kpiTarget),
+    });
+  }
+
+  return metrics;
+};
+
+export const syncCounsellorPerformanceFromLeads = async (period: string) => {
+  const metrics = await computeCounsellorConversionMetrics(period);
+  const synced = [];
+  for (const m of metrics) {
+    synced.push(
+      await addCounsellorPerformance({
+        counsellorId: m.counsellorId,
+        counsellorName: m.counsellorName,
+        period: m.period,
+        leadsHandled: m.leadsHandled,
+        conversions: m.conversions,
+        revenue: m.revenue,
+      })
+    );
+  }
+  return synced;
+};
+
+export const generatePerformanceReviewsFromConversion = async (opts: {
+  period: string;
+  cycle?: string;
+}) => {
+  const { period, cycle } = opts;
+  const metrics = await computeCounsellorConversionMetrics(period);
+  await syncCounsellorPerformanceFromLeads(period);
+
+  const [year, month] = period.split('-').map(Number);
+  const reviewCycle =
+    cycle ||
+    `${new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'short', year: 'numeric' })} Review`;
+
+  const reviews: PerformanceReview[] = [];
+
+  for (const m of metrics) {
+    const userId = parseInt(m.counsellorId, 10);
+    if (Number.isNaN(userId)) continue;
+
+    const emp = await prisma.hrEmployee.findFirst({
+      where: { userId },
+      include: { manager: true },
+    });
+    if (!emp) continue;
+
+    const existing = await prisma.hrPerformanceReview.findFirst({
+      where: { employeeId: emp.id, cycle: reviewCycle },
+    });
+
+    const data = {
+      employeeId: emp.id,
+      name: emp.name,
+      employeeCode: emp.employeeCode,
+      department: emp.department || 'Counselling',
+      cycle: reviewCycle,
+      manager: emp.manager?.name || 'HR',
+      rating: m.calculatedRating,
+      status: 'MANAGER_REVIEW' as HrReviewStatus,
+      reviewDate: new Date().toISOString().split('T')[0],
+      reviewPeriod: period,
+      leadsHandled: m.leadsHandled,
+      conversions: m.conversions,
+      enrollments: m.enrollments,
+      conversionRate: m.conversionRate,
+    };
+
+    const row = existing
+      ? await prisma.hrPerformanceReview.update({ where: { id: existing.id }, data })
+      : await prisma.hrPerformanceReview.create({ data });
+
+    reviews.push(mapPerformanceReview(row));
+  }
+
+  return reviews;
+};
+
+// ---------------------------------------------------------------------------
 // 21. Payroll Deductions
 // ---------------------------------------------------------------------------
 
@@ -2731,6 +2905,11 @@ const mapPerformanceReview = (r: HrPerformanceReview): PerformanceReview => ({
   rating: r.rating,
   status: reviewStatusToApi[r.status],
   date: r.reviewDate,
+  reviewPeriod: r.reviewPeriod ?? undefined,
+  leadsHandled: r.leadsHandled,
+  conversions: r.conversions,
+  enrollments: r.enrollments,
+  conversionRate: r.conversionRate,
 });
 
 export const getPerformanceReviews = async (search?: string) => {

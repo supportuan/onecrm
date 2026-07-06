@@ -42,6 +42,7 @@ import {
   upsertPayrollDeductionSchema,
   createPerformanceReviewSchema,
   updatePerformanceReviewSchema,
+  performancePeriodSchema,
   createLeaveRequestSchema,
   processLeaveRequestSchema,
   updateEmployeeSchema,
@@ -1230,6 +1231,40 @@ export const addCounsellorPerformance = async (req: Request, res: Response, next
     const validatedData = addCounsellorPerformanceSchema.parse(req.body);
     const data = await hrService.addCounsellorPerformance(validatedData);
     return sendSuccess(res, 'Counsellor performance recorded successfully', data, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCounsellorConversionMetrics = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const period = (req.query.period as string) || new Date().toISOString().slice(0, 7);
+    const data = await hrService.computeCounsellorConversionMetrics(period);
+    return sendSuccess(res, 'Counsellor conversion metrics computed', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const syncCounsellorPerformanceFromLeads = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { period } = performancePeriodSchema.parse(req.body);
+    const data = await hrService.syncCounsellorPerformanceFromLeads(period);
+    return sendSuccess(res, 'Counsellor performance synced from leads', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generatePerformanceReviewsFromConversion = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { period, cycle } = performancePeriodSchema.parse(req.body);
+    const data = await hrService.generatePerformanceReviewsFromConversion({ period, cycle });
+    return sendSuccess(res, 'Performance reviews generated from lead conversion', data, 201);
   } catch (error) {
     next(error);
   }

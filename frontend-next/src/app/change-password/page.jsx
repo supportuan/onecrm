@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import authFetch from '@/lib/api';
-import { ShieldCheck, Eye, EyeOff, Lock, Check } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 
 export default function ChangePasswordPage() {
@@ -71,49 +71,34 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 px-4 py-12">
-      <div className="w-auto rounded-lg border border-neutral-200 bg-white p-8 shadow-sm relative overflow-hidden">
-        {/* Decorative dynamic ambient glow */}
-        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-neutral-50 blur-3xl"></div>
-        <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-neutral-50 blur-3xl"></div>
-
-        <div className="mb-6 text-center relative z-10">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 mb-4 border border-neutral-200">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Security Update Required</p>
-          <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Create a new password</h1>
-          <p className="mt-2 text-sm text-neutral-500">
-            Since this is your first time logging in with a temporary password, you must configure a secure personal password.
+    <main className="ui-page flex items-center justify-center">
+      <div className="ui-card relative">
+        <div className="mb-8">
+          <p className="ui-section-title">Security</p>
+          <h1 className="mt-3 ui-text-h2">New password</h1>
+          <p className="mt-2 ui-text-body">
+            Set a secure personal password to continue.
           </p>
         </div>
 
         {success ? (
-          <div className="space-y-6 text-center py-6 relative z-10">
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-bounce">
-              <Check className="h-8 w-8" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-white">Password Updated Successfully!</h2>
-              <p className="mt-2 text-sm text-neutral-500">
-                Your credentials are secure now. Redirecting you to your workspace in <span className="font-bold text-neutral-500">{countdown}s</span>...
-              </p>
-            </div>
+          <div className="space-y-4 py-4 text-center">
+            <p className="ui-text-h3">Password updated</p>
+            <p className="ui-text-body">
+              Redirecting in <span className="font-medium">{countdown}s</span>…
+            </p>
           </div>
         ) : (
-          <form className="space-y-5 relative z-10" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-neutral-500">Current Temporary Password</label>
+              <label className="ui-label">Current password</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">
-                  <Lock className="h-4 w-4" />
-                </span>
                 <input
                   type={showCurrent ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter the password sent to your email"
-                  className="w-full rounded-lg border border-neutral-200 bg-white pl-11 pr-12 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
+                  placeholder="Temporary password from email"
+                  className="ui-input pr-10"
                   required
                 />
                 <button
@@ -127,17 +112,14 @@ export default function ChangePasswordPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-neutral-500">New Password</label>
+              <label className="ui-label">New password</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">
-                  <Lock className="h-4 w-4" />
-                </span>
                 <input
                   type={showNew ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Choose a strong password"
-                  className="w-full rounded-lg border border-neutral-200 bg-white pl-11 pr-12 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
+                  className="ui-input pr-10"
                   required
                 />
                 <button
@@ -149,41 +131,22 @@ export default function ChangePasswordPage() {
                 </button>
               </div>
 
-              {/* Password Quality Checker Checklist */}
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-[11px] font-semibold">
-                <div className={`flex items-center gap-1.5 ${isLengthValid ? 'text-emerald-400' : 'text-neutral-500'}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${isLengthValid ? 'bg-emerald-400' : 'bg-slate-600'}`}></span>
-                  Min 8 Characters
-                </div>
-                <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-400' : 'text-neutral-500'}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${hasNumber ? 'bg-emerald-400' : 'bg-slate-600'}`}></span>
-                  At least 1 Number
-                </div>
-                <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-400' : 'text-neutral-500'}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${hasSpecial ? 'bg-emerald-400' : 'bg-slate-600'}`}></span>
-                  1 Special Char
-                </div>
+              <div className="mt-3 space-y-1.5 ui-text-meta">
+                <p className={isLengthValid ? 'text-emerald-700' : ''}>At least 8 characters</p>
+                <p className={hasNumber ? 'text-emerald-700' : ''}>At least 1 number</p>
+                <p className={hasSpecial ? 'text-emerald-700' : ''}>At least 1 special character</p>
               </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-neutral-500">Confirm New Password</label>
+              <label className="ui-label">Confirm password</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500">
-                  <Lock className="h-4 w-4" />
-                </span>
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter your new password"
-                  className={`w-full rounded-lg border bg-white pl-11 pr-12 py-2.5 text-sm text-neutral-900 outline-none transition focus:ring-2 focus:ring-neutral-200 ${
-                    confirmPassword
-                      ? passwordsMatch
-                        ? 'border-emerald-600 focus:border-emerald-500'
-                        : 'border-red-600 focus:border-red-500'
-                      : 'border-neutral-200 focus:border-neutral-400'
-                  }`}
+                  placeholder="Re-enter password"
+                  className="ui-input pr-10"
                   required
                 />
                 <button
@@ -199,14 +162,10 @@ export default function ChangePasswordPage() {
               )}
             </div>
 
-            {error && <div className="rounded-lg bg-red-50 border border-red-500/20 p-3 text-sm text-red-700">{error}</div>}
+            {error && <div className="ui-error">{error}</div>}
 
-            <button
-              type="submit"
-              disabled={loading || !isFormValid}
-              className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3.5 text-sm font-bold text-neutral-900 transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40 shadow-lg "
-            >
-              {loading ? 'Securing your account...' : 'Change Password & Continue'}
+            <button type="submit" disabled={loading || !isFormValid} className="ui-btn-primary w-full py-3">
+              {loading ? 'Saving…' : 'Continue'}
             </button>
           </form>
         )}

@@ -1,350 +1,305 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  Award, 
-  TrendingUp, 
-  Users, 
-  Clock, 
-  Search, 
-  Plus, 
-  Star, 
-  CheckCircle2, 
-  X, 
-  Sliders, 
-  UserCheck,
-  Loader2
-} from 'lucide-react';
-import { getPerformanceReviews, createPerformanceReview } from '@/services/hrApi';
+import { Search, RefreshCw, Loader2 } from 'lucide-react';
+import {
+  getPerformanceReviews,
+  getCounsellorConversionMetrics,
+  generatePerformanceReviewsFromConversion,
+  updatePerformanceReview,
+} from '@/services/hrApi';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const currentPeriod = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const periodOptions = () => {
+  const opts = [];
+  const now = new Date();
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const p = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    opts.push({ value: p, label: `${MONTHS[d.getMonth()]} ${d.getFullYear()}` });
+  }
+  return opts;
+};
+
+const ratingLabel = (rate, target = 40) => {
+  if (rate >= target * 1.2) return 'Exceeds';
+  if (rate >= target) return 'Meets';
+  if (rate >= target * 0.7) return 'Developing';
+  return 'Below target';
+};
 
 export default function PerformanceReviews() {
   const [reviews, setReviews] = useState([]);
+  const [preview, setPreview] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newReview, setNewReview] = useState({
-    name: '',
-    employeeId: '',
-    department: 'Engineering',
-    cycle: 'FY26 H1 Review',
-    manager: 'Jane Admin',
-    status: 'Self-Review'
-  });
+  const [period, setPeriod] = useState(currentPeriod());
+  const [kpiTarget, setKpiTarget] = useState(40);
 
   const fetchReviews = useCallback(async (search = '') => {
     setLoading(true);
     setError(null);
     try {
       const res = await getPerformanceReviews(search || undefined);
-      if (res.success) {
-        setReviews(res.data || []);
-      } else {
-        setError(res.message || 'Failed to load performance reviews');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Unable to connect to HR database');
+      if (res.success) setReviews(res.data || []);
+      else setError(res.message || 'Failed to load reviews');
+    } catch {
+      setError('Unable to load performance reviews');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const fetchPreview = useCallback(async () => {
+    setPreviewLoading(true);
+    try {
+      const res = await getCounsellorConversionMetrics(period);
+      if (res.success) {
+        setPreview(res.data || []);
+        if (res.data?.[0]?.kpiTarget) setKpiTarget(res.data[0].kpiTarget);
+      }
+    } catch {
+      setPreview([]);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [period]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchReviews(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery, fetchReviews]);
 
-  const handleCreateReview = async (e) => {
-    e.preventDefault();
-    if (!newReview.name || !newReview.employeeId) return;
+  useEffect(() => {
+    fetchPreview();
+  }, [fetchPreview]);
 
-    setSubmitting(true);
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setError(null);
     try {
-      const res = await createPerformanceReview({
-        ...newReview,
-        date: new Date().toISOString().split('T')[0],
-      });
+      const res = await generatePerformanceReviewsFromConversion({ period });
       if (res.success) {
-        setShowAddModal(false);
-        setNewReview({
-          name: '',
-          employeeId: '',
-          department: 'Engineering',
-          cycle: 'FY26 H1 Review',
-          manager: 'Jane Admin',
-          status: 'Self-Review'
-        });
         await fetchReviews(searchQuery);
+        await fetchPreview();
       } else {
-        alert(res.message || 'Failed to create review');
+        setError(res.message || 'Failed to generate reviews');
       }
-    } catch (err) {
-      console.error(err);
-      alert('Failed to create performance review');
+    } catch {
+      setError('Failed to generate reviews from lead data');
     } finally {
-      setSubmitting(false);
+      setGenerating(false);
     }
   };
 
-  const filteredReviews = reviews;
+  const handleStatusChange = async (id, status) => {
+    try {
+      const res = await updatePerformanceReview(id, { status });
+      if (res.success) await fetchReviews(searchQuery);
+    } catch {
+      setError('Failed to update review status');
+    }
+  };
 
-  const completedReviews = reviews.filter(r => r.status === 'Completed').length;
-  const avgRating = (reviews.filter(r => r.rating > 0).reduce((sum, r) => sum + r.rating, 0) / reviews.filter(r => r.rating > 0).length || 0).toFixed(1);
+  const avgConversion =
+    reviews.filter((r) => r.conversionRate > 0).length > 0
+      ? (
+          reviews.reduce((s, r) => s + (r.conversionRate || 0), 0) /
+          reviews.filter((r) => r.conversionRate > 0).length
+        ).toFixed(1)
+      : '—';
+
+  const avgRating =
+    reviews.filter((r) => r.rating > 0).length > 0
+      ? (
+          reviews.reduce((s, r) => s + r.rating, 0) / reviews.filter((r) => r.rating > 0).length
+        ).toFixed(1)
+      : '—';
 
   return (
-    <div className="ui-page text-neutral-800">
-      {/* Title */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="ui-container">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900">
-            Performance Reviews & Goals
-          </h1>
-          <p className="text-neutral-500 text-sm mt-1">
-            Conduct appraisals, track feedback cycles, calibrate results, and manage employee performance goals.
+          <p className="ui-text-body max-w-xl">
+            Counsellor reviews are calculated from lead conversion rate — leads handled vs converted to applications.
+            Target: {kpiTarget}% conversion.
           </p>
         </div>
-
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-5 py-3 rounded-lg text-xs font-semibold bg-neutral-900 text-white shadow-md  hover:scale-[1.01] hover:shadow-lg hover:bg-neutral-800 transition-all shrink-0"
-        >
-          <Plus size={14} />
-          Initiate Review
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="ui-field ui-select w-auto min-w-[140px]"
+          >
+            {periodOptions().map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={generating}
+            className="ui-btn-primary inline-flex items-center gap-2"
+          >
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Calculate reviews
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-8">
-        {/* Appraisal Cycles Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="p-6 bg-white border border-neutral-200 rounded-lg flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-neutral-500">Active cycles</span>
-              <Sliders size={20} className="text-neutral-700 opacity-60" />
-            </div>
-            <p className="text-3xl font-extrabold text-neutral-900 tracking-tight">FY26 H1</p>
-            <div className="text-[11px] font-medium text-neutral-500 mt-1">Active institutional appraisal</div>
-          </div>
+      {error && <div className="ui-error">{error}</div>}
 
-          <div className="p-6 bg-white border border-neutral-200 rounded-lg flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-neutral-500">Reviews in progress</span>
-              <Clock size={20} className="text-amber-500 opacity-60" />
-            </div>
-            <p className="text-3xl font-extrabold text-neutral-900 tracking-tight">{reviews.length - completedReviews}</p>
-            <div className="text-[11px] font-medium text-neutral-500 mt-1">Pending calibration / submissions</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Reviews', value: reviews.length },
+          { label: 'Avg conversion', value: avgConversion === '—' ? '—' : `${avgConversion}%` },
+          { label: 'Avg rating', value: avgRating === '—' ? '—' : `${avgRating} / 5` },
+          { label: 'KPI target', value: `${kpiTarget}%` },
+        ].map((stat) => (
+          <div key={stat.label} className="ui-panel p-4">
+            <p className="ui-text-caption normal-case tracking-normal">{stat.label}</p>
+            <p className="ui-text-h2 mt-1">{stat.value}</p>
           </div>
+        ))}
+      </div>
 
-          <div className="p-6 bg-white border border-neutral-200 rounded-lg flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-neutral-500">Completed reviews</span>
-              <CheckCircle2 size={20} className="text-emerald-500 opacity-60" />
-            </div>
-            <p className="text-3xl font-extrabold text-neutral-900 tracking-tight">{completedReviews}</p>
-            <div className="text-[11px] font-medium text-neutral-500 mt-1">Signed off & locked ledgers</div>
-          </div>
-
-          <div className="p-6 bg-white border border-neutral-200 rounded-lg flex flex-col gap-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-neutral-500">Average rating score</span>
-              <Star size={20} className="text-yellow-500 opacity-60" />
-            </div>
-            <p className="text-3xl font-extrabold text-neutral-900 tracking-tight">{avgRating} / 5.0</p>
-            <div className="text-[11px] font-medium text-neutral-500 mt-1">Average peer & manager score</div>
-          </div>
+      {/* Live preview from CRM leads */}
+      <div className="ui-panel overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--ui-border)] flex items-center justify-between">
+          <h2 className="ui-text-h3">Conversion preview — {period}</h2>
+          {previewLoading && <Loader2 className="h-4 w-4 animate-spin text-[var(--ui-text-muted)]" />}
         </div>
-
-        {/* Filter and appraisal ledger */}
-        <div className="space-y-6">
-          <div className="ui-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search appraisals by name, ID, or department..."
-                className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="px-5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-600">
-              {filteredReviews.length} Enrolled assessments
-            </div>
-          </div>
-
-          <div className="ui-panel overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-neutral-50 border-b border-neutral-200 text-xs font-semibold text-neutral-500">
-                    <th className="px-6 py-4">University ID</th>
-                    <th className="px-6 py-4">Employee</th>
-                    <th className="px-6 py-4">Appraisal cycle</th>
-                    <th className="px-6 py-4">Assigned evaluator</th>
-                    <th className="px-6 py-4">Final score</th>
-                    <th className="px-6 py-4">Assessment status</th>
-                    <th className="px-6 py-4 text-right">Appraisal date</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-[var(--ui-border)] ui-text-caption normal-case tracking-normal">
+                <th className="px-4 py-3 font-normal">Counsellor</th>
+                <th className="px-4 py-3 font-normal">Leads</th>
+                <th className="px-4 py-3 font-normal">Converted</th>
+                <th className="px-4 py-3 font-normal">Enrolled</th>
+                <th className="px-4 py-3 font-normal">Conversion %</th>
+                <th className="px-4 py-3 font-normal">Rating</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--ui-border)]">
+              {preview.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center ui-text-meta">
+                    {previewLoading ? 'Loading…' : 'No counsellor lead data for this period'}
+                  </td>
+                </tr>
+              ) : (
+                preview.map((row) => (
+                  <tr key={row.counsellorId} className="hover:bg-[var(--ui-bg-page)]">
+                    <td className="px-4 py-3 ui-text-strong">{row.counsellorName}</td>
+                    <td className="px-4 py-3 ui-text-body">{row.leadsHandled}</td>
+                    <td className="px-4 py-3 ui-text-body">{row.conversions}</td>
+                    <td className="px-4 py-3 ui-text-body">{row.enrollments}</td>
+                    <td className="px-4 py-3">
+                      <span className="ui-text-strong">{row.conversionRate}%</span>
+                      <span className="ui-text-meta ml-2">
+                        ({ratingLabel(row.conversionRate, row.kpiTarget)})
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 ui-text-strong">{row.calculatedRating} / 5</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-16 text-center text-sm text-neutral-500">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-neutral-700" />
-                        <span className="block mt-3">Loading performance reviews...</span>
-                      </td>
-                    </tr>
-                  ) : error ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-16 text-center text-sm text-red-500">{error}</td>
-                    </tr>
-                  ) : filteredReviews.length > 0 ? (
-                    filteredReviews.map((rev) => (
-                      <tr key={rev.id} className="hover:bg-neutral-50/50 transition-all duration-200">
-                        <td className="px-6 py-5 text-xs font-mono font-bold text-neutral-700 tracking-wider">
-                          {rev.employeeId}
-                        </td>
-                        <td className="px-6 py-5">
-                          <div>
-                            <p className="text-sm font-semibold text-neutral-800">{rev.name}</p>
-                            <p className="text-xs text-neutral-500 mt-0.5">{rev.department}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 text-xs font-semibold text-neutral-600">
-                          {rev.cycle}
-                        </td>
-                        <td className="px-6 py-5 text-xs font-medium text-slate-650">
-                          {rev.manager}
-                        </td>
-                        <td className="px-6 py-5">
-                          {rev.rating > 0 ? (
-                            <span className="text-xs font-semibold text-amber-600 flex items-center gap-1">
-                              <Star size={12} className="fill-amber-600 text-amber-600" />
-                              {rev.rating.toFixed(1)} / 5.0
-                            </span>
-                          ) : (
-                            <span className="text-xs text-neutral-500">Not appraised</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-5">
-                          <span className={`px-2.5 py-1 text-xs font-medium rounded-lg border ${
-                            rev.status === 'Completed'
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                              : rev.status === 'Manager Review'
-                              ? 'bg-neutral-100 border-neutral-200 text-neutral-900'
-                              : rev.status === 'Calibrated'
-                              ? 'bg-neutral-100 border-neutral-200 text-neutral-700'
-                              : 'bg-amber-50 border-amber-200 text-amber-700'
-                          }`}>
-                            {rev.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-right text-xs font-mono text-neutral-500">
-                          {rev.date}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-xs text-neutral-500 italic">
-                        No performance assessments found matching your query.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Add appraisal modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="ui-modal scale-100 animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50">
-              <h2 className="text-sm font-bold text-neutral-800">Initiate appraisal record</h2>
-              <button 
-                onClick={() => setShowAddModal(false)} 
-                className="text-neutral-500 hover:text-neutral-700 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleCreateReview} className="p-8 space-y-5">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-neutral-600 ml-1">Staff member name</label>
-                <input
-                  type="text" 
-                  required
-                  placeholder="e.g. Raju Kalla"
-                  value={newReview.name}
-                  onChange={e => setNewReview({ ...newReview, name: e.target.value })}
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
-                />
-              </div>
+      {/* Saved reviews */}
+      <div className="space-y-3">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ui-text-muted)]" />
+          <input
+            type="text"
+            placeholder="Search by name or ID…"
+            className="ui-field pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-neutral-600 ml-1">University ID</label>
-                <input
-                  type="text" 
-                  required
-                  placeholder="e.g. E001"
-                  value={newReview.employeeId}
-                  onChange={e => setNewReview({ ...newReview, employeeId: e.target.value })}
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold text-slate-850 focus:border-neutral-900 outline-none transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-neutral-600 ml-1">Department</label>
-                  <select
-                    value={newReview.department}
-                    onChange={e => setNewReview({ ...newReview, department: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold text-neutral-800 focus:border-neutral-900 outline-none transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="Engineering">Engineering</option>
-                    <option value="Human Resources">Human Resources</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Marketing">Marketing</option>
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-neutral-600 ml-1">Assigned evaluator</label>
-                  <input
-                    type="text" 
-                    required
-                    value={newReview.manager}
-                    onChange={e => setNewReview({ ...newReview, manager: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-bold text-slate-850 focus:border-neutral-900 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 border-t border-neutral-200 pt-6 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-3.5 border border-neutral-200 rounded-lg text-xs font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
-                >
-                  Discard
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-xs hover:bg-neutral-800 transition-all shadow-sm flex items-center justify-center gap-1.5"
-                >
-                  Confirm Appraisal
-                </button>
-              </div>
-            </form>
+        <div className="ui-panel overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[var(--ui-border)] ui-text-caption normal-case tracking-normal">
+                  <th className="px-4 py-3 font-normal">Employee</th>
+                  <th className="px-4 py-3 font-normal">Period</th>
+                  <th className="px-4 py-3 font-normal">Leads → Converted</th>
+                  <th className="px-4 py-3 font-normal">Conversion %</th>
+                  <th className="px-4 py-3 font-normal">Rating</th>
+                  <th className="px-4 py-3 font-normal">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--ui-border)]">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center ui-text-meta">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                    </td>
+                  </tr>
+                ) : reviews.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center ui-text-meta">
+                      No reviews yet. Select a period and click Calculate reviews.
+                    </td>
+                  </tr>
+                ) : (
+                  reviews.map((rev) => (
+                    <tr key={rev.id} className="hover:bg-[var(--ui-bg-page)]">
+                      <td className="px-4 py-3">
+                        <p className="ui-text-strong">{rev.name}</p>
+                        <p className="ui-text-meta">{rev.employeeId} · {rev.department}</p>
+                      </td>
+                      <td className="px-4 py-3 ui-text-body">{rev.reviewPeriod || rev.cycle}</td>
+                      <td className="px-4 py-3 ui-text-body">
+                        {rev.leadsHandled ?? '—'} → {rev.conversions ?? '—'}
+                        {(rev.enrollments ?? 0) > 0 && (
+                          <span className="ui-text-meta"> · {rev.enrollments} enrolled</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 ui-text-strong">
+                        {rev.conversionRate != null ? `${rev.conversionRate}%` : '—'}
+                      </td>
+                      <td className="px-4 py-3 ui-text-strong">
+                        {rev.rating > 0 ? `${rev.rating} / 5` : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={rev.status}
+                          onChange={(e) => handleStatusChange(rev.id, e.target.value)}
+                          className="ui-field ui-select w-auto min-w-[130px] py-1.5 text-[12px]"
+                        >
+                          <option value="Self-Review">Self-Review</option>
+                          <option value="Manager Review">Manager Review</option>
+                          <option value="Calibrated">Calibrated</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

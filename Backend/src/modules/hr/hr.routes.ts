@@ -160,8 +160,11 @@ router.get('/performance/marketing', requirePermission('VIEW_REPORTS'), controll
 router.post('/performance/marketing', requirePermission('MANAGE_EMPLOYEES'), controller.addMarketingPerformance);
 router.get('/performance/counsellors', requirePermission('VIEW_REPORTS'), controller.getCounsellorPerformance);
 router.post('/performance/counsellors', requirePermission('MANAGE_EMPLOYEES'), controller.addCounsellorPerformance);
+router.get('/performance/counsellors/computed', requirePermission('VIEW_REPORTS'), controller.getCounsellorConversionMetrics);
+router.post('/performance/counsellors/sync', requirePermission('MANAGE_EMPLOYEES'), controller.syncCounsellorPerformanceFromLeads);
 router.get('/performance-reviews', requirePermission('VIEW_REPORTS'), controller.getPerformanceReviews);
 router.post('/performance-reviews', requirePermission('MANAGE_EMPLOYEES'), controller.createPerformanceReview);
+router.post('/performance-reviews/generate', requirePermission('MANAGE_EMPLOYEES'), controller.generatePerformanceReviewsFromConversion);
 router.put('/performance-reviews/:id', requirePermission('MANAGE_EMPLOYEES'), controller.updatePerformanceReview);
 
 export default router;

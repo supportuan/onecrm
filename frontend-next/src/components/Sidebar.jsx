@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Command, LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import MenuItem from "./MenuItem";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -203,55 +203,23 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
   return (
     <>
       <aside
-        className="
-          fixed inset-y-0 left-0 z-30 flex h-screen flex-col
-          border-r border-neutral-200 bg-white text-neutral-800
-          transition-[width] duration-300 ease-in-out
-        "
+        className="fixed inset-y-0 left-0 z-30 flex h-screen flex-col border-r border-[var(--ui-border)] bg-white transition-[width] duration-200 ease-out"
         style={{
-          width: sidebarOpen ? "288px" : "80px",
+          width: sidebarOpen ? "var(--ui-sidebar-open)" : "var(--ui-sidebar-collapsed)",
         }}
       >
-        <div className="flex-none p-5 pb-3">
-          <div className="flex items-center justify-between gap-3 border-b border-neutral-200 pb-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-900">
-                <Command className="h-4 w-4" />
-              </div>
-
-              {sidebarOpen && (
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-neutral-900">
-                    ONECRM
-                  </p>
-                  <p className="text-xs text-neutral-500 truncate">
-                    Role based access
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="flex h-[var(--ui-header-height)] flex-none items-center border-b border-[var(--ui-border)] px-4">
+          {sidebarOpen ? (
+            <p className="text-[13px] font-medium tracking-[-0.01em] text-[var(--ui-text)]">OneCRM</p>
+          ) : (
+            <p className="mx-auto text-[13px] font-medium text-[var(--ui-text)]">O</p>
+          )}
         </div>
 
-        {sidebarOpen && (
-          <div className="px-5 py-2 flex-none">
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
-              <p className="text-xs text-neutral-500">Logged in as</p>
-              <p className="text-sm font-medium text-neutral-900 mt-0.5">
-                {user?.role || "User"}
-              </p>
-              <p className="text-xs text-neutral-500 mt-1 truncate">
-                {user?.fullName || user?.email}
-              </p>
-            </div>
-          </div>
-        )}
-
         <div
-          className={`
-            flex-1 overflow-y-auto sidebar-scrollbar py-3 space-y-1
-            ${sidebarOpen ? "px-5" : "px-3"}
-          `}
+          className={`flex-1 overflow-y-auto sidebar-scrollbar py-4 space-y-0.5 ${
+            sidebarOpen ? "px-3" : "px-2"
+          }`}
         >
           {filteredNavMenu.map((item) => {
             const hasSubItems = item.subItems && item.subItems.length > 0;
@@ -264,14 +232,11 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
                       type="button"
                       title={!sidebarOpen ? item.label : ""}
                       className={`
-                        flex w-full items-center rounded-lg py-2.5 text-xs font-medium transition
-                        ${sidebarOpen
-                          ? "justify-between gap-3 px-3"
-                          : "justify-center px-2"
-                        }
+                        flex w-full items-center rounded-[var(--ui-radius)] py-2 text-[13px] transition
+                        ${sidebarOpen ? "justify-between gap-2 px-3" : "justify-center px-0"}
                         ${isSectionActive(item)
-                          ? "bg-neutral-100 text-neutral-900"
-                          : "text-neutral-600 hover:bg-neutral-50"
+                          ? "font-medium text-[var(--ui-text)] bg-[var(--ui-bg-page)]"
+                          : "text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]"
                         }
                       `}
                       onMouseEnter={(e) => {
@@ -310,17 +275,17 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
                         toggleSection(item.label);
                       }}
                     >
-                      <span className="flex items-center gap-3 text-neutral-800">
-                        <item.icon className="h-4 w-4 shrink-0 text-neutral-500" />
+                      <span className="flex items-center gap-2.5">
+                        <item.icon className="h-[15px] w-[15px] shrink-0" strokeWidth={1.5} />
                         {sidebarOpen && <span>{item.label}</span>}
                       </span>
 
                       {sidebarOpen && (
                         <ChevronDown
-                          className={`h-4 w-4 text-neutral-400 transition-transform ${openSections[item.label]
-                            ? "rotate-180"
-                            : "rotate-0"
-                            }`}
+                          className={`h-3.5 w-3.5 text-[var(--ui-text-muted)] transition-transform ${
+                            openSections[item.label] ? "rotate-180" : ""
+                          }`}
+                          strokeWidth={1.5}
                         />
                       )}
                     </button>
@@ -347,21 +312,18 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
                     type="button"
                     title={!sidebarOpen ? item.label : ""}
                     className={`
-                      flex w-full items-center rounded-lg py-2.5 text-xs font-medium transition
-                      ${sidebarOpen
-                        ? "gap-3 px-3"
-                        : "justify-center px-2"
-                      }
+                      flex w-full items-center rounded-[var(--ui-radius)] py-2 text-[13px] transition
+                      ${sidebarOpen ? "gap-2.5 px-3" : "justify-center px-0"}
                       ${location === item.path
-                        ? "bg-neutral-100 text-neutral-900"
-                        : "text-neutral-600 hover:bg-neutral-50"
+                        ? "font-medium text-[var(--ui-text)] bg-[var(--ui-bg-page)]"
+                        : "text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]"
                       }
                     `}
                     onClick={() => {
                       router.push(item.path);
                     }}
                   >
-                    <item.icon className="h-4 w-4 shrink-0 text-neutral-500" />
+                    <item.icon className="h-[15px] w-[15px] shrink-0" strokeWidth={1.5} />
                     {sidebarOpen && <span>{item.label}</span>}
                   </button>
                 )}
@@ -370,33 +332,29 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
           })}
         </div>
 
-        <div className="flex-none p-5 border-t border-neutral-200 bg-neutral-50">
+        <div className="flex-none border-t border-[var(--ui-border)] p-3">
           <button
             onClick={() => {
               handleLogout();
-
-              try {
-                authLogout();
-              } catch (e) { }
-
-              try {
-                workspaceLogout();
-              } catch (e) { }
+              try { authLogout(); } catch (e) { }
+              try { workspaceLogout(); } catch (e) { }
             }}
             title={!sidebarOpen ? "Logout" : ""}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white p-3 border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition"
+            className={`flex w-full items-center text-[13px] text-[var(--ui-text-muted)] transition hover:text-[var(--ui-text)] ${
+              sidebarOpen ? "gap-2.5 px-3 py-2" : "justify-center py-2"
+            }`}
           >
-            <LogOut className="h-4 w-4 shrink-0" />
-            {sidebarOpen && <span>Logout</span>}
+            <LogOut className="h-[15px] w-[15px] shrink-0" strokeWidth={1.5} />
+            {sidebarOpen && <span>Sign out</span>}
           </button>
         </div>
       </aside>
 
       {flyoutMenu && !sidebarOpen && (
         <div
-          className="fixed z-50 min-w-[240px] rounded-xl border border-neutral-200 bg-white p-2 shadow-xl"
+          className="fixed z-50 min-w-[200px] rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-white py-2"
           style={{
-            left: "88px",
+            left: "calc(var(--ui-sidebar-collapsed) + 8px)",
             top: `${flyoutMenu.top}px`,
           }}
           onMouseEnter={() => {
@@ -408,11 +366,11 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
             setFlyoutMenu(null);
           }}
         >
-          <p className="px-3 py-2 text-xs font-semibold text-neutral-400">
+          <p className="px-3 pb-1 ui-text-caption">
             {flyoutMenu.label}
           </p>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5 px-1">
             {flyoutMenu.subItems.map((sub) => (
               <button
                 key={sub.path}
@@ -422,15 +380,15 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
                   setFlyoutMenu(null);
                 }}
                 className={`
-                  flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition
+                  flex w-full items-center gap-2.5 rounded-[var(--ui-radius)] px-3 py-2 text-[13px] transition
                   ${location.startsWith(sub.path)
-                    ? "bg-neutral-100 text-neutral-900"
-                    : "text-neutral-600 hover:bg-neutral-50"
+                    ? "font-medium text-[var(--ui-text)]"
+                    : "text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]"
                   }
                 `}
               >
                 {sub.icon && (
-                  <sub.icon className="h-4 w-4 shrink-0 text-neutral-500" />
+                  <sub.icon className="h-[15px] w-[15px] shrink-0" strokeWidth={1.5} />
                 )}
                 <span>{sub.label}</span>
               </button>
