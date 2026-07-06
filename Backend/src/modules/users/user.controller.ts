@@ -145,8 +145,10 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       {
         ...data,
         phone: data.phone ?? undefined,
+        
       },
-      scopeFor(req)
+      scopeFor(req),
+      req.user.id
     );
     return sendSuccess(res, 'User updated successfully', updated);
   } catch (error) {

@@ -579,6 +579,8 @@ export const updateUser = async (
     moduleAccess?: any;
   },
   tenantId: number | null = null,
+  updatedById?: number
+
 ) => {
   if (tenantId != null) {
     const existing = await prisma.user.findFirst({ where: { id, tenantId } });
@@ -609,9 +611,11 @@ export const updateUser = async (
       await tx.lead.updateMany({
         where: {
           studentUserId: id,
+          deletedAt: null,
         },
         data: {
           assignedCounsellorId: data.counsellorId,
+          assignedById: updatedById ?? null,
         },
       });
     }
