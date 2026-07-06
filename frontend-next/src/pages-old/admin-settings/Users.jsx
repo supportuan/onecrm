@@ -745,7 +745,7 @@ export default function UserManagementPage() {
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => handleAssignCounsellor(user.id)}
-                                className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700"
+                                className="rounded-xl bg-black px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-gray-700 cursor-pointer"
                               >
                                 Assign
                               </button>
@@ -1144,14 +1144,14 @@ export default function UserManagementPage() {
             <div className="user-modal-footer">
               <button
                 onClick={closeModal}
-                className="rounded-2xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
+                className="rounded-2xl border border-slate-400 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleSaveUser}
-                className="rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"
+                className="rounded-2xl bg-black px-5 py-2.5 text-sm font-bold text-white hover:bg-black/80 cursor-pointer"
               >
                 {modalMode === "edit" ? "Update Access" : "Create User"}
               </button>
