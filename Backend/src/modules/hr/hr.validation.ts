@@ -382,7 +382,7 @@ export const updateEmployeeSchema = z.object({
   biometricId: z.string().optional().nullable(),
   joiningDate: z.string().optional().nullable(),
   managerId: z.string().optional().nullable(),
-  access_role: z.enum(['EMPLOYEE', 'SUPER_ADMIN', 'HR_MANAGER', 'PAYROLL_ADMIN']).optional(),
+  access_role: z.enum(['EMPLOYEE', 'COUNSELLOR', 'SUPER_ADMIN', 'HR_MANAGER', 'PAYROLL_ADMIN']).optional(),
   employmentStatus: z.enum(['ACTIVE', 'ON_LEAVE', 'RESIGNED', 'TERMINATED']).optional(),
   resignedAt: z.string().optional().nullable(),
   terminatedAt: z.string().optional().nullable(),

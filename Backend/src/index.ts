@@ -20,6 +20,7 @@ import path from 'path';
 import { ensureDefaultTenantSeeded } from './modules/rbac/rbac.service.js';
 import { backfillHrSeedsForExistingTenants, backfillStaffEmployees } from './modules/super-admin/hr-seed-backfill.js';
 import { startNotificationScheduler } from './modules/notifications/scheduler.js';
+import { warmIndustryCache } from './modules/crm-settings/crm-settings.service.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -66,6 +67,7 @@ app.listen(port, async () => {
     console.log('[One CRM] HR employee records ensured for staff users');
     startNotificationScheduler();
     console.log('[One CRM] Notification scheduler started');
+    warmIndustryCache().catch((err) => console.warn('[One CRM] Industry cache warm skipped', err));
   } catch (err) {
     console.error('[One CRM] Failed to initialize RBAC permissions', err);
   }

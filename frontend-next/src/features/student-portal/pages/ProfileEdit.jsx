@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getMyStudent, getFormOptions, updateMyStudent } from '@/services/studentCrmApi';
-import { resolveStudyCascades, studyIdsFromProfile, toNumOrNull, toSelectId } from '@/features/student-crm/studyFormOptions';
+import { listIndustries, listIndustrySubFields } from '@/services/crmSettingsApi';
+import { studyIdsFromProfile, toNumOrNull, toSelectId } from '@/features/student-crm/studyFormOptions';
+import { resolveCatalogCountryId, pickCatalogCountry } from '@/features/student-crm/catalogCountry';
+import CatalogCourseFields from '@/features/student-crm/components/CatalogCourseFields';
 import {
   LEVELS,
   INTAKE_MONTHS,
@@ -24,6 +27,10 @@ const emptyForm = () => ({
   industryId: '',
   subIndustryId: '',
   studyAreaId: '',
+  universityId: '',
+  university: '',
+  courseId: '',
+  course: '',
   intakeMonth: '',
   intakeYear: '',
   studyMode: '',
@@ -38,6 +45,10 @@ export default function ProfileEditPage() {
   const router = useRouter();
   const [form, setForm] = useState(null);
   const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
+  const [countryIndustries, setCountryIndustries] = useState([]);
+  const [subFields, setSubFields] = useState([]);
+  const [loadingIndustries, setLoadingIndustries] = useState(false);
+  const [loadingSubFields, setLoadingSubFields] = useState(false);
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -50,19 +61,26 @@ export default function ProfileEditPage() {
           router.replace('/applicant/profile/view');
           return;
         }
-        setFormOptions(oRes?.data || { countries: [], industries: [] });
+        const options = oRes?.data || { countries: [], industries: [] };
+        setFormOptions(options);
         const ids = studyIdsFromProfile(p);
+        const catalogCountryId = resolveCatalogCountryId(ids.countryId) || ids.countryId;
+        const catalogCountry = pickCatalogCountry(options.countries, ids.countryId);
         setForm({
           ...emptyForm(),
           firstName: p?.firstName || '',
           lastName: p?.lastName || '',
           phone: p?.phone || '',
           email: p?.email || '',
-          countryId: ids.countryId,
+          countryId: catalogCountryId,
           level: p?.level || '',
           industryId: ids.industryId,
           subIndustryId: ids.subIndustryId,
           studyAreaId: ids.studyAreaId,
+          universityId: toSelectId(p?.preferredUniversityId ?? p?.preferredUniversity?.id),
+          university: p?.preferredUniversity?.name || '',
+          courseId: toSelectId(p?.preferredCourseId ?? p?.preferredCourseRef?.id),
+          course: p?.preferredCourse || p?.preferredCourseRef?.name || '',
           intakeMonth: p?.intakeMonth || '',
           intakeYear: p?.intakeYear || '',
           studyMode: p?.studyMode || '',
@@ -71,16 +89,39 @@ export default function ProfileEditPage() {
           studyAttendanceType: p?.studyAttendanceType || '',
           typeOfDegree: p?.typeOfDegree || '',
           workExperience: p?.workExperience || '',
+          preferredCountry: catalogCountry?.name || p?.preferredCountry || '',
         });
       })
       .catch(() => setMsg('Failed to load profile'))
       .finally(() => setLoading(false));
   }, [router]);
 
-  const { subIndustries, studyAreas } = useMemo(
-    () => resolveStudyCascades(formOptions.industries, form?.industryId, form?.subIndustryId),
-    [formOptions.industries, form?.industryId, form?.subIndustryId]
-  );
+  useEffect(() => {
+    const catalogCountryId = resolveCatalogCountryId(form?.countryId);
+    if (!catalogCountryId) {
+      setCountryIndustries([]);
+      return;
+    }
+    setLoadingIndustries(true);
+    listIndustries({ countryId: catalogCountryId })
+      .then((r) => setCountryIndustries(Array.isArray(r?.data) ? r.data : []))
+      .catch(() => setCountryIndustries([]))
+      .finally(() => setLoadingIndustries(false));
+  }, [form?.countryId]);
+
+  useEffect(() => {
+    const catalogCountryId = resolveCatalogCountryId(form?.countryId);
+    if (!catalogCountryId || !form?.industryId) {
+      setSubFields([]);
+      return;
+    }
+    setLoadingSubFields(true);
+    listIndustrySubFields({ countryId: catalogCountryId, industryId: form.industryId })
+      .then((r) => setSubFields(Array.isArray(r?.data) ? r.data : []))
+      .catch(() => setSubFields([]))
+      .finally(() => setLoadingSubFields(false));
+  }, [form?.countryId, form?.industryId]);
+
   const showGraduationFields = (form?.level || '').toLowerCase().includes('graduation') || form?.level === 'PG';
 
   const save = async (e) => {
@@ -94,6 +135,9 @@ export default function ProfileEditPage() {
         industryId: toNumOrNull(form.industryId),
         subIndustryId: toNumOrNull(form.subIndustryId),
         studyAreaId: toNumOrNull(form.studyAreaId),
+        preferredUniversityId: toNumOrNull(form.universityId),
+        preferredCourseId: toNumOrNull(form.courseId),
+        preferredCourse: form.course || null,
       });
       router.push('/applicant/profile/view');
     } catch (err) {
@@ -147,10 +191,32 @@ export default function ProfileEditPage() {
           <h2 className="text-sm font-semibold text-neutral-900">Study preferences</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Study destination" required>
-              <select className="ui-input ui-select" value={form.countryId} onChange={(e) => setForm({ ...form, countryId: e.target.value })} required>
+              <select
+                className="ui-input ui-select"
+                value={form.countryId}
+                onChange={(e) => {
+                  const country = formOptions.countries?.find((c) => String(c.catalogCountryId ?? c.id) === e.target.value);
+                  setForm({
+                    ...form,
+                    countryId: e.target.value,
+                    preferredCountry: country?.name || '',
+                    industryId: '',
+                    subIndustryId: '',
+                    studyAreaId: '',
+                    universityId: '',
+                    university: '',
+                    courseId: '',
+                    course: '',
+                  });
+                }}
+                required
+              >
                 <option value="">Select country</option>
                 {formOptions.countries?.map((c) => (
-                  <option key={c.id} value={String(c.id)}>{c.name}</option>
+                  <option key={c.id} value={String(c.catalogCountryId ?? c.id)}>
+                    {c.name}
+                    {c.courseCount > 0 ? ` (${c.courseCount.toLocaleString()} courses)` : ''}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -162,45 +228,72 @@ export default function ProfileEditPage() {
                 ))}
               </select>
             </Field>
-            <Field label="Industry" required>
+            <Field label="Field of study" required>
               <select
                 className="ui-input ui-select"
                 value={form.industryId}
                 onChange={(e) => setForm({ ...form, industryId: e.target.value, subIndustryId: '', studyAreaId: '' })}
+                disabled={!form.countryId || loadingIndustries}
                 required
               >
-                <option value="">Select industry</option>
-                {formOptions.industries?.map((i) => (
-                  <option key={i.id} value={String(i.id)}>{i.name}</option>
+                <option value="">
+                  {!form.countryId
+                    ? 'Select country first'
+                    : loadingIndustries
+                      ? 'Loading fields…'
+                      : countryIndustries.length
+                        ? 'Select field of study'
+                        : 'No fields for this country'}
+                </option>
+                {countryIndustries.map((i) => (
+                  <option key={i.id ?? i.name} value={i.id ? String(i.id) : ''} disabled={!i.id}>
+                    {i.name}
+                    {i.courseCount != null ? ` (${i.courseCount.toLocaleString()} courses)` : ''}
+                  </option>
                 ))}
               </select>
             </Field>
-            <Field label="Sub-industry">
+            <Field label="Program level">
               <select
                 className="ui-input ui-select"
                 value={form.subIndustryId}
-                onChange={(e) => setForm({ ...form, subIndustryId: e.target.value, studyAreaId: '' })}
-                disabled={!subIndustries.length}
+                onChange={(e) => {
+                  const selected = subFields.find((s) => s.id && String(s.id) === e.target.value);
+                  setForm({
+                    ...form,
+                    subIndustryId: e.target.value,
+                    level: selected?.name || form.level,
+                    studyAreaId: '',
+                  });
+                }}
+                disabled={!form.industryId || loadingSubFields}
               >
-                <option value="">{subIndustries.length ? 'Select sub-industry' : 'No sub-industries'}</option>
-                {subIndustries.map((s) => (
-                  <option key={s.id} value={String(s.id)}>{s.name}</option>
+                <option value="">
+                  {!form.industryId
+                    ? 'Select field of study first'
+                    : loadingSubFields
+                      ? 'Loading program levels…'
+                      : subFields.length
+                        ? 'Select program level'
+                        : 'No program levels for this field'}
+                </option>
+                {subFields.map((s) => (
+                  <option key={s.id ?? s.name} value={s.id ? String(s.id) : ''} disabled={!s.id}>
+                    {s.name}
+                    {s.courseCount != null ? ` (${s.courseCount.toLocaleString()} courses)` : ''}
+                  </option>
                 ))}
               </select>
             </Field>
-            <Field label="Study area">
-              <select
-                className="ui-input ui-select"
-                value={form.studyAreaId}
-                onChange={(e) => setForm({ ...form, studyAreaId: e.target.value })}
-                disabled={!studyAreas.length}
-              >
-                <option value="">{studyAreas.length ? 'Select study area' : 'No study areas'}</option>
-                {studyAreas.map((a) => (
-                  <option key={a.id} value={String(a.id)}>{a.name}</option>
-                ))}
-              </select>
-            </Field>
+            <div className="md:col-span-2">
+              <CatalogCourseFields
+                hideCountry
+                countryId={resolveCatalogCountryId(form.countryId) || form.countryId}
+                countries={formOptions.countries}
+                value={form}
+                onChange={(catalog) => setForm((prev) => ({ ...prev, ...catalog }))}
+              />
+            </div>
             <Field label="Budget" required>
               <select className="ui-input ui-select" value={form.studyBudget} onChange={(e) => setForm({ ...form, studyBudget: e.target.value })} required>
                 <option value="">Select budget</option>

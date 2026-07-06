@@ -20,6 +20,7 @@ import {
   uploadEmployeeDocument,
   deleteEmployeeDocument,
 } from '@/services/hrApi';
+import { HR_ACCESS_ROLES } from '../constants/accessRoles';
 
 const STATUS_OPTIONS = [
   { value: 'ACTIVE', label: 'Active' },
@@ -340,10 +341,11 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
                     onChange={(e) => setForm({ ...form, access_role: e.target.value })}
                     className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium"
                   >
-                    <option value="EMPLOYEE">Standard employee</option>
-                    <option value="HR_MANAGER">HR manager</option>
-                    <option value="PAYROLL_ADMIN">Payroll admin</option>
-                    <option value="SUPER_ADMIN">Super administrator</option>
+                    {HR_ACCESS_ROLES.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1.5">

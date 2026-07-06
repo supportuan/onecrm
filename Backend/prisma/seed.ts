@@ -69,14 +69,21 @@ async function ensureDefaultTenant() {
 async function ensureEmployeeForUser(
   tenantId: number,
   user: { id: number; fullName: string; email: string; phone: string | null },
-  accessRole: 'HR_MANAGER' | 'EMPLOYEE' = 'EMPLOYEE',
+  accessRole: 'HR_MANAGER' | 'EMPLOYEE' | 'COUNSELLOR' = 'EMPLOYEE',
 ) {
   const existing = await prisma.hrEmployee.findFirst({
     where: { OR: [{ userId: user.id }, { email: user.email }] },
   });
   if (existing) {
-    if (existing.userId == null) {
-      await prisma.hrEmployee.update({ where: { id: existing.id }, data: { userId: user.id } });
+    const patch: Record<string, unknown> = {};
+    if (existing.userId == null) patch.userId = user.id;
+    if (accessRole === 'COUNSELLOR' && existing.accessRole !== 'COUNSELLOR') {
+      patch.accessRole = 'COUNSELLOR';
+      patch.department = existing.department || 'Counselling';
+      patch.designation = existing.designation || 'Counsellor';
+    }
+    if (Object.keys(patch).length) {
+      await prisma.hrEmployee.update({ where: { id: existing.id }, data: patch });
     }
     return existing;
   }
@@ -89,6 +96,9 @@ async function ensureEmployeeForUser(
       employeeCode: `EMP-T${tenantId}-U${user.id}`,
       phone: user.phone,
       accessRole,
+      ...(accessRole === 'COUNSELLOR'
+        ? { department: 'Counselling', designation: 'Counsellor' }
+        : {}),
     },
   });
 }
@@ -301,7 +311,7 @@ async function main() {
 
   // Link staff users to HrEmployee rows so HR self-service + leave work for them.
   await ensureEmployeeForUser(tenantId, hrUser, 'HR_MANAGER');
-  await ensureEmployeeForUser(tenantId, counsellor, 'EMPLOYEE');
+  await ensureEmployeeForUser(tenantId, counsellor, 'COUNSELLOR');
   console.log('✅ HR employee records ensured for seeded staff');
 
   const crmSettings = await seedCrmSettings();

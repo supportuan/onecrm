@@ -11,6 +11,7 @@ import {
   moduleAccessToPermissions,
   slugifyRoleName,
 } from '../../utils/role-permissions.js';
+import { hrAccessRoleDefaults, userRoleToHrAccessRole } from '../hr/hr-access-role.js';
 
 const allowedRoles = [
   UserRole.GLOBAL_ADMIN,
@@ -436,6 +437,7 @@ export const createUser = async (data: {
           });
         } else {
           const employeeCode = `EMP-T${data.tenantId}-U${user.id}`;
+          const accessRole = userRoleToHrAccessRole(systemRole);
           await tx.hrEmployee.create({
             data: {
               tenantId: data.tenantId,
@@ -444,10 +446,8 @@ export const createUser = async (data: {
               email: normalizedEmail,
               employeeCode,
               phone: user.phone,
-              accessRole:
-                systemRole === UserRole.GLOBAL_ADMIN || systemRole === UserRole.HR
-                  ? 'HR_MANAGER'
-                  : 'EMPLOYEE',
+              accessRole,
+              ...hrAccessRoleDefaults(accessRole),
             },
           });
         }

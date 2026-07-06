@@ -143,9 +143,23 @@ export const listCourses = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const listIndustries = async (_req: Request, res: Response, next: NextFunction) => {
+export const listIndustries = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    return sendSuccess(res, 'industries', await service.listIndustries());
+    const countryId = req.query.countryId ? numId(req.query.countryId) : undefined;
+    return sendSuccess(res, 'industries', await service.listIndustries({ countryId }));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listIndustrySubFields = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const countryId = numId(req.query.countryId);
+    const industryId = numId(req.query.industryId);
+    if (!countryId || !industryId) {
+      return sendError(res, 'countryId and industryId are required', null, 400);
+    }
+    return sendSuccess(res, 'sub-fields', await service.listIndustrySubFields(countryId, industryId));
   } catch (err) {
     next(err);
   }

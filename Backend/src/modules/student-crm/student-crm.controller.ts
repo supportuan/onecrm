@@ -427,8 +427,41 @@ export const upsertVisa = async (req: Request, res: Response, next: NextFunction
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const item = await service.upsertVisaTracking(id, req.body || {});
+    const item = await resolveFileRefsDeep(await service.upsertVisaTracking(id, req.body || {}));
     return sendSuccess(res, 'visa tracking saved', item);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const uploadVisaDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId) return sendError(res, 'invalid application id', null, 400);
+
+    const file = req.file;
+    if (!file) {
+      return sendError(res, 'file is required (jpg, png, pdf, doc, docx, max 20MB)', null, 400);
+    }
+
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/student-crm/applications/${applicationId}/visa/${storedName}`;
+    const { ref: fileUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    const item = await resolveFileRefsDeep(
+      await service.upsertVisaTracking(applicationId, {
+        documents: {
+          fileUrl,
+          filename: file.originalname,
+          uploadedAt: new Date().toISOString(),
+        },
+      }),
+    );
+    return sendSuccess(res, 'visa document uploaded', item, 201);
   } catch (err) {
     next(err);
   }

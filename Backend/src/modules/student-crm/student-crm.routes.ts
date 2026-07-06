@@ -71,6 +71,12 @@ router.post(
   controller.uploadOfferLetter,
 );
 router.put('/applications/:id/visa', manage, controller.upsertVisa);
+router.post(
+  '/applications/:id/visa/upload',
+  manage,
+  applicationDocUpload.single('file'),
+  controller.uploadVisaDocument,
+);
 
 // Checklist defaults (used by UI before docs exist)
 router.get('/checklist', view, controller.getChecklist);

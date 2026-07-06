@@ -1,6 +1,64 @@
 import { prisma } from '../../prisma.js';
+import { Prisma } from '@prisma/client';
+import { buildIndustryCaseSql, STUDY_INDUSTRY_RULES } from './study-industry-rules.js';
+import { CATALOG_COUNTRY_ALIASES, resolveCatalogCountryId } from './catalog-country.js';
 
 const notDeleted = { deletedAt: null };
+
+/** In-memory cache — country industry scan is expensive on first hit (~150k courses). */
+const industryByCountryCache = new Map<number, { at: number; data: Awaited<ReturnType<typeof computeIndustriesForCountry>> }>();
+const INDUSTRY_CACHE_MS = 15 * 60 * 1000;
+
+const computeIndustriesForCountry = async (countryId: number) => {
+  const catalogCountryId = resolveCatalogCountryId(countryId) ?? countryId;
+
+  const all = await prisma.studyIndustry.findMany({
+    where: notDeleted,
+    orderBy: { name: 'asc' },
+    include: {
+      subIndustries: { where: notDeleted, orderBy: { name: 'asc' } },
+      studyAreas: { where: notDeleted, orderBy: { name: 'asc' } },
+    },
+  });
+  const byName = new Map(all.map((i) => [i.name, i]));
+
+  // One CASE scan is faster and uses a single DB connection vs 35 parallel regex counts.
+  const caseSql = buildIndustryCaseSql();
+  const rows = await prisma.$queryRaw<Array<{ bucket: string; cnt: bigint }>>(Prisma.sql`
+    SELECT bucket, COUNT(*)::bigint AS cnt
+    FROM (
+      SELECT CASE
+        ${Prisma.raw(caseSql)}
+        ELSE NULL
+      END AS bucket
+      FROM "Course" c
+      INNER JOIN "University" u ON c."universityId" = u.id
+      WHERE u."countryId" = ${catalogCountryId}
+        AND c."deletedAt" IS NULL
+        AND u."deletedAt" IS NULL
+    ) x
+    WHERE bucket IS NOT NULL
+    GROUP BY bucket
+    ORDER BY cnt DESC
+  `);
+
+  const countMap = new Map(rows.map((r) => [r.bucket, Number(r.cnt)]));
+
+  return STUDY_INDUSTRY_RULES.filter((r) => countMap.has(r.name))
+    .map((r) => {
+      const courseCount = countMap.get(r.name) ?? 0;
+      const db = byName.get(r.name);
+      if (db) return { ...db, courseCount };
+      return {
+        id: null,
+        name: r.name,
+        subIndustries: [],
+        studyAreas: [],
+        courseCount,
+      };
+    })
+    .sort((a, b) => (b.courseCount ?? 0) - (a.courseCount ?? 0));
+};
 
 const normalizeCountryName = (name: string) =>
   name
@@ -11,12 +69,37 @@ const normalizeCountryName = (name: string) =>
 
 export const listCountries = async () => {
   const rows = await prisma.country.findMany({ where: notDeleted, orderBy: { name: 'asc' } });
-  const byKey = new Map<string, (typeof rows)[0]>();
+
+  const countRows = await prisma.$queryRaw<Array<{ countryId: number; courses: number }>>`
+    SELECT u."countryId" AS "countryId", COUNT(c.id)::int AS courses
+    FROM "University" u
+    LEFT JOIN "Course" c ON c."universityId" = u.id AND c."deletedAt" IS NULL
+    WHERE u."deletedAt" IS NULL
+    GROUP BY u."countryId"
+  `;
+  const courseCountById = new Map(countRows.map((r) => [r.countryId, r.courses]));
+
+  const hideIds = new Set<number>();
+  for (const [from, to] of Object.entries(CATALOG_COUNTRY_ALIASES)) {
+    const fromId = Number(from);
+    if ((courseCountById.get(fromId) ?? 0) === 0 && (courseCountById.get(to) ?? 0) > 0) {
+      hideIds.add(fromId);
+    }
+  }
+
+  const byKey = new Map<string, (typeof rows)[0] & { courseCount: number; catalogCountryId: number }>();
   for (const row of rows) {
+    if (hideIds.has(row.id)) continue;
     const key = row.name.trim().toLowerCase();
+    const enriched = {
+      ...row,
+      name: normalizeCountryName(row.name),
+      courseCount: courseCountById.get(row.id) ?? 0,
+      catalogCountryId: resolveCatalogCountryId(row.id) ?? row.id,
+    };
     const existing = byKey.get(key);
-    if (!existing || row.id < existing.id) {
-      byKey.set(key, { ...row, name: normalizeCountryName(row.name) });
+    if (!existing || enriched.courseCount > existing.courseCount) {
+      byKey.set(key, enriched);
     }
   }
   return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
@@ -31,15 +114,96 @@ export const updateCountry = (id: number, data: Partial<{ name: string; symbol: 
 export const deleteCountry = (id: number) =>
   prisma.country.update({ where: { id }, data: { deletedAt: new Date() } });
 
-export const listIndustries = () =>
-  prisma.studyIndustry.findMany({
-    where: notDeleted,
-    orderBy: { name: 'asc' },
-    include: {
-      subIndustries: { where: notDeleted, orderBy: { name: 'asc' } },
-      studyAreas: { where: notDeleted, orderBy: { name: 'asc' } },
-    },
+export const listIndustries = async (opts: { countryId?: number } = {}) => {
+  if (!opts.countryId) {
+    return prisma.studyIndustry.findMany({
+      where: notDeleted,
+      orderBy: { name: 'asc' },
+      include: {
+        subIndustries: { where: notDeleted, orderBy: { name: 'asc' } },
+        studyAreas: { where: notDeleted, orderBy: { name: 'asc' } },
+      },
+    });
+  }
+
+  const catalogCountryId = resolveCatalogCountryId(opts.countryId) ?? opts.countryId;
+  const cached = industryByCountryCache.get(catalogCountryId);
+  if (cached && Date.now() - cached.at < INDUSTRY_CACHE_MS) return cached.data;
+
+  const data = await computeIndustriesForCountry(catalogCountryId);
+  industryByCountryCache.set(catalogCountryId, { at: Date.now(), data });
+  return data;
+};
+
+/** Program levels (sub-industries) available for an industry in a given country's catalog. */
+export const listIndustrySubFields = async (countryId: number, industryId: number) => {
+  const industry = await prisma.studyIndustry.findFirst({
+    where: { id: industryId, deletedAt: null },
   });
+  if (!industry) return [];
+
+  const rule = STUDY_INDUSTRY_RULES.find((r) => r.name === industry.name);
+  if (!rule) return [];
+
+  const catalogCountryId = resolveCatalogCountryId(countryId) ?? countryId;
+
+  const [rows, subIndustries] = await Promise.all([
+    prisma.$queryRaw<Array<{ level: string; cnt: bigint }>>`
+      SELECT TRIM(c.level) AS level, COUNT(*)::bigint AS cnt
+      FROM "Course" c
+      INNER JOIN "University" u ON c."universityId" = u.id
+      WHERE u."countryId" = ${catalogCountryId}
+        AND c."deletedAt" IS NULL
+        AND u."deletedAt" IS NULL
+        AND c.level IS NOT NULL
+        AND TRIM(c.level) <> ''
+        AND c.name ~* ${rule.pattern}
+      GROUP BY TRIM(c.level)
+      ORDER BY cnt DESC
+    `,
+    prisma.studySubIndustry.findMany({
+      where: { industryId, deletedAt: null },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
+
+  const subByName = new Map(subIndustries.map((s) => [s.name.trim().toLowerCase(), s]));
+
+  return rows.map((r) => {
+    const level = r.level.trim();
+    const sub = subByName.get(level.toLowerCase());
+    return {
+      id: sub?.id ?? null,
+      name: level,
+      industryId,
+      courseCount: Number(r.cnt),
+    };
+  });
+};
+
+/** Ensure all catalog industry buckets exist in StudyIndustry (run after deploy / seed). */
+export const ensureStudyIndustryCatalog = async () => {
+  for (const { name } of STUDY_INDUSTRY_RULES) {
+    await prisma.studyIndustry.upsert({
+      where: { name },
+      create: { name },
+      update: {},
+    });
+  }
+  return listIndustries();
+};
+
+/** Pre-warm industry cache for high-traffic countries (runs in background). */
+export const warmIndustryCache = async (countryIds: number[] = [23, 2, 1, 5]) => {
+  for (const id of countryIds) {
+    try {
+      await listIndustries({ countryId: id });
+      console.log(`[crm] warmed industry cache for country ${id}`);
+    } catch (err) {
+      console.warn(`[crm] industry cache warm failed for country ${id}`, err);
+    }
+  }
+};
 
 export const createIndustry = (name: string) => prisma.studyIndustry.create({ data: { name } });
 
@@ -56,11 +220,13 @@ export const listUniversities = async (opts: {
   search?: string;
 } = {}) => {
   const page = Math.max(1, opts.page ?? 1);
-  const limit = Math.min(100, Math.max(1, opts.limit ?? 50));
+  const limit = Math.min(5000, Math.max(1, opts.limit ?? 50));
   const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = { ...notDeleted };
-  if (opts.countryId) where.countryId = opts.countryId;
+  if (opts.countryId) {
+    where.countryId = resolveCatalogCountryId(opts.countryId) ?? opts.countryId;
+  }
   if (opts.search?.trim()) {
     where.name = { contains: opts.search.trim(), mode: 'insensitive' };
   }
@@ -118,7 +284,7 @@ export const listCourses = async (opts: {
   search?: string;
 } = {}) => {
   const page = Math.max(1, opts.page ?? 1);
-  const limit = Math.min(100, Math.max(1, opts.limit ?? 50));
+  const limit = Math.min(5000, Math.max(1, opts.limit ?? 50));
   const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = { ...notDeleted };
@@ -175,11 +341,13 @@ export const listCatalog = async (opts: {
   search?: string;
 } = {}) => {
   const page = Math.max(1, opts.page ?? 1);
-  const limit = Math.min(100, Math.max(1, opts.limit ?? 50));
+  const limit = Math.min(5000, Math.max(1, opts.limit ?? 50));
   const skip = (page - 1) * limit;
 
   const universityFilter: Record<string, unknown> = { ...notDeleted };
-  if (opts.countryId) universityFilter.countryId = opts.countryId;
+  if (opts.countryId) {
+    universityFilter.countryId = resolveCatalogCountryId(opts.countryId) ?? opts.countryId;
+  }
   if (opts.universityId) universityFilter.id = opts.universityId;
 
   const where: Record<string, unknown> = {

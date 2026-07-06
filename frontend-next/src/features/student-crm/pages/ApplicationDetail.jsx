@@ -22,6 +22,7 @@ import {
   deleteDocument,
   uploadApplicationDocument,
   uploadOfferLetter,
+  uploadVisaDocument,
   notifyMissingDocs,
   upsertOffer,
   upsertVisa,
@@ -58,6 +59,7 @@ export default function ApplicationDetail({ applicationId }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [uploadingDocId, setUploadingDocId] = useState(null);
   const [offerUploading, setOfferUploading] = useState(false);
+  const [visaUploading, setVisaUploading] = useState(false);
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const flash = (kind, msg) => {
     setToast({ kind, msg });
@@ -239,10 +241,24 @@ export default function ApplicationDetail({ applicationId }) {
     if (!app) return;
     try {
       await upsertVisa(app.id, payload);
-      flash('ok', 'Visa tracking saved');
+      flash('ok', 'Visa details saved');
       fetchDetail();
     } catch (e) {
-      flash('err', e?.message || 'failed to save visa');
+      flash('err', e?.message || 'Failed to save visa details');
+    }
+  };
+
+  const handleVisaUpload = async (file) => {
+    if (!app || !file) return;
+    setVisaUploading(true);
+    try {
+      await uploadVisaDocument(app.id, file);
+      flash('ok', 'Visa document uploaded');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Upload failed');
+    } finally {
+      setVisaUploading(false);
     }
   };
 
@@ -370,7 +386,15 @@ export default function ApplicationDetail({ applicationId }) {
                 uploading={offerUploading}
               />
             )}
-            {activeTab === 'visa' && <VisaPanel app={app} canManage={canManage} onSave={handleSaveVisa} />}
+            {activeTab === 'visa' && (
+              <VisaPanel
+                app={app}
+                canManage={canManage}
+                onSave={handleSaveVisa}
+                onUpload={handleVisaUpload}
+                uploading={visaUploading}
+              />
+            )}
             {activeTab === 'history' && <AuditTimeline app={app} />}
           </div>
         </div>

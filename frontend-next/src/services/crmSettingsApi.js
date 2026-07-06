@@ -61,5 +61,63 @@ export const listCourses = async ({ universityId, page = 1, limit = 50, search }
   return handleResponse(await authFetch(`${API_URL}/courses?${params.toString()}`, { headers: tenantHeaders() }));
 };
 
-export const listIndustries = async () =>
-  handleResponse(await authFetch(`${API_URL}/industries`, { headers: tenantHeaders() }));
+/** Paginate through all universities for a country (full catalog). */
+export const fetchAllUniversitiesForCountry = async (countryId) => {
+  const limit = 500;
+  let page = 1;
+  let all = [];
+  let totalPages = 1;
+  while (page <= totalPages) {
+    const res = await listUniversities({ countryId, page, limit });
+    const data = res?.data || {};
+    all = all.concat(data.items || []);
+    totalPages = data.totalPages || 1;
+    page += 1;
+  }
+  return all;
+};
+
+/** Paginate through all courses for a university (full catalog). */
+export const fetchAllCoursesForUniversity = async (universityId) => {
+  const limit = 500;
+  let page = 1;
+  let all = [];
+  let totalPages = 1;
+  while (page <= totalPages) {
+    const res = await listCourses({ universityId, page, limit });
+    const data = res?.data || {};
+    all = all.concat(data.items || []);
+    totalPages = data.totalPages || 1;
+    page += 1;
+  }
+  return all;
+};
+
+export const listIndustries = async ({ countryId } = {}) => {
+  const params = new URLSearchParams();
+  if (countryId) params.set('countryId', String(countryId));
+  const qs = params.toString();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120000);
+  try {
+    return await handleResponse(
+      await authFetch(`${API_URL}/industries${qs ? `?${qs}` : ''}`, {
+        headers: tenantHeaders(),
+        signal: controller.signal,
+      })
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+export const listIndustrySubFields = async ({ countryId, industryId }) => {
+  const params = new URLSearchParams();
+  params.set('countryId', String(countryId));
+  params.set('industryId', String(industryId));
+  return handleResponse(
+    await authFetch(`${API_URL}/industries/sub-fields?${params.toString()}`, {
+      headers: tenantHeaders(),
+    })
+  );
+};

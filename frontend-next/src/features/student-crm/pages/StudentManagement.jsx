@@ -25,8 +25,10 @@ import {
   setStudentEnrolled,
   updateChecklistValue,
 } from '@/services/studentCrmApi';
-import { getFormOptions } from '@/services/crmSettingsApi';
-import { resolveStudyCascades, studyIdsFromProfile, toNumOrNull } from '../studyFormOptions';
+import { getFormOptions, listIndustries, listIndustrySubFields } from '@/services/crmSettingsApi';
+import { studyIdsFromProfile, toNumOrNull, toSelectId } from '../studyFormOptions';
+import CatalogCourseFields from '../components/CatalogCourseFields';
+import { resolveCatalogCountryId, pickCatalogCountry } from '../catalogCountry';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { getStageLabel, stageBadgeClass } from '../constants';
 
@@ -83,6 +85,11 @@ export default function StudentManagement() {
   const [saving, setSaving] = useState(false);
   const [counsellors, setCounsellors] = useState([]);
   const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
+  const [countryIndustries, setCountryIndustries] = useState([]);
+  const [loadingIndustries, setLoadingIndustries] = useState(false);
+  const [industryLoadError, setIndustryLoadError] = useState('');
+  const [subFields, setSubFields] = useState([]);
+  const [loadingSubFields, setLoadingSubFields] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showNewApp, setShowNewApp] = useState(false);
   const [toast, setToast] = useState({ kind: '', msg: '' });
@@ -148,6 +155,39 @@ export default function StudentManagement() {
   const [form, setForm] = useState(null);
 
   useEffect(() => {
+    const catalogCountryId = resolveCatalogCountryId(form?.countryId);
+    if (!catalogCountryId) {
+      setCountryIndustries([]);
+      setIndustryLoadError('');
+      return;
+    }
+    setLoadingIndustries(true);
+    setIndustryLoadError('');
+    listIndustries({ countryId: catalogCountryId })
+      .then((r) => setCountryIndustries(Array.isArray(r?.data) ? r.data : []))
+      .catch((err) => {
+        console.error('Failed to load fields of study', err);
+        setCountryIndustries([]);
+        setIndustryLoadError(err?.message || 'Failed to load fields from catalog');
+      })
+      .finally(() => setLoadingIndustries(false));
+  }, [form?.countryId]);
+
+  useEffect(() => {
+    const catalogCountryId = resolveCatalogCountryId(form?.countryId);
+    const industryId = form?.industryId;
+    if (!catalogCountryId || !industryId) {
+      setSubFields([]);
+      return;
+    }
+    setLoadingSubFields(true);
+    listIndustrySubFields({ countryId: catalogCountryId, industryId })
+      .then((r) => setSubFields(Array.isArray(r?.data) ? r.data : []))
+      .catch(() => setSubFields([]))
+      .finally(() => setLoadingSubFields(false));
+  }, [form?.countryId, form?.industryId]);
+
+  useEffect(() => {
     if (!profile) {
       setForm(null);
       return;
@@ -169,6 +209,8 @@ export default function StudentManagement() {
         : [emptyExam()];
 
     const ids = studyIdsFromProfile(profile);
+    const catalogCountryId = resolveCatalogCountryId(ids.countryId) || ids.countryId;
+    const catalogCountry = pickCatalogCountry(formOptions.countries, ids.countryId);
     setForm({
       firstName: profile.firstName || '',
       lastName: profile.lastName || '',
@@ -177,12 +219,16 @@ export default function StudentManagement() {
       phone: profile.phone || '',
       dob: profile.dob ? profile.dob.slice(0, 10) : '',
       nationality: profile.nationality || '',
-      preferredCountry: profile.preferredCountry || '',
+      preferredCountry: catalogCountry?.name || profile.preferredCountry || '',
       level: profile.level || '',
-      countryId: ids.countryId,
+      countryId: catalogCountryId,
       industryId: ids.industryId,
       subIndustryId: ids.subIndustryId,
       studyAreaId: ids.studyAreaId,
+      universityId: toSelectId(profile.preferredUniversityId ?? profile.preferredUniversity?.id),
+      university: profile.preferredUniversity?.name || '',
+      courseId: toSelectId(profile.preferredCourseId ?? profile.preferredCourseRef?.id),
+      course: profile.preferredCourse || profile.preferredCourseRef?.name || '',
       intakeMonth: profile.intakeMonth || '',
       intakeYear: profile.intakeYear || '',
       studyMode: profile.studyMode || '',
@@ -204,7 +250,7 @@ export default function StudentManagement() {
       educationDetails: education.length ? education : [emptyEducation()],
       asstExamSections: exams.length ? exams : [emptyExam()],
     });
-  }, [profile]);
+  }, [profile, formOptions.countries]);
 
   const saveProfile = async () => {
     if (!form || !selectedId) return;
@@ -223,6 +269,9 @@ export default function StudentManagement() {
         industryId: toNumOrNull(form.industryId),
         subIndustryId: toNumOrNull(form.subIndustryId),
         studyAreaId: toNumOrNull(form.studyAreaId),
+        preferredUniversityId: toNumOrNull(form.universityId),
+        preferredCourseId: toNumOrNull(form.courseId),
+        preferredCourse: form.course || null,
         intakeMonth: form.intakeMonth || null,
         intakeYear: form.intakeYear || null,
         studyMode: form.studyMode || null,
@@ -256,12 +305,6 @@ export default function StudentManagement() {
       setSaving(false);
     }
   };
-
-  const { subIndustries, studyAreas } = resolveStudyCascades(
-    formOptions.industries,
-    form?.industryId,
-    form?.subIndustryId
-  );
 
   const markEnrolled = async (value) => {
     if (!selectedId) return;
@@ -546,66 +589,102 @@ export default function StudentManagement() {
                         style={SELECT_BG}
                         value={form.countryId}
                         disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, countryId: e.target.value })}
+                        onChange={(e) => {
+                          const country = formOptions.countries?.find((c) => String(c.id) === e.target.value);
+                          const catalogId = resolveCatalogCountryId(e.target.value) || e.target.value;
+                          setForm({
+                            ...form,
+                            countryId: catalogId,
+                            preferredCountry: country?.name || '',
+                            industryId: '',
+                            subIndustryId: '',
+                            studyAreaId: '',
+                            university: '',
+                            courseId: '',
+                            course: '',
+                          });
+                        }}
                       >
                         <option value="">Select country</option>
                         {formOptions.countries?.map((c) => (
-                          <option key={c.id} value={String(c.id)}>
+                          <option key={c.id} value={String(c.catalogCountryId ?? c.id)}>
                             {c.name}
+                            {c.courseCount > 0 ? ` (${c.courseCount.toLocaleString()} courses)` : ''}
                           </option>
                         ))}
                       </select>
                     </Field>
-                    <Field label="Industry">
+                    <Field label={`Field of study${countryIndustries.length ? ` — ${countryIndustries.length} in catalog` : ''}`}>
                       <select
                         className={SELECT}
                         style={SELECT_BG}
                         value={form.industryId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) =>
-                          setForm({ ...form, industryId: e.target.value, subIndustryId: '', studyAreaId: '' })
-                        }
+                        disabled={!canManage || profile.isEnrolled || !form.countryId || loadingIndustries}
+                        onChange={(e) => setForm({ ...form, industryId: e.target.value, subIndustryId: '', studyAreaId: '' })}
                       >
-                        <option value="">Select industry</option>
-                        {formOptions.industries?.map((i) => (
-                          <option key={i.id} value={String(i.id)}>
+                        <option value="">
+                          {!form.countryId
+                            ? 'Select country first'
+                            : loadingIndustries
+                              ? 'Scanning course catalog (first load may take ~1 min)…'
+                              : industryLoadError
+                                ? industryLoadError
+                                : countryIndustries.length
+                                  ? 'Select field of study'
+                                  : 'No fields matched for this country'}
+                        </option>
+                        {countryIndustries.map((i) => (
+                          <option key={i.id ?? i.name} value={i.id ? String(i.id) : ''} disabled={!i.id}>
                             {i.name}
+                            {i.courseCount != null ? ` (${i.courseCount.toLocaleString()} courses)` : ''}
                           </option>
                         ))}
                       </select>
                     </Field>
-                    <Field label="Sub-industry">
+                    <Field label={`Program level${subFields.length ? ` — ${subFields.length} in catalog` : ''}`}>
                       <select
                         className={SELECT}
                         style={SELECT_BG}
                         value={form.subIndustryId}
-                        disabled={!canManage || profile.isEnrolled || !subIndustries.length}
-                        onChange={(e) => setForm({ ...form, subIndustryId: e.target.value, studyAreaId: '' })}
+                        disabled={!canManage || profile.isEnrolled || !form.industryId || loadingSubFields}
+                        onChange={(e) => {
+                          const selected = subFields.find((s) => s.id && String(s.id) === e.target.value);
+                          setForm({
+                            ...form,
+                            subIndustryId: e.target.value,
+                            level: selected?.name || form.level,
+                            studyAreaId: '',
+                          });
+                        }}
                       >
-                        <option value="">{subIndustries.length ? 'Select sub-industry' : 'No sub-industries'}</option>
-                        {subIndustries.map((s) => (
-                          <option key={s.id} value={String(s.id)}>
+                        <option value="">
+                          {!form.industryId
+                            ? 'Select field of study first'
+                            : loadingSubFields
+                              ? 'Loading program levels…'
+                              : subFields.length
+                                ? 'Select program level'
+                                : 'No program levels for this field'}
+                        </option>
+                        {subFields.map((s) => (
+                          <option key={s.id ?? s.name} value={s.id ? String(s.id) : ''} disabled={!s.id}>
                             {s.name}
+                            {s.courseCount != null ? ` (${s.courseCount.toLocaleString()} courses)` : ''}
                           </option>
                         ))}
                       </select>
                     </Field>
-                    <Field label="Study area">
-                      <select
-                        className={SELECT}
-                        style={SELECT_BG}
-                        value={form.studyAreaId}
-                        disabled={!canManage || profile.isEnrolled || !studyAreas.length}
-                        onChange={(e) => setForm({ ...form, studyAreaId: e.target.value })}
-                      >
-                        <option value="">{studyAreas.length ? 'Select study area' : 'No study areas'}</option>
-                        {studyAreas.map((a) => (
-                          <option key={a.id} value={String(a.id)}>
-                            {a.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
+                    <div className="md:col-span-2">
+                      <CatalogCourseFields
+                        hideCountry
+                        countryId={resolveCatalogCountryId(form.countryId) || form.countryId}
+                        countries={formOptions.countries}
+                        value={form}
+                        onChange={(catalog) => setForm((prev) => ({ ...prev, ...catalog }))}
+                        inputClass={INPUT}
+                        disabled={!canManage || profile.isEnrolled}
+                      />
+                    </div>
                     <Field label="Intake month">
                       <input
                         className={INPUT}
@@ -919,6 +998,7 @@ export default function StudentManagement() {
 
       {showNew && (
         <NewStudentModal
+          countries={formOptions.countries}
           onClose={() => setShowNew(false)}
           onCreated={async (student) => {
             setShowNew(false);
@@ -932,6 +1012,7 @@ export default function StudentManagement() {
       {showNewApp && profile && (
         <NewAppModal
           student={profile}
+          countries={formOptions.countries}
           counsellors={counsellors}
           onClose={() => setShowNewApp(false)}
           onCreated={async () => {
@@ -955,7 +1036,7 @@ function Field({ label, children }) {
   );
 }
 
-function NewStudentModal({ onClose, onCreated }) {
+function NewStudentModal({ countries = [], onClose, onCreated }) {
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -963,6 +1044,7 @@ function NewStudentModal({ onClose, onCreated }) {
     dob: '',
     nationality: 'India',
     preferredCountry: '',
+    countryId: '',
     ieltsScore: '',
     toeflScore: '',
     greScore: '',
@@ -976,6 +1058,7 @@ function NewStudentModal({ onClose, onCreated }) {
     try {
       const res = await createStudent({
         ...form,
+        countryId: form.countryId ? Number(form.countryId) : undefined,
         ieltsScore: form.ieltsScore === '' ? undefined : Number(form.ieltsScore),
         toeflScore: form.toeflScore === '' ? undefined : Number(form.toeflScore),
         greScore: form.greScore === '' ? undefined : Number(form.greScore),
@@ -1006,7 +1089,30 @@ function NewStudentModal({ onClose, onCreated }) {
           <input type="date" className={INPUT} value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} />
         </Field>
         <Field label="Preferred country">
-          <input className={INPUT} value={form.preferredCountry} onChange={(e) => setForm({ ...form, preferredCountry: e.target.value })} />
+          {countries.length ? (
+            <select
+              className={SELECT}
+              style={SELECT_BG}
+              value={form.countryId}
+              onChange={(e) => {
+                const country = countries.find((c) => String(c.id) === e.target.value);
+                setForm({
+                  ...form,
+                  countryId: e.target.value,
+                  preferredCountry: country?.name || '',
+                });
+              }}
+            >
+              <option value="">Select country</option>
+              {countries.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input className={INPUT} value={form.preferredCountry} onChange={(e) => setForm({ ...form, preferredCountry: e.target.value })} />
+          )}
         </Field>
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="ui-btn-secondary flex-1">
@@ -1021,11 +1127,21 @@ function NewStudentModal({ onClose, onCreated }) {
   );
 }
 
-function NewAppModal({ student, counsellors, onClose, onCreated }) {
+function NewAppModal({ student, countries = [], counsellors, onClose, onCreated }) {
+  const initialCountryId =
+    student.countryId != null
+      ? String(student.countryId)
+      : countries.find((c) => c.name === student.preferredCountry)?.id != null
+        ? String(countries.find((c) => c.name === student.preferredCountry).id)
+        : '';
+
   const [form, setForm] = useState({
     country: student.preferredCountry || '',
+    countryId: initialCountryId,
     university: '',
+    universityId: '',
     course: '',
+    courseId: '',
     intake: '',
     deadline: '',
     assignedToId: '',
@@ -1035,6 +1151,7 @@ function NewAppModal({ student, counsellors, onClose, onCreated }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!form.country || !form.university || !form.course) return;
     setBusy(true);
     try {
       await createApplication({
@@ -1058,15 +1175,12 @@ function NewAppModal({ student, counsellors, onClose, onCreated }) {
   return (
     <Modal title={`New application · ${student.fullName}`} onClose={onClose}>
       <form onSubmit={submit} className="p-6 space-y-4 max-w-lg">
-        <Field label="Country *">
-          <input required className={INPUT} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
-        </Field>
-        <Field label="University *">
-          <input required className={INPUT} value={form.university} onChange={(e) => setForm({ ...form, university: e.target.value })} />
-        </Field>
-        <Field label="Course *">
-          <input required className={INPUT} value={form.course} onChange={(e) => setForm({ ...form, course: e.target.value })} />
-        </Field>
+        <CatalogCourseFields
+          countries={countries}
+          value={form}
+          onChange={(catalog) => setForm((prev) => ({ ...prev, ...catalog }))}
+          inputClass={INPUT}
+        />
         <Field label="Intake">
           <input className={INPUT} value={form.intake} onChange={(e) => setForm({ ...form, intake: e.target.value })} placeholder="Fall 2026" />
         </Field>

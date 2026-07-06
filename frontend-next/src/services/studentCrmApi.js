@@ -88,6 +88,15 @@ export const uploadOfferLetter = async (applicationId, file) => {
 };
 export const upsertVisa = async (applicationId, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/visa`, putJson(payload)));
+export const uploadVisaDocument = async (applicationId, file) => {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await tenantFetch(`${API_URL}/applications/${applicationId}/visa/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  return handleResponse(res);
+};
 
 export const getChecklist = async (country) =>
   handleResponse(await tenantFetch(`${API_URL}/checklist?country=${encodeURIComponent(country)}`));

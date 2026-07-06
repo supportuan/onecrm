@@ -16,6 +16,7 @@ router.put('/countries/:id', manage, controller.updateCountry);
 router.delete('/countries/:id', manage, controller.deleteCountry);
 
 router.get('/industries', view, controller.listIndustries);
+router.get('/industries/sub-fields', view, controller.listIndustrySubFields);
 router.post('/industries', manage, controller.createIndustry);
 router.post('/industries/:industryId/sub-industries', manage, controller.createSubIndustry);
 router.post('/study-areas', manage, controller.createStudyArea);

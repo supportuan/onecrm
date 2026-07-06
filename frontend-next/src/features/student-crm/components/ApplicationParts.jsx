@@ -28,9 +28,10 @@ import {
   VISA_STATUSES,
   OFFER_DECISION,
   getStageLabel,
+  getVisaStatusLabel,
   stageBadgeClass,
 } from '@/features/student-crm/constants';
-import { listUniversities, listCourses } from '@/services/crmSettingsApi';
+import CatalogCourseFields from './CatalogCourseFields';
 
 const stageBadge = stageBadgeClass;
 
@@ -40,6 +41,21 @@ export const formatDate = (d) => {
     return new Date(d).toLocaleDateString();
   } catch {
     return '—';
+  }
+};
+
+/** Normalize API DateTime (string, Date, or null) for <input type="date">. */
+export const toDateInputValue = (value) => {
+  if (value == null || value === '') return '';
+  if (typeof value === 'string') return value.slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  try {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+  } catch {
+    return '';
   }
 };
 
@@ -166,11 +182,11 @@ export const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal,
 );
 
 export const ApplicationMetaEditor = ({ app, counsellors, canManage, onSave }) => {
-  const [deadline, setDeadline] = useState(app.deadline?.slice(0, 10) || '');
+  const [deadline, setDeadline] = useState(toDateInputValue(app.deadline));
   const [assignedToId, setAssignedToId] = useState(app.assignedToId ? String(app.assignedToId) : '');
 
   useEffect(() => {
-    setDeadline(app.deadline?.slice(0, 10) || '');
+    setDeadline(toDateInputValue(app.deadline));
     setAssignedToId(app.assignedToId ? String(app.assignedToId) : '');
   }, [app.id, app.deadline, app.assignedToId]);
 
@@ -591,9 +607,9 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
   const [form, setForm] = useState(() => ({
     fileUrl: app.offerLetter?.fileUrl || '',
     filename: app.offerLetter?.filename || '',
-    receivedAt: app.offerLetter?.receivedAt?.slice(0, 10) || '',
+    receivedAt: toDateInputValue(app.offerLetter?.receivedAt),
     conditional: app.offerLetter?.conditional || false,
-    decisionDeadline: app.offerLetter?.decisionDeadline?.slice(0, 10) || '',
+    decisionDeadline: toDateInputValue(app.offerLetter?.decisionDeadline),
     studentDecision: app.offerLetter?.studentDecision || 'PENDING',
     notes: app.offerLetter?.notes || '',
   }));
@@ -601,9 +617,9 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
     setForm({
       fileUrl: app.offerLetter?.fileUrl || '',
       filename: app.offerLetter?.filename || '',
-      receivedAt: app.offerLetter?.receivedAt?.slice(0, 10) || '',
+      receivedAt: toDateInputValue(app.offerLetter?.receivedAt),
       conditional: app.offerLetter?.conditional || false,
-      decisionDeadline: app.offerLetter?.decisionDeadline?.slice(0, 10) || '',
+      decisionDeadline: toDateInputValue(app.offerLetter?.decisionDeadline),
       studentDecision: app.offerLetter?.studentDecision || 'PENDING',
       notes: app.offerLetter?.notes || '',
     });
@@ -769,7 +785,7 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
             onClick={() => onSave(form)}
             className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white transition-all"
           >
-            Save offer details
+            Save
           </button>
         </div>
       )}
@@ -777,56 +793,160 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
   );
 };
 
-/* -------------------- Visa tracking -------------------- */
+/* -------------------- Visa application -------------------- */
 
-export const VisaPanel = ({ app, canManage, onSave }) => {
+export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading }) => {
+  const visaDoc = app.visaTracking?.documents || {};
   const [form, setForm] = useState(() => ({
     country: app.visaTracking?.country || app.country || '',
     status: app.visaTracking?.status || 'NOT_STARTED',
-    appointmentDate: app.visaTracking?.appointmentDate?.slice(0, 10) || '',
-    decisionDate: app.visaTracking?.decisionDate?.slice(0, 10) || '',
+    appointmentDate: toDateInputValue(app.visaTracking?.appointmentDate),
+    decisionDate: toDateInputValue(app.visaTracking?.decisionDate),
     notes: app.visaTracking?.notes || '',
+    fileUrl: visaDoc.fileUrl || '',
+    filename: visaDoc.filename || '',
   }));
+
   useEffect(() => {
+    const doc = app.visaTracking?.documents || {};
     setForm({
       country: app.visaTracking?.country || app.country || '',
       status: app.visaTracking?.status || 'NOT_STARTED',
-      appointmentDate: app.visaTracking?.appointmentDate?.slice(0, 10) || '',
-      decisionDate: app.visaTracking?.decisionDate?.slice(0, 10) || '',
+      appointmentDate: toDateInputValue(app.visaTracking?.appointmentDate),
+      decisionDate: toDateInputValue(app.visaTracking?.decisionDate),
       notes: app.visaTracking?.notes || '',
+      fileUrl: doc.fileUrl || '',
+      filename: doc.filename || '',
     });
   }, [app.id, app.visaTracking]);
 
+  const hasFile = Boolean(form.fileUrl);
+
   return (
-    <div className="ui-surface px-6 py-5 space-y-4">
+    <div className="ui-surface px-6 py-5 space-y-5">
       <div>
-        <h4 className="ui-text-h3">Visa tracking</h4>
-        <p className="ui-text-meta mt-0.5">Monitor the visa process and outcome.</p>
+        <h4 className="ui-text-h3">Visa application</h4>
+        <p className="ui-text-meta mt-0.5">
+          Upload visa documents and track submission, appointment, and outcome.
+        </p>
       </div>
+
+      <div
+        className={`rounded-xl border-2 border-dashed p-6 transition ${
+          hasFile ? 'border-emerald-200 bg-emerald-50/40' : 'border-neutral-200 bg-neutral-50/40'
+        }`}
+      >
+        {hasFile ? (
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                <FileText size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="ui-text-strong truncate">{form.filename || 'Visa document'}</p>
+                {visaDoc.uploadedAt && (
+                  <p className="text-[11px] text-neutral-500">
+                    Uploaded {formatDate(visaDoc.uploadedAt)}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={form.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 ui-text-strong flex items-center gap-1.5 transition"
+              >
+                <Eye size={13} /> View
+              </a>
+              <a
+                href={form.fileUrl}
+                download={form.filename || 'visa-document'}
+                className="px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 ui-text-strong flex items-center gap-1.5 transition"
+              >
+                <Download size={13} /> Download
+              </a>
+              {canManage && onUpload && (
+                <label
+                  className={`px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white ui-text-strong !text-white flex items-center gap-1.5 cursor-pointer transition ${
+                    uploading ? 'opacity-60 pointer-events-none' : ''
+                  }`}
+                >
+                  {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                  Replace
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) onUpload(file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+        ) : canManage && onUpload ? (
+          <label
+            className={`flex flex-col items-center justify-center gap-2 py-4 cursor-pointer ${
+              uploading ? 'opacity-60 pointer-events-none' : ''
+            }`}
+          >
+            {uploading ? (
+              <Loader2 size={24} className="text-neutral-400 animate-spin" />
+            ) : (
+              <Upload size={24} className="text-neutral-400" />
+            )}
+            <p className="ui-text-strong text-neutral-700">
+              {uploading ? 'Uploading…' : 'Upload visa document'}
+            </p>
+            <p className="ui-text-meta">Approval letter, visa stamp, or CAS — PDF, JPG, PNG, DOC</p>
+            <input
+              type="file"
+              className="hidden"
+              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onUpload(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+        ) : (
+          <p className="ui-text-meta text-center py-4">No visa document uploaded yet.</p>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Visa country">
+        <Field label="Destination country">
           <input
             disabled={!canManage}
             value={form.country}
             onChange={(e) => setForm({ ...form, country: e.target.value })}
             className="ui-field"
+            placeholder="e.g. United Kingdom"
           />
         </Field>
-        <Field label="Status">
+        <Field label="Application status">
           <select
             disabled={!canManage}
             value={form.status}
             onChange={(e) => setForm({ ...form, status: e.target.value })}
-            className="ui-field"
+            className="ui-field ui-select"
           >
             {VISA_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.replace(/_/g, ' ').toLowerCase()}
+                {getVisaStatusLabel(s)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Appointment date">
+        <Field label="Biometrics / appointment">
           <input
             type="date"
             disabled={!canManage}
@@ -845,22 +965,32 @@ export const VisaPanel = ({ app, canManage, onSave }) => {
           />
         </Field>
       </div>
-      <Field label="Notes">
+      <Field label="Internal notes">
         <textarea
           disabled={!canManage}
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
           rows={2}
           className="ui-field"
+          placeholder="Counsellor notes on visa progress"
         />
       </Field>
       {canManage && (
         <div className="flex justify-end">
           <button
-            onClick={() => onSave(form)}
-            className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white transition-all"
+            type="button"
+            onClick={() =>
+              onSave({
+                country: form.country,
+                status: form.status,
+                appointmentDate: form.appointmentDate || undefined,
+                decisionDate: form.decisionDate || undefined,
+                notes: form.notes,
+              })
+            }
+            className="ui-btn-primary px-5"
           >
-            Save visa
+            Save
           </button>
         </div>
       )}
@@ -948,14 +1078,16 @@ export const NewStudentModal = ({ onClose, onSave }) => {
 
 export const NewApplicationModal = ({ onClose, onSave, student, counsellors = [], formOptions = {} }) => {
   const countries = formOptions.countries || [];
-  const [countryUniversities, setCountryUniversities] = useState([]);
-  const [universityCourses, setUniversityCourses] = useState([]);
-  const [loadingUnis, setLoadingUnis] = useState(false);
-  const [loadingCourses, setLoadingCourses] = useState(false);
+  const initialCountryId =
+    student?.countryId != null
+      ? String(student.countryId)
+      : countries.find((c) => c.name === student?.preferredCountry)?.id != null
+        ? String(countries.find((c) => c.name === student?.preferredCountry).id)
+        : '';
 
   const [form, setForm] = useState({
     country: student?.preferredCountry || '',
-    countryId: student?.countryId || '',
+    countryId: initialCountryId,
     university: '',
     universityId: '',
     course: student?.preferredCourse || '',
@@ -965,65 +1097,6 @@ export const NewApplicationModal = ({ onClose, onSave, student, counsellors = []
     assignedToId: '',
     notes: '',
   });
-
-  useEffect(() => {
-    if (!form.countryId) {
-      setCountryUniversities([]);
-      return;
-    }
-    setLoadingUnis(true);
-    listUniversities({ countryId: Number(form.countryId), page: 1, limit: 500 })
-      .then((r) => setCountryUniversities(r?.data?.items || []))
-      .catch(() => setCountryUniversities([]))
-      .finally(() => setLoadingUnis(false));
-  }, [form.countryId]);
-
-  useEffect(() => {
-    if (!form.universityId) {
-      setUniversityCourses([]);
-      return;
-    }
-    setLoadingCourses(true);
-    listCourses({ universityId: Number(form.universityId), page: 1, limit: 500 })
-      .then((r) => setUniversityCourses(r?.data?.items || []))
-      .catch(() => setUniversityCourses([]))
-      .finally(() => setLoadingCourses(false));
-  }, [form.universityId]);
-
-  const onCountryChange = (countryId) => {
-    const country = countries.find((c) => c.id === Number(countryId));
-    setForm({
-      ...form,
-      countryId,
-      country: country?.name || '',
-      university: '',
-      universityId: '',
-      course: '',
-      courseId: '',
-    });
-  };
-
-  const onUniversityChange = (universityId) => {
-    const uni = countryUniversities.find((u) => u.id === Number(universityId));
-    setForm({
-      ...form,
-      universityId,
-      university: uni?.name || '',
-      countryId: uni?.countryId || form.countryId,
-      country: uni?.country?.name || form.country,
-      course: '',
-      courseId: '',
-    });
-  };
-
-  const onCourseChange = (courseId) => {
-    const course = universityCourses.find((c) => c.id === Number(courseId));
-    setForm({
-      ...form,
-      courseId,
-      course: course?.name || '',
-    });
-  };
 
   return (
     <Modal title={`New application · ${student?.fullName}`} onClose={onClose}>
@@ -1039,30 +1112,13 @@ export const NewApplicationModal = ({ onClose, onSave, student, counsellors = []
         className="space-y-4 p-6"
       >
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Country *">
-            {countries.length ? (
-              <select
-                required
-                value={form.countryId}
-                onChange={(e) => onCountryChange(e.target.value)}
-                className="ui-field"
-              >
-                <option value="">Select country</option>
-                {countries.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                required
-                value={form.country}
-                onChange={(e) => setForm({ ...form, country: e.target.value })}
-                className="ui-field"
-              />
-            )}
-          </Field>
+          <div className="col-span-2">
+            <CatalogCourseFields
+              countries={countries}
+              value={form}
+              onChange={(catalog) => setForm((prev) => ({ ...prev, ...catalog }))}
+            />
+          </div>
           <Field label="Intake">
             <input
               value={form.intake}
@@ -1072,63 +1128,6 @@ export const NewApplicationModal = ({ onClose, onSave, student, counsellors = []
             />
           </Field>
         </div>
-        <Field label="University *">
-          {loadingUnis ? (
-            <input disabled className="ui-field" placeholder="Loading universities..." />
-          ) : countryUniversities.length ? (
-            <select
-              required
-              value={form.universityId}
-              onChange={(e) => onUniversityChange(e.target.value)}
-              className="ui-field"
-            >
-              <option value="">Select university</option>
-              {countryUniversities.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                  {u.city ? ` · ${u.city}` : ''}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              required
-              value={form.university}
-              onChange={(e) => setForm({ ...form, university: e.target.value })}
-              className="ui-field"
-              placeholder={form.countryId ? 'No universities for this country' : 'Select a country first'}
-            />
-          )}
-        </Field>
-        <Field label="Course *">
-          {loadingCourses ? (
-            <input disabled className="ui-field" placeholder="Loading courses..." />
-          ) : universityCourses.length ? (
-            <select
-              required
-              value={form.courseId}
-              onChange={(e) => onCourseChange(e.target.value)}
-              className="ui-field"
-            >
-              <option value="">Select course</option>
-              {universityCourses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                  {c.level ? ` (${c.level})` : ''}
-                  {c.duration ? ` · ${c.duration}` : ''}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              required
-              value={form.course}
-              onChange={(e) => setForm({ ...form, course: e.target.value, courseId: '' })}
-              className="ui-field"
-              placeholder={form.universityId ? 'No courses imported — type manually' : 'Select university first'}
-            />
-          )}
-        </Field>
         <Field label="Deadline">
           <input
             type="date"

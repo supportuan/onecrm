@@ -44,6 +44,18 @@ export const VISA_STATUSES = [
   'APPROVED',
   'REJECTED',
 ];
+
+export const VISA_STATUS_LABELS = {
+  NOT_STARTED: 'Not started',
+  DOCUMENTS_GATHERING: 'Documents in progress',
+  APPLIED: 'Submitted',
+  INTERVIEW_SCHEDULED: 'Appointment scheduled',
+  APPROVED: 'Approved',
+  REJECTED: 'Refused',
+};
+
+export const getVisaStatusLabel = (key) =>
+  VISA_STATUS_LABELS[key] || key?.replace(/_/g, ' ').toLowerCase();
 export const OFFER_DECISION = ['PENDING', 'ACCEPTED', 'REJECTED'];
 
 export const stageBadgeClass = (stageKey) => {

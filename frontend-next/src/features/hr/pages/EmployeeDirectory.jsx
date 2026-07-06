@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { getEmployees, assignAccessRole, bulkImportEmployees } from '@/services/hrApi';
 import EmployeeDetailModal, { statusBadgeClass } from './EmployeeDetailModal';
+import { HR_ACCESS_ROLES } from '../constants/accessRoles';
 
 export default function EmployeeDirectory() {
   const [employees, setEmployees] = useState([]);
@@ -373,6 +374,8 @@ export default function EmployeeDirectory() {
                               className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border inline-flex items-center gap-1 w-fit ${
                                 emp.access_role?.includes('ADMIN')
                                   ? 'bg-neutral-100 text-neutral-900 border-neutral-200'
+                                  : emp.access_role === 'COUNSELLOR'
+                                  ? 'bg-neutral-50 text-neutral-800 border-neutral-300'
                                   : emp.access_role?.includes('HR')
                                   ? 'bg-purple-50 text-purple-700 border-purple-200'
                                   : 'bg-slate-100 text-neutral-600 border-neutral-200'
@@ -691,8 +694,11 @@ export default function EmployeeDirectory() {
                     className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
                   >
                     <option value="EMPLOYEE">Standard employee</option>
-                    <option value="HR_MANAGER">HR manager</option>
-                    <option value="SUPER_ADMIN">Super administrator</option>
+                    {HR_ACCESS_ROLES.filter((r) => r.value !== 'EMPLOYEE').map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -781,9 +787,12 @@ export default function EmployeeDirectory() {
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
                 >
-                  <option value="SUPER_ADMIN">Super administrator</option>
-                  <option value="HR_MANAGER">HR manager</option>
                   <option value="EMPLOYEE">Standard employee</option>
+                  {HR_ACCESS_ROLES.filter((r) => r.value !== 'EMPLOYEE').map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 

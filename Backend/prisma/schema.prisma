@@ -206,6 +206,7 @@ enum CommissionStatus {
 
 enum HrAccessRole {
   EMPLOYEE
+  COUNSELLOR
   SUPER_ADMIN
   HR_MANAGER
   PAYROLL_ADMIN
@@ -721,6 +722,7 @@ model University {
   country             Country             @relation(fields: [countryId], references: [id], onDelete: Cascade)
   studentUniversities StudentUniversity[]
   courses             Course[]
+  preferredByStudents Student[]           @relation("StudentPreferredUniversity")
 
   @@unique([countryId, name])
 }
@@ -741,7 +743,8 @@ model Course {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  university          University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  preferredByStudents Student[]  @relation("StudentPreferredCourse")
 
   @@index([universityId])
   @@index([name])
@@ -779,6 +782,9 @@ model Student {
   industryId          Int?
   subIndustryId       Int?
   studyAreaId         Int?
+  preferredUniversityId Int?
+  preferredCourseId     Int?
+  preferredCourse       String?
   intakeMonth         String?
   intakeYear          String?
   studyMode           String?
@@ -820,6 +826,8 @@ model Student {
   industry          StudyIndustry?      @relation(fields: [industryId], references: [id])
   subIndustry       StudySubIndustry?   @relation(fields: [subIndustryId], references: [id])
   studyArea         StudyArea?          @relation(fields: [studyAreaId], references: [id])
+  preferredUniversity University?       @relation("StudentPreferredUniversity", fields: [preferredUniversityId], references: [id])
+  preferredCourseRef  Course?           @relation("StudentPreferredCourse", fields: [preferredCourseId], references: [id])
   applications      Application[]
   universities      StudentUniversity[]
   checklists        StudentChecklist[]

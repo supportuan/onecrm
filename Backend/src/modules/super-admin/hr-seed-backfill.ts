@@ -1,6 +1,7 @@
 import { UserRole } from '@prisma/client';
 import { prisma } from '../../prisma.js';
 import { seedHrDefaults } from './super-admin.service.js';
+import { hrAccessRoleDefaults, userRoleToHrAccessRole } from '../hr/hr-access-role.js';
 
 /**
  * Boot-time backfill: for any tenant that has the HR module enabled but no
@@ -59,14 +60,22 @@ export const backfillStaffEmployees = async (): Promise<void> => {
           where: { OR: [{ userId: u.id }, { email: u.email }] },
         });
         if (existing) {
-          if (existing.userId == null) {
+          const patch: Record<string, unknown> = {};
+          if (existing.userId == null) patch.userId = u.id;
+          const accessRole = userRoleToHrAccessRole(u.role);
+          if (accessRole !== existing.accessRole) {
+            patch.accessRole = accessRole;
+            Object.assign(patch, hrAccessRoleDefaults(accessRole));
+          }
+          if (Object.keys(patch).length) {
             await prisma.hrEmployee.update({
               where: { id: existing.id },
-              data: { userId: u.id },
+              data: patch,
             });
           }
           continue;
         }
+        const accessRole = userRoleToHrAccessRole(u.role);
         await prisma.hrEmployee.create({
           data: {
             tenantId,
@@ -75,10 +84,8 @@ export const backfillStaffEmployees = async (): Promise<void> => {
             email: u.email,
             employeeCode: `EMP-T${tenantId}-U${u.id}`,
             phone: u.phone,
-            accessRole:
-              u.role === UserRole.GLOBAL_ADMIN || u.role === UserRole.HR
-                ? 'HR_MANAGER'
-                : 'EMPLOYEE',
+            accessRole,
+            ...hrAccessRoleDefaults(accessRole),
           },
         });
         console.log(`[hr-seed] provisioned employee for user ${u.id} in tenant ${tenantId}`);
