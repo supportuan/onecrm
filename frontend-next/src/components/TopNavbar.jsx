@@ -51,8 +51,14 @@ const TopNavbar = ({ onToggleSidebar }) => {
         : '?';
 
     return (
+<<<<<<< Updated upstream
         <header className="ui-shell-header justify-between gap-6">
             <div className="flex min-w-0 items-center gap-4">
+=======
+        <header className="flex items-center justify-between bg-white px-4 sm:px-6 lg:px-8 gap-4 py-4 sm:px-6 lg:px-8">
+            {/* Left */}
+            <div className="flex min-w-0 items-center gap-6">
+>>>>>>> Stashed changes
                 <button
                     type="button"
                     onClick={onToggleSidebar}
@@ -61,7 +67,39 @@ const TopNavbar = ({ onToggleSidebar }) => {
                 >
                     <Menu className="h-[18px] w-[18px]" strokeWidth={1.5} />
                 </button>
+<<<<<<< Updated upstream
                 <h1 className="ui-text-h1 truncate">{title}</h1>
+=======
+
+                <Image
+                    src="/images/applyUniNow.png"
+                    alt="ONECRM Logo"
+                    width={64}
+                    height={64}
+                    className="h-12 w-12 shrink-0 object-contain"
+                />
+
+                <div className="hidden flex-col border-slate-200 pr-5 sm:flex">
+                    <p className="text-lg font-bold leading-tight text-slate-900">
+                        ONECRM
+                    </p>
+                    {/* <p className="text-xs text-slate-500">
+                        Role based access   
+                    </p> */}
+                </div>
+
+                <div className="flex min-w-0 flex-col">
+                    <p className="text-xs font-semibold text-slate-400">{breadcrumb}</p>
+                    <h1 className="truncate text-[24px] font-bold leading-tight text-slate-900">
+                        {title}
+                    </h1>
+                    {description && (
+                        <p className="truncate text-xs font-medium text-slate-500">
+                            {description}
+                        </p>
+                    )}
+                </div>
+>>>>>>> Stashed changes
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
