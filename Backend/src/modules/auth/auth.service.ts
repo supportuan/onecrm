@@ -21,7 +21,7 @@ export const register = async (data: RegisterData) => {
   // Check duplicate phone number
   if (data.phone) {
     // Check duplicate phone number using findUnique (phone should be unique)
-    const existingPhone = await prisma.user.findUnique({
+    const existingPhone = await prisma.user.findFirst({
       where: { phone: data.phone },
     });
 

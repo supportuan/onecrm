@@ -119,7 +119,7 @@ export const getPages = async (_req: Request, res: Response) => {
 
 export const getForms = async (req: Request, res: Response) => {
     try {
-        const { pageId } = req.params;
+        const pageId = String(req.params.pageId);
 
         const data = await metaService.fetchLeadForms(pageId);
 
@@ -137,7 +137,7 @@ export const getForms = async (req: Request, res: Response) => {
 
 export const getFormLeads = async (req: Request, res: Response) => {
     try {
-        const { formId } = req.params;
+        const formId = String(req.params.formId);
 
         const data = await metaService.fetchHistoricalLeads(formId);
 
