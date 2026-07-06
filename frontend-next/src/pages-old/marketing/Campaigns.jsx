@@ -1003,7 +1003,7 @@ const Campaigns = () => {
   return (
     <div className="space-y-6">
       {/* FILTER & ACTIONS BAR - high-fidelity rounded pills */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-2 py-1 rounded-lg border border-neutral-200/50 shadow-xs">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-4 py-3 rounded-lg border border-neutral-200/50 shadow-xs">
         <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 sm:max-w-md shadow-xs transition-all focus-within:ring-2 focus-within:ring-neutral-900/20 focus-within:border-neutral-900/60">
           <Search className="h-5 w-5 text-neutral-500 flex-shrink-0" />
           <input
@@ -1083,7 +1083,7 @@ const Campaigns = () => {
               });
               setIsCreateOpen(true);
             }}
-            className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
+            className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md active:scale-95 hover:shadow-lg"
           >
             <Plus className="h-4 w-4 stroke-[3]" />
             Create Campaign
@@ -1294,7 +1294,7 @@ const Campaigns = () => {
                               e.stopPropagation();
                               setActiveMenuId(activeMenuId === camp.id ? null : camp.id);
                             }}
-                            className="p-1.5 hover:bg-slate-100 rounded-full text-neutral-500 hover:text-neutral-600 transition"
+                            className="p-1.5 hover:bg-slate-100 rounded-full text-neutral-500 hover:text-neutral-600 transition "
                           >
                             <MoreVertical className="h-4.5 w-4.5" />
                           </button>
@@ -1314,7 +1314,7 @@ const Campaigns = () => {
                             </button> */}
                             <button
                               onClick={() => handleOpenEdit(camp)}
-                              className="w-full px-4 py-2 hover:bg-neutral-50 text-xs font-semibold text-neutral-700 flex items-center gap-2 transition"
+                              className="w-full px-4 py-2 hover:bg-neutral-50 text-xs font-semibold text-neutral-700 flex items-center gap-2 transition "
                             >
                               <Target className="h-3.5 w-3.5 text-neutral-500" />
                               Edit details
@@ -1637,16 +1637,16 @@ const Campaigns = () => {
               </div>
               <button
                 onClick={() => setIsCreateOpen(false)}
-                className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition"
+                className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition "
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Scrollable form body */}
-            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4 max-h-[420px] overflow-y-auto bg-neutral-50/50 font-semibold text-xs text-neutral-500">
+            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4 max-h-[520px] overflow-y-auto bg-neutral-50/50 font-semibold text-xs text-neutral-500">
 
-              <div className="space-y-1">
+              <div className="space-y-1"> 
                 <label className="">Campaign Identity Name *</label>
                 <input
                   type="text"
@@ -1802,14 +1802,14 @@ const Campaigns = () => {
               <div className="pt-4 border-t border-neutral-100 flex items-center gap-3">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95"
+                  className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95 "
                 >
                   {campaignForm.type === 'SOCIAL_MEDIA' ? 'Save & Launch Ad' : 'Save & Launch'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-5 py-3 border border-neutral-200 hover:bg-neutral-50 rounded-xl text-sm font-semibold text-neutral-500 transition"
+                  className="px-5 py-3 border border-neutral-200 hover:bg-neutral-50 rounded-xl text-sm font-semibold text-neutral-500 transition "
                 >
                   Cancel
                 </button>
