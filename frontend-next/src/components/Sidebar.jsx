@@ -799,7 +799,7 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
 
       {flyoutMenu && !sidebarOpen && (
         <div
-          className="fixed z-50 min-w-[240px] rounded-xl border border-neutral-200 bg-white p-2 shadow-xl"
+          className="fixed z-50 min-w-[240px] rounded-xl border border-neutral-200 bg-white p-2 shadow-xl "
           style={{
             left: "88px",
             top: `${flyoutMenu.top}px`,
@@ -826,7 +826,7 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
                   router.push(sub.path);
                   setFlyoutMenu(null);
                 }}
-                className={`
+                className={` cursor-pointer
                   flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition
                   ${location.startsWith(sub.path)
                     ? "bg-neutral-100 text-neutral-900"

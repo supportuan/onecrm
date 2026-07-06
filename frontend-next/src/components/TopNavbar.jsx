@@ -282,18 +282,18 @@ const TopNavbar = ({ onToggleSidebar }) => {
                 <Image
                     src="/images/applyUniNow.png"
                     alt="ONECRM Logo"
-                    width={42}
-                    height={42}
-                    className="h-10 w-10 shrink-0 object-contain"
+                    width={58}
+                    height={58}
+                    className="h-12 w-15 shrink-0 object-contain"
                 />
 
-                <div className="hidden flex-col border-slate-200 pr-5 sm:flex">
-                    <p className="text-sm font-bold leading-tight text-slate-900">
+                <div className="hidden flex-col border-slate-200 pr-14 sm:flex">
+                    <p className="text-lg font-bold leading-tight text-slate-900">
                         ONECRM
                     </p>
-                    <p className="text-xs text-slate-500">
+                    {/* <p className="text-xs text-slate-500">
                         Role based access
-                    </p>
+                    </p> */}
                 </div>
 
                 <div className="flex min-w-0 flex-col">

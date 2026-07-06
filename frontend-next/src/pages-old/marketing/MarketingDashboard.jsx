@@ -1326,7 +1326,7 @@ const MarketingDashboard = () => {
   }
 
   return (
-    <div className="ui-page text-neutral-800 antialiased font-sans">
+    <div className="text-neutral-800 antialiased ">
       <input
         ref={fileInputRef}
         type="file"

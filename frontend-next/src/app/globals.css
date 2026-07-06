@@ -194,7 +194,7 @@ textarea {
 
 .user-modal-box {
   width: min(900px, 100%);
-  max-height: min(680px, calc(100vh - 48px));
+  max-height: min(680px, calc(100vh - 170px));
   display: flex;
   flex-direction: column;
   background: #ffffff;
