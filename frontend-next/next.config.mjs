@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:4000";
 
 const nextConfig = {
+  output: "standalone",
   // Allow large file uploads (videos up to 100MB) via the rewrite proxy
   experimental: {
     serverActions: {
