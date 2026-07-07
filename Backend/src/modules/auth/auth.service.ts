@@ -36,12 +36,12 @@ export const register = async (data: RegisterData) => {
   const { getDefaultModuleAccessByRole } = await import('../users/user.service.js');
   const moduleAccess = getDefaultModuleAccessByRole(data.role);
   let tenantId: number | null = null;
-    try {
-      tenantId = await getDefaultTenantId();
-    } catch (e) {
-      // In test environment prisma.tenant may be undefined; default to null
-      tenantId = null;
-    }
+  try {
+    tenantId = await getDefaultTenantId();
+  } catch (e) {
+    // In test environment prisma.tenant may be undefined; default to null
+    tenantId = null;
+  }
 
   const user = await prisma.user.create({
     data: {
@@ -71,17 +71,122 @@ export const register = async (data: RegisterData) => {
     // Send Welcome Email to Agent
     sendCampaignEmail({
       to: data.email,
-      subject: 'Agent Registration Received - Awaiting Approval',
+      subject: 'Welcome to OneCRM - Agent Registration Received',
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
-          <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
-          <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
-          <p style="color: #334155; font-size: 14px;">Your agent registration has been received successfully.</p>
-          <p style="color: #334155; font-size: 14px;">Please note that agent accounts require admin approval before you can log in. You will receive an email confirmation once your account has been approved.</p>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p style="color: #94a3b8; font-size: 12px; text-align: center;">This is an automated email, please do not reply directly.</p>
-        </div>
-      `,
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8" />
+        </head>
+        <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;">
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:40px 0;">
+            <tr>
+              <td align="center">
+
+                <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+
+                  <!-- Header -->
+                  <tr>
+                    <td style="background:#0f172a;padding:28px;text-align:center;">
+                      <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;">
+                        ONECRM
+                      </h1>
+                      <p style="margin-top:8px;color:#cbd5e1;font-size:14px;">
+                        Agent Registration Confirmation
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding:40px;">
+
+                      <h2 style="margin-top:0;color:#111827;font-size:24px;">
+                        Hello ${data.fullName},
+                      </h2>
+
+                      <p style="font-size:15px;color:#4b5563;line-height:1.8;">
+                        Thank you for registering as an
+                        <strong>Agent</strong> with
+                        <strong>OneCRM</strong>.
+                      </p>
+
+                      <div style="
+                        background:#f8fafc;
+                        border-left:4px solid #2563eb;
+                        padding:18px;
+                        margin:25px 0;
+                        border-radius:8px;
+                      ">
+                        <p style="margin:0;font-size:15px;color:#334155;">
+                          <strong>Your registration has been received successfully.</strong>
+                        </p>
+
+                        <p style="margin-top:10px;font-size:14px;color:#475569;line-height:1.8;">
+                          Before you can access your account, your registration
+                          must be reviewed and approved by our administration team.
+                        </p>
+                      </div>
+
+                      <h3 style="margin-bottom:10px;color:#111827;">
+                        What happens next?
+                      </h3>
+
+                      <ul style="padding-left:20px;color:#4b5563;font-size:14px;line-height:2;">
+                        <li>Your application will be reviewed by our administrators.</li>
+                        <li>Your agency details will be verified.</li>
+                        <li>Once approved, you'll receive another email confirming your account activation.</li>
+                        <li>After approval, you can log in and start managing student applications through the OneCRM portal.</li>
+                      </ul>
+
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin:30px 0;background:#eff6ff;border-radius:10px;">
+                        <tr>
+                          <td style="padding:18px;">
+                            <strong style="color:#1d4ed8;">Registered Email</strong>
+                            <br/>
+                            <span style="color:#334155;">${data.email}</span>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <p style="font-size:14px;color:#4b5563;line-height:1.8;">
+                        We appreciate your interest in partnering with us and look
+                        forward to welcoming you to the OneCRM Agent Network.
+                      </p>
+
+                      <p style="margin-top:30px;font-size:15px;color:#111827;">
+                        Regards,<br/>
+                        <strong>OneCRM Team</strong>
+                      </p>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background:#f8fafc;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+
+                      <p style="margin:0;color:#64748b;font-size:12px;">
+                        This is an automated email. Please do not reply to this message.
+                      </p>
+
+                      <p style="margin-top:10px;color:#94a3b8;font-size:12px;">
+                        © ${new Date().getFullYear()} OneCRM. All rights reserved.
+                      </p>
+
+                    </td>
+                  </tr>
+
+                </table>
+
+              </td>
+            </tr>
+          </table>
+
+        </body>
+        </html>
+        `,
     }).catch(err => console.error('[Agent Welcome Email Error]', err));
   } else if (data.role === UserRole.STUDENT) {
     // Notify admin

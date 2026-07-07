@@ -274,13 +274,98 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
   },
 
   // -------------------- Welcome --------------------
+  // 'welcome.user': {
+  //   key: 'welcome.user',
+  //   defaultChannels: ['IN_APP', 'EMAIL'],
+  //   build: (v) => {
+  //     const title = `Welcome to OneCRM`;
+  //     const body = `Hi ${fallbackVar(v.name, 'there')}, your account is ready. You're signed in as ${fallbackVar(v.role, 'a team member')}.`;
+  //     return { title, body, html: wrapEmailHtml(title, body, '/', 'Open dashboard'), link: '/' };
+  //   },
+  // },
   'welcome.user': {
     key: 'welcome.user',
     defaultChannels: ['IN_APP', 'EMAIL'],
     build: (v) => {
-      const title = `Welcome to OneCRM`;
-      const body = `Hi ${fallbackVar(v.name, 'there')}, your account is ready. You're signed in as ${fallbackVar(v.role, 'a team member')}.`;
-      return { title, body, html: wrapEmailHtml(title, body, '/', 'Open dashboard'), link: '/' };
+      const name = fallbackVar(v.name, 'there');
+      const role = fallbackVar(v.role, 'team member');
+
+      const title = 'Welcome to OneCRM';
+
+      const body = `Hi ${name}, your OneCRM account has been created successfully. You are signed in as ${role}. You can now access your dashboard and start using your assigned modules.`;
+
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:40px 0;">
+          <tr>
+            <td align="center">
+              <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+                
+                <tr>
+                  <td style="background:#0f172a;padding:30px;text-align:center;">
+                    <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;">
+                      ONECRM
+                    </h1>
+                    <p style="margin:8px 0 0;color:#cbd5e1;font-size:14px;">
+                      Account Ready
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:40px;">
+                    <h2 style="margin:0;color:#111827;font-size:24px;">
+                      Welcome, ${name} 👋
+                    </h2>
+
+                    <p style="margin-top:18px;font-size:15px;line-height:1.8;color:#4b5563;">
+                      Your OneCRM account has been created successfully.
+                      You are signed in as <strong>${role}</strong>.
+                    </p>
+
+                    <div style="margin:28px 0;padding:18px;border-radius:10px;background:#f8fafc;border-left:4px solid #2563eb;">
+                      <p style="margin:0;color:#334155;font-size:14px;line-height:1.7;">
+                        You can now access your dashboard and start using the modules assigned to your role.
+                      </p>
+                    </div>
+
+                    <div style="text-align:center;margin:34px 0;">
+                      <a href="https://crm.applyuninow.com/" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;">
+                        Open Dashboard
+                      </a>
+                    </div>
+
+                    <p style="margin-top:30px;color:#111827;font-size:15px;">
+                      Regards,<br/>
+                      <strong>OneCRM Team</strong>
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="background:#f8fafc;padding:18px;text-align:center;border-top:1px solid #e5e7eb;">
+                    <p style="margin:0;color:#64748b;font-size:12px;">
+                      This is an automated notification from OneCRM.
+                    </p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+      return {
+        title,
+        body,
+        html,
+        link: '/',
+      };
     },
   },
 };
