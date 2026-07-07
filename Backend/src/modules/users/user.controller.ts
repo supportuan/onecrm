@@ -19,6 +19,29 @@ const sendError = (res: Response, message: string, status = 400) => {
   });
 };
 
+/** Admin UI sends `role` (ADMIN, COUNSELLOR, …); global admins must provide `roleName`. */
+const normalizeCreateUserBody = (
+  body: Record<string, unknown>,
+  actorRole: UserRole
+): Record<string, unknown> => {
+  const normalized = { ...body };
+  const role = typeof normalized.role === 'string' ? normalized.role.trim() : '';
+  const roleName =
+    typeof normalized.roleName === 'string' ? normalized.roleName.trim() : '';
+
+  if (actorRole === UserRole.GLOBAL_ADMIN && !roleName && role) {
+    normalized.roleName = role === 'ADMIN' ? 'Admin' : role;
+    delete normalized.role;
+  }
+
+  if (role === 'ADMIN') {
+    normalized.roleName = (normalized.roleName as string) || 'Admin';
+    delete normalized.role;
+  }
+
+  return normalized;
+};
+
 const validateCreatePayload = (
   currentRole: UserRole,
   body: { role?: UserRole; roleName?: string }
@@ -97,7 +120,9 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 
-    const data = createUserSchema.parse(req.body);
+    const data = createUserSchema.parse(
+      normalizeCreateUserBody(req.body as Record<string, unknown>, req.user.role)
+    );
     const validationError = validateCreatePayload(req.user.role, data);
     if (validationError) {
       return sendError(res, validationError, 403);

@@ -397,7 +397,7 @@ export default function UserManagementPage() {
         fullName: `${form.firstName} ${form.lastName}`.trim(),
         email: form.email,
         phone: form.phone || undefined,
-        role: form.role,
+        roleName: form.role === "ADMIN" ? "Admin" : form.role,
         isActive: form.isActive,
         moduleAccess: getCleanModuleAccess(form.moduleAccess),
       };
