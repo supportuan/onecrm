@@ -5,6 +5,7 @@ jest.unstable_mockModule('../prisma.js', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
     },
   },
@@ -54,6 +55,7 @@ describe('Auth Service - register', () => {
     };
 
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
 
     (prisma.user.create as jest.Mock).mockResolvedValue({
       id: 1,
@@ -333,7 +335,7 @@ describe('Auth Service - register', () => {
     expect(adminStudentNotification).not.toHaveBeenCalled();
   });
 
-  
 
-  
+
+
 });
