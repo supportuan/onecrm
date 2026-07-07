@@ -168,164 +168,6 @@ export const getUserById = async (id: number, tenantId: number | null = null) =>
   });
 };
 
-// export const createUser = async (data: {
-//   fullName: string;
-//   email: string;
-//   phone?: string;
-//   password: string;
-//   role: UserRole;
-//   agencyDetails?: any;
-//   moduleAccess?: any;
-// }) => {
-//   if (!allowedRoles.includes(data.role)) {
-//     throw new Error('Invalid role selected');
-//   }
-
-//   const passwordHash = await hashPassword(data.password);
-//   const isApproved = data.role !== UserRole.AGENT;
-//   const moduleAccess = data.moduleAccess || getDefaultModuleAccessByRole(data.role);
-
-//   const user = await prisma.user.create({
-//     data: {
-//       fullName: data.fullName,
-//       email: data.email,
-//       phone: data.phone || null,
-//       passwordHash,
-//       role: data.role,
-//       isActive: true,
-//       isApproved,
-//       agencyDetails: data.agencyDetails || null,
-//       moduleAccess: moduleAccess || null,
-//     },
-//   });
-
-//   // Dispatch Welcome Email asynchronously so it does not block the response
-//   sendCampaignEmail({
-//     to: data.email,
-//     subject: 'Welcome to OneCRM - Your Account Details',
-//     html: `
-//       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
-//         <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
-//         <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
-//         <p style="color: #334155; font-size: 14px;">Your account has been created successfully with the role of <strong>${data.role}</strong>.</p>
-//         <p style="color: #334155; font-size: 14px;">Here are your temporary login credentials:</p>
-//         <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-//           <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Username (Email):</strong> ${data.email}</p>
-//           <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Temporary Password:</strong> ${data.password}</p>
-//         </div>
-//         <p style="color: #64748b; font-size: 13px;">Please note that you will be prompted to change this temporary password upon your first login for security reasons.</p>
-//         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-//         <p style="color: #94a3b8; font-size: 12px; text-align: center;">This is an automated email, please do not reply directly.</p>
-//       </div>
-//     `,
-//   }).catch((err) => {
-//     console.error('[Welcome Email Error] Failed to send email to:', data.email, err);
-//   });
-
-//   return user;
-// };
-
-// export const createUser = async (data: {
-//   fullName: string;
-//   email: string;
-//   phone?: string | null;
-//   password?: string;
-//   role: UserRole;
-//   agencyDetails?: any;
-//   moduleAccess?: any;
-// }) => {
-//   if (!allowedRoles.includes(data.role)) {
-//     throw new Error('Invalid role selected');
-//   }
-
-//   const temporaryPassword =
-//     data.password || Math.random().toString(36).slice(-8) + 'A@1';
-
-//   const passwordHash = await hashPassword(temporaryPassword);
-//   const isApproved = data.role !== UserRole.AGENT;
-//   const moduleAccess = data.moduleAccess || getDefaultModuleAccessByRole(data.role);
-
-//   const result = await prisma.$transaction(async (tx) => {
-//     const user = await tx.user.create({
-//       data: {
-//         fullName: data.fullName,
-//         email: data.email,
-//         phone: data.phone || null,
-//         passwordHash,
-//         role: data.role,
-//         isActive: true,
-//         isApproved,
-//         agencyDetails: data.agencyDetails || null,
-//         moduleAccess: moduleAccess || null,
-//       },
-//     });
-
-//     if (data.role === UserRole.STUDENT) {
-//       await tx.lead.create({
-//         data: {
-//           fullName: user.fullName,
-//           email: user.email,
-//           phone: user.phone,
-//           studentUserId: user.id,
-//           isStudentLoginCreated: true,
-//           status: 'NEW',
-//           rating: 'WARM',
-//         },
-//       });
-//     }
-
-//     return user;
-//   });
-
-// //   sendCampaignEmail({
-// //     to: data.email,
-// //     subject: 'Welcome to OneCRM - Your Account Details',
-// //     html: `
-// //       <p>Hello <b>${data.fullName}</b>,</p>
-// //       <p>Your account has been created successfully.</p>
-// //       <p><b>Email:</b> ${data.email}</p>
-// //       <p><b>Temporary Password:</b> ${temporaryPassword}</p>
-// //     `,
-// //   }).catch((err) => {
-// //     console.error('[Welcome Email Error] Failed to send email to:', data.email, err);
-// //   });
-
-// //   if (isApproved) {
-// //     await safeNotify({
-// //       recipientId: user.id,
-// //       templateKey: 'welcome.user',
-// //       vars: { name: user.fullName, role: user.role },
-// //     });
-// //   }
-
-// //   return user;
-// // };
-//   sendCampaignEmail({
-//     to: data.email,
-//     subject: 'Welcome to OneCRM - Your Account Details',
-//     html: `
-//       <p>Hello <b>${data.fullName}</b>,</p>
-//       <p>Your account has been created successfully.</p>
-//       <p><b>Email:</b> ${data.email}</p>
-//       <p><b>Temporary Password:</b> ${temporaryPassword}</p>
-//     `,
-//   }).catch((err) => {
-//     console.error('[Welcome Email Error] Failed to send email to:', data.email, err);
-//   });
-
-//   if (isApproved) {
-//     await safeNotify({
-//       recipientId: result.id,
-//       templateKey: 'welcome.user',
-//       vars: {
-//         name: result.fullName,
-//         role: result.role,
-//       },
-//     });
-//   }
-
-//   return result;
-// };
 
 export const createUser = async (data: {
   fullName: string;
@@ -468,22 +310,146 @@ export const createUser = async (data: {
     sendCampaignEmail({
       to: normalizedEmail,
       subject: 'Welcome to OneCRM - Your Account Details',
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
-          <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
-            <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
-            <p style="color: #334155; font-size: 14px;">Your account has been created successfully with the role of <strong>${displayRole}</strong>.</p>
-            <p style="color: #334155; font-size: 14px;">Here are your temporary login credentials:</p>
-          <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-            <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Username (Email):</strong> ${data.email}</p>
-            <p style="margin: 5px 0; font-size: 14px; color: #1e293b;"><strong>Temporary Password:</strong> ${temporaryPassword}</p>
-          </div>
-            <p style="color: #64748b; font-size: 13px;">Please note that you will be prompted to change this temporary password upon your first login for security reasons.</p>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-            <p style="color: #94a3b8; font-size: 12px; text-align: center;">This is an automated email, please do not reply directly.</p>
-        </div>
+      
 
-      `,
+      html: `
+          <div style="margin:0;padding:0;background:#f4f7fb;font-family:'Segoe UI',Arial,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+              <tr>
+                <td align="center">
+
+                  <table width="650" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 25px rgba(0,0,0,.08);">
+
+                    <!-- Header -->
+                    <tr>
+                      <td style="background:#0f172a;padding:30px;text-align:center;">
+                        <h1 style="margin:0;color:#ffffff;font-size:30px;font-weight:700;">
+                          Welcome to OneCRM
+                        </h1>
+                        <p style="margin-top:10px;color:#E0E7FF;font-size:15px;">
+                          Smart CRM Platform for Education & Business Management
+                        </p>
+                      </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                      <td style="padding:40px;">
+
+                        <p style="font-size:17px;color:#334155;margin:0 0 20px;">
+                          Hello <strong>${data.fullName}</strong>,
+                        </p>
+
+                        <p style="font-size:15px;line-height:28px;color:#475569;margin-bottom:25px;">
+                          Congratulations! Your <strong>OneCRM</strong> account has been successfully created.
+                          You have been assigned the role of
+                          <strong style="color:#4F46E5;">${displayRole}</strong>.
+                        </p>
+
+                        <!-- Login Credentials -->
+                        <table width="100%" cellpadding="0" cellspacing="0"
+                          style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;margin:25px 0;">
+                          <tr>
+                            <td style="padding:25px;">
+
+                              <h3 style="margin:0 0 18px;color:#1E293B;font-size:18px;">
+                                🔐 Login Credentials
+                              </h3>
+
+                              <table width="100%" cellpadding="8">
+                                <tr>
+                                  <td width="170" style="font-weight:600;color:#64748B;">
+                                    Email
+                                  </td>
+                                  <td style="color:#1E293B;">
+                                    ${data.email}
+                                  </td>
+                                </tr>
+
+                                <tr>
+                                  <td style="font-weight:600;color:#64748B;">
+                                    Temporary Password
+                                  </td>
+                                  <td style="color:#DC2626;font-weight:700;font-size:16px;">
+                                    ${temporaryPassword}
+                                  </td>
+                                </tr>
+
+                                <tr>
+                                  <td style="font-weight:600;color:#64748B;">
+                                    Role
+                                  </td>
+                                  <td style="color:#4F46E5;font-weight:600;">
+                                    ${displayRole}
+                                  </td>
+                                </tr>
+                              </table>
+
+                            </td>
+                          </tr>
+                        </table>
+
+                        <!-- Login Button -->
+                        <div style="text-align:center;margin:35px 0;">
+                          <a href="https://your-domain.com/login"
+                            style="background:#4F46E5;
+                                  color:#ffffff;
+                                  text-decoration:none;
+                                  padding:14px 35px;
+                                  border-radius:10px;
+                                  display:inline-block;
+                                  font-size:15px;
+                                  font-weight:600;">
+                            Login to OneCRM
+                          </a>
+                        </div>
+
+                        <!-- Security Notice -->
+                        <div style="background:#FEFCE8;border-left:5px solid #EAB308;padding:18px;border-radius:8px;margin-top:25px;">
+                          <strong style="color:#92400E;">Security Reminder</strong>
+
+                          <p style="margin-top:10px;font-size:14px;color:#57534E;line-height:24px;">
+                            This password is temporary. For your security, you will be asked
+                            to create a new password immediately after your first login.
+                            Please do not share your login credentials with anyone.
+                          </p>
+                        </div>
+
+                        <p style="margin-top:35px;font-size:15px;color:#475569;line-height:26px;">
+                          If you experience any issues accessing your account,
+                          please contact your system administrator or our support team.
+                        </p>
+
+                        <p style="margin-top:30px;font-size:15px;color:#334155;">
+                          Best Regards,<br>
+                          <strong>OneCRM Team</strong>
+                        </p>
+
+                      </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                      <td style="background:#F8FAFC;padding:25px;text-align:center;border-top:1px solid #E2E8F0;">
+
+                        <p style="margin:0;font-size:13px;color:#64748B;">
+                          © ${new Date().getFullYear()} OneCRM. All Rights Reserved.
+                        </p>
+
+                        <p style="margin-top:8px;font-size:12px;color:#94A3B8;">
+                          This is an automated email. Please do not reply to this message.
+                        </p>
+
+                      </td>
+                    </tr>
+
+                  </table>
+
+                </td>
+              </tr>
+            </table>
+          </div>
+          `,
     }).catch((err) => {
       console.error(
         '[Welcome Email Error] Failed to send email to:',
@@ -529,41 +495,6 @@ export const createUser = async (data: {
     throw new Error('Failed to create user');
   }
 };
-
-// export const updateUser = async (
-//   id: number,
-//   data: {
-//     fullName?: string;
-//     email?: string;
-//     phone?: string | null;
-//     role?: UserRole;
-//     isActive?: boolean;
-//     isApproved?: boolean;
-//     counsellorId?: number | null;
-//     moduleAccess?: any;
-//   }
-// ) => {
-//   const existing = data.isApproved !== undefined
-//     ? await prisma.user.findUnique({ where: { id } })
-//     : null;
-
-//   const updated = await prisma.user.update({
-//     where: { id },
-//     data,
-//   });
-
-
-
-//   if (existing && data.isApproved === true && !existing.isApproved) {
-//     await safeNotify({
-//       recipientId: id,
-//       templateKey: 'welcome.user',
-//       vars: { name: updated.fullName, role: updated.role },
-//     });
-//   }
-
-//   return updated;
-// };
 
 export const updateUser = async (
   id: number,

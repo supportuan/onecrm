@@ -200,16 +200,158 @@ export const register = async (data: RegisterData) => {
     sendCampaignEmail({
       to: data.email,
       subject: 'Welcome to OneCRM - Student Account Registered',
+      
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
-          <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to OneCRM!</h2>
-          <p style="color: #334155; font-size: 16px;">Hello <strong>${data.fullName}</strong>,</p>
-          <p style="color: #334155; font-size: 14px;">Your student registration has been created successfully.</p>
-          <p style="color: #334155; font-size: 14px;">An admin will assign a counsellor to assist you shortly. You can log in using your email and password.</p>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p style="color: #94a3b8; font-size: 12px; text-align: center;">This is an automated email, please do not reply directly.</p>
-        </div>
-      `,
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8" />
+          </head>
+          <body style="margin:0;padding:30px;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;">
+
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td align="center">
+
+                <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+
+                  <!-- Header -->
+                  <tr>
+                    <td style="background:#0f172a;padding:24px 32px;">
+
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="70" valign="middle">
+                            <img
+                              src="https://your-domain.com/logo.png"
+                              alt="OneCRM"
+                              width="52"
+                              height="52"
+                              style="display:block;border-radius:8px;"
+                            />
+                          </td>
+
+                          <td valign="middle">
+                            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">
+                              ONECRM
+                            </h1>
+
+                            <p style="margin:6px 0 0;color:#cbd5e1;font-size:14px;">
+                              Student Registration Successful
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding:40px;">
+
+                      <h2 style="margin:0;color:#111827;font-size:24px;">
+                        Welcome, ${data.fullName} 
+                      </h2>
+
+                      <p style="margin-top:20px;font-size:15px;line-height:1.8;color:#475569;">
+                        Thank you for registering with
+                        <strong>OneCRM</strong>.
+                        Your student account has been created successfully.
+                      </p>
+
+                      <div style="
+                          margin:30px 0;
+                          padding:20px;
+                          background:#eff6ff;
+                          border-left:5px solid #2563eb;
+                          border-radius:10px;
+                      ">
+
+                        <p style="margin:0;font-size:16px;font-weight:600;color:#1e3a8a;">
+                          ✅ Registration Completed Successfully
+                        </p>
+
+                        <p style="margin-top:12px;font-size:14px;line-height:1.8;color:#475569;">
+                          An academic counsellor will be assigned to your profile shortly.
+                          Once assigned, they will contact you to guide you through your
+                          university admissions and application process.
+                        </p>
+
+                      </div>
+
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;margin-bottom:30px;">
+                        <tr>
+                          <td style="padding:18px;">
+
+                            <strong style="color:#1e293b;">Login Email</strong>
+
+                            <p style="margin:8px 0 0;color:#475569;">
+                              ${data.email}
+                            </p>
+
+                          </td>
+                        </tr>
+                      </table>
+
+                      <p style="font-size:15px;line-height:1.8;color:#475569;">
+                        You can log in using your registered email address and password to
+                        access your student portal, track your applications, and communicate
+                        with your assigned counsellor.
+                      </p>
+
+                      <div style="text-align:center;margin-top:35px;">
+
+                        <a
+                          href="https://crm.applyuninow.com/login"
+                          style="
+                            display:inline-block;
+                            padding:14px 32px;
+                            background:#2563eb;
+                            color:#ffffff;
+                            text-decoration:none;
+                            border-radius:8px;
+                            font-size:15px;
+                            font-weight:600;
+                          "
+                        >
+                          Login to OneCRM
+                        </a>
+
+                      </div>
+
+                      <p style="margin-top:40px;color:#111827;font-size:15px;">
+                        Regards,<br/>
+                        <strong>OneCRM Team</strong>
+                      </p>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background:#f8fafc;border-top:1px solid #e5e7eb;padding:18px;text-align:center;">
+
+                      <p style="margin:0;font-size:12px;color:#64748b;">
+                        This is an automated email. Please do not reply directly to this message.
+                      </p>
+
+                      <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
+                        © ${new Date().getFullYear()} OneCRM. All rights reserved.
+                      </p>
+
+                    </td>
+                  </tr>
+
+                </table>
+
+              </td>
+            </tr>
+          </table>
+
+          </body>
+          </html>
+          `,
     }).catch(err => console.error('[Student Welcome Email Error]', err));
   }
 
