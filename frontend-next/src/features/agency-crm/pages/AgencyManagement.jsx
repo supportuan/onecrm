@@ -9,6 +9,8 @@ import {
   createPartner,
   updatePartner,
   getStatistics,
+  updatePartnerStatus,
+  advanceOnboarding,
 } from '@/services/agencyCrmApi';
 import { PARTNER_STATUS_LABELS, partnerStatusClass } from '../constants';
 
@@ -25,8 +27,9 @@ const emptyForm = () => ({
   contactPerson: '',
   city: '',
   country: '',
+  services: '',
   commissionRate: 10,
-  status: 'ACTIVE',
+  status: 'PENDING',
   notes: '',
 });
 
@@ -34,7 +37,7 @@ export default function AgencyManagement() {
   const { user } = useAuth();
   const { can } = usePermissions();
   const canManage = can('MANAGE_AGENCY_CRM');
-  const isFreelancer = user?.role === 'AGENCY_FREELANCER';
+  const isFreelancer = user?.role === 'AGENCY_FREELANCER' || user?.role === 'AGENT';
 
   const [partners, setPartners] = useState([]);
   const [stats, setStats] = useState(null);
@@ -87,6 +90,7 @@ export default function AgencyManagement() {
       contactPerson: selected.contactPerson || '',
       city: selected.city || '',
       country: selected.country || '',
+      services: selected.services || '',
       commissionRate: selected.commissionRate ?? 10,
       status: selected.status || 'ACTIVE',
       notes: selected.notes || '',
@@ -95,7 +99,8 @@ export default function AgencyManagement() {
 
   const savePartner = async (e) => {
     e.preventDefault();
-    if (!canManage || !selectedId) return;
+    if (!selectedId) return;
+    if (!canManage && !isFreelancer) return;
     try {
       await updatePartner(selectedId, {
         agencyName: form.agencyName,
@@ -105,6 +110,7 @@ export default function AgencyManagement() {
         phone: form.phone,
         city: form.city,
         country: form.country,
+        services: form.services,
         commissionRate: Number(form.commissionRate),
         status: form.status,
         notes: form.notes,
@@ -303,11 +309,52 @@ export default function AgencyManagement() {
                 </div>
 
                 <label className="block space-y-1">
+                  <span className="text-xs text-neutral-500">Services offered</span>
+                  <input
+                    className={INPUT}
+                    value={form.services}
+                    onChange={(e) => setForm({ ...form, services: e.target.value })}
+                    disabled={isFreelancer && !canManage}
+                    placeholder="e.g. Study abroad, visa support"
+                  />
+                </label>
+
+                {!showNew && canManage && !isFreelancer && selectedId && (
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
+                    {['VERIFIED', 'APPROVED', 'ACTIVE', 'INACTIVE', 'BLACKLISTED'].map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                        onClick={async () => {
+                          await updatePartnerStatus(selectedId, st);
+                          flash(`Status → ${st}`);
+                          await load();
+                        }}
+                      >
+                        Mark {PARTNER_STATUS_LABELS[st]}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                      onClick={async () => {
+                        await advanceOnboarding(selectedId, 'VERIFIED');
+                        flash('Onboarding verified');
+                        await load();
+                      }}
+                    >
+                      Verify docs
+                    </button>
+                  </div>
+                )}
+
+                <label className="block space-y-1">
                   <span className="text-xs text-neutral-500">Notes</span>
                   <textarea className={`${INPUT} min-h-[80px]`} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} disabled={!canManage} />
                 </label>
 
-                {canManage && (
+                {(canManage || isFreelancer) && (
                   <div className="flex gap-2">
                     <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm rounded-lg">
                       <Save className="w-4 h-4" />

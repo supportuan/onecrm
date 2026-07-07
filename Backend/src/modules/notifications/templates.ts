@@ -98,8 +98,53 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
       const title = `Missing documents`;
       const missing = Array.isArray(v.missing) ? v.missing.join(', ') : fallbackVar(v.missing);
       const body = `Application ${fallbackVar(v.applicationCode, '')} is missing: ${missing}.`;
-      const link = v.applicationId ? `/student-crm/applications?app=${v.applicationId}` : undefined;
+      const link = v.applicationId ? `/student-crm/applications/${v.applicationId}` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'Review application'), link };
+    },
+  },
+
+  'application.document_missing_student': {
+    key: 'application.document_missing_student',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Documents needed for your application`;
+      const missing = Array.isArray(v.missing) ? v.missing.join(', ') : fallbackVar(v.missing);
+      const body = `Your application ${fallbackVar(v.applicationCode, '')} still needs: ${missing}. Please upload them at your earliest convenience.`;
+      const link = v.applicationId ? `/applicant/applications/${v.applicationId}` : undefined;
       return { title, body, html: wrapEmailHtml(title, body, link, 'Upload documents'), link };
+    },
+  },
+
+  'application.deadline_reminder': {
+    key: 'application.deadline_reminder',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Upcoming deadline — ${fallbackVar(v.university)}`;
+      const body = `Application ${fallbackVar(v.applicationCode, '')} has a deadline on ${fallbackVar(v.dueDate)}.`;
+      const link = v.applicationId ? `/applicant/applications/${v.applicationId}` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'View application'), link };
+    },
+  },
+
+  'application.offer_for_student': {
+    key: 'application.offer_for_student',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Offer received — ${fallbackVar(v.university)}`;
+      const body = `You have received an offer for ${fallbackVar(v.course, 'your programme')}${v.deadline ? `. Please respond by ${v.deadline}` : ''}.`;
+      const link = v.applicationId ? `/applicant/applications/${v.applicationId}` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'Review offer'), link };
+    },
+  },
+
+  'application.offer_decision': {
+    key: 'application.offer_decision',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Student ${fallbackVar(v.decision)} offer`;
+      const body = `${fallbackVar(v.studentName)} has ${fallbackVar(v.decision)} the offer from ${fallbackVar(v.university)}.`;
+      const link = v.applicationId ? `/student-crm/applications/${v.applicationId}` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'View application'), link };
     },
   },
 
@@ -143,8 +188,19 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
     build: (v) => {
       const title = `Visa status: ${fallbackVar(v.status)}`;
       const body = `${fallbackVar(v.studentName, 'Application')} — visa status updated to ${fallbackVar(v.status)}.`;
-      const link = v.applicationId ? `/student-crm/applications?app=${v.applicationId}` : undefined;
+      const link = v.applicationId ? `/student-crm/applications/${v.applicationId}` : undefined;
       return { title, body, html: wrapEmailHtml(title, body, link, 'View visa tracking'), link };
+    },
+  },
+
+  'application.visa_update_student': {
+    key: 'application.visa_update_student',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Visa update — ${fallbackVar(v.university)}`;
+      const body = `Your visa application status is now: ${fallbackVar(v.status)}.`;
+      const link = v.applicationId ? `/applicant/applications/${v.applicationId}` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'View visa status'), link };
     },
   },
 
@@ -157,6 +213,30 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
       const body = `${fallbackVar(v.message, '')}`;
       const link = v.link || undefined;
       return { title, body, html: wrapEmailHtml(title, body, link, 'Read more'), link };
+    },
+  },
+
+  'agent.application_status': {
+    key: 'agent.application_status',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Application update — ${fallbackVar(v.studentName, 'Student')}`;
+      const body = `${fallbackVar(v.studentName)}: ${fallbackVar(v.university)} / ${fallbackVar(v.course)} is now ${fallbackVar(v.stage)}.`;
+      const link = v.applicationId
+        ? `/agency-crm/agency-leads`
+        : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'View referrals'), link };
+    },
+  },
+
+  'agent.commission_update': {
+    key: 'agent.commission_update',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = 'Commission update';
+      const body = `Commission ${fallbackVar(v.status, 'updated')}: ${fallbackVar(v.currency, 'INR')} ${fallbackVar(v.amount, '0')} for application ${fallbackVar(v.applicationCode, '')}.`;
+      const link = '/agency-crm/commission-management';
+      return { title, body, html: wrapEmailHtml(title, body, link, 'View commissions'), link };
     },
   },
 

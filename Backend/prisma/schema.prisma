@@ -193,8 +193,48 @@ model TenantModule {
 
 enum AgencyPartnerStatus {
   PENDING
+  VERIFIED
+  APPROVED
   ACTIVE
+  INACTIVE
   SUSPENDED
+  BLACKLISTED
+}
+
+enum AgencyOnboardingStage {
+  REGISTERED
+  DOCS_SUBMITTED
+  AGREEMENT_SIGNED
+  VERIFIED
+  APPROVED
+  ACTIVE
+}
+
+enum AgencyDocumentType {
+  CONTRACT
+  AGREEMENT
+  COMMISSION_POLICY
+  KYC_ID
+  BUSINESS_REGISTRATION
+  OTHER
+}
+
+enum AgencyActivityType {
+  EMAIL
+  CALL
+  MEETING
+  NOTE
+  BROADCAST
+}
+
+enum CommissionRuleType {
+  PERCENTAGE
+  FIXED
+}
+
+enum CommissionTrigger {
+  ENROLLED
+  VISA_APPROVED
 }
 
 enum CommissionStatus {
@@ -621,6 +661,7 @@ model User {
   applicationsAssigned    Application[]           @relation("ApplicationAssignee")
   applicationStageChanges ApplicationStageEvent[] @relation("StageChangedBy")
   agencyPartner           AgencyPartner?
+  agencyActivities        AgencyActivity[]        @relation("AgencyActivityActor")
   hrCandidateStageChanges HrCandidateStageEvent[] @relation("HrCandidateStageChangedBy")
 }
 
@@ -1013,29 +1054,91 @@ model Application {
 // -----------------------------------------------------------------------------
 
 model AgencyPartner {
-  id             Int                 @id @default(autoincrement())
-  userId         Int                 @unique
-  agencyName     String
-  agencyCode     String              @unique
-  contactPerson  String?
-  email          String?
-  phone          String?
-  address        String?
-  city           String?
-  country        String?
-  commissionRate Float               @default(10)
-  status         AgencyPartnerStatus @default(PENDING)
-  branding       Json?
-  notes          String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  id               Int                    @id @default(autoincrement())
+  userId           Int                    @unique
+  agencyName       String
+  agencyCode       String                 @unique
+  contactPerson    String?
+  email            String?
+  phone            String?
+  address          String?
+  city             String?
+  country          String?
+  services         String?
+  commissionRate   Float                  @default(10)
+  status           AgencyPartnerStatus    @default(PENDING)
+  onboardingStage  AgencyOnboardingStage  @default(REGISTERED)
+  agreementSignedAt DateTime?
+  verifiedAt       DateTime?
+  approvedAt       DateTime?
+  activatedAt      DateTime?
+  branding         Json?
+  notes            String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   referrals   AgencyReferral[]
   commissions AgencyCommission[]
+  documents   AgencyPartnerDocument[]
+  activities  AgencyActivity[]
+  rules       AgencyCommissionRule[]
 
   @@index([status])
   @@index([agencyCode])
+}
+
+model AgencyPartnerDocument {
+  id              Int                @id @default(autoincrement())
+  agencyPartnerId Int
+  type            AgencyDocumentType
+  fileName        String
+  fileUrl         String
+  mimeType        String?
+  fileSize        Int?
+  notes           String?
+  uploadedAt      DateTime           @default(now())
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  agencyPartner AgencyPartner @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
+
+  @@index([agencyPartnerId, type])
+}
+
+model AgencyActivity {
+  id              Int                @id @default(autoincrement())
+  agencyPartnerId Int
+  actorId         Int?
+  activityType    AgencyActivityType
+  subject         String?
+  comment         String?
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+
+  agencyPartner AgencyPartner @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
+  actor         User?         @relation("AgencyActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([agencyPartnerId, createdAt])
+}
+
+model AgencyCommissionRule {
+  id              Int                @id @default(autoincrement())
+  agencyPartnerId Int?
+  country         String?
+  university      String?
+  ruleType        CommissionRuleType @default(PERCENTAGE)
+  amount          Float
+  trigger         CommissionTrigger  @default(ENROLLED)
+  currency        String             @default("INR")
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  agencyPartner AgencyPartner? @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
+
+  @@index([agencyPartnerId])
+  @@index([country, university])
 }
 
 model AgencyReferral {
@@ -1437,30 +1540,33 @@ model HrLeaveRequest {
 }
 
 model HrSalaryStructure {
-  id          Int      @id @default(autoincrement())
-  employeeId  Int      @unique
-  basicSalary Float
-  allowances  Float
-  deductions  Float
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                     Int      @id @default(autoincrement())
+  employeeId             Int      @unique
+  basicSalary            Float
+  allowances             Float
+  deductions             Float
+  incentivePerEnrollment Float    @default(0)
+  incentiveRevenueShare  Float    @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
 
 model HrPayslip {
-  id          Int             @id @default(autoincrement())
-  employeeId  Int
-  name        String
-  month       Int
-  year        Int
-  basicSalary Float
-  allowances  Float
-  deductions  Float
-  netSalary   Float
-  status      HrPayslipStatus @default(DRAFT)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id                   Int             @id @default(autoincrement())
+  employeeId           Int
+  name                 String
+  month                Int
+  year                 Int
+  basicSalary          Float
+  allowances           Float
+  performanceIncentive Float           @default(0)
+  deductions           Float
+  netSalary            Float
+  status               HrPayslipStatus @default(DRAFT)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
@@ -1764,7 +1870,7 @@ model HrCounsellorPerformance {
 }
 
 model HrPerformanceReview {
-  id             Int            @id @default(autoincrement())
+  id             Int             @id @default(autoincrement())
   tenantId       Int?
   employeeId     Int?
   name           String
@@ -1772,16 +1878,18 @@ model HrPerformanceReview {
   department     String
   cycle          String
   manager        String
-  rating         Float          @default(0)
-  status         HrReviewStatus @default(SELF_REVIEW)
+  rating         Float           @default(0)
+  status         HrReviewStatus  @default(SELF_REVIEW)
   reviewDate     String
   reviewPeriod   String?
-  leadsHandled   Int            @default(0)
-  conversions    Int            @default(0)
-  enrollments    Int            @default(0)
-  conversionRate Float          @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  frequency      HrKpiFrequency  @default(MONTHLY)
+  leadsHandled   Int             @default(0)
+  conversions    Int             @default(0)
+  enrollments    Int             @default(0)
+  conversionRate Float           @default(0)
+  revenue        Float           @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   tenant   Tenant?     @relation(fields: [tenantId], references: [id])
   employee HrEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)

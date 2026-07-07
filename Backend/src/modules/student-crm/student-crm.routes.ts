@@ -80,6 +80,23 @@ router.post(
 
 // Checklist defaults (used by UI before docs exist)
 router.get('/checklist', view, controller.getChecklist);
+router.get('/process-stages', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getProcessStages);
+
+// Checklist template admin
+router.get('/checklist-templates', view, controller.listChecklistTemplates);
+router.post('/checklist-templates', manage, controller.createChecklistTemplate);
+router.put('/checklist-templates/:id', manage, controller.updateChecklistTemplate);
+router.delete('/checklist-templates/:id', manage, controller.deleteChecklistTemplate);
+
+// Visa aggregate view
+router.get('/visa-tracking', view, controller.listVisaTracking);
+
+// Student offer decision
+router.post(
+  '/applications/:id/offer/decision',
+  studentSelfOr('MANAGE_STUDENT_CRM'),
+  controller.studentOfferDecision,
+);
 
 // Lead → Application bridge (Phase 2)
 router.post('/applications/from-lead/:leadId', manage, controller.createFromLead);

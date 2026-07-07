@@ -69,6 +69,11 @@ import type {
   HrEmployeeDocumentType,
 } from '@prisma/client';
 import { storeUploadedFile } from '../../lib/file-storage.js';
+import {
+  detectPeriodType,
+  formatReviewCycle,
+  parseReviewPeriod,
+} from './hr-period.js';
 
 // ---------------------------------------------------------------------------
 
@@ -335,6 +340,8 @@ const mapSalaryStructure = (s: HrSalaryStructure, emp?: HrEmployee | null) => ({
   basicSalary: s.basicSalary,
   allowances: s.allowances,
   deductions: s.deductions,
+  incentivePerEnrollment: s.incentivePerEnrollment,
+  incentiveRevenueShare: s.incentiveRevenueShare,
   ...(emp ? { name: emp.name, email: emp.email } : {}),
 });
 
@@ -346,6 +353,7 @@ const mapPayslip = (p: HrPayslip): Payslip => ({
   year: p.year,
   basicSalary: p.basicSalary,
   allowances: p.allowances,
+  performanceIncentive: p.performanceIncentive,
   deductions: p.deductions,
   netSalary: p.netSalary,
   status: p.status,
@@ -600,39 +608,66 @@ export const assignAccessRole = async (employeeId: string, role: string) => {
 
 export const bulkImportEmployees = async (rows: Partial<Employee>[]) => {
   let importedCount = 0;
+  const errors: string[] = [];
   for (const row of rows) {
-    if (!row.name || !row.email || !row.employeeId) continue;
-    const exists = await prisma.hrEmployee.findFirst({
-      where: {
-        OR: [
-          { email: { equals: row.email, mode: 'insensitive' } },
-          { employeeCode: row.employeeId },
-        ],
-      },
-    });
-    if (!exists) {
-      const { first, last } = splitName(row.name);
-      await prisma.hrEmployee.create({
-        data: {
-          name: row.name,
-          firstName: row.firstName ?? first,
-          lastName: row.lastName ?? last,
-          employeeCode: row.employeeId,
-          email: row.email,
-          accessRole: (row.access_role as HrAccessRole) || 'EMPLOYEE',
-          department: row.department || 'Operations',
-          designation: row.designation || 'Staff Member',
-          phone: row.phone || null,
-          biometricId: row.biometricId || row.employeeId,
-          location: row.location || 'HQ Office',
-          joiningDate: row.joiningDate || null,
-          employmentStatus: 'ACTIVE',
-        },
-      });
+    try {
+      await createEmployee(row);
       importedCount++;
+    } catch (error: any) {
+      errors.push(error?.message || 'Import failed for a row');
     }
   }
-  return { success: true, count: importedCount };
+  return { success: true, count: importedCount, errors };
+};
+
+export const createEmployee = async (row: Partial<Employee>) => {
+  if (!row.name || !row.email || !row.employeeId) {
+    throw new Error('Name, email, and employee ID are required');
+  }
+
+  const exists = await prisma.hrEmployee.findFirst({
+    where: {
+      OR: [
+        { email: { equals: row.email, mode: 'insensitive' } },
+        { employeeCode: row.employeeId },
+      ],
+    },
+  });
+  if (exists) {
+    if (exists.email.toLowerCase() === row.email.toLowerCase()) {
+      throw new Error('An employee with this email already exists');
+    }
+    throw new Error('An employee with this employee ID already exists');
+  }
+
+  let managerDbId: number | undefined;
+  if (row.managerId) {
+    const manager = await resolveEmployeeId(row.managerId);
+    if (!manager) throw new Error('Manager not found');
+    managerDbId = manager.id;
+  }
+
+  const { first, last } = splitName(row.name);
+  const created = await prisma.hrEmployee.create({
+    data: {
+      name: row.name,
+      firstName: row.firstName ?? first,
+      lastName: row.lastName ?? last,
+      employeeCode: row.employeeId,
+      email: row.email,
+      accessRole: (row.access_role as HrAccessRole) || 'EMPLOYEE',
+      department: row.department || 'Operations',
+      designation: row.designation || 'Staff Member',
+      phone: row.phone || null,
+      biometricId: row.biometricId || row.employeeId,
+      location: row.location || 'HQ Office',
+      joiningDate: row.joiningDate || null,
+      managerId: managerDbId,
+      employmentStatus: 'ACTIVE',
+    },
+    include: { manager: true },
+  });
+  return mapEmployee(created);
 };
 
 export const updateEmployee = async (
@@ -1463,11 +1498,15 @@ export const updateSalaryStructure = async (data: Omit<SalaryStructure, 'id'>) =
       basicSalary: Number(data.basicSalary),
       allowances: Number(data.allowances),
       deductions: Number(data.deductions),
+      incentivePerEnrollment: Number(data.incentivePerEnrollment ?? 0),
+      incentiveRevenueShare: Number(data.incentiveRevenueShare ?? 0),
     },
     update: {
       basicSalary: Number(data.basicSalary),
       allowances: Number(data.allowances),
       deductions: Number(data.deductions),
+      incentivePerEnrollment: Number(data.incentivePerEnrollment ?? 0),
+      incentiveRevenueShare: Number(data.incentiveRevenueShare ?? 0),
     },
   });
   return {
@@ -1476,6 +1515,8 @@ export const updateSalaryStructure = async (data: Omit<SalaryStructure, 'id'>) =
     basicSalary: struct.basicSalary,
     allowances: struct.allowances,
     deductions: struct.deductions,
+    incentivePerEnrollment: struct.incentivePerEnrollment,
+    incentiveRevenueShare: struct.incentiveRevenueShare,
   };
 };
 
@@ -1489,6 +1530,7 @@ export const calculatePayroll = async (month: number, year: number) => {
     include: { employee: true },
   });
   const computedList: Payslip[] = [];
+  const payrollPeriod = `${year}-${String(month).padStart(2, '0')}`;
 
   for (const struct of structures) {
     const exists = await prisma.hrPayslip.findUnique({
@@ -1512,12 +1554,18 @@ export const calculatePayroll = async (month: number, year: number) => {
       },
     });
 
+    const performanceIncentive = await computePerformanceIncentive(
+      struct.employeeId,
+      payrollPeriod
+    );
+    const totalAllowances = struct.allowances + performanceIncentive;
+
     const totalDeductions =
       struct.deductions +
       (deduction?.leaveDeduction ?? 0) +
       (deduction?.taxAmount ?? 0) +
       (deduction?.otherDeductions ?? 0);
-    const netSalary = struct.basicSalary + struct.allowances - totalDeductions;
+    const netSalary = struct.basicSalary + totalAllowances - totalDeductions;
 
     const newPay = await prisma.hrPayslip.create({
       data: {
@@ -1526,7 +1574,8 @@ export const calculatePayroll = async (month: number, year: number) => {
         month,
         year,
         basicSalary: struct.basicSalary,
-        allowances: struct.allowances,
+        allowances: totalAllowances,
+        performanceIncentive,
         deductions: totalDeductions,
         netSalary,
         status: 'PAID',
@@ -2648,14 +2697,135 @@ export const addCounsellorPerformance = async (
 // 20b. Counsellor conversion metrics (computed from live CRM lead data)
 // ---------------------------------------------------------------------------
 
-const parseReviewPeriod = (period: string): { start: Date; end: Date } => {
-  const [year, month] = period.split('-').map(Number);
-  if (!year || !month || month < 1 || month > 12) {
-    throw new Error('Invalid period format. Use YYYY-MM');
+const parseMoney = (value?: string | null): number => {
+  if (!value) return 0;
+  const cleaned = value.replace(/[^0-9.]/g, '');
+  const num = parseFloat(cleaned);
+  return Number.isFinite(num) ? num : 0;
+};
+
+const defaultEnrollmentRevenue = () =>
+  Number(process.env.HR_DEFAULT_ENROLLMENT_REVENUE || 25_000);
+
+const defaultIncentivePerEnrollment = () =>
+  Number(process.env.HR_INCENTIVE_PER_ENROLLMENT || 5_000);
+
+const defaultIncentiveRevenueShare = () =>
+  Number(process.env.HR_INCENTIVE_REVENUE_SHARE || 0.02);
+
+const computeCounsellorRevenue = async (
+  counsellorId: number,
+  start: Date,
+  end: Date
+): Promise<number> => {
+  const apps = await prisma.application.findMany({
+    where: {
+      assignedToId: counsellorId,
+      stage: 'ENROLLED',
+      updatedAt: { gte: start, lte: end },
+    },
+    select: { university: true, course: true },
+  });
+
+  let total = 0;
+  for (const app of apps) {
+    const course = await prisma.course.findFirst({
+      where: {
+        name: { equals: app.course, mode: 'insensitive' },
+        deletedAt: null,
+        university: {
+          name: { equals: app.university, mode: 'insensitive' },
+          deletedAt: null,
+        },
+      },
+      select: { tuitionFee: true, applicationFee: true },
+    });
+
+    if (course) {
+      total += parseMoney(course.tuitionFee) + parseMoney(course.applicationFee);
+    } else {
+      total += defaultEnrollmentRevenue();
+    }
   }
-  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-  const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-  return { start, end };
+
+  return Math.round(total * 100) / 100;
+};
+
+export const computeCounsellorMetricForUser = async (
+  counsellor: { id: number; fullName: string | null; email: string },
+  period: string
+): Promise<CounsellorConversionMetric> => {
+  const { start, end } = parseReviewPeriod(period);
+  const kpiTarget = await getCounsellorConversionTarget();
+
+  const leadsHandled = await prisma.lead.count({
+    where: {
+      assignedCounsellorId: counsellor.id,
+      deletedAt: null,
+      createdAt: { gte: start, lte: end },
+    },
+  });
+
+  const conversions = await prisma.lead.count({
+    where: {
+      assignedCounsellorId: counsellor.id,
+      deletedAt: null,
+      status: 'CONVERTED',
+      convertedAt: { gte: start, lte: end },
+    },
+  });
+
+  const enrollments = await prisma.application.count({
+    where: {
+      assignedToId: counsellor.id,
+      stage: 'ENROLLED',
+      updatedAt: { gte: start, lte: end },
+    },
+  });
+
+  const revenue = await computeCounsellorRevenue(counsellor.id, start, end);
+  const conversionRate =
+    leadsHandled > 0 ? Math.round((conversions / leadsHandled) * 1000) / 10 : 0;
+
+  return {
+    counsellorId: String(counsellor.id),
+    counsellorName: counsellor.fullName || counsellor.email,
+    period,
+    leadsHandled,
+    conversions,
+    enrollments,
+    conversionRate,
+    revenue,
+    kpiTarget,
+    calculatedRating: conversionRateToRating(conversionRate, kpiTarget),
+  };
+};
+
+export const computePerformanceIncentive = async (
+  employeeId: number,
+  period: string
+): Promise<number> => {
+  const emp = await prisma.hrEmployee.findUnique({
+    where: { id: employeeId },
+    include: { salaryStructure: true },
+  });
+  if (!emp?.userId) return 0;
+
+  const user = await prisma.user.findUnique({ where: { id: emp.userId } });
+  if (!user || user.role !== 'COUNSELLOR') return 0;
+
+  const metric = await computeCounsellorMetricForUser(
+    { id: user.id, fullName: user.fullName, email: user.email },
+    period
+  );
+
+  const perEnrollment =
+    emp.salaryStructure?.incentivePerEnrollment || defaultIncentivePerEnrollment();
+  const revenueShare =
+    emp.salaryStructure?.incentiveRevenueShare || defaultIncentiveRevenueShare();
+
+  const incentive = metric.enrollments * perEnrollment + metric.revenue * revenueShare;
+  return Math.round(incentive * 100) / 100;
 };
 
 export const conversionRateToRating = (conversionRate: number, target: number): number => {
@@ -2686,61 +2856,13 @@ const getCounsellorConversionTarget = async (): Promise<number> => {
 export const computeCounsellorConversionMetrics = async (
   period: string
 ): Promise<CounsellorConversionMetric[]> => {
-  const { start, end } = parseReviewPeriod(period);
-  const kpiTarget = await getCounsellorConversionTarget();
-
   const counsellors = await prisma.user.findMany({
     where: { role: 'COUNSELLOR', isActive: true },
     select: { id: true, fullName: true, email: true },
     orderBy: { fullName: 'asc' },
   });
 
-  const metrics: CounsellorConversionMetric[] = [];
-
-  for (const counsellor of counsellors) {
-    const leadsHandled = await prisma.lead.count({
-      where: {
-        assignedCounsellorId: counsellor.id,
-        deletedAt: null,
-        createdAt: { gte: start, lte: end },
-      },
-    });
-
-    const conversions = await prisma.lead.count({
-      where: {
-        assignedCounsellorId: counsellor.id,
-        deletedAt: null,
-        status: 'CONVERTED',
-        convertedAt: { gte: start, lte: end },
-      },
-    });
-
-    const enrollments = await prisma.application.count({
-      where: {
-        assignedToId: counsellor.id,
-        stage: 'ENROLLED',
-        updatedAt: { gte: start, lte: end },
-      },
-    });
-
-    const conversionRate =
-      leadsHandled > 0 ? Math.round((conversions / leadsHandled) * 1000) / 10 : 0;
-
-    metrics.push({
-      counsellorId: String(counsellor.id),
-      counsellorName: counsellor.fullName || counsellor.email,
-      period,
-      leadsHandled,
-      conversions,
-      enrollments,
-      conversionRate,
-      revenue: 0,
-      kpiTarget,
-      calculatedRating: conversionRateToRating(conversionRate, kpiTarget),
-    });
-  }
-
-  return metrics;
+  return Promise.all(counsellors.map((c) => computeCounsellorMetricForUser(c, period)));
 };
 
 export const syncCounsellorPerformanceFromLeads = async (period: string) => {
@@ -2766,13 +2888,12 @@ export const generatePerformanceReviewsFromConversion = async (opts: {
   cycle?: string;
 }) => {
   const { period, cycle } = opts;
+  const periodType = detectPeriodType(period);
   const metrics = await computeCounsellorConversionMetrics(period);
   await syncCounsellorPerformanceFromLeads(period);
 
-  const [year, month] = period.split('-').map(Number);
-  const reviewCycle =
-    cycle ||
-    `${new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'short', year: 'numeric' })} Review`;
+  const reviewCycle = cycle || formatReviewCycle(period);
+  const frequency = periodType === 'weekly' ? 'WEEKLY' : 'MONTHLY';
 
   const reviews: PerformanceReview[] = [];
 
@@ -2801,10 +2922,12 @@ export const generatePerformanceReviewsFromConversion = async (opts: {
       status: 'MANAGER_REVIEW' as HrReviewStatus,
       reviewDate: new Date().toISOString().split('T')[0],
       reviewPeriod: period,
+      frequency: frequency as 'WEEKLY' | 'MONTHLY',
       leadsHandled: m.leadsHandled,
       conversions: m.conversions,
       enrollments: m.enrollments,
       conversionRate: m.conversionRate,
+      revenue: m.revenue,
     };
 
     const row = existing
@@ -2906,10 +3029,12 @@ const mapPerformanceReview = (r: HrPerformanceReview): PerformanceReview => ({
   status: reviewStatusToApi[r.status],
   date: r.reviewDate,
   reviewPeriod: r.reviewPeriod ?? undefined,
+  frequency: r.frequency,
   leadsHandled: r.leadsHandled,
   conversions: r.conversions,
   enrollments: r.enrollments,
   conversionRate: r.conversionRate,
+  revenue: r.revenue,
 });
 
 export const getPerformanceReviews = async (search?: string) => {

@@ -8,8 +8,11 @@ import {
   listAgencyApplications,
   listPartners,
   getStatistics,
+  createReferral,
+  getMyPartner,
 } from '@/services/agencyCrmApi';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { usePermissions } from '@/lib/auth/PermissionsContext';
 
 const INPUT =
   'w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-neutral-50 focus:border-neutral-400 outline-none';
@@ -17,7 +20,8 @@ const PAGE_SIZE = 50;
 
 export default function AgencyLeads() {
   const { user } = useAuth();
-  const isFreelancer = user?.role === 'AGENCY_FREELANCER';
+  const { can } = usePermissions();
+  const isFreelancer = user?.role === 'AGENCY_FREELANCER' || user?.role === 'AGENT';
 
   const [tab, setTab] = useState('referrals');
   const [stats, setStats] = useState(null);
@@ -79,6 +83,35 @@ export default function AgencyLeads() {
     setPage(1);
   }, [tab, search, agencyFilter]);
 
+  const [referralForm, setReferralForm] = useState({ leadId: '', studentId: '', notes: '' });
+  const [referralMsg, setReferralMsg] = useState('');
+
+  const submitReferral = async (e) => {
+    e.preventDefault();
+    try {
+      let partnerId = agencyFilter;
+      if (!partnerId && isFreelancer) {
+        const mine = await getMyPartner();
+        partnerId = mine?.data?.id;
+      }
+      if (!partnerId) {
+        setReferralMsg('Select an agency first');
+        return;
+      }
+      await createReferral({
+        agencyPartnerId: Number(partnerId),
+        leadId: referralForm.leadId ? Number(referralForm.leadId) : undefined,
+        studentId: referralForm.studentId ? Number(referralForm.studentId) : undefined,
+        notes: referralForm.notes || undefined,
+      });
+      setReferralForm({ leadId: '', studentId: '', notes: '' });
+      setReferralMsg('Referral linked');
+      await load();
+    } catch (err) {
+      setReferralMsg(err?.message || 'Referral failed');
+    }
+  };
+
   return (
     <div className="ui-page">
       <div className="ui-container space-y-6">
@@ -103,6 +136,27 @@ export default function AgencyLeads() {
               </div>
             ))}
           </div>
+        )}
+
+        {(can('VIEW_AGENCY_CRM') || isFreelancer) && (
+          <form onSubmit={submitReferral} className="rounded-lg border border-neutral-200 bg-white p-4 grid md:grid-cols-4 gap-3 items-end">
+            <label className="block space-y-1">
+              <span className="text-xs text-neutral-500">Lead ID</span>
+              <input className={INPUT} value={referralForm.leadId} onChange={(e) => setReferralForm({ ...referralForm, leadId: e.target.value })} />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs text-neutral-500">Student ID</span>
+              <input className={INPUT} value={referralForm.studentId} onChange={(e) => setReferralForm({ ...referralForm, studentId: e.target.value })} />
+            </label>
+            <label className="block space-y-1 md:col-span-1">
+              <span className="text-xs text-neutral-500">Notes</span>
+              <input className={INPUT} value={referralForm.notes} onChange={(e) => setReferralForm({ ...referralForm, notes: e.target.value })} />
+            </label>
+            <button type="submit" className="px-4 py-2 bg-neutral-900 text-white text-sm rounded-lg h-[38px]">
+              Link referral
+            </button>
+            {referralMsg && <p className="text-xs text-neutral-600 md:col-span-4">{referralMsg}</p>}
+          </form>
         )}
 
         <div className="flex flex-wrap gap-3 items-center">

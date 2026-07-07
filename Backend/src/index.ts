@@ -15,11 +15,14 @@ import studentCrmRouter from './modules/student-crm/student-crm.routes.js';
 import crmSettingsRouter from './modules/crm-settings/crm-settings.routes.js';
 import uploadsRouter from './modules/uploads/uploads.routes.js';
 import agencyCrmRouter from './modules/agency-crm/agency-crm.routes.js';
+import agencyCrmPublicRouter from './modules/agency-crm/agency-crm.public.routes.js';
 import superAdminRouter from './modules/super-admin/super-admin.routes.js';
 import path from 'path';
 import { ensureDefaultTenantSeeded } from './modules/rbac/rbac.service.js';
 import { backfillHrSeedsForExistingTenants, backfillStaffEmployees } from './modules/super-admin/hr-seed-backfill.js';
 import { startNotificationScheduler } from './modules/notifications/scheduler.js';
+import { startHrPerformanceReviewScheduler } from './modules/hr/hr-performance.scheduler.js';
+import { startStudentCrmScheduler } from './modules/student-crm/student-crm.scheduler.js';
 import { warmIndustryCache } from './modules/crm-settings/crm-settings.service.js';
 
 const app = express();
@@ -47,6 +50,7 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/student-crm', studentCrmRouter);
 app.use('/api/crm-settings', crmSettingsRouter);
 app.use('/api/uploads', uploadsRouter);
+app.use('/api/agency-crm/public', agencyCrmPublicRouter);
 app.use('/api/agency-crm', agencyCrmRouter);
 app.use('/api/super-admin', superAdminRouter);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -67,6 +71,9 @@ app.listen(port, async () => {
     console.log('[One CRM] HR employee records ensured for staff users');
     startNotificationScheduler();
     console.log('[One CRM] Notification scheduler started');
+    startStudentCrmScheduler();
+    console.log('[One CRM] Student CRM scheduler started');
+    startHrPerformanceReviewScheduler();
     warmIndustryCache().catch((err) => console.warn('[One CRM] Industry cache warm skipped', err));
   } catch (err) {
     console.error('[One CRM] Failed to initialize RBAC permissions', err);

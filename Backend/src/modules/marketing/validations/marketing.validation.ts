@@ -19,6 +19,9 @@ export const createLeadSchema = z.object({
   utmCampaign: z.string().optional().nullable(),
   utmTerm: z.string().optional().nullable(),
   utmContent: z.string().optional().nullable(),
+  referralCode: z.string().optional().nullable(),
+  agencyRef: z.string().optional().nullable(),
+  ref: z.string().optional().nullable(),
 });
 
 export const updateLeadSchema = createLeadSchema.partial();

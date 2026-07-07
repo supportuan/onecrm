@@ -127,6 +127,8 @@ export interface SalaryStructure {
   basicSalary: number;
   allowances: number;
   deductions: number;
+  incentivePerEnrollment?: number;
+  incentiveRevenueShare?: number;
 }
 
 export interface Payslip {
@@ -137,6 +139,7 @@ export interface Payslip {
   year: number;
   basicSalary: number;
   allowances: number;
+  performanceIncentive?: number;
   deductions: number;
   netSalary: number;
   status: 'DRAFT' | 'PAID';
@@ -362,10 +365,12 @@ export interface PerformanceReview {
   status: string;
   date: string;
   reviewPeriod?: string;
+  frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
   leadsHandled?: number;
   conversions?: number;
   enrollments?: number;
   conversionRate?: number;
+  revenue?: number;
 }
 
 export interface CounsellorConversionMetric {
@@ -387,6 +392,7 @@ export {
   getEmployeeById,
   getTeam,
   assignAccessRole,
+  createEmployee,
   updateEmployee,
   bulkImportEmployees,
   getEmployeeDocuments,

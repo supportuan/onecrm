@@ -89,7 +89,9 @@ export default function PayrollInputs() {
         employeeId: editingStruct.employeeId,
         basicSalary: parseFloat(editingStruct.basicSalary) || 0,
         allowances: parseFloat(editingStruct.allowances) || 0,
-        deductions: parseFloat(editingStruct.deductions) || 0
+        deductions: parseFloat(editingStruct.deductions) || 0,
+        incentivePerEnrollment: parseFloat(editingStruct.incentivePerEnrollment) || 0,
+        incentiveRevenueShare: parseFloat(editingStruct.incentiveRevenueShare) || 0,
       });
       if (res.success) {
         setStructures(structures.map(s => s.employeeId === editingStruct.employeeId ? { ...s, ...res.data } : s));
@@ -512,7 +514,7 @@ export default function PayrollInputs() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-neutral-600 ml-1">Variable Allowances</label>
+                <label className="text-[10px] font-semibold text-neutral-600 ml-1">Fixed Variable Allowances</label>
                 <input
                   type="number" 
                   required
@@ -521,6 +523,34 @@ export default function PayrollInputs() {
                   className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-neutral-600 ml-1">Incentive / Enrollment (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editingStruct.incentivePerEnrollment ?? 0}
+                    onChange={e => setEditingStruct({ ...editingStruct, incentivePerEnrollment: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-neutral-600 ml-1">Revenue Share (0.02 = 2%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={editingStruct.incentiveRevenueShare ?? 0}
+                    onChange={e => setEditingStruct({ ...editingStruct, incentiveRevenueShare: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-neutral-500">
+                Performance incentive is auto-calculated at payroll run from enrollments and revenue.
+              </p>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-semibold text-neutral-600 ml-1">Mandatory Withholding / Deductions</label>
@@ -609,12 +639,24 @@ export default function PayrollInputs() {
                       <span className="font-semibold">₹{(selectedPayslip.basicSalary || 0).toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex justify-between items-center text-neutral-600">
-                      <span>Housing Allowance / HRA</span>
-                      <span className="font-semibold">₹0</span>
+                      <span>Fixed Allowances</span>
+                      <span className="font-semibold">
+                        ₹{Math.max(0, (selectedPayslip.allowances || 0) - (selectedPayslip.performanceIncentive || 0)).toLocaleString('en-IN')}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center text-neutral-600">
-                      <span>Special Allowances</span>
-                      <span className="font-semibold">₹{(selectedPayslip.allowances || 0).toLocaleString('en-IN')}</span>
+                    {(selectedPayslip.performanceIncentive || 0) > 0 && (
+                      <div className="flex justify-between items-center text-emerald-700">
+                        <span>Performance Incentive</span>
+                        <span className="font-semibold">
+                          ₹{(selectedPayslip.performanceIncentive || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-neutral-800 border-t border-neutral-100 pt-2">
+                      <span className="font-semibold">Total Credits</span>
+                      <span className="font-semibold">
+                        ₹{((selectedPayslip.basicSalary || 0) + (selectedPayslip.allowances || 0)).toLocaleString('en-IN')}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -8,7 +8,12 @@ import { safeNotify } from '../notifications/recipients.js';
 import { getDefaultTenantId } from '../../utils/tenant-default.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
 import { applicationScopeWhere, studentScopeWhere } from './scoping.js';
-import { computeProcessProgress } from './stage-engine.js';
+import { computeProcessProgress, getStagesForCountry } from './stage-engine.js';
+import {
+  appendVisaDocument,
+  getVisaWorkflowForCountry,
+  normalizeVisaDocuments,
+} from './visa-workflows.js';
 
 type Actor = { id?: number; role?: string };
 
@@ -545,6 +550,15 @@ export const setStage = async (
     }
   }
 
+  try {
+    const { onApplicationStageChanged } = await import(
+      '../agency-crm/agency-commission.engine.js'
+    );
+    await onApplicationStageChanged(applicationId, toStage);
+  } catch (err) {
+    console.warn('[Agency CRM] stage hook failed:', (err as Error)?.message);
+  }
+
   return getApplication(applicationId);
 };
 
@@ -609,7 +623,7 @@ export const deleteDocument = async (docId: number) => {
   return prisma.applicationDocument.delete({ where: { id: docId } });
 };
 
-/** Fires a `document_missing` notification if any required docs are still PENDING. */
+/** Fires missing-document notifications to the student (and counsellor if assigned). */
 export const notifyMissingDocs = async (applicationId: number) => {
   const app = await prisma.application.findUnique({
     where: { id: applicationId },
@@ -617,16 +631,31 @@ export const notifyMissingDocs = async (applicationId: number) => {
   });
   if (!app) return;
   const missing = app.documents.filter((d) => d.required && d.status === 'PENDING').map((d) => d.name);
-  if (missing.length === 0 || !app.assignedToId) return;
-  await safeNotify({
-    recipientId: app.assignedToId,
-    templateKey: 'application.document_missing',
-    vars: {
-      applicationCode: app.applicationCode,
-      missing,
-      applicationId,
-    },
-  });
+  if (missing.length === 0) return;
+
+  if (app.student?.userId) {
+    await safeNotify({
+      recipientId: app.student.userId,
+      templateKey: 'application.document_missing_student',
+      vars: {
+        applicationCode: app.applicationCode,
+        missing,
+        applicationId,
+      },
+    });
+  }
+
+  if (app.assignedToId) {
+    await safeNotify({
+      recipientId: app.assignedToId,
+      templateKey: 'application.document_missing',
+      vars: {
+        applicationCode: app.applicationCode,
+        missing,
+        applicationId,
+      },
+    });
+  }
 };
 
 /** Notify counsellor when a student uploads a document for review. */
@@ -684,9 +713,16 @@ export const upsertOfferLetter = async (
     studentDecision: 'PENDING' | 'ACCEPTED' | 'REJECTED';
     decisionAt: string;
     notes: string;
-  }>
+  }>,
+  changedById?: number
 ) => {
-  const existing = await prisma.offerLetter.findUnique({ where: { applicationId } });
+  const app = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: { student: true, assignedTo: true, offerLetter: true },
+  });
+  if (!app) throw new Error('application not found');
+
+  const existing = app.offerLetter;
   const payload: any = {
     ...(data.fileUrl !== undefined && { fileUrl: data.fileUrl }),
     ...(data.filename !== undefined && { filename: data.filename }),
@@ -697,10 +733,87 @@ export const upsertOfferLetter = async (
     ...(data.decisionAt && { decisionAt: new Date(data.decisionAt) }),
     ...(data.notes !== undefined && { notes: data.notes }),
   };
-  if (existing) {
-    return prisma.offerLetter.update({ where: { applicationId }, data: payload });
+
+  const result = existing
+    ? await prisma.offerLetter.update({ where: { applicationId }, data: payload })
+    : await prisma.offerLetter.create({ data: { applicationId, ...payload } });
+
+  const hasNewFile = Boolean(data.fileUrl && data.fileUrl !== existing?.fileUrl);
+  const staffDecision = data.studentDecision && data.studentDecision !== 'PENDING';
+
+  if (hasNewFile || (data.receivedAt && app.stage !== 'OFFER_RECEIVED')) {
+    if (!['OFFER_ACCEPTED', 'OFFER_REJECTED', 'ENROLLED'].includes(app.stage)) {
+      await setStage(applicationId, 'OFFER_RECEIVED', changedById, 'offer letter received');
+    }
+    if (app.student?.userId) {
+      await safeNotify({
+        recipientId: app.student.userId,
+        templateKey: 'application.offer_for_student',
+        vars: {
+          university: app.university,
+          course: app.course,
+          applicationCode: app.applicationCode,
+          deadline: data.decisionDeadline
+            ? new Date(data.decisionDeadline).toISOString().slice(0, 10)
+            : result.decisionDeadline
+              ? new Date(result.decisionDeadline).toISOString().slice(0, 10)
+              : undefined,
+          applicationId,
+        },
+      });
+    }
   }
-  return prisma.offerLetter.create({ data: { applicationId, ...payload } });
+
+  if (staffDecision && data.studentDecision === 'ACCEPTED' && app.stage !== 'OFFER_ACCEPTED') {
+    await setStage(applicationId, 'OFFER_ACCEPTED', changedById, 'offer accepted by counsellor');
+  } else if (staffDecision && data.studentDecision === 'REJECTED' && app.stage !== 'OFFER_REJECTED') {
+    await setStage(applicationId, 'OFFER_REJECTED', changedById, 'offer rejected by counsellor');
+  }
+
+  return result;
+};
+
+/** Student self-service accept or reject an offer. */
+export const studentRespondToOffer = async (
+  applicationId: number,
+  userId: number,
+  decision: 'ACCEPTED' | 'REJECTED'
+) => {
+  const app = await prisma.application.findFirst({
+    where: { id: applicationId, student: { userId, deletedAt: null } },
+    include: { offerLetter: true, student: true, assignedTo: true },
+  });
+  if (!app) throw new Error('application not found');
+  if (!app.offerLetter?.fileUrl) throw new Error('no offer letter on file');
+  if (app.offerLetter.studentDecision !== 'PENDING' && app.offerLetter.studentDecision) {
+    throw new Error('offer decision already recorded');
+  }
+
+  await prisma.offerLetter.update({
+    where: { applicationId },
+    data: {
+      studentDecision: decision,
+      decisionAt: new Date(),
+    },
+  });
+
+  const toStage = decision === 'ACCEPTED' ? 'OFFER_ACCEPTED' : 'OFFER_REJECTED';
+  await setStage(applicationId, toStage, userId, `student ${decision.toLowerCase()} offer`);
+
+  if (app.assignedToId) {
+    await safeNotify({
+      recipientId: app.assignedToId,
+      templateKey: 'application.offer_decision',
+      vars: {
+        studentName: app.student.fullName,
+        university: app.university,
+        decision: decision.toLowerCase(),
+        applicationId,
+      },
+    });
+  }
+
+  return getApplication(applicationId, { id: userId, role: 'STUDENT' });
 };
 
 export const upsertVisaTracking = async (
@@ -752,10 +865,29 @@ export const upsertVisaTracking = async (
     });
   }
 
+  if (data.status && data.status !== prevStatus && app.student?.userId) {
+    await safeNotify({
+      recipientId: app.student.userId,
+      templateKey: 'application.visa_update_student',
+      vars: {
+        university: app.university,
+        status: String(data.status).replace(/_/g, ' ').toLowerCase(),
+        applicationId,
+      },
+    });
+  }
+
+  if (data.status && data.status !== prevStatus) {
+    try {
+      const { onVisaStatusChanged } = await import('../agency-crm/agency-commission.engine.js');
+      await onVisaStatusChanged(applicationId, data.status as any);
+    } catch (err) {
+      console.warn('[Agency CRM] visa hook failed:', (err as Error)?.message);
+    }
+  }
+
   return result;
 };
-
-// -------------------- Lead → Application conversion (Phase 2) --------------------
 
 export const createApplicationFromLead = async (
   leadId: number,
@@ -1053,6 +1185,17 @@ export const promoteLeadToStudent = async (
     });
   }
 
+  try {
+    const { linkReferralsForConvertedLead } = await import(
+      '../agency-crm/agency-referral.service.js'
+    );
+    if (application?.id) {
+      await linkReferralsForConvertedLead(leadId, student.id, application.id);
+    }
+  } catch (err) {
+    console.warn('[Agency CRM] referral link failed:', (err as Error)?.message);
+  }
+
   return {
     user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
     student: await getStudent(student.id),
@@ -1120,3 +1263,105 @@ export const promoteAllLeads = async (password?: string, actingUserId?: number) 
 
   return results;
 };
+
+// -------------------- Checklist templates (admin) --------------------
+
+export const listChecklistTemplates = async () =>
+  prisma.documentChecklistTemplate.findMany({ orderBy: [{ country: 'asc' }, { university: 'asc' }] });
+
+export const createChecklistTemplate = async (data: {
+  country: string;
+  university?: string | null;
+  documents: ChecklistItem[];
+}) =>
+  prisma.documentChecklistTemplate.create({
+    data: {
+      country: data.country,
+      university: data.university || null,
+      documents: data.documents as any,
+    },
+  });
+
+export const updateChecklistTemplate = async (
+  id: number,
+  data: Partial<{ country: string; university: string | null; documents: ChecklistItem[] }>
+) => {
+  const payload: Record<string, unknown> = {};
+  if (data.country) payload.country = data.country;
+  if ('university' in data) payload.university = data.university || null;
+  if (data.documents) payload.documents = data.documents;
+  return prisma.documentChecklistTemplate.update({ where: { id }, data: payload as any });
+};
+
+export const deleteChecklistTemplate = async (id: number) =>
+  prisma.documentChecklistTemplate.delete({ where: { id } });
+
+export const resolveChecklistForCountry = async (country: string, university?: string) => {
+  let items: ChecklistItem[] | null = null;
+  if (university) {
+    const tpl = await prisma.documentChecklistTemplate.findFirst({
+      where: { country, university },
+    });
+    if (tpl?.documents) items = Array.isArray(tpl.documents) ? (tpl.documents as any) : null;
+  }
+  if (!items) {
+    const fallback = await prisma.documentChecklistTemplate.findFirst({
+      where: { country, university: null },
+    });
+    if (fallback?.documents) items = Array.isArray(fallback.documents) ? (fallback.documents as any) : null;
+  }
+  return items || getDefaultChecklist(country);
+};
+
+// -------------------- Visa management (aggregate) --------------------
+
+export const listVisaTracking = async (actor?: Actor) => {
+  const scope = applicationScopeWhere(actor);
+  return prisma.visaTracking.findMany({
+    where: { application: scope },
+    orderBy: { updatedAt: 'desc' },
+    include: {
+      application: {
+        select: {
+          id: true,
+          applicationCode: true,
+          university: true,
+          course: true,
+          country: true,
+          stage: true,
+          student: { select: { id: true, fullName: true, email: true } },
+          assignedTo: { select: { id: true, fullName: true } },
+        },
+      },
+    },
+  });
+};
+
+export const appendVisaDocumentFile = async (
+  applicationId: number,
+  entry: { fileUrl: string; filename: string; label?: string }
+) => {
+  const existing = await prisma.visaTracking.findUnique({ where: { applicationId } });
+  const app = await prisma.application.findUnique({ where: { id: applicationId } });
+  if (!app) throw new Error('application not found');
+
+  const docEntry = {
+    fileUrl: entry.fileUrl,
+    filename: entry.filename,
+    uploadedAt: new Date().toISOString(),
+    ...(entry.label ? { label: entry.label } : {}),
+  };
+  const documents = appendVisaDocument(existing?.documents, docEntry);
+
+  return upsertVisaTracking(applicationId, {
+    country: existing?.country || app.country,
+    documents,
+  });
+};
+
+export const getProcessStages = (country?: string | null) => ({
+  stages: getStagesForCountry(country),
+  visaWorkflow: getVisaWorkflowForCountry(country),
+});
+
+export { getStagesForCountry, getVisaWorkflowForCountry, normalizeVisaDocuments };

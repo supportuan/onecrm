@@ -88,9 +88,10 @@ export const uploadOfferLetter = async (applicationId, file) => {
 };
 export const upsertVisa = async (applicationId, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/visa`, putJson(payload)));
-export const uploadVisaDocument = async (applicationId, file) => {
+export const uploadVisaDocument = async (applicationId, file, label) => {
   const form = new FormData();
   form.append('file', file);
+  if (label) form.append('label', label);
   const res = await tenantFetch(`${API_URL}/applications/${applicationId}/visa/upload`, {
     method: 'POST',
     body: form,
@@ -98,8 +99,36 @@ export const uploadVisaDocument = async (applicationId, file) => {
   return handleResponse(res);
 };
 
-export const getChecklist = async (country) =>
-  handleResponse(await tenantFetch(`${API_URL}/checklist?country=${encodeURIComponent(country)}`));
+export const getChecklist = async (country, university) => {
+  const params = new URLSearchParams({ country });
+  if (university) params.set('university', university);
+  return handleResponse(await tenantFetch(`${API_URL}/checklist?${params.toString()}`));
+};
+
+export const getProcessStages = async (country) => {
+  const params = country ? `?country=${encodeURIComponent(country)}` : '';
+  return handleResponse(await tenantFetch(`${API_URL}/process-stages${params}`));
+};
+
+export const listChecklistTemplates = async () =>
+  handleResponse(await tenantFetch(`${API_URL}/checklist-templates`));
+
+export const createChecklistTemplate = async (payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/checklist-templates`, json(payload)));
+
+export const updateChecklistTemplate = async (id, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/checklist-templates/${id}`, putJson(payload)));
+
+export const deleteChecklistTemplate = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/checklist-templates/${id}`, { method: 'DELETE' }));
+
+export const listVisaTracking = async () =>
+  handleResponse(await tenantFetch(`${API_URL}/visa-tracking`));
+
+export const respondToOffer = async (applicationId, decision) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/offer/decision`, json({ decision }))
+  );
 
 // -------------------- Lead → Application --------------------
 export const convertLeadToApplication = async (leadId, payload) =>

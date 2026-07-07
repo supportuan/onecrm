@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Circle, FileText, ChevronRight } from 'lucide-react';
-import { getMyStudent, listMyApplications } from '@/services/studentCrmApi';
-import { PROCESS_STAGES, STAGE_LABELS } from '../constants';
+import { getMyStudent, listMyApplications, getProcessStages } from '@/services/studentCrmApi';
+import { STAGE_LABELS } from '../constants';
+import { formatDate } from '@/features/student-crm/components/ApplicationParts';
 
 const docProgress = (app) => {
   const docs = app.documents || [];
@@ -17,19 +18,28 @@ const docProgress = (app) => {
 export default function ApplicationsPage() {
   const [profile, setProfile] = useState(null);
   const [apps, setApps] = useState([]);
+  const [processStages, setProcessStages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([getMyStudent(), listMyApplications()])
-      .then(([pRes, aRes]) => {
-        setProfile(pRes?.data || null);
+      .then(async ([pRes, aRes]) => {
+        const p = pRes?.data || null;
+        setProfile(p);
         setApps(Array.isArray(aRes?.data) ? aRes.data : []);
+        const country = p?.country?.name || p?.preferredCountry;
+        if (country) {
+          const stagesRes = await getProcessStages(country);
+          const stages = stagesRes?.data?.stages || [];
+          setProcessStages(stages);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const currentIdx = PROCESS_STAGES.indexOf(profile?.processStage || '');
+  const stageList = processStages.length > 0 ? processStages : Object.keys(STAGE_LABELS);
+  const currentIdx = stageList.indexOf(profile?.processStage || '');
 
   if (loading) return <p className="text-sm text-neutral-500">Loading application…</p>;
 
@@ -43,7 +53,7 @@ export default function ApplicationsPage() {
       <section className="ui-panel p-5">
         <h2 className="text-sm font-semibold text-neutral-900 mb-4">Application journey</h2>
         <ol className="space-y-2">
-          {PROCESS_STAGES.map((stage, idx) => {
+          {stageList.map((stage, idx) => {
             const done = currentIdx > idx;
             const active = profile?.processStage === stage;
             return (
@@ -63,7 +73,7 @@ export default function ApplicationsPage() {
                   <Circle className={`h-5 w-5 shrink-0 ${active ? 'text-white' : 'text-neutral-300'}`} />
                 )}
                 <div className="flex-1">
-                  <span className="font-medium">{idx + 1}. {STAGE_LABELS[stage]}</span>
+                  <span className="font-medium">{idx + 1}. {STAGE_LABELS[stage] || stage.replace(/_/g, ' ')}</span>
                   {active && profile && (
                     <p className={`text-xs mt-0.5 ${active ? 'text-neutral-300' : 'text-neutral-500'}`}>
                       {profile.completedCheckList} of {profile.totalCheckList} checklist items complete
@@ -92,6 +102,7 @@ export default function ApplicationsPage() {
                   <th className="px-5 py-3 font-medium">Course</th>
                   <th className="px-5 py-3 font-medium">Country</th>
                   <th className="px-5 py-3 font-medium">Stage</th>
+                  <th className="px-5 py-3 font-medium">Deadline</th>
                   <th className="px-5 py-3 font-medium">Documents</th>
                   <th className="px-5 py-3 font-medium" />
                 </tr>
@@ -99,6 +110,7 @@ export default function ApplicationsPage() {
               <tbody className="divide-y divide-neutral-100">
                 {apps.map((a) => {
                   const { required, done, rejected } = docProgress(a);
+                  const overdue = a.deadline && new Date(a.deadline) < new Date();
                   return (
                   <tr key={a.id} className="hover:bg-neutral-50/80">
                     <td className="px-5 py-3 font-medium">{a.applicationCode}</td>
@@ -109,6 +121,9 @@ export default function ApplicationsPage() {
                       <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-700">
                         {a.stage}
                       </span>
+                    </td>
+                    <td className={`px-5 py-3 text-xs ${overdue ? 'text-rose-600 font-medium' : 'text-neutral-500'}`}>
+                      {a.deadline ? formatDate(a.deadline) : '—'}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2 text-xs text-neutral-600">
@@ -130,7 +145,7 @@ export default function ApplicationsPage() {
                         href={`/applicant/applications/${a.id}`}
                         className="inline-flex items-center gap-1 text-xs font-medium text-neutral-700 hover:text-neutral-900"
                       >
-                        Manage docs <ChevronRight size={12} />
+                        Open <ChevronRight size={12} />
                       </Link>
                     </td>
                   </tr>

@@ -9,6 +9,7 @@ router.use(requireHrAuth);
 
 // Employees & team
 router.get('/employees', requirePermission('VIEW_ALL_EMPLOYEES', 'VIEW_TEAM'), controller.getEmployees);
+router.post('/employees', requirePermission('MANAGE_EMPLOYEES'), controller.createEmployee);
 router.get('/employees/:id', requirePermission('VIEW_ALL_EMPLOYEES', 'VIEW_TEAM'), controller.getEmployeeById);
 router.put('/employees/:id', requirePermission('MANAGE_EMPLOYEES'), controller.updateEmployee);
 router.get('/team', requirePermission('VIEW_TEAM', 'VIEW_ALL_EMPLOYEES'), controller.getTeam);

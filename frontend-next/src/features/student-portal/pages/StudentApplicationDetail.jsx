@@ -3,14 +3,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
-import { getApplication, uploadApplicationDocument } from '@/services/studentCrmApi';
-import { DocumentChecklist } from '@/features/student-crm/components/ApplicationParts';
+import {
+  getApplication,
+  uploadApplicationDocument,
+  respondToOffer,
+  getProcessStages,
+} from '@/services/studentCrmApi';
+import {
+  DocumentChecklist,
+  StudentOfferPanel,
+  StudentVisaPanel,
+  formatDate,
+} from '@/features/student-crm/components/ApplicationParts';
 import { getStageLabel } from '@/features/student-crm/constants';
 
 export default function StudentApplicationDetail({ applicationId }) {
   const [app, setApp] = useState(null);
+  const [workflow, setWorkflow] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingDocId, setUploadingDocId] = useState(null);
+  const [offerBusy, setOfferBusy] = useState(false);
   const [toast, setToast] = useState({ kind: '', msg: '' });
 
   const flash = (kind, msg) => {
@@ -22,7 +34,12 @@ export default function StudentApplicationDetail({ applicationId }) {
     setLoading(true);
     try {
       const res = await getApplication(applicationId);
-      setApp(res?.data || null);
+      const data = res?.data || null;
+      setApp(data);
+      if (data?.country) {
+        const stagesRes = await getProcessStages(data.country);
+        setWorkflow(stagesRes?.data?.visaWorkflow || []);
+      }
     } catch (e) {
       flash('err', e?.message || 'Failed to load application');
     } finally {
@@ -48,8 +65,24 @@ export default function StudentApplicationDetail({ applicationId }) {
     }
   };
 
+  const handleOfferDecision = async (decision) => {
+    if (!app) return;
+    const label = decision === 'ACCEPTED' ? 'accept' : 'decline';
+    if (!window.confirm(`Are you sure you want to ${label} this offer?`)) return;
+    setOfferBusy(true);
+    try {
+      await respondToOffer(app.id, decision);
+      flash('ok', `Offer ${decision === 'ACCEPTED' ? 'accepted' : 'declined'}`);
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Could not record decision');
+    } finally {
+      setOfferBusy(false);
+    }
+  };
+
   if (loading) {
-    return <p className="text-sm text-neutral-500">Loading documents…</p>;
+    return <p className="text-sm text-neutral-500">Loading application…</p>;
   }
 
   if (!app) {
@@ -86,8 +119,20 @@ export default function StudentApplicationDetail({ applicationId }) {
         <h1 className="text-2xl font-semibold text-neutral-900">{app.university}</h1>
         <p className="text-sm text-neutral-500 mt-1">
           {app.applicationCode} · {app.course} · {getStageLabel(app.stage)}
+          {app.deadline && (
+            <span className="ml-2 text-neutral-400">· Deadline {formatDate(app.deadline)}</span>
+          )}
         </p>
       </div>
+
+      <StudentOfferPanel
+        app={app}
+        busy={offerBusy}
+        onAccept={() => handleOfferDecision('ACCEPTED')}
+        onReject={() => handleOfferDecision('REJECTED')}
+      />
+
+      <StudentVisaPanel app={app} workflow={workflow} />
 
       <DocumentChecklist
         app={app}
