@@ -1787,10 +1787,121 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
       to: user.email,
       subject: 'Your Student Account – Temporary Password',
       html: `
-        <p>Hello ${user.fullName},</p>
-        <p>Welcome to OneCRM! Your student account has been created.</p>
-        <p><strong>Temporary password:</strong> ${tempPassword}</p>
-        <p>Please log in and change your password immediately.</p>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8" />
+        </head>
+        <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:30px 0;">
+            <tr>
+              <td align="center">
+
+                <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.08);">
+
+                  <!-- Header -->
+                  <tr>
+                    <td style="background:#0f172a;padding:30px;text-align:center;">
+                      <h1 style="margin:0;color:#ffffff;font-size:28px;">
+                        ONECRM
+                      </h1>
+                      <p style="margin-top:8px;color:#cbd5e1;font-size:14px;">
+                        Student Portal
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding:40px;">
+
+                      <h2 style="margin:0;color:#1e293b;">
+                        Welcome, ${user.fullName} 👋
+                      </h2>
+
+                      <p style="margin-top:18px;font-size:15px;line-height:26px;color:#475569;">
+                        Your student account has been successfully created.
+                        You can now access the Student Portal using the credentials below.
+                      </p>
+
+                      <table width="100%" cellpadding="12" cellspacing="0"
+                        style="margin:30px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+
+                        <tr>
+                          <td width="140" style="font-weight:bold;color:#334155;">
+                            Email
+                          </td>
+                          <td style="color:#0f172a;">
+                            ${user.email}
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td style="font-weight:bold;color:#334155;">
+                            Temporary Password
+                          </td>
+                          <td style="color:#dc2626;font-weight:bold;font-size:16px;">
+                            ${tempPassword}
+                          </td>
+                        </tr>
+
+                      </table>
+
+                      <div style="text-align:center;margin:35px 0;">
+                        <a
+                          href="https://crm.applyuninow.com/login"
+                          style="
+                            background:#2563eb;
+                            color:#ffffff;
+                            text-decoration:none;
+                            padding:14px 34px;
+                            border-radius:8px;
+                            display:inline-block;
+                            font-weight:bold;
+                            font-size:15px;
+                          "
+                        >
+                          Login to Student Portal
+                        </a>
+                      </div>
+
+                      <div style="background:#fff7ed;border-left:4px solid #f97316;padding:16px;border-radius:6px;">
+                        <strong style="color:#9a3412;">
+                          Important Security Notice
+                        </strong>
+
+                        <p style="margin:8px 0 0;color:#7c2d12;font-size:14px;line-height:22px;">
+                          This password is temporary.
+                          Please log in and change your password immediately to keep your account secure.
+                        </p>
+                      </div>
+
+                      <p style="margin-top:35px;color:#475569;font-size:14px;line-height:24px;">
+                        If you have any questions or need assistance, please contact our support team.
+                      </p>
+
+                      <p style="margin-top:30px;color:#0f172a;">
+                        Regards,<br>
+                        <strong>ApplyUniNow</strong>
+                      </p>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background:#f8fafc;padding:20px;text-align:center;color:#64748b;font-size:12px;">
+                      © ${new Date().getFullYear()} OneCRM. All Rights Reserved.
+                    </td>
+                  </tr>
+
+                </table>
+
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `,
     });
   } catch (err) {
