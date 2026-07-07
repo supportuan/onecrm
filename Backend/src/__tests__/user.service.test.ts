@@ -192,7 +192,7 @@ describe("user.service - createUser", () => {
         expect(mockPrisma.user.create).not.toHaveBeenCalled();
     });
 
-    
+
 
     it("should create AGENT as not approved", async () => {
         mockPrisma.user.findUnique.mockResolvedValue(null);
@@ -303,9 +303,13 @@ describe("user.service - updateUser", () => {
         expect(mockPrisma.lead.updateMany).toHaveBeenCalledWith({
             where: {
                 studentUserId: 10,
+                deletedAt: null,
+
             },
             data: {
                 assignedCounsellorId: 5,
+                assignedById: null,
+
             },
         });
     });

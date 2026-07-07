@@ -7,7 +7,6 @@
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
   --ui-bg: #ffffff;
   --ui-bg-page: #fafafa;
   --ui-border: #ebebeb;
@@ -42,6 +41,7 @@ textarea {
 }
 
 @layer components {
+
   /* ── Layout ── */
   .ui-page {
     @apply min-h-screen bg-[var(--ui-bg-page)] text-[var(--ui-text)] px-6 py-10 md:px-10;
@@ -194,7 +194,7 @@ textarea {
 
 .user-modal-box {
   width: min(900px, 100%);
-  max-height: min(680px, calc(100vh - 48px));
+  max-height: min(680px, calc(100vh - 170px));
   display: flex;
   flex-direction: column;
   background: #ffffff;
@@ -234,3 +234,9 @@ select {
 option {
   cursor: pointer !important;
 }
+
+button {
+  cursor: pointer !important;
+
+}
+

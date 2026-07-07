@@ -183,7 +183,7 @@ const LeadManagement = () => {
   const activityEndRef = useRef(null);
 
   const isAdminOrSuperAdmin = useMemo(() => {
-    return user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN');
+    return user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' || user.role === "GLOBAL_ADMIN");
   }, [user]);
 
   // const displayedLeads = useMemo(() => {
@@ -789,7 +789,7 @@ ApplyUniNow`
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingLeads}
-            className="border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+            className="border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition  shadow-sm active:scale-95"
           >
             {uploadingLeads ? (
               <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
@@ -801,7 +801,7 @@ ApplyUniNow`
 
           <button
             onClick={handleExport}
-            className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+            className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition  shadow-sm active:scale-95"
           >
             <Download className="h-4 w-4 text-slate-600 stroke-[2.5]" />
             Export
@@ -809,7 +809,7 @@ ApplyUniNow`
 
           <button
             onClick={() => setIsIntakeOpen(true)}
-            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
+            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md active:scale-95 hover:shadow-lg"
           >
             <Plus className="h-4 w-4 stroke-[3]" />
             Add Lead
@@ -855,7 +855,7 @@ ApplyUniNow`
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingLeads}
-              className="border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+              className="border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 transition  shadow-sm active:scale-95"
             >
               {uploadingLeads ? (
                 <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
@@ -867,7 +867,7 @@ ApplyUniNow`
 
             <button
               onClick={handleExport}
-              className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 transition cursor-pointer shadow-sm active:scale-95"
+              className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 flex items-center gap-2 transition  shadow-sm active:scale-95"
             >
               <Download className="h-4 w-4 text-slate-600 stroke-[2.5]" />
               Export
@@ -875,7 +875,7 @@ ApplyUniNow`
 
             <button
               onClick={() => setIsIntakeOpen(true)}
-              className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
+              className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md active:scale-95 hover:shadow-lg"
             >
               <Plus className="h-4 w-4 stroke-[3]" />
               Add Lead
@@ -1007,7 +1007,7 @@ ApplyUniNow`
                 <tr className="bg-[#f8fafc] border-b border-slate-100">
                   <th
                     onClick={() => handleSort('fullName')}
-                    className="w-[14%] cursor-pointer px-3 py-4 text-sm font-semibold text-[#556987]"
+                    className="w-[14%]  px-3 py-4 text-sm font-semibold text-[#556987]"
                   >
                     Lead
                   </th>
@@ -1018,7 +1018,7 @@ ApplyUniNow`
 
                   <th
                     onClick={() => handleSort('sourceId')}
-                    className="w-[10%] cursor-pointer px-3 py-4 text-sm font-semibold text-[#556987] text-center"
+                    className="w-[10%]  px-3 py-4 text-sm font-semibold text-[#556987] text-center"
                   >
                     Source
                   </th>
@@ -1029,7 +1029,7 @@ ApplyUniNow`
 
                   <th
                     onClick={() => handleSort('rating')}
-                    className="w-[12%] cursor-pointer px-3 py-4 text-sm font-semibold text-[#556987] text-center"
+                    className="w-[12%]  px-3 py-4 text-sm font-semibold text-[#556987] text-center"
                   >
                     Lead Status
                   </th>
@@ -1159,8 +1159,7 @@ ApplyUniNow`
                             onChange={(e) =>
                               handleAssignCounsellor(lead.id, e.target.value)
                             }
-                            className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-2 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm w-full max-w-[140px]"
-                          // className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-10 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer transition shadow-sm min-w-[180px]"
+                            className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-2 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none  transition shadow-sm w-full max-w-[140px]"
                           >
                             <option value="">Unassigned</option>
 
@@ -1188,7 +1187,7 @@ ApplyUniNow`
                       <select
                         value={lead.status || 'NEW'}
                         onChange={(e) => handleLeadStatusChange(lead.id, e.target.value)}
-                        className="border border-slate-200 bg-white px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer"
+                        className="border border-slate-200 bg-white px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none "
                       >
                         <option value="NEW">New</option>
                         <option value="CONTACTED">Contacted</option>
@@ -1203,7 +1202,7 @@ ApplyUniNow`
                         {!lead.isStudentLoginCreated ? (
                           <button
                             onClick={() => handleCreateStudentLogin(lead.id)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap cursor-pointer"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap "
                             title="Create Student Login"
                           >
                             Create Login
@@ -1216,7 +1215,7 @@ ApplyUniNow`
 
                         <button
                           onClick={(e) => handleDeleteLead(e, lead.id)}
-                          className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer opacity-0 group-hover:opacity-100"
+                          className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition  opacity-0 group-hover:opacity-100"
                           title="Delete Lead"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1252,7 +1251,7 @@ ApplyUniNow`
               <button
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-slate-600 font-semibold transition cursor-pointer shadow-sm active:scale-95"
+                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-slate-600 font-semibold transition  shadow-sm active:scale-95"
               >
                 Previous
               </button>
@@ -1268,7 +1267,7 @@ ApplyUniNow`
               <button
                 disabled={page >= pagination.totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-slate-600 font-semibold transition cursor-pointer shadow-sm active:scale-95"
+                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-xl text-slate-600 font-semibold transition  shadow-sm active:scale-95"
               >
                 Next
               </button>
@@ -1292,7 +1291,7 @@ ApplyUniNow`
 
               <button
                 onClick={() => setIsIntakeOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition "
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1480,7 +1479,7 @@ ApplyUniNow`
                 <button
                   type="button"
                   onClick={() => setIsIntakeOpen(false)}
-                  className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer"
+                  className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition "
                 >
                   Cancel
                 </button>
@@ -1488,7 +1487,7 @@ ApplyUniNow`
                 <button
                   type="submit"
                   disabled={submittingLead}
-                  className="bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-[#0084ff]/50 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md hover:shadow-lg"
+                  className="bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-[#0084ff]/50 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md hover:shadow-lg"
                 >
                   {submittingLead ? (
                     <>
@@ -1741,7 +1740,17 @@ ApplyUniNow`
       )}
 
       {isActivityOpen && activeLead && (
-        <div className="fixed inset-y-0 right-0 z-50 w-[420px] max-w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col h-full transform transition-transform duration-300">
+        <div
+          className="fixed right-0 top-[75px] bottom-0 z-50 w-[420px] max-w-full bg-white border-l
+                  border-slate-200
+                  shadow-2xl
+                  flex
+                  flex-col
+                  transition-all
+                  duration-300
+                "
+        >
+          {/* // <div className="fixed inset-y-0 right-0 z-50 w-[420px] max-w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col h-full transform transition-transform duration-300"> */}
           <div className="px-3 py-4 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1764,7 +1773,7 @@ ApplyUniNow`
 
               <button
                 onClick={() => setIsActivityOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition "
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1793,7 +1802,9 @@ ApplyUniNow`
                     activeLead.isStudentLoginCreated
                       ? 'text-emerald-600 font-bold'
                       : 'text-slate-500'
+                      
                   }
+                  
                 >
                   {activeLead.isStudentLoginCreated
                     ? 'Login Active'
@@ -1804,7 +1815,7 @@ ApplyUniNow`
               {!activeLead.isStudentLoginCreated && (
                 <button
                   onClick={() => handleCreateStudentLogin(activeLead.id)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition "
                 >
                   Create Login
                 </button>
@@ -1929,7 +1940,7 @@ ApplyUniNow`
                         handleLeadQuickAction(type);
                       }
                     }}
-                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${activityForm.activityType === type
+                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition  ${activityForm.activityType === type
                       ? 'bg-slate-900 border-slate-900 text-white shadow-md'
                       : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
                       }`}
@@ -1957,7 +1968,7 @@ ApplyUniNow`
               <button
                 type="submit"
                 disabled={!activityForm.comment.trim()}
-                className="rounded-xl bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-slate-100 disabled:text-slate-400 text-white p-2.5 shadow-sm transition flex-shrink-0 cursor-pointer"
+                className="rounded-xl bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-slate-100 disabled:text-slate-400 text-white p-2.5 shadow-sm transition flex-shrink-0 "
               >
                 <Send className="h-4 w-4 stroke-[2.5]" />
               </button>
