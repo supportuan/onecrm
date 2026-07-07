@@ -57,8 +57,24 @@ Migrations run automatically on startup (`prisma migrate deploy`). Disable with
 
 App is then available at `http://<host>:3000`.
 
+## Manual deploy (no Docker)
+
+If you deploy with `git pull` on the server instead of Docker:
+
+```bash
+cd Backend
+npm ci
+npx prisma migrate deploy   # applies new migrations (required after pull)
+npm run build               # runs prisma generate + tsc
+# restart your process manager (pm2/systemd)
+```
+
 ## Notes
 
+- **Backend build:** `npm run build` runs `prisma generate` then `tsc`. After pulling
+  schema changes, always run `npx prisma migrate deploy` before (or on) deploy so the
+  DB and generated client stay in sync. If you only run `tsc`, you will see missing
+  Prisma enum/model TypeScript errors.
 - The frontend proxies `/api/*` and `/uploads/*` to the backend inside the
   container (`127.0.0.1:4000`), so only port 3000 must be exposed publicly.
 - File uploads use S3 when AWS keys are provided; otherwise they fall back to
