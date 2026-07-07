@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendError, sendSuccess } from '../../utils/response.js';
 import * as service from './student-crm.service.js';
-import { getDefaultChecklist } from './checklists.js';
 import { getFormOptions as loadFormOptions } from '../crm-settings/crm-settings.service.js';
 import { resolveFileRefsDeep, safeUploadFilename, storeUploadedFile } from '../../lib/file-storage.js';
 import { isStudentRole } from './scoping.js';
@@ -385,7 +384,9 @@ export const upsertOffer = async (req: Request, res: Response, next: NextFunctio
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const item = await resolveFileRefsDeep(await service.upsertOfferLetter(id, req.body || {}));
+    const item = await resolveFileRefsDeep(
+      await service.upsertOfferLetter(id, req.body || {}, req.user?.id)
+    );
     return sendSuccess(res, 'offer saved', item);
   } catch (err) {
     next(err);
@@ -415,7 +416,7 @@ export const uploadOfferLetter = async (req: Request, res: Response, next: NextF
         filename: file.originalname,
         fileUrl,
         receivedAt: new Date().toISOString().slice(0, 10),
-      }),
+      }, req.user?.id),
     );
     return sendSuccess(res, 'offer letter uploaded', item, 201);
   } catch (err) {
@@ -452,13 +453,12 @@ export const uploadVisaDocument = async (req: Request, res: Response, next: Next
       contentType: file.mimetype,
     });
 
+    const label = typeof req.body?.label === 'string' ? req.body.label : undefined;
     const item = await resolveFileRefsDeep(
-      await service.upsertVisaTracking(applicationId, {
-        documents: {
-          fileUrl,
-          filename: file.originalname,
-          uploadedAt: new Date().toISOString(),
-        },
+      await service.appendVisaDocumentFile(applicationId, {
+        fileUrl,
+        filename: file.originalname,
+        label,
       }),
     );
     return sendSuccess(res, 'visa document uploaded', item, 201);
@@ -473,8 +473,91 @@ export const getChecklist = async (req: Request, res: Response, next: NextFuncti
   try {
     const country = (req.query.country as string) || '';
     if (!country) return sendError(res, 'country is required', null, 400);
-    return sendSuccess(res, 'default checklist', getDefaultChecklist(country));
+    const university = typeof req.query.university === 'string' ? req.query.university : undefined;
+    const items = await service.resolveChecklistForCountry(country, university);
+    return sendSuccess(res, 'checklist', items);
   } catch (err) {
+    next(err);
+  }
+};
+
+export const getProcessStages = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const country = typeof req.query.country === 'string' ? req.query.country : undefined;
+    return sendSuccess(res, 'process stages', service.getProcessStages(country));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listChecklistTemplates = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const items = await service.listChecklistTemplates();
+    return sendSuccess(res, 'checklist templates', items);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createChecklistTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { country, university, documents } = req.body || {};
+    if (!country || !Array.isArray(documents)) {
+      return sendError(res, 'country and documents array are required', null, 400);
+    }
+    const created = await service.createChecklistTemplate({ country, university, documents });
+    return sendSuccess(res, 'template created', created, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateChecklistTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const updated = await service.updateChecklistTemplate(id, req.body || {});
+    return sendSuccess(res, 'template updated', updated);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteChecklistTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    await service.deleteChecklistTemplate(id);
+    return sendSuccess(res, 'template deleted', { id });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listVisaTracking = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const items = await resolveFileRefsDeep(await service.listVisaTracking(actor(req)));
+    return sendSuccess(res, 'visa tracking', items);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const studentOfferDecision = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    const decision = req.body?.decision;
+    if (!id || !req.user?.id) return sendError(res, 'invalid request', null, 400);
+    if (decision !== 'ACCEPTED' && decision !== 'REJECTED') {
+      return sendError(res, 'decision must be ACCEPTED or REJECTED', null, 400);
+    }
+    const result = await resolveFileRefsDeep(
+      await service.studentRespondToOffer(id, req.user.id, decision)
+    );
+    return sendSuccess(res, 'offer decision recorded', result);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('already')) return sendError(res, err.message, null, 409);
     next(err);
   }
 };

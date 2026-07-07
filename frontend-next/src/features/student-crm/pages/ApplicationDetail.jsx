@@ -27,6 +27,7 @@ import {
   upsertOffer,
   upsertVisa,
   listCounsellors,
+  getProcessStages,
 } from '@/services/studentCrmApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { APPLICATION_STAGES, getNextStage, getStageLabel } from '@/features/student-crm/constants';
@@ -60,6 +61,7 @@ export default function ApplicationDetail({ applicationId }) {
   const [uploadingDocId, setUploadingDocId] = useState(null);
   const [offerUploading, setOfferUploading] = useState(false);
   const [visaUploading, setVisaUploading] = useState(false);
+  const [visaWorkflow, setVisaWorkflow] = useState([]);
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const flash = (kind, msg) => {
     setToast({ kind, msg });
@@ -70,7 +72,13 @@ export default function ApplicationDetail({ applicationId }) {
     setLoading(true);
     try {
       const res = await getApplication(applicationId);
-      setApp(res?.data || null);
+      const data = res?.data || null;
+      setApp(data);
+      if (data?.country) {
+        getProcessStages(data.country)
+          .then((r) => setVisaWorkflow(r?.data?.visaWorkflow || []))
+          .catch(() => setVisaWorkflow([]));
+      }
     } catch (e) {
       flash('err', e?.message || 'failed to load application');
     } finally {
@@ -248,11 +256,11 @@ export default function ApplicationDetail({ applicationId }) {
     }
   };
 
-  const handleVisaUpload = async (file) => {
+  const handleVisaUpload = async (file, label) => {
     if (!app || !file) return;
     setVisaUploading(true);
     try {
-      await uploadVisaDocument(app.id, file);
+      await uploadVisaDocument(app.id, file, label);
       flash('ok', 'Visa document uploaded');
       fetchDetail();
     } catch (e) {
@@ -393,6 +401,7 @@ export default function ApplicationDetail({ applicationId }) {
                 onSave={handleSaveVisa}
                 onUpload={handleVisaUpload}
                 uploading={visaUploading}
+                workflow={visaWorkflow}
               />
             )}
             {activeTab === 'history' && <AuditTimeline app={app} />}

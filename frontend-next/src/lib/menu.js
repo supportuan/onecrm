@@ -181,6 +181,7 @@ import {
   MessageCircle,
   MessageSquare,
   Percent,
+  Plane,
   RotateCcw,
   Search,
   Settings,
@@ -241,6 +242,11 @@ export const navMenu = [
         icon: ClipboardList,
       },
       {
+        label: "Visa management",
+        path: "/student-crm/visa-management",
+        icon: Plane,
+      },
+      {
         label: "CRM Settings",
         path: "/student-crm/settings",
         icon: Settings,
@@ -261,6 +267,16 @@ export const navMenu = [
         label: "Agency Leads",
         path: "/agency-crm/agency-leads",
         icon: ClipboardList,
+      },
+      {
+        label: "Onboarding",
+        path: "/agency-crm/onboarding",
+        icon: FileText,
+      },
+      {
+        label: "Communications",
+        path: "/agency-crm/communications",
+        icon: MessageSquare,
       },
       {
         label: "Co-branding Tools",

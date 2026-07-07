@@ -1,17 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { registerUser } from '@/services/userApi';
 import { UserPlus, Eye, EyeOff, Sparkles, GraduationCap, Briefcase, CheckCircle, Clock } from 'lucide-react';
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', confirmPassword: '', role: 'STUDENT' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(null);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref && typeof window !== 'undefined') {
+      localStorage.setItem('agencyReferralCode', ref.toUpperCase());
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -209,5 +217,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen flex items-center justify-center text-neutral-500">Loading…</main>}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

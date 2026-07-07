@@ -7,6 +7,10 @@ import {
   createCommission,
   updateCommission,
   listPartners,
+  getCommissionStatement,
+  listCommissionRules,
+  saveCommissionRule,
+  deleteCommissionRule,
 } from '@/services/agencyCrmApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { COMMISSION_STATUS_LABELS, commissionStatusClass } from '../constants';
@@ -38,6 +42,25 @@ export default function CommissionManagement() {
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState(emptyForm());
   const [msg, setMsg] = useState('');
+  const [rules, setRules] = useState([]);
+  const [statement, setStatement] = useState(null);
+  const [ruleForm, setRuleForm] = useState({
+    country: '',
+    university: '',
+    ruleType: 'PERCENTAGE',
+    amount: 10,
+    trigger: 'ENROLLED',
+  });
+
+  useEffect(() => {
+    if (!agencyFilter) return;
+    listCommissionRules(agencyFilter)
+      .then((r) => setRules(r?.data || []))
+      .catch(() => setRules([]));
+    getCommissionStatement({ agencyPartnerId: agencyFilter })
+      .then((r) => setStatement(r?.data || null))
+      .catch(() => setStatement(null));
+  }, [agencyFilter]);
 
   useEffect(() => {
     listPartners()
@@ -266,6 +289,48 @@ export default function CommissionManagement() {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+          </div>
+        )}
+
+        {canManage && agencyFilter && (
+          <div className="rounded-lg border border-neutral-200 bg-white p-6 space-y-4">
+            <h2 className="text-lg font-medium">Commission rules</h2>
+            <form
+              className="grid md:grid-cols-5 gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await saveCommissionRule({ ...ruleForm, agencyPartnerId: Number(agencyFilter), amount: Number(ruleForm.amount) });
+                const r = await listCommissionRules(agencyFilter);
+                setRules(r?.data || []);
+                setMsg('Rule saved');
+              }}
+            >
+              <input className={INPUT} placeholder="Country" value={ruleForm.country} onChange={(e) => setRuleForm({ ...ruleForm, country: e.target.value })} />
+              <input className={INPUT} placeholder="University" value={ruleForm.university} onChange={(e) => setRuleForm({ ...ruleForm, university: e.target.value })} />
+              <select className={INPUT} value={ruleForm.ruleType} onChange={(e) => setRuleForm({ ...ruleForm, ruleType: e.target.value })}>
+                <option value="PERCENTAGE">%</option>
+                <option value="FIXED">Fixed</option>
+              </select>
+              <input className={INPUT} type="number" placeholder="Amount" value={ruleForm.amount} onChange={(e) => setRuleForm({ ...ruleForm, amount: e.target.value })} />
+              <button type="submit" className="px-3 py-2 bg-neutral-900 text-white text-sm rounded-lg">Add rule</button>
+            </form>
+            <ul className="text-sm space-y-2">
+              {rules.map((rule) => (
+                <li key={rule.id} className="flex justify-between border-b border-neutral-100 py-2">
+                  <span>{rule.country || 'Any'} / {rule.university || 'Any'} — {rule.ruleType} {rule.amount} ({rule.trigger})</span>
+                  <button type="button" className="text-red-600 text-xs" onClick={async () => { await deleteCommissionRule(rule.id); setRules((await listCommissionRules(agencyFilter))?.data || []); }}>Delete</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {statement?.totals && (
+          <div className="rounded-lg border border-neutral-200 bg-white p-6">
+            <h2 className="text-lg font-medium mb-2">Commission statement</h2>
+            <p className="text-sm text-neutral-600">
+              Total: ₹{statement.totals.amount?.toLocaleString?.('en-IN')} · Paid: ₹{statement.totals.paid?.toLocaleString?.('en-IN')} · Pending: ₹{statement.totals.pending?.toLocaleString?.('en-IN')}
+            </p>
           </div>
         )}
       </div>

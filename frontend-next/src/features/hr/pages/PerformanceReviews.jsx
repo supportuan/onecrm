@@ -11,12 +11,23 @@ import {
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const currentPeriod = () => {
+const currentMonthPeriod = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
-const periodOptions = () => {
+const currentWeekPeriod = () => {
+  const d = new Date();
+  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - day);
+  const year = target.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(year, 0, 1));
+  const week = Math.ceil(((target.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return `${year}-W${String(week).padStart(2, '0')}`;
+};
+
+const monthPeriodOptions = () => {
   const opts = [];
   const now = new Date();
   for (let i = 0; i < 6; i++) {
@@ -25,6 +36,24 @@ const periodOptions = () => {
     opts.push({ value: p, label: `${MONTHS[d.getMonth()]} ${d.getFullYear()}` });
   }
   return opts;
+};
+
+const weekPeriodOptions = () => {
+  const opts = [];
+  const now = new Date();
+  for (let i = 0; i < 8; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i * 7);
+    const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = target.getUTCDay() || 7;
+    target.setUTCDate(target.getUTCDate() + 4 - day);
+    const year = target.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const week = Math.ceil(((target.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+    const p = `${year}-W${String(week).padStart(2, '0')}`;
+    opts.push({ value: p, label: `Week ${week}, ${year}` });
+  }
+  return Array.from(new Map(opts.map((o) => [o.value, o])).values());
 };
 
 const ratingLabel = (rate, target = 40) => {
@@ -42,7 +71,8 @@ export default function PerformanceReviews() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [period, setPeriod] = useState(currentPeriod());
+  const [periodType, setPeriodType] = useState('monthly');
+  const [period, setPeriod] = useState(currentMonthPeriod());
   const [kpiTarget, setKpiTarget] = useState(40);
 
   const fetchReviews = useCallback(async (search = '') => {
@@ -110,6 +140,13 @@ export default function PerformanceReviews() {
     }
   };
 
+  const handlePeriodTypeChange = (type) => {
+    setPeriodType(type);
+    setPeriod(type === 'weekly' ? currentWeekPeriod() : currentMonthPeriod());
+  };
+
+  const periodOptions = periodType === 'weekly' ? weekPeriodOptions() : monthPeriodOptions();
+
   const avgConversion =
     reviews.filter((r) => r.conversionRate > 0).length > 0
       ? (
@@ -130,17 +167,25 @@ export default function PerformanceReviews() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="ui-text-body max-w-xl">
-            Counsellor reviews are calculated from lead conversion rate — leads handled vs converted to applications.
-            Target: {kpiTarget}% conversion.
+            Counsellor reviews use live CRM data — leads, conversions, enrollments, and revenue.
+            Weekly reviews auto-generate every Monday; monthly on the 1st.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={periodType}
+            onChange={(e) => handlePeriodTypeChange(e.target.value)}
+            className="ui-field ui-select w-auto min-w-[120px]"
+          >
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+          </select>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             className="ui-field ui-select w-auto min-w-[140px]"
           >
-            {periodOptions().map((o) => (
+            {periodOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
@@ -188,6 +233,7 @@ export default function PerformanceReviews() {
                 <th className="px-4 py-3 font-normal">Leads</th>
                 <th className="px-4 py-3 font-normal">Converted</th>
                 <th className="px-4 py-3 font-normal">Enrolled</th>
+                <th className="px-4 py-3 font-normal">Revenue</th>
                 <th className="px-4 py-3 font-normal">Conversion %</th>
                 <th className="px-4 py-3 font-normal">Rating</th>
               </tr>
@@ -195,7 +241,7 @@ export default function PerformanceReviews() {
             <tbody className="divide-y divide-[var(--ui-border)]">
               {preview.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center ui-text-meta">
+                  <td colSpan={7} className="px-4 py-8 text-center ui-text-meta">
                     {previewLoading ? 'Loading…' : 'No counsellor lead data for this period'}
                   </td>
                 </tr>
@@ -206,6 +252,9 @@ export default function PerformanceReviews() {
                     <td className="px-4 py-3 ui-text-body">{row.leadsHandled}</td>
                     <td className="px-4 py-3 ui-text-body">{row.conversions}</td>
                     <td className="px-4 py-3 ui-text-body">{row.enrollments}</td>
+                    <td className="px-4 py-3 ui-text-body">
+                      ₹{(row.revenue || 0).toLocaleString('en-IN')}
+                    </td>
                     <td className="px-4 py-3">
                       <span className="ui-text-strong">{row.conversionRate}%</span>
                       <span className="ui-text-meta ml-2">
@@ -242,6 +291,7 @@ export default function PerformanceReviews() {
                   <th className="px-4 py-3 font-normal">Employee</th>
                   <th className="px-4 py-3 font-normal">Period</th>
                   <th className="px-4 py-3 font-normal">Leads → Converted</th>
+                  <th className="px-4 py-3 font-normal">Revenue</th>
                   <th className="px-4 py-3 font-normal">Conversion %</th>
                   <th className="px-4 py-3 font-normal">Rating</th>
                   <th className="px-4 py-3 font-normal">Status</th>
@@ -250,13 +300,13 @@ export default function PerformanceReviews() {
               <tbody className="divide-y divide-[var(--ui-border)]">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center ui-text-meta">
+                    <td colSpan={7} className="px-4 py-12 text-center ui-text-meta">
                       <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                     </td>
                   </tr>
                 ) : reviews.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center ui-text-meta">
+                    <td colSpan={7} className="px-4 py-12 text-center ui-text-meta">
                       No reviews yet. Select a period and click Calculate reviews.
                     </td>
                   </tr>
@@ -273,6 +323,9 @@ export default function PerformanceReviews() {
                         {(rev.enrollments ?? 0) > 0 && (
                           <span className="ui-text-meta"> · {rev.enrollments} enrolled</span>
                         )}
+                      </td>
+                      <td className="px-4 py-3 ui-text-body">
+                        {rev.revenue != null ? `₹${Number(rev.revenue).toLocaleString('en-IN')}` : '—'}
                       </td>
                       <td className="px-4 py-3 ui-text-strong">
                         {rev.conversionRate != null ? `${rev.conversionRate}%` : '—'}

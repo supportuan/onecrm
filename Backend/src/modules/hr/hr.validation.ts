@@ -122,6 +122,26 @@ export const createSalaryStructureSchema = z.object({
   basicSalary: z.number(),
   allowances: z.number(),
   deductions: z.number(),
+  incentivePerEnrollment: z.number().min(0).optional().default(0),
+  incentiveRevenueShare: z.number().min(0).max(1).optional().default(0),
+});
+
+export const createEmployeeSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  employeeId: z.string().min(1),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  department: z.string().optional(),
+  designation: z.string().optional(),
+  phone: z.string().optional(),
+  location: z.string().optional(),
+  joiningDate: z.string().optional(),
+  biometricId: z.string().optional(),
+  managerId: z.string().optional(),
+  access_role: z
+    .enum(['EMPLOYEE', 'COUNSELLOR', 'SUPER_ADMIN', 'HR_MANAGER', 'PAYROLL_ADMIN'])
+    .optional(),
 });
 
 // ---- New Sprint Feature Schemas ----
@@ -366,7 +386,9 @@ export const updatePerformanceReviewSchema = z.object({
 });
 
 export const performancePeriodSchema = z.object({
-  period: z.string().regex(/^\d{4}-\d{2}$/, 'Period must be YYYY-MM'),
+  period: z
+    .string()
+    .regex(/^\d{4}-(\d{2}|W\d{1,2})$/i, 'Period must be YYYY-MM or YYYY-Www'),
   cycle: z.string().optional(),
 });
 

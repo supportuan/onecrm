@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { listCountries, listCatalog, getCatalogStats, createUniversity } from '@/services/crmSettingsApi';
+import {
+  listChecklistTemplates,
+  createChecklistTemplate,
+  deleteChecklistTemplate,
+  getChecklist,
+} from '@/services/studentCrmApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 
 const INPUT = 'w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg';
@@ -21,6 +27,9 @@ export default function CrmSettingsPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: '', countryId: '', city: '' });
   const [msg, setMsg] = useState('');
+  const [templates, setTemplates] = useState([]);
+  const [tplForm, setTplForm] = useState({ country: '', university: '', docName: '', docRequired: true });
+  const [tplDocs, setTplDocs] = useState([]);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -55,6 +64,9 @@ export default function CrmSettingsPage() {
     getCatalogStats()
       .then((r) => setStats(r?.data || null))
       .catch(() => setStats(null));
+    listChecklistTemplates()
+      .then((r) => setTemplates(Array.isArray(r?.data) ? r.data : []))
+      .catch(() => setTemplates([]));
   }, []);
 
   useEffect(() => {
@@ -81,6 +93,47 @@ export default function CrmSettingsPage() {
       await loadCatalog();
     } catch (err) {
       setMsg(err.message || 'Failed');
+    }
+  };
+
+  const loadDefaultDocs = async (country) => {
+    if (!country) return;
+    try {
+      const res = await getChecklist(country);
+      const items = Array.isArray(res?.data) ? res.data : [];
+      setTplDocs(items);
+    } catch {
+      setTplDocs([]);
+    }
+  };
+
+  const saveTemplate = async (e) => {
+    e.preventDefault();
+    if (!canManage || !tplForm.country || tplDocs.length === 0) return;
+    try {
+      await createChecklistTemplate({
+        country: tplForm.country,
+        university: tplForm.university || null,
+        documents: tplDocs,
+      });
+      setMsg('Checklist template saved');
+      setTplForm({ country: '', university: '', docName: '', docRequired: true });
+      setTplDocs([]);
+      const r = await listChecklistTemplates();
+      setTemplates(Array.isArray(r?.data) ? r.data : []);
+    } catch (err) {
+      setMsg(err.message || 'Failed to save template');
+    }
+  };
+
+  const removeTemplate = async (id) => {
+    if (!canManage || !window.confirm('Delete this template?')) return;
+    try {
+      await deleteChecklistTemplate(id);
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      setMsg('Template deleted');
+    } catch (err) {
+      setMsg(err.message || 'Delete failed');
     }
   };
 
@@ -251,6 +304,136 @@ export default function CrmSettingsPage() {
               </button>
             </div>
           )}
+        </div>
+
+        <div className="ui-panel p-5 space-y-4">
+          <div>
+            <h2 className="font-semibold text-sm">Document checklist templates</h2>
+            <p className="text-xs text-neutral-500 mt-1">
+              Per-country (and optional university) defaults used when new applications are created.
+            </p>
+          </div>
+
+          {canManage && (
+            <form onSubmit={saveTemplate} className="space-y-3 border border-neutral-200 rounded-lg p-4">
+              <div className="grid md:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500">Country *</label>
+                  <input
+                    className={INPUT}
+                    value={tplForm.country}
+                    onChange={(e) => {
+                      setTplForm({ ...tplForm, country: e.target.value });
+                      loadDefaultDocs(e.target.value);
+                    }}
+                    placeholder="e.g. United Kingdom"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">University (optional)</label>
+                  <input
+                    className={INPUT}
+                    value={tplForm.university}
+                    onChange={(e) => setTplForm({ ...tplForm, university: e.target.value })}
+                    placeholder="Leave blank for country default"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button type="button" className="ui-btn-secondary w-full" onClick={() => loadDefaultDocs(tplForm.country)}>
+                    Load built-in defaults
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 items-end">
+                <div className="flex-1 min-w-[160px]">
+                  <label className="text-xs text-neutral-500">Add document</label>
+                  <input
+                    className={INPUT}
+                    value={tplForm.docName}
+                    onChange={(e) => setTplForm({ ...tplForm, docName: e.target.value })}
+                    placeholder="Document name"
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-xs pb-2">
+                  <input
+                    type="checkbox"
+                    checked={tplForm.docRequired}
+                    onChange={(e) => setTplForm({ ...tplForm, docRequired: e.target.checked })}
+                  />
+                  Required
+                </label>
+                <button
+                  type="button"
+                  className="ui-btn-secondary"
+                  onClick={() => {
+                    if (!tplForm.docName.trim()) return;
+                    setTplDocs([...tplDocs, { name: tplForm.docName.trim(), required: tplForm.docRequired }]);
+                    setTplForm({ ...tplForm, docName: '' });
+                  }}
+                >
+                  Add row
+                </button>
+              </div>
+
+              {tplDocs.length > 0 && (
+                <ul className="text-sm divide-y divide-neutral-100 border border-neutral-100 rounded-lg">
+                  {tplDocs.map((d, i) => (
+                    <li key={i} className="flex justify-between px-3 py-2">
+                      <span>{d.name}{d.required ? ' *' : ''}</span>
+                      <button type="button" className="text-xs text-rose-600" onClick={() => setTplDocs(tplDocs.filter((_, j) => j !== i))}>
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <button type="submit" className="ui-btn-primary" disabled={!tplForm.country || tplDocs.length === 0}>
+                Save template
+              </button>
+            </form>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-neutral-500 border-b">
+                  <th className="py-2 pr-4">Country</th>
+                  <th className="py-2 pr-4">University</th>
+                  <th className="py-2 pr-4">Documents</th>
+                  {canManage && <th className="py-2" />}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {templates.length === 0 ? (
+                  <tr>
+                    <td colSpan={canManage ? 4 : 3} className="py-6 text-center text-neutral-500">
+                      No custom templates — built-in country defaults are used.
+                    </td>
+                  </tr>
+                ) : (
+                  templates.map((t) => (
+                    <tr key={t.id}>
+                      <td className="py-2 pr-4">{t.country}</td>
+                      <td className="py-2 pr-4">{t.university || '— (country default)'}</td>
+                      <td className="py-2 pr-4 text-neutral-600">
+                        {Array.isArray(t.documents) ? `${t.documents.length} items` : '—'}
+                      </td>
+                      {canManage && (
+                        <td className="py-2 text-right">
+                          <button type="button" className="text-xs text-rose-600" onClick={() => removeTemplate(t.id)}>
+                            Delete
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

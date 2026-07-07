@@ -96,6 +96,15 @@ export const bulkImportEmployees = async (rows) => {
   return handleResponse(res);
 };
 
+export const createEmployee = async (data) => {
+  const res = await tenantFetch(`${API_URL}/employees`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+};
+
 // ==========================================
 // 2. Attendance Settings Service
 // ==========================================

@@ -814,6 +814,78 @@ export default function StudentManagement() {
                         </Field>
                       </div>
                     ))}
+
+                    <div className="border-t border-neutral-200 pt-6 mt-2">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-sm font-semibold text-neutral-800">Academic history</h3>
+                        {canManage && !profile.isEnrolled && (
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-neutral-700"
+                            onClick={() =>
+                              setForm({
+                                ...form,
+                                academicHistory: [...form.academicHistory, emptyAcademic()],
+                              })
+                            }
+                          >
+                            + Add entry
+                          </button>
+                        )}
+                      </div>
+                      {form.academicHistory.map((row, idx) => (
+                        <div key={`ac-${idx}`} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-neutral-50 rounded-lg mb-3">
+                          <Field label="Degree">
+                            <input
+                              className={INPUT}
+                              value={row.degree}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => {
+                                const next = [...form.academicHistory];
+                                next[idx] = { ...next[idx], degree: e.target.value };
+                                setForm({ ...form, academicHistory: next });
+                              }}
+                            />
+                          </Field>
+                          <Field label="Institution">
+                            <input
+                              className={INPUT}
+                              value={row.institution}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => {
+                                const next = [...form.academicHistory];
+                                next[idx] = { ...next[idx], institution: e.target.value };
+                                setForm({ ...form, academicHistory: next });
+                              }}
+                            />
+                          </Field>
+                          <Field label="Year">
+                            <input
+                              className={INPUT}
+                              value={row.year}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => {
+                                const next = [...form.academicHistory];
+                                next[idx] = { ...next[idx], year: e.target.value };
+                                setForm({ ...form, academicHistory: next });
+                              }}
+                            />
+                          </Field>
+                          <Field label="Grade">
+                            <input
+                              className={INPUT}
+                              value={row.grade}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => {
+                                const next = [...form.academicHistory];
+                                next[idx] = { ...next[idx], grade: e.target.value };
+                                setForm({ ...form, academicHistory: next });
+                              }}
+                            />
+                          </Field>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

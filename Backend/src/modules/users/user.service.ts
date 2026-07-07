@@ -1,5 +1,5 @@
 import { prisma } from '../../prisma.js';
-import { UserRole } from '@prisma/client';
+import { UserRole, AgencyPartnerStatus } from '@prisma/client';
 import { hashPassword } from '../../utils/password.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
@@ -636,6 +636,16 @@ export const updateUser = async (
       templateKey: 'welcome.user',
       vars: { name: updated.fullName, role: updated.roleLabel || updated.role },
     });
+
+    if (updated.role === UserRole.AGENT || updated.role === UserRole.AGENCY_FREELANCER) {
+      const { provisionPartnerFromAgentUser, setPartnerStatus } = await import(
+        '../agency-crm/agency-partner.lifecycle.js'
+      );
+      const partner = await provisionPartnerFromAgentUser(id);
+      if (partner && partner.status === AgencyPartnerStatus.PENDING) {
+        await setPartnerStatus(partner.id, AgencyPartnerStatus.ACTIVE, updatedById);
+      }
+    }
   }
 
   return updated;

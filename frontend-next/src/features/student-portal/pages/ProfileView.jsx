@@ -19,6 +19,13 @@ export default function ProfileViewPage() {
   if (error) return <p className="ui-error">{error}</p>;
   if (!profile) return <p className="text-sm text-neutral-500">Loading profile…</p>;
 
+  const examScores = [
+    profile.ieltsScore != null && { label: 'IELTS', value: profile.ieltsScore },
+    profile.toeflScore != null && { label: 'TOEFL', value: profile.toeflScore },
+    profile.greScore != null && { label: 'GRE', value: profile.greScore },
+    profile.gmatScore != null && { label: 'GMAT', value: profile.gmatScore },
+  ].filter(Boolean);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -55,6 +62,39 @@ export default function ProfileViewPage() {
           <Row label="Process stage" value={STAGE_LABELS[profile.processStage] || profile.processStage} />
         </Card>
       </div>
+
+      {(examScores.length > 0 || (Array.isArray(profile.asstExamSections) && profile.asstExamSections.length > 0)) && (
+        <Card title="Exam scores">
+          {examScores.map((s) => (
+            <Row key={s.label} label={s.label} value={s.value} />
+          ))}
+          {Array.isArray(profile.asstExamSections) &&
+            profile.asstExamSections.map((ex, i) => (
+              <Row
+                key={i}
+                label={ex.label || ex.type || `Exam ${i + 1}`}
+                value={
+                  ex.overall_score
+                    ? `${ex.overall_score}${ex.reading ? ` (R:${ex.reading} W:${ex.writing} S:${ex.speaking} L:${ex.listening})` : ''}`
+                    : '—'
+                }
+              />
+            ))}
+        </Card>
+      )}
+
+      {Array.isArray(profile.academicHistory) && profile.academicHistory.length > 0 && (
+        <Card title="Academic history">
+          <ul className="space-y-2">
+            {profile.academicHistory.map((row, i) => (
+              <li key={i} className="text-sm text-neutral-700 flex justify-between gap-4 border-b border-neutral-100 pb-2 last:border-0">
+                <span>{row.degree || '—'}{row.institution ? ` · ${row.institution}` : ''}</span>
+                <span className="text-neutral-500">{row.grade || '—'} · {row.year || '—'}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {Array.isArray(profile.educationDetails) && profile.educationDetails.length > 0 && (
         <Card title="Education background">

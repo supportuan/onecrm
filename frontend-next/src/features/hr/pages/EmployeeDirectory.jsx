@@ -20,7 +20,7 @@ import {
   X,
   ClipboardCheck,
 } from 'lucide-react';
-import { getEmployees, assignAccessRole, bulkImportEmployees } from '@/services/hrApi';
+import { getEmployees, assignAccessRole, bulkImportEmployees, createEmployee } from '@/services/hrApi';
 import EmployeeDetailModal, { statusBadgeClass } from './EmployeeDetailModal';
 import { HR_ACCESS_ROLES } from '../constants/accessRoles';
 
@@ -163,9 +163,9 @@ export default function EmployeeDirectory() {
     setSubmitting(true);
     setCreateFeedback(null);
     try {
-      const res = await bulkImportEmployees([createForm]);
+      const res = await createEmployee(createForm);
       if (res.success) {
-        setCreateFeedback({ type: 'success', text: 'employee added successfully' });
+        setCreateFeedback({ type: 'success', text: 'Employee added successfully' });
         setCreateForm({
           name: '',
           email: '',
@@ -183,11 +183,10 @@ export default function EmployeeDirectory() {
           setCreateFeedback(null);
         }, 1200);
       } else {
-        setCreateFeedback({ type: 'error', text: res.error || 'failed to add employee' });
+        setCreateFeedback({ type: 'error', text: res.message || 'Failed to add employee' });
       }
     } catch (err) {
-      console.error(err);
-      setCreateFeedback({ type: 'error', text: 'connection error' });
+      setCreateFeedback({ type: 'error', text: err.message || 'Failed to add employee' });
     } finally {
       setSubmitting(false);
     }

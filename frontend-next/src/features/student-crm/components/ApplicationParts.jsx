@@ -35,6 +35,13 @@ import CatalogCourseFields from './CatalogCourseFields';
 
 const stageBadge = stageBadgeClass;
 
+const normalizeVisaDocs = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter((d) => d?.fileUrl);
+  if (raw.fileUrl) return [raw];
+  return [];
+};
+
 export const formatDate = (d) => {
   if (!d) return '—';
   try {
@@ -795,130 +802,111 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
 
 /* -------------------- Visa application -------------------- */
 
-export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading }) => {
-  const visaDoc = app.visaTracking?.documents || {};
+export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading, workflow = [] }) => {
+  const visaDocs = normalizeVisaDocs(app.visaTracking?.documents);
+  const [uploadLabel, setUploadLabel] = useState('');
   const [form, setForm] = useState(() => ({
     country: app.visaTracking?.country || app.country || '',
     status: app.visaTracking?.status || 'NOT_STARTED',
     appointmentDate: toDateInputValue(app.visaTracking?.appointmentDate),
     decisionDate: toDateInputValue(app.visaTracking?.decisionDate),
     notes: app.visaTracking?.notes || '',
-    fileUrl: visaDoc.fileUrl || '',
-    filename: visaDoc.filename || '',
   }));
 
   useEffect(() => {
-    const doc = app.visaTracking?.documents || {};
     setForm({
       country: app.visaTracking?.country || app.country || '',
       status: app.visaTracking?.status || 'NOT_STARTED',
       appointmentDate: toDateInputValue(app.visaTracking?.appointmentDate),
       decisionDate: toDateInputValue(app.visaTracking?.decisionDate),
       notes: app.visaTracking?.notes || '',
-      fileUrl: doc.fileUrl || '',
-      filename: doc.filename || '',
     });
   }, [app.id, app.visaTracking]);
 
-  const hasFile = Boolean(form.fileUrl);
+  const statusIdx = workflow.findIndex((s) => s.suggestedStatus === form.status);
 
   return (
     <div className="ui-surface px-6 py-5 space-y-5">
       <div>
         <h4 className="ui-text-h3">Visa application</h4>
         <p className="ui-text-meta mt-0.5">
-          Upload visa documents and track submission, appointment, and outcome.
+          Country-specific workflow, multi-document upload, and status tracking.
         </p>
       </div>
 
-      <div
-        className={`rounded-xl border-2 border-dashed p-6 transition ${
-          hasFile ? 'border-emerald-200 bg-emerald-50/40' : 'border-neutral-200 bg-neutral-50/40'
-        }`}
-      >
-        {hasFile ? (
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                <FileText size={16} />
-              </div>
-              <div className="min-w-0">
-                <p className="ui-text-strong truncate">{form.filename || 'Visa document'}</p>
-                {visaDoc.uploadedAt && (
-                  <p className="text-[11px] text-neutral-500">
-                    Uploaded {formatDate(visaDoc.uploadedAt)}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <a
-                href={form.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 ui-text-strong flex items-center gap-1.5 transition"
-              >
-                <Eye size={13} /> View
-              </a>
-              <a
-                href={form.fileUrl}
-                download={form.filename || 'visa-document'}
-                className="px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 ui-text-strong flex items-center gap-1.5 transition"
-              >
-                <Download size={13} /> Download
-              </a>
-              {canManage && onUpload && (
-                <label
-                  className={`px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white ui-text-strong !text-white flex items-center gap-1.5 cursor-pointer transition ${
-                    uploading ? 'opacity-60 pointer-events-none' : ''
-                  }`}
-                >
-                  {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                  Replace
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                    disabled={uploading}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) onUpload(file);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-        ) : canManage && onUpload ? (
-          <label
-            className={`flex flex-col items-center justify-center gap-2 py-4 cursor-pointer ${
-              uploading ? 'opacity-60 pointer-events-none' : ''
-            }`}
-          >
-            {uploading ? (
-              <Loader2 size={24} className="text-neutral-400 animate-spin" />
-            ) : (
-              <Upload size={24} className="text-neutral-400" />
-            )}
-            <p className="ui-text-strong text-neutral-700">
-              {uploading ? 'Uploading…' : 'Upload visa document'}
-            </p>
-            <p className="ui-text-meta">Approval letter, visa stamp, or CAS — PDF, JPG, PNG, DOC</p>
-            <input
-              type="file"
-              className="hidden"
-              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-              disabled={uploading}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onUpload(file);
-                e.target.value = '';
-              }}
-            />
-          </label>
+      {workflow.length > 0 && (
+        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {workflow.map((step, idx) => (
+            <li
+              key={step.key}
+              className={`rounded-lg border px-3 py-2 text-xs ${
+                statusIdx >= idx
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                  : 'border-neutral-200 bg-neutral-50 text-neutral-600'
+              }`}
+            >
+              <span className="font-medium">{idx + 1}. {step.label}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      <div className="rounded-xl border border-neutral-200 bg-neutral-50/40 p-4 space-y-3">
+        {visaDocs.length > 0 ? (
+          <ul className="space-y-2">
+            {visaDocs.map((doc, i) => (
+              <li key={i} className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-neutral-100">
+                <div className="min-w-0">
+                  <p className="ui-text-strong truncate">{doc.label || doc.filename || `Document ${i + 1}`}</p>
+                  {doc.uploadedAt && (
+                    <p className="text-[11px] text-neutral-500">Uploaded {formatDate(doc.uploadedAt)}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-xs border rounded-lg">
+                    View
+                  </a>
+                  <a href={doc.fileUrl} download={doc.filename} className="px-2 py-1 text-xs border rounded-lg">
+                    Download
+                  </a>
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : (
-          <p className="ui-text-meta text-center py-4">No visa document uploaded yet.</p>
+          <p className="ui-text-meta text-center py-2">No visa documents uploaded yet.</p>
+        )}
+
+        {canManage && onUpload && (
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end pt-2 border-t border-neutral-200">
+            <Field label="Document label (optional)" className="flex-1">
+              <input
+                value={uploadLabel}
+                onChange={(e) => setUploadLabel(e.target.value)}
+                className="ui-field"
+                placeholder="e.g. CAS letter, I-20"
+              />
+            </Field>
+            <label
+              className={`px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white ui-text-strong !text-white flex items-center justify-center gap-1.5 cursor-pointer transition ${
+                uploading ? 'opacity-60 pointer-events-none' : ''
+              }`}
+            >
+              {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+              Add document
+              <input
+                type="file"
+                className="hidden"
+                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                disabled={uploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onUpload(file, uploadLabel || undefined);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+          </div>
         )}
       </div>
 
@@ -993,6 +981,128 @@ export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading }) => {
             Save
           </button>
         </div>
+      )}
+    </div>
+  );
+};
+
+/* -------------------- Student portal: offer decision -------------------- */
+
+export const StudentOfferPanel = ({ app, onAccept, onReject, busy }) => {
+  const offer = app.offerLetter;
+  if (!offer?.fileUrl) return null;
+
+  const decided = offer.studentDecision && offer.studentDecision !== 'PENDING';
+
+  return (
+    <div className="ui-panel p-5 space-y-4">
+      <div>
+        <h2 className="text-sm font-semibold text-neutral-900">Offer letter</h2>
+        <p className="text-xs text-neutral-500 mt-1">
+          Review your offer and accept or decline before the deadline.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <a
+          href={offer.fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-neutral-200 rounded-lg hover:bg-neutral-50"
+        >
+          <FileText size={14} /> View offer letter
+        </a>
+        {offer.decisionDeadline && (
+          <span className="text-xs text-neutral-500">
+            Decision by {formatDate(offer.decisionDeadline)}
+          </span>
+        )}
+        {offer.conditional && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Conditional</span>
+        )}
+      </div>
+      {decided ? (
+        <p className="text-sm font-medium text-neutral-800">
+          You {offer.studentDecision === 'ACCEPTED' ? 'accepted' : 'declined'} this offer
+          {offer.decisionAt ? ` on ${formatDate(offer.decisionAt)}` : ''}.
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onAccept}
+            className="ui-btn-primary"
+          >
+            Accept offer
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onReject}
+            className="ui-btn-secondary"
+          >
+            Decline offer
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* -------------------- Student portal: visa status -------------------- */
+
+export const StudentVisaPanel = ({ app, workflow = [] }) => {
+  const visa = app.visaTracking;
+  if (!visa && !['VISA_PROCESS', 'OFFER_ACCEPTED', 'ENROLLED'].includes(app.stage)) return null;
+
+  const docs = normalizeVisaDocs(visa?.documents);
+  const statusIdx = workflow.findIndex((s) => s.suggestedStatus === visa?.status);
+
+  return (
+    <div className="ui-panel p-5 space-y-4">
+      <div>
+        <h2 className="text-sm font-semibold text-neutral-900">Visa status</h2>
+        <p className="text-xs text-neutral-500 mt-1">
+          {visa?.country || app.country} — {getVisaStatusLabel(visa?.status || 'NOT_STARTED')}
+        </p>
+      </div>
+      {workflow.length > 0 && (
+        <ol className="space-y-2">
+          {workflow.map((step, idx) => (
+            <li
+              key={step.key}
+              className={`text-sm rounded-lg px-3 py-2 border ${
+                statusIdx >= idx
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                  : 'border-neutral-200 text-neutral-600'
+              }`}
+            >
+              {idx + 1}. {step.label}
+            </li>
+          ))}
+        </ol>
+      )}
+      {(visa?.appointmentDate || visa?.decisionDate) && (
+        <div className="text-sm text-neutral-600 space-y-1">
+          {visa.appointmentDate && <p>Appointment: {formatDate(visa.appointmentDate)}</p>}
+          {visa.decisionDate && <p>Decision: {formatDate(visa.decisionDate)}</p>}
+        </div>
+      )}
+      {docs.length > 0 && (
+        <ul className="space-y-2">
+          {docs.map((doc, i) => (
+            <li key={i}>
+              <a
+                href={doc.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-neutral-700 hover:text-neutral-900 underline"
+              >
+                {doc.label || doc.filename || `Visa document ${i + 1}`}
+              </a>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

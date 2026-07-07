@@ -1,7 +1,9 @@
 import { AgencyPartnerStatus, CommissionStatus, UserRole } from '@prisma/client';
 import { prisma } from '../../prisma.js';
 import { hashPassword } from '../../utils/password.js';
-import { hasFullAgencyAccess, isAgencyFreelancer } from './scoping.js';
+import { hasFullAgencyAccess, isAgencyPartnerUser } from './scoping.js';
+import { uniqueAgencyCode, syncUserAgencyDetails } from './agency-partner.lifecycle.js';
+import { createReferralWithDedup } from './agency-referral.service.js';
 
 type Actor = { id?: number; role?: string };
 
@@ -21,7 +23,7 @@ export const getPartnerByUserId = (userId: number) =>
   prisma.agencyPartner.findUnique({ where: { userId }, include: PARTNER_INCLUDE });
 
 const resolvePartnerForActor = async (actor?: Actor, agencyPartnerId?: number) => {
-  if (isAgencyFreelancer(actor?.role)) {
+  if (isAgencyPartnerUser(actor?.role)) {
     if (!actor?.id) return null;
     return getPartnerByUserId(actor.id);
   }
@@ -31,27 +33,9 @@ const resolvePartnerForActor = async (actor?: Actor, agencyPartnerId?: number) =
   return null;
 };
 
-const syncUserAgencyDetails = async (
-  userId: number,
-  data: { agencyName: string; agencyCode: string; address?: string | null; city?: string | null; country?: string | null }
-) => {
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      agencyDetails: {
-        agencyName: data.agencyName,
-        agencyCode: data.agencyCode,
-        agencyAddress: data.address ?? null,
-        agencyCity: data.city ?? null,
-        agencyCountry: data.country ?? null,
-      },
-    },
-  });
-};
-
 export const getStatistics = async (actor?: Actor, agencyPartnerId?: number) => {
   const partner = await resolvePartnerForActor(actor, agencyPartnerId);
-  if (isAgencyFreelancer(actor?.role) && !partner) {
+  if (isAgencyPartnerUser(actor?.role) && !partner) {
     return {
       totalReferrals: 0,
       activeStudents: 0,
@@ -113,7 +97,7 @@ export const getStatistics = async (actor?: Actor, agencyPartnerId?: number) => 
 };
 
 export const listPartners = async (opts: { search?: string; status?: AgencyPartnerStatus; actor?: Actor } = {}) => {
-  if (isAgencyFreelancer(opts.actor?.role)) {
+  if (isAgencyPartnerUser(opts.actor?.role)) {
     const mine = opts.actor?.id ? await getPartnerByUserId(opts.actor.id) : null;
     return mine ? [mine] : [];
   }
@@ -139,7 +123,7 @@ export const listPartners = async (opts: { search?: string; status?: AgencyPartn
 export const getPartner = async (id: number, actor?: Actor) => {
   const partner = await prisma.agencyPartner.findUnique({ where: { id }, include: PARTNER_INCLUDE });
   if (!partner) return null;
-  if (isAgencyFreelancer(actor?.role) && partner.userId !== actor?.id) return null;
+  if (isAgencyPartnerUser(actor?.role) && partner.userId !== actor?.id) return null;
   return partner;
 };
 
@@ -156,10 +140,11 @@ export const createPartner = async (data: {
   city?: string;
   country?: string;
   commissionRate?: number;
+  services?: string;
   status?: AgencyPartnerStatus;
   notes?: string;
 }) => {
-  const agencyCode = (data.agencyCode || slugCode(data.agencyName)).toUpperCase();
+  const agencyCode = await uniqueAgencyCode(data.agencyCode || slugCode(data.agencyName));
 
   let userId = data.userId;
   if (!userId) {
@@ -196,8 +181,9 @@ export const createPartner = async (data: {
       address: data.address ?? null,
       city: data.city ?? null,
       country: data.country ?? null,
+      services: data.services ?? null,
       commissionRate: data.commissionRate ?? 10,
-      status: data.status ?? AgencyPartnerStatus.ACTIVE,
+      status: data.status ?? AgencyPartnerStatus.PENDING,
       notes: data.notes ?? null,
     },
     include: PARTNER_INCLUDE,
@@ -209,6 +195,7 @@ export const createPartner = async (data: {
     address: partner.address,
     city: partner.city,
     country: partner.country,
+    services: partner.services,
   });
 
   return partner;
@@ -225,6 +212,7 @@ export const updatePartner = async (
     address: string;
     city: string;
     country: string;
+    services: string;
     commissionRate: number;
     status: AgencyPartnerStatus;
     branding: Record<string, unknown>;
@@ -236,7 +224,7 @@ export const updatePartner = async (
   if (!existing) throw new Error('partner not found');
 
   const payload = { ...data };
-  if (isAgencyFreelancer(actor?.role)) {
+  if (isAgencyPartnerUser(actor?.role)) {
     delete payload.agencyCode;
     delete payload.commissionRate;
     delete payload.status;
@@ -278,7 +266,7 @@ export const listLeads = async (opts: {
   const skip = (page - 1) * limit;
 
   const partner = await resolvePartnerForActor(opts.actor, opts.agencyPartnerId);
-  if (isAgencyFreelancer(opts.actor?.role) && !partner) {
+  if (isAgencyPartnerUser(opts.actor?.role) && !partner) {
     return { items: [], total: 0, page, totalPages: 1, from: 0, to: 0 };
   }
 
@@ -354,7 +342,7 @@ export const listApplications = async (opts: {
   const skip = (page - 1) * limit;
 
   const partner = await resolvePartnerForActor(opts.actor, opts.agencyPartnerId);
-  if (isAgencyFreelancer(opts.actor?.role) && !partner) {
+  if (isAgencyPartnerUser(opts.actor?.role) && !partner) {
     return { items: [], total: 0, page, totalPages: 1, from: 0, to: 0 };
   }
 
@@ -422,35 +410,12 @@ export const createReferral = async (
   },
   actor?: Actor
 ) => {
-  if (isAgencyFreelancer(actor?.role)) {
+  if (isAgencyPartnerUser(actor?.role)) {
     const mine = actor?.id ? await getPartnerByUserId(actor.id) : null;
     if (!mine || mine.id !== data.agencyPartnerId) throw new Error('forbidden');
   }
 
-  if (!data.leadId && !data.studentId && !data.applicationId) {
-    throw new Error('leadId, studentId, or applicationId is required');
-  }
-
-  const partner = await prisma.agencyPartner.findUnique({ where: { id: data.agencyPartnerId } });
-  if (!partner) throw new Error('partner not found');
-
-  return prisma.agencyReferral.create({
-    data: {
-      agencyPartnerId: data.agencyPartnerId,
-      leadId: data.leadId ?? null,
-      studentId: data.studentId ?? null,
-      applicationId: data.applicationId ?? null,
-      referralCode: data.referralCode ?? partner.agencyCode,
-      status: data.status ?? 'REFERRED',
-      notes: data.notes ?? null,
-    },
-    include: {
-      lead: true,
-      student: true,
-      application: true,
-      agencyPartner: { select: { id: true, agencyName: true, agencyCode: true } },
-    },
-  });
+  return createReferralWithDedup(data);
 };
 
 export const listCommissions = async (opts: {
@@ -465,7 +430,7 @@ export const listCommissions = async (opts: {
   const skip = (page - 1) * limit;
 
   const partner = await resolvePartnerForActor(opts.actor, opts.agencyPartnerId);
-  if (isAgencyFreelancer(opts.actor?.role) && !partner) {
+  if (isAgencyPartnerUser(opts.actor?.role) && !partner) {
     return { items: [], total: 0, page, totalPages: 1, from: 0, to: 0 };
   }
 
@@ -512,7 +477,7 @@ export const createCommission = async (
   },
   actor?: Actor
 ) => {
-  if (isAgencyFreelancer(actor?.role)) {
+  if (isAgencyPartnerUser(actor?.role)) {
     throw new Error('only admins can create commissions');
   }
 
@@ -556,7 +521,7 @@ export const updateCommission = async (
   });
   if (!existing) throw new Error('commission not found');
 
-  if (isAgencyFreelancer(actor?.role)) {
+  if (isAgencyPartnerUser(actor?.role)) {
     const mine = actor?.id ? await getPartnerByUserId(actor.id) : null;
     if (!mine || mine.id !== existing.agencyPartnerId) throw new Error('forbidden');
     if (data.status && data.status !== existing.status) {
@@ -573,7 +538,7 @@ export const updateCommission = async (
           ? new Date()
           : undefined;
 
-  return prisma.agencyCommission.update({
+  const updated = await prisma.agencyCommission.update({
     where: { id },
     data: {
       amount: data.amount,
@@ -584,9 +549,25 @@ export const updateCommission = async (
       ...(paidAt !== undefined ? { paidAt } : {}),
     },
     include: {
-      agencyPartner: { select: { id: true, agencyName: true, agencyCode: true } },
+      agencyPartner: { select: { id: true, agencyName: true, agencyCode: true, userId: true } },
       student: { select: { id: true, fullName: true, email: true } },
       application: { select: { id: true, applicationCode: true } },
     },
   });
+
+  if (data.status && data.status !== existing.status && updated.agencyPartner?.userId) {
+    const { safeNotify } = await import('../notifications/recipients.js');
+    await safeNotify({
+      recipientId: updated.agencyPartner.userId,
+      templateKey: 'agent.commission_update',
+      vars: {
+        amount: updated.amount,
+        currency: updated.currency,
+        status: updated.status,
+        applicationCode: updated.application?.applicationCode,
+      },
+    });
+  }
+
+  return updated;
 };

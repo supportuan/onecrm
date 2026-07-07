@@ -46,6 +46,7 @@ import {
   createLeaveRequestSchema,
   processLeaveRequestSchema,
   updateEmployeeSchema,
+  createEmployeeSchema,
   createEmployeeDocumentSchema,
 } from './hr.validation.js';
 import { notifyRoles } from '../notifications/recipients.js';
@@ -191,6 +192,16 @@ export const bulkImportEmployees = async (req: Request, res: Response, next: Nex
     }
     const result = await hrService.bulkImportEmployees(rows);
     return sendSuccess(res, 'Employees imported successfully', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createEmployee = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validated = createEmployeeSchema.parse(req.body);
+    const data = await hrService.createEmployee(validated);
+    return sendSuccess(res, 'Employee created successfully', data, 201);
   } catch (error) {
     next(error);
   }

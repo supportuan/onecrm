@@ -249,9 +249,12 @@ export const getSources = async () => {
 export const createLead = async (data: any) => {
   await validateDuplicateLead(data.email, data.phone);
 
-  return await prisma.lead.create({
+  const referralCode = data.referralCode || data.agencyRef || data.ref;
+  const { referralCode: _r, agencyRef: _a, ref: _ref, ...leadData } = data;
+
+  const lead = await prisma.lead.create({
     data: {
-      ...data,
+      ...leadData,
       email: normalizeValue(data.email),
       phone: normalizeValue(data.phone),
     },
@@ -261,6 +264,19 @@ export const createLead = async (data: any) => {
       assignedBy: true,
     },
   });
+
+  if (referralCode) {
+    try {
+      const { attachReferralToLead } = await import(
+        '../../agency-crm/agency-referral.service.js'
+      );
+      await attachReferralToLead(lead.id, String(referralCode));
+    } catch (err) {
+      console.warn('[Agency CRM] referral attach skipped:', (err as Error)?.message);
+    }
+  }
+
+  return lead;
 };
 
 // export const updateLead = async (id: number, data: any) => {

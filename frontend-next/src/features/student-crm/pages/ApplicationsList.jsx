@@ -24,6 +24,7 @@ import {
   listPromotableLeads,
   promoteLead,
   promoteAllLeads,
+  getStatistics,
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
@@ -48,7 +49,7 @@ const STAGE_FILTERS = [
   { key: 'OFFER_RECEIVED', label: 'Offer received' },
   { key: 'OFFER_ACCEPTED', label: 'Offer accepted' },
   { key: 'OFFER_REJECTED', label: 'Rejected' },
-  { key: 'VISA_IN_PROGRESS', label: 'Visa' },
+  { key: 'VISA_PROCESS', label: 'Visa' },
   { key: 'ENROLLED', label: 'Enrolled' },
 ];
 
@@ -81,6 +82,7 @@ export default function ApplicationsList() {
   const [promotableExpanded, setPromotableExpanded] = useState(false);
   const [promotingId, setPromotingId] = useState(null);
   const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
+  const [stats, setStats] = useState(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -108,6 +110,9 @@ export default function ApplicationsList() {
       .catch(() => {});
     getFormOptions()
       .then((r) => setFormOptions(r?.data || { countries: [], industries: [] }))
+      .catch(() => {});
+    getStatistics()
+      .then((r) => setStats(r?.data || null))
       .catch(() => {});
   }, [refresh]);
 
@@ -268,6 +273,22 @@ export default function ApplicationsList() {
           )}
         </div>
       </div>
+
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          {[
+            ['Students', stats.totalStudents],
+            ['Enrolled', stats.enrolled],
+            ['Active apps', allApps.filter((a) => !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage)).length],
+            ['In visa', stageCounts.VISA_PROCESS || 0],
+          ].map(([label, value]) => (
+            <div key={label} className="ui-surface px-4 py-3">
+              <p className="ui-text-meta">{label}</p>
+              <p className="text-xl font-semibold text-neutral-900 mt-0.5">{value ?? '—'}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Promotable leads — collapsible */}
       {canManage && visibleLeads.length > 0 && (
