@@ -27,6 +27,19 @@ const getMetaStatus = (status?: string) => {
   }
 };
 
+const getMetaDate = (date?: string | Date | null) => {
+  if (!date) return null;
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+};
+
+const getDefaultEndDate = () => {
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 30);
+  return endDate.toISOString();
+};
+
 const normalizeCountry = (country?: string) => {
   const value = String(country || "IN").trim().toUpperCase();
 
@@ -137,25 +150,94 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     // ===========================
     // CREATE ADSET
     // ===========================
+    // const adSetPayload = {
+    //   name: `${campaign.name} Ad Set`,
+    //   campaign_id: metaCampaignId,
+
+    //   daily_budget: Math.max(Number(campaign.budget || 100) * 100, 10000),
+
+    //   billing_event: 'IMPRESSIONS',
+    //   optimization_goal: 'LINK_CLICKS',
+    //   bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+    //   destination_type: 'WEBSITE',
+
+    //   // targeting: {
+    //   //   geo_locations: {
+    //   //     countries: [template.targetCountry || 'IN'],
+    //   //   },
+    //   //   targeting_automation: {
+    //   //     advantage_audience: 0,
+    //   //   },
+    //   // },
+    //   targeting: {
+    //     geo_locations: {
+    //       countries: [template.targetCountry || 'IN'],
+    //     },
+
+    //     ...(useInstagram
+    //       ? {
+    //         publisher_platforms: ['facebook', 'instagram'],
+    //         facebook_positions: ['feed'],
+    //         instagram_positions: ['stream', 'story', 'reels'],
+    //       }
+    //       : {
+    //         publisher_platforms: ['facebook'],
+    //         facebook_positions: ['feed'],
+    //       }),
+
+    //     targeting_automation: {
+    //       advantage_audience: 0,
+    //     },
+    //   },
+
+    //   status: metaStatus,
+    //   access_token: accessToken,
+    // };
+
+    // Build campaign schedule
+    const start = campaign.startDate
+      ? new Date(campaign.startDate)
+      : new Date();
+
+    const end = campaign.endDate
+      ? new Date(campaign.endDate)
+      : new Date();
+
+    // Start at beginning of selected day
+    start.setHours(0, 0, 0, 0);
+
+    // End at end of selected day
+    end.setHours(23, 59, 59, 999);
+
+    // Meta requires at least 24 hours for daily budget campaigns
+    if (end.getTime() - start.getTime() < 24 * 60 * 60 * 1000) {
+      end.setDate(end.getDate() + 1);
+    }
+
+    const startTime = start.toISOString();
+    const endTime = end.toISOString();
+
+    console.log("Meta Start Time:", startTime);
+    console.log("Meta End Time:", endTime);
+    const details = getLaunchDetails(campaign);
+
+    const dailyBudget =
+      Number(details.dailyBudget || campaign.budget || 100);
+
     const adSetPayload = {
       name: `${campaign.name} Ad Set`,
       campaign_id: metaCampaignId,
 
-      daily_budget: Math.max(Number(campaign.budget || 100) * 100, 10000),
+      daily_budget: Math.max(dailyBudget * 100, 10000),
+
+      start_time: startTime,
+      end_time: endTime,
 
       billing_event: 'IMPRESSIONS',
       optimization_goal: 'LINK_CLICKS',
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       destination_type: 'WEBSITE',
 
-      // targeting: {
-      //   geo_locations: {
-      //     countries: [template.targetCountry || 'IN'],
-      //   },
-      //   targeting_automation: {
-      //     advantage_audience: 0,
-      //   },
-      // },
       targeting: {
         geo_locations: {
           countries: [template.targetCountry || 'IN'],
@@ -195,7 +277,6 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     // ===========================
     // UPLOAD IMAGE / VIDEO SELECT
     // ===========================
-    const details = getLaunchDetails(campaign);
     const mediaHash = details.mediaHash;
     // Normalise to uppercase so both 'VIDEO' and 'video' are accepted
     const mediaType = String(details.mediaType || '').toUpperCase();
@@ -273,9 +354,9 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     if (isVideo) {
       creativePayload.object_story_spec = {
         page_id: pageId,
-        // ...(instagramActorId ? { instagram_actor_id: instagramActorId } : {}),
+        // ...(instagramActorId ? { instagram_user_id: instagramActorId } : {}),
         // ...(useInstagram && instagramActorId
-        //   ? { instagram_actor_id: instagramActorId }
+        //   ? { instagram_user_id: instagramActorId }
         //   : {}),
         ...(useInstagram && instagramActorId
           ? { instagram_user_id: instagramActorId }
@@ -295,7 +376,7 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     } else {
       creativePayload.object_story_spec = {
         page_id: pageId,
-        // ...(instagramActorId ? { instagram_actor_id: instagramActorId } : {}),
+        // ...(instagramActorId ? { instagram_user_id: instagramActorId } : {}),
         ...(useInstagram && instagramActorId
           ? { instagram_user_id: instagramActorId }
           : {}),
@@ -408,7 +489,8 @@ export const uploadMediaToMeta = async (file: any): Promise<{ hash: string; type
     formData.append('source', blob, file.originalname);
     formData.append('access_token', accessToken);
 
-    console.log(`[Meta Campaign Service] Uploading video to act_${adAccountId}/advideos...`);
+    // console.log(`[Meta Campaign Service] Uploading video to act_${adAccountId}/advideos...`);
+    console.log(`[Meta Campaign Service] Uploading video to ${adAccountId}/advideos...`);
     const response = await axios.post(`${baseUrl}/${adAccountId}/advideos`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
