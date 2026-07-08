@@ -767,7 +767,8 @@ export const createCampaign = async (data: any) => {
   if (data.type === 'EMAIL') {
     emailContent = buildCampaignEmailTemplate(data, {});
   } else if (data.type === 'SOCIAL_MEDIA') {
-    metaAdId = await createAd(data, data.launchDetails);
+    // metaAdId = await createAd(data, data.launchDetails);
+    metaAdId = undefined;
   }
 
   return await prisma.campaign.create({

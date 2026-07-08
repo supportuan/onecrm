@@ -191,22 +191,181 @@ export const sendResetEmail = async (email: string, token: string) => {
         from: getEmailFrom(),
         to: email,
         subject: "Reset your One CRM password",
+        //     html: `
+        //   <div style="font-family: Arial, sans-serif;">
+        //     <h2>Password Reset</h2>
+        //     <p>Click the button below to reset your password.</p>
+
+        //     <a href="${resetUrl}"
+        //       style="display:inline-block;background:#111827;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;">
+        //       Reset Password
+        //     </a>
+
+        //     <p style="margin-top:20px;">Or copy this link:</p>
+        //     <p>${resetUrl}</p>
+
+        //     <p>This link will expire in 1 hour.</p>
+        //   </div>
+        // `,
+
         html: `
-      <div style="font-family: Arial, sans-serif;">
-        <h2>Password Reset</h2>
-        <p>Click the button below to reset your password.</p>
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="UTF-8" />
+            </head>
+            <body style="margin:0;padding:30px;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;">
 
-        <a href="${resetUrl}"
-          style="display:inline-block;background:#111827;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;">
-          Reset Password
-        </a>
+            <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td align="center">
 
-        <p style="margin-top:20px;">Or copy this link:</p>
-        <p>${resetUrl}</p>
+                <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
 
-        <p>This link will expire in 1 hour.</p>
-      </div>
-    `,
+                    <!-- Header -->
+                    <tr>
+                    <td style="background:#0f172a;padding:24px 32px;">
+
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td width="70" valign="middle">
+                            <img
+                                src="https://your-domain.com/logo.png"
+                                alt="OneCRM"
+                                width="52"
+                                height="52"
+                                style="display:block;border-radius:8px;"
+                            />
+                            </td>   
+
+                            <td valign="middle">
+                            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">
+                                ONECRM
+                            </h1>
+
+                            <p style="margin:6px 0 0;color:#cbd5e1;font-size:14px;">
+                                Password Reset Request
+                            </p>
+                            </td>
+                        </tr>
+                        </table>
+
+                    </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                    <td style="padding:40px;">
+
+                        <h2 style="margin:0;color:#111827;font-size:24px;">
+                        Reset Your Password
+                        </h2>
+
+                        <p style="margin-top:20px;font-size:15px;line-height:1.8;color:#475569;">
+                        We received a request to reset the password for your
+                        <strong>OneCRM</strong> account.
+                        </p>
+
+                        <div style="
+                        margin:30px 0;
+                        padding:20px;
+                        background:#eff6ff;
+                        border-left:5px solid #2563eb;
+                        border-radius:10px;
+                        ">
+                        <p style="margin:0;font-size:15px;color:#1e3a8a;font-weight:600;">
+                            Click the button below to create a new password.
+                        </p>
+                        </div>
+
+                        <div style="text-align:center;margin:35px 0;">
+
+                        <a
+                            href="${resetUrl}"
+                            style="
+                            display:inline-block;
+                            padding:14px 34px;
+                            background:#2563eb;
+                            color:#ffffff;
+                            text-decoration:none;
+                            border-radius:8px;
+                            font-size:15px;
+                            font-weight:600;
+                            "
+                        >
+                            Reset Password
+                        </a>
+
+                        </div>
+
+                        <p style="font-size:14px;color:#475569;line-height:1.8;">
+                        If the button above doesn't work, copy and paste the following
+                        link into your browser:
+                        </p>
+
+                        <div style="
+                        margin-top:15px;
+                        padding:15px;
+                        background:#f8fafc;
+                        border:1px solid #e2e8f0;
+                        border-radius:8px;
+                        word-break:break-all;
+                        color:#2563eb;
+                        font-size:13px;
+                        ">
+                        ${resetUrl}
+                        </div>
+
+                        <div style="
+                        margin-top:30px;
+                        padding:18px;
+                        background:#fff7ed;
+                        border-left:5px solid #f59e0b;
+                        border-radius:10px;
+                        ">
+                        <strong style="color:#92400e;">
+                            Security Notice
+                        </strong>
+
+                        <p style="margin:10px 0 0;font-size:14px;line-height:1.7;color:#7c2d12;">
+                            • This password reset link is valid for <strong>1 hour</strong>.<br/>
+                            • If you did not request a password reset, you can safely ignore this email.
+                            Your password will remain unchanged.
+                        </p>
+                        </div>
+
+                        <p style="margin-top:35px;font-size:15px;color:#111827;">
+                        Regards,<br/>
+                        <strong>OneCRM Team</strong>
+                        </p>
+
+                    </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                    <td style="background:#f8fafc;border-top:1px solid #e5e7eb;padding:18px;text-align:center;">
+
+                        <p style="margin:0;font-size:12px;color:#64748b;">
+                        This is an automated email. Please do not reply to this message.
+                        </p>
+
+                        <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
+                        © ${new Date().getFullYear()} OneCRM. All rights reserved.
+                        </p>
+
+                    </td>
+                    </tr>
+
+                </table>
+
+                </td>
+            </tr>
+            </table>
+
+            </body>
+            </html>
+            `,
     });
 
     console.info(`Password reset email sent to ${email}`);
