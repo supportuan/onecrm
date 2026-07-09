@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import {
   getApplication,
+  listMyApplications,
   uploadApplicationDocument,
   respondToOffer,
   getProcessStages,
@@ -33,8 +34,15 @@ export default function StudentApplicationDetail({ applicationId }) {
   const fetchDetail = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getApplication(applicationId);
-      const data = res?.data || null;
+      let data = null;
+      try {
+        const res = await getApplication(applicationId);
+        data = res?.data || null;
+      } catch {
+        const listRes = await listMyApplications();
+        const items = Array.isArray(listRes?.data) ? listRes.data : [];
+        data = items.find((a) => String(a.id) === String(applicationId)) || null;
+      }
       setApp(data);
       if (data?.country) {
         const stagesRes = await getProcessStages(data.country);

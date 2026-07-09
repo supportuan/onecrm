@@ -12,7 +12,11 @@ const numId = (raw: any) => {
 
 // -------------------- Students --------------------
 
-const actor = (req: Request) => ({ id: req.user?.id, role: req.user?.role });
+const actor = (req: Request) => ({
+  id: req.user?.id,
+  role: req.user?.role,
+  email: req.user?.email,
+});
 
 const assertApplicationAccess = async (req: Request, applicationId: number) => {
   const app = await service.getApplication(applicationId, actor(req));

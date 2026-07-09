@@ -24,7 +24,7 @@ router.get('/statistics', view, controller.getStatistics);
 
 // Students — self-service portal
 router.get('/students/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getMyStudent);
-router.put('/students/me', studentSelfOr('MANAGE_STUDENT_CRM'), controller.updateMyStudent);
+router.put('/students/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.updateMyStudent);
 router.get('/applications/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.listMyApplications);
 router.get('/form-options', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getFormOptions);
 router.get('/students', view, controller.listStudents);
@@ -43,7 +43,7 @@ router.delete('/students/:id/universities/:universityId', manage, controller.rem
 
 // Applications — list/get
 router.get('/applications', view, controller.listApplications);
-router.get('/applications/:id', view, controller.getApplication);
+router.get('/applications/:id', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getApplication);
 
 // Applications — write
 router.post('/applications', manage, controller.createApplication);
