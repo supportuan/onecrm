@@ -26,6 +26,7 @@ import {
   StudentVisaPanel,
   formatDate,
 } from '@/features/student-crm/components/ApplicationParts';
+import StudentPaymentPanel from '../components/StudentPaymentPanel';
 import { getStageLabel } from '@/features/student-crm/constants';
 import StudentPaymentPanel from '../components/StudentPaymentPanel';
 import StudentWorkflowGuide, { resolveStudentWorkflow } from '../components/StudentWorkflowGuide';
