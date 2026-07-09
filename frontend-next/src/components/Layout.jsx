@@ -88,10 +88,12 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuth();
 
   const publicRoutes = [
     '/',
@@ -103,9 +105,13 @@ const Layout = ({ children }) => {
     '/change-password',
   ];
 
-  const isPublicPage = publicRoutes.includes(pathname);
+  const isPublicPage =
+    publicRoutes.includes(pathname) ||
+    pathname?.startsWith('/applicant') ||
+    pathname?.startsWith('/super-admin');
+  const isStudentPortal = user?.role === 'STUDENT';
 
-  if (isPublicPage) {
+  if (isPublicPage || isStudentPortal) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900">
         {children}

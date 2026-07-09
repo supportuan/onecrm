@@ -101,7 +101,7 @@ export const ROLE_DESCRIPTIONS = {
   COUNSELLOR: 'counsellor / advisor. marketing + student crm management, self-service hr.',
   TELECALLER: 'telecaller. view-only on marketing and student crm; self-service hr.',
   AGENCY_FREELANCER: 'agency partner / freelancer. agency crm + student crm visibility.',
-  STUDENT: 'student. student crm only.',
+  STUDENT: 'student. applicant portal only (profile and own applications).',
 };
 
 /** Roles hidden from the Admin > Roles & Permissions editor UI. */
@@ -157,7 +157,7 @@ export const ROLE_PERMISSIONS = {
     'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
   ],
-  STUDENT: ['VIEW_STUDENT_CRM'],
+  STUDENT: [],
 };
 
 const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_');
