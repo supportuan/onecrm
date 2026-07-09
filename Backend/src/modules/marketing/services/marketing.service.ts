@@ -14,6 +14,7 @@ import {
 } from "../../../utils/validation.js";
 import { buildCampaignEmailTemplate } from './emailTemplate.service.js';
 import { syncMetaCampaignInsights } from './metaInsights.service.js';
+import { getDefaultTenantId } from '../../../utils/tenant-default.js';
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {
