@@ -96,7 +96,7 @@ export const getDefaultModuleAccessByRole = (role: string) => {
   if (role === "HR") {
     giveModuleActions("HR", ["VIEW", "EDIT"]);
   } else if (role === "STUDENT") {
-    giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
+    // Students use the applicant portal only — no staff CRM sidebar access.
   } else if (role === "AGENT") {
     giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
   } else if (role === "COUNSELLOR") {

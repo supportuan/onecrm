@@ -72,9 +72,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
   ],
-  STUDENT: [
-    'VIEW_STUDENT_CRM',
-  ],
+  STUDENT: [],
 };
 
 /**

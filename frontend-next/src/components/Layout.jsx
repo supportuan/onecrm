@@ -4,41 +4,13 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
-import { StaffAutoPageHeader, StaffLayoutProvider } from './StaffLayoutContext';
 import { useAuth } from '@/lib/auth/AuthContext';
-import {
-  SIDEBAR_OPEN,
-  SIDEBAR_COLLAPSED,
-  STAFF_SIDEBAR_STORAGE_KEY,
-} from '@/lib/layout-shell';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STAFF_SIDEBAR_STORAGE_KEY);
-      if (stored !== null) setSidebarOpen(stored === 'true');
-    } catch {
-      /* ignore */
-    }
-    setMounted(true);
-  }, []);
-
-  const toggleSidebar = () => {
-    setSidebarOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(STAFF_SIDEBAR_STORAGE_KEY, String(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  };
 
   const publicRoutes = [
     '/',
