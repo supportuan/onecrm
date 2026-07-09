@@ -130,6 +130,28 @@ export const respondToOffer = async (applicationId, decision) =>
     await tenantFetch(`${API_URL}/applications/${applicationId}/offer/decision`, json({ decision }))
   );
 
+// -------------------- Payments --------------------
+export const getApplicationReadiness = async (applicationId) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/readiness`));
+
+export const listApplicationFees = async (applicationId) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/fees`));
+
+export const upsertApplicationFee = async (applicationId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/fees`, json(payload)));
+
+export const listMyPayments = async () => handleResponse(await tenantFetch(`${API_URL}/payments/me`));
+
+export const createPaymentOrder = async (applicationId, feeId) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/payments/create-order`, json({ feeId }))
+  );
+
+export const verifyPayment = async (applicationId, payload) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/payments/verify`, json(payload))
+  );
+
 // -------------------- Lead → Application --------------------
 export const convertLeadToApplication = async (leadId, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/from-lead/${leadId}`, json(payload)));

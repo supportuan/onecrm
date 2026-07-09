@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Pencil } from 'lucide-react';
 import { getMyStudent } from '@/services/studentCrmApi';
 import { STAGE_LABELS } from '../constants';
 
@@ -31,14 +29,10 @@ export default function ProfileViewPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900">My profile</h1>
-          <p className="text-sm text-neutral-500 mt-1">Your personal and study details on file.</p>
+          <p className="text-sm text-neutral-500 mt-1">
+            View-only. Your counsellor maintains these details — contact them to request changes.
+          </p>
         </div>
-        {!profile.isEnrolled && (
-          <Link href="/applicant/profile/edit" className="ui-btn-primary gap-2">
-            <Pencil className="h-4 w-4" />
-            Edit profile
-          </Link>
-        )}
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">

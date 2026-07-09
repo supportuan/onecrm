@@ -1834,6 +1834,7 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
   const passwordHash = await hashPassword(tempPassword);
 
   // 4️⃣ Create STUDENT user
+  const tenantId = await getDefaultTenantId(lead.assignedCounsellorId ?? null);
   const user = await prisma.user.create({
     data: {
       fullName: lead.fullName,
@@ -1841,8 +1842,10 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
       phone: lead.phone,
       passwordHash,
       role: UserRole.STUDENT,
+      tenantId,
       isActive: true,
       isApproved: true,
+      mustChangePassword: true,
     },
   });
 

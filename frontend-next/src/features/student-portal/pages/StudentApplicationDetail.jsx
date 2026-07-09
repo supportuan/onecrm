@@ -9,6 +9,7 @@ import {
   uploadApplicationDocument,
   respondToOffer,
   getProcessStages,
+  getApplicationReadiness,
 } from '@/services/studentCrmApi';
 import {
   DocumentChecklist,
@@ -16,10 +17,12 @@ import {
   StudentVisaPanel,
   formatDate,
 } from '@/features/student-crm/components/ApplicationParts';
+import StudentPaymentPanel from '../components/StudentPaymentPanel';
 import { getStageLabel } from '@/features/student-crm/constants';
 
 export default function StudentApplicationDetail({ applicationId }) {
   const [app, setApp] = useState(null);
+  const [readiness, setReadiness] = useState(null);
   const [workflow, setWorkflow] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingDocId, setUploadingDocId] = useState(null);
@@ -44,6 +47,10 @@ export default function StudentApplicationDetail({ applicationId }) {
         data = items.find((a) => String(a.id) === String(applicationId)) || null;
       }
       setApp(data);
+      if (data?.id) {
+        const readinessRes = await getApplicationReadiness(data.id);
+        setReadiness(readinessRes?.data || null);
+      }
       if (data?.country) {
         const stagesRes = await getProcessStages(data.country);
         setWorkflow(stagesRes?.data?.visaWorkflow || []);
@@ -140,8 +147,6 @@ export default function StudentApplicationDetail({ applicationId }) {
         onReject={() => handleOfferDecision('REJECTED')}
       />
 
-      <StudentVisaPanel app={app} workflow={workflow} />
-
       <DocumentChecklist
         app={app}
         canManage={false}
@@ -149,6 +154,10 @@ export default function StudentApplicationDetail({ applicationId }) {
         onUpload={handleDocUpload}
         uploadingDocId={uploadingDocId}
       />
+
+      <StudentPaymentPanel app={app} readiness={readiness} onPaid={fetchDetail} />
+
+      <StudentVisaPanel app={app} workflow={workflow} />
     </div>
   );
 }
