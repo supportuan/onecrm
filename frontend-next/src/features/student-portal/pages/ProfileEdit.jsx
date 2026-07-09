@@ -141,7 +141,12 @@ export default function ProfileEditPage() {
       });
       router.push('/applicant/profile/view');
     } catch (err) {
-      setMsg(err.message || 'Save failed');
+      const msg = err.message || 'Save failed';
+      setMsg(
+        msg.includes('locked') || msg.includes('enrolled')
+          ? 'Your profile is locked by your counsellor. Please contact them to update your details.'
+          : msg
+      );
     } finally {
       setSaving(false);
     }
@@ -161,7 +166,7 @@ export default function ProfileEditPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900">Edit profile</h1>
-          <p className="text-sm text-neutral-500 mt-1">Update your personal details and study preferences.</p>
+          <p className="text-sm text-neutral-500 mt-1">Update your personal details and study preferences. You can save changes multiple times until your counsellor marks you as enrolled.</p>
         </div>
         <Link href="/applicant/profile/view" className="ui-btn-secondary">
           Cancel

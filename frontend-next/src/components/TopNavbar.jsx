@@ -176,9 +176,10 @@
 'use client';
 
 import Image from 'next/image';
-import { Bell, LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
+import NotificationBell from '@/components/NotificationBell';
 
 const TopNavbar = ({ onToggleSidebar }) => {
     const router = useRouter();
@@ -304,16 +305,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
 
             {/* Right */}
             <div className="flex shrink-0 items-center gap-5">
-                <button
-                    type="button"
-                    className="relative text-slate-400 transition hover:text-slate-600 cursor-pointer"
-                    onClick={() => router.push('/notifications')}
-                >
-                    <Bell className="h-5 w-5 stroke-[1.5]" />
-                    <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-bold text-slate-950 ring-1 ring-white">
-                        5
-                    </span>
-                </button>
+                <NotificationBell />
 
                 <div className="flex items-center gap-3">
                     {user && (

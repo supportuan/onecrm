@@ -78,11 +78,29 @@ export const getStudent = async (id: number, actor?: Actor) => {
   return student;
 };
 
-export const getStudentByUserId = async (userId: number) =>
-  prisma.student.findFirst({
+export const getStudentByUserId = async (userId: number) => {
+  let student = await prisma.student.findFirst({
     where: { userId, deletedAt: null },
     include: STUDENT_INCLUDE,
   });
+  if (student) return student;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user?.email) return null;
+
+  student = await prisma.student.findFirst({
+    where: { email: user.email, deletedAt: null },
+    include: STUDENT_INCLUDE,
+  });
+  if (student && !student.userId) {
+    await prisma.student.update({ where: { id: student.id }, data: { userId } });
+    student = await prisma.student.findFirst({
+      where: { id: student.id },
+      include: STUDENT_INCLUDE,
+    });
+  }
+  return student;
+};
 
 const buildFullName = (data: { firstName?: string; lastName?: string; fullName?: string }) => {
   if (data.fullName?.trim()) return data.fullName.trim();
@@ -172,11 +190,14 @@ export const updateStudent = async (id: number, data: Record<string, any>, actor
   return getStudent(id, actor);
 };
 
-/** Student self-service update — bypasses counsellor scope */
+/** Student self-service update — may repeat until counsellor marks enrolled. */
 export const updateMyStudentProfile = async (userId: number, data: Record<string, any>) => {
   const current = await getStudentByUserId(userId);
   if (!current) throw new Error('student profile not found');
-  return updateStudent(current.id, data);
+  if (current.isEnrolled) {
+    throw new Error('Your profile is locked. Contact your counsellor to request changes.');
+  }
+  return updateStudent(current.id, data, { id: userId, role: 'STUDENT' });
 };
 
 export const listMyApplications = async (userId: number) => {
