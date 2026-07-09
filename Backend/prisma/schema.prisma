@@ -462,6 +462,20 @@ model Campaign {
   emailContent       Json?
   metaAdId           String?
 
+  // Meta reporting fields
+  metaCampaignId  String?
+  metaAdSetId     String?
+  metaCreativeId  String?
+
+  metaSpend       Float    @default(0)
+  metaImpressions Int      @default(0)
+  metaReach       Int      @default(0)
+  metaClicks      Int      @default(0)
+  metaCpc         Float    @default(0)
+  metaCpm         Float    @default(0)
+  metaCtr         Float    @default(0)
+  lastMetaSyncAt  DateTime?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -1929,7 +1943,7 @@ model CampaignLaunchLog {
   id          Int      @id @default(autoincrement())
   campaignId  Int
   launchedBy  Int?
-  launchedAt  DateTime @default(now())
+  launchedAt  DateTime? @default(now())
   status      String
   details     Json?
   createdAt   DateTime @default(now())

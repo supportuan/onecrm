@@ -1,6 +1,7 @@
 
 import axios from 'axios';
 import { buildSocialMediaPostTemplate } from './socialMediaTemplate.service.js';
+import { prisma } from "../../../prisma.js";
 
 const normalizeAdAccountId = (value?: string) => {
   if (!value) return '';
@@ -440,6 +441,25 @@ export const execute = async (campaign: any, leads: any[] = []) => {
     console.log('Ad Created:', adRes.data);
 
     const metaAdId = adRes.data.id;
+
+    await prisma.campaign.update({
+      where: { id: campaign.id },
+      data: {
+        metaCampaignId,
+        metaAdSetId,
+        metaCreativeId,
+        metaAdId,
+
+        metaSpend: 0,
+        metaImpressions: 0,
+        metaReach: 0,
+        metaClicks: 0,
+        metaCpc: 0,
+        metaCpm: 0,
+        metaCtr: 0,
+        lastMetaSyncAt: new Date(),
+      },
+    });
 
     return {
       success: true,

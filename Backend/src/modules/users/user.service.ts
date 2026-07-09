@@ -28,8 +28,8 @@ const MODULE_ACCESS_OPTIONS = [
     options: [
       "Lead Management",
       "Campaigns",
-      "Automation",
-      "Landing Pages & Forms",
+      // "Automation",
+      // "Landing Pages & Forms",
       "Marketing Analytics",
     ],
   },

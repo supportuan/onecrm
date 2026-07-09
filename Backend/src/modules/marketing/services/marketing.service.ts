@@ -11,6 +11,7 @@ import {
   normalizeValue,
 } from "../../../utils/validation.js";
 import { buildCampaignEmailTemplate } from './emailTemplate.service.js';
+import { syncMetaCampaignInsights } from './metaInsights.service.js';
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {
@@ -649,25 +650,90 @@ export const getCampaigns = async (filters: {
     }
   });
 
+
   let totalBudget = 0;
   let totalSpent = 0;
   let totalLeads = 0;
 
-  const allItemsMapped = allCampaigns.map(c => {
+  // const allItemsMapped = allCampaigns.map(c => {
+  await Promise.all(
+    allCampaigns.map(async (campaign) => {
+      if (
+        campaign.type === CampaignType.SOCIAL_MEDIA &&
+        campaign.metaCampaignId
+      ) {
+        await syncMetaCampaignInsights(campaign.id);
+      }
+    })
+  );
+
+  // Fetch fresh campaigns after syncing
+  const refreshedCampaigns = await prisma.campaign.findMany({
+    where: whereClause,
+    include: {
+      leads: {
+        include: {
+          lead: true,
+        },
+      },
+      _count: {
+        select: {
+          leads: true,
+        },
+      },
+    },
+  });
+
+  const allItemsMapped = refreshedCampaigns.map((c) => {
     const dbLeadsCount = c._count.leads;
     const dbConversionsCount = c.leads.filter(l => l.lead.status === 'CONVERTED').length;
     const metrics = getCampaignMetrics(c.name, dbLeadsCount, dbConversionsCount);
 
     totalBudget += c.budget || 0;
-    totalSpent += c.spent || 0;
+    // totalSpent += c.spent || 0;
+    totalSpent += c.type === CampaignType.SOCIAL_MEDIA
+      ? c.metaSpend || 0
+      : c.spent || 0;
     totalLeads += metrics.leads;
 
+    // return {
+    //   id: c.id,
+    //   name: c.name,
+    //   type: c.type,
+    //   budget: c.budget,
+    //   spent: c.spent,
+    //   startDate: c.startDate,
+    //   endDate: c.endDate,
+    //   status: c.status,
+    //   targetAudience: c.targetAudience,
+    //   description: c.description,
+    //   createdAt: c.createdAt,
+    //   updatedAt: c.updatedAt,
+    //   leadsCount: metrics.leads,
+    //   conversionsCount: metrics.conversions,
+    //   conversionRate: metrics.rate
+    // };
     return {
       id: c.id,
       name: c.name,
       type: c.type,
       budget: c.budget,
       spent: c.spent,
+
+      // Meta reporting fields
+      metaCampaignId: c.metaCampaignId,
+      metaAdSetId: c.metaAdSetId,
+      metaCreativeId: c.metaCreativeId,
+      metaAdId: c.metaAdId,
+      metaSpend: c.metaSpend,
+      metaImpressions: c.metaImpressions,
+      metaReach: c.metaReach,
+      metaClicks: c.metaClicks,
+      metaCpc: c.metaCpc,
+      metaCpm: c.metaCpm,
+      metaCtr: c.metaCtr,
+      lastMetaSyncAt: c.lastMetaSyncAt,
+
       startDate: c.startDate,
       endDate: c.endDate,
       status: c.status,
@@ -677,7 +743,7 @@ export const getCampaigns = async (filters: {
       updatedAt: c.updatedAt,
       leadsCount: metrics.leads,
       conversionsCount: metrics.conversions,
-      conversionRate: metrics.rate
+      conversionRate: metrics.rate,
     };
   });
 
