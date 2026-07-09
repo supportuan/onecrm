@@ -103,6 +103,21 @@ enum DocumentStatus {
   REJECTED
 }
 
+enum ApplicationFeeType {
+  APPLICATION_FEE
+  SERVICE_FEE
+  VISA_FEE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  CREATED
+  PAID
+  FAILED
+  REFUNDED
+}
+
 enum OfferDecisionStatus {
   PENDING
   ACCEPTED
@@ -660,6 +675,7 @@ model User {
   studentsAsContact       Student[]               @relation("StudentContact")
   applicationsAssigned    Application[]           @relation("ApplicationAssignee")
   applicationStageChanges ApplicationStageEvent[] @relation("StageChangedBy")
+  applicationPayments     ApplicationPayment[]    @relation("StudentPayments")
   agencyPartner           AgencyPartner?
   agencyActivities        AgencyActivity[]        @relation("AgencyActivityActor")
   hrCandidateStageChanges HrCandidateStageEvent[] @relation("HrCandidateStageChangedBy")
@@ -1039,6 +1055,8 @@ model Application {
   assignedTo        User?                   @relation("ApplicationAssignee", fields: [assignedToId], references: [id])
   stageEvents       ApplicationStageEvent[]
   documents         ApplicationDocument[]
+  fees              ApplicationFee[]
+  payments          ApplicationPayment[]
   offerLetter       OfferLetter?
   visaTracking      VisaTracking?
   agencyReferrals   AgencyReferral[]
@@ -1217,6 +1235,50 @@ model ApplicationDocument {
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId, status])
+}
+
+model ApplicationFee {
+  id            Int                @id @default(autoincrement())
+  applicationId Int
+  feeType       ApplicationFeeType @default(APPLICATION_FEE)
+  label         String
+  amountPaise   Int
+  currency      String             @default("INR")
+  required      Boolean            @default(true)
+  dueDate       DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  application Application          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  payments    ApplicationPayment[]
+
+  @@index([applicationId])
+}
+
+model ApplicationPayment {
+  id                Int           @id @default(autoincrement())
+  applicationId     Int
+  feeId             Int?
+  studentUserId     Int
+  amountPaise       Int
+  currency          String        @default("INR")
+  status            PaymentStatus @default(PENDING)
+  razorpayOrderId   String?       @unique
+  razorpayPaymentId String?       @unique
+  razorpaySignature String?
+  receiptNumber     String?
+  paidAt            DateTime?
+  failureReason     String?
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  application Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fee         ApplicationFee? @relation(fields: [feeId], references: [id], onDelete: SetNull)
+  studentUser User            @relation("StudentPayments", fields: [studentUserId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, status])
+  @@index([studentUserId])
 }
 
 model OfferLetter {

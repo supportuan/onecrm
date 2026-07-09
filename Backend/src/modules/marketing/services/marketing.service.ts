@@ -11,6 +11,7 @@ import {
   normalizeValue,
 } from "../../../utils/validation.js";
 import { buildCampaignEmailTemplate } from './emailTemplate.service.js';
+import { getDefaultTenantId } from '../../../utils/tenant-default.js';
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {
@@ -1768,6 +1769,7 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
   const passwordHash = await hashPassword(tempPassword);
 
   // 4️⃣ Create STUDENT user
+  const tenantId = await getDefaultTenantId(lead.assignedCounsellorId ?? null);
   const user = await prisma.user.create({
     data: {
       fullName: lead.fullName,
@@ -1775,8 +1777,10 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
       phone: lead.phone,
       passwordHash,
       role: UserRole.STUDENT,
+      tenantId,
       isActive: true,
       isApproved: true,
+      mustChangePassword: true,
     },
   });
 

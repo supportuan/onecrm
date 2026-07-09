@@ -1,5 +1,6 @@
 import { prisma } from '../../prisma.js';
 import { notify } from '../notifications/notifications.service.js';
+import { getApplicationReadiness } from './application-gates.js';
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const DEADLINE_WINDOW_DAYS = 3;
@@ -101,6 +102,45 @@ export const checkUpcomingDeadlines = async (): Promise<void> => {
   }
 };
 
+/** Remind students when documents are uploaded but fees remain unpaid. */
+export const checkUnpaidFees = async (): Promise<void> => {
+  const apps = await prisma.application.findMany({
+    where: {
+      stage: { in: ['DOCUMENTS_PENDING', 'DRAFT'] },
+    },
+    include: { student: true },
+  });
+
+  for (const app of apps) {
+    if (!app.student?.userId) continue;
+    const readiness = await getApplicationReadiness(app.id);
+    if (!readiness?.canPay || readiness.feesPaid || readiness.unpaidFees.length === 0) continue;
+
+    const recent = await recentNotification(
+      app.student.userId,
+      'application.payment_due_student',
+      app.id,
+    );
+    if (recent) continue;
+
+    const fee = readiness.unpaidFees[0];
+    try {
+      await notify({
+        recipientId: app.student.userId,
+        templateKey: 'application.payment_due_student',
+        vars: {
+          applicationCode: app.applicationCode,
+          feeLabel: fee.label,
+          amount: (fee.amountPaise / 100).toFixed(2),
+          applicationId: app.id,
+        },
+      });
+    } catch {
+      /* swallow */
+    }
+  }
+};
+
 const SCHEDULER_MS = 60 * 60 * 1000;
 
 export const startStudentCrmScheduler = (): void => {
@@ -110,6 +150,9 @@ export const startStudentCrmScheduler = (): void => {
     );
     checkUpcomingDeadlines().catch((err) =>
       console.error('[STUDENT-CRM/SCHEDULER] deadline reminder failed', err)
+    );
+    checkUnpaidFees().catch((err) =>
+      console.error('[STUDENT-CRM/SCHEDULER] unpaid-fee reminder failed', err)
     );
   };
   run();

@@ -40,6 +40,7 @@ import {
   VisaPanel,
   AuditTimeline,
 } from '@/features/student-crm/components/ApplicationParts';
+import StaffApplicationFees from '@/features/student-crm/components/StaffApplicationFees';
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: ListChecks },
@@ -363,12 +364,15 @@ export default function ApplicationDetail({ applicationId }) {
 
           <div className="p-5 sm:p-6 space-y-5 bg-neutral-50/40">
             {activeTab === 'overview' && (
-              <ApplicationMetaEditor
-                app={app}
-                counsellors={counsellors}
-                canManage={canManage}
-                onSave={handleUpdateMeta}
-              />
+              <>
+                <ApplicationMetaEditor
+                  app={app}
+                  counsellors={counsellors}
+                  canManage={canManage}
+                  onSave={handleUpdateMeta}
+                />
+                <StaffApplicationFees app={app} canManage={canManage} onSaved={fetchDetail} />
+              </>
             )}
             {activeTab === 'documents' && (
               <DocumentChecklist
