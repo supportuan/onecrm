@@ -98,6 +98,30 @@ router.post(
   controller.studentOfferDecision,
 );
 
+// Payments & readiness
+router.get(
+  '/applications/:id/readiness',
+  studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'),
+  controller.getApplicationReadinessHandler,
+);
+router.get(
+  '/applications/:id/fees',
+  studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'),
+  controller.listApplicationFeesHandler,
+);
+router.post('/applications/:id/fees', manage, controller.upsertApplicationFeeHandler);
+router.get('/payments/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.listMyPaymentsHandler);
+router.post(
+  '/applications/:id/payments/create-order',
+  studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'),
+  controller.createPaymentOrderHandler,
+);
+router.post(
+  '/applications/:id/payments/verify',
+  studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'),
+  controller.verifyPaymentHandler,
+);
+
 // Lead → Application bridge (Phase 2)
 router.post('/applications/from-lead/:leadId', manage, controller.createFromLead);
 

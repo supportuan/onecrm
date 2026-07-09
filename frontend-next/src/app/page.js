@@ -29,7 +29,7 @@ export default function Home() {
     } else if (role === "AGENT" || role === "AGENCY_FREELANCER") {
       router.push("/agency-crm/agency-management");
     } else if (role === "STUDENT") {
-      router.push("/applicant/profile/view");
+      router.push("/applicant/applications");
     } else {
       router.push("/login");
     }

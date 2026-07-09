@@ -4,6 +4,8 @@ import * as service from './student-crm.service.js';
 import { getFormOptions as loadFormOptions } from '../crm-settings/crm-settings.service.js';
 import { resolveFileRefsDeep, safeUploadFilename, storeUploadedFile } from '../../lib/file-storage.js';
 import { isStudentRole } from './scoping.js';
+import { getApplicationReadiness } from './application-gates.js';
+import * as paymentsService from './payments.service.js';
 
 const numId = (raw: any) => {
   const n = Number(raw);
@@ -100,6 +102,7 @@ export const updateMyStudent = async (req: Request, res: Response, next: NextFun
   } catch (err: any) {
     if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     if (err?.message?.includes('enrolled')) return sendError(res, err.message, null, 403);
+    if (err?.message?.includes('counsellor')) return sendError(res, err.message, null, 403);
     next(err);
   }
 };
@@ -282,7 +285,8 @@ export const advanceStage = async (req: Request, res: Response, next: NextFuncti
     if (!stage) return sendError(res, 'stage is required', null, 400);
     const result = await service.setStage(id, stage, req.user?.id, notes);
     return sendSuccess(res, 'stage updated', result);
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.message?.includes('Cannot advance')) return sendError(res, err.message, null, 400);
     next(err);
   }
 };
@@ -612,6 +616,110 @@ export const createFromLead = async (req: Request, res: Response, next: NextFunc
   } catch (err: any) {
     if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     if (err?.message?.includes('already converted')) return sendError(res, err.message, null, 409);
+    next(err);
+  }
+};
+
+// -------------------- Payments & readiness --------------------
+
+export const getApplicationReadinessHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const app = await assertApplicationAccess(req, id);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const readiness = await getApplicationReadiness(id);
+    return sendSuccess(res, 'readiness', readiness);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listApplicationFeesHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const app = await assertApplicationAccess(req, id);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const fees = await paymentsService.listApplicationFees(id);
+    return sendSuccess(res, 'fees', fees);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const upsertApplicationFeeHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const { label, amountInr, feeType, required, dueDate } = req.body || {};
+    if (!label || amountInr == null) {
+      return sendError(res, 'label and amountInr are required', null, 400);
+    }
+    const fee = await paymentsService.upsertApplicationFee(id, {
+      id: numId(req.body?.id) ?? undefined,
+      label,
+      amountInr: Number(amountInr),
+      feeType,
+      required,
+      dueDate,
+    });
+    return sendSuccess(res, 'fee saved', fee);
+  } catch (err: any) {
+    if (err?.message?.includes('greater than zero')) return sendError(res, err.message, null, 400);
+    next(err);
+  }
+};
+
+export const listMyPaymentsHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
+    const items = await paymentsService.listMyPayments(req.user.id);
+    return sendSuccess(res, 'my payments', items);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createPaymentOrderHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    const feeId = numId(req.body?.feeId);
+    if (!applicationId || !feeId || !req.user?.id) {
+      return sendError(res, 'invalid request', null, 400);
+    }
+    const order = await paymentsService.createPaymentOrder(applicationId, feeId, req.user.id);
+    return sendSuccess(res, 'payment order created', order);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('already been paid')) return sendError(res, err.message, null, 409);
+    if (err?.message?.includes('upload all required')) return sendError(res, err.message, null, 400);
+    if (err?.message?.includes('Razorpay')) return sendError(res, err.message, null, 503);
+    next(err);
+  }
+};
+
+export const verifyPaymentHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId || !req.user?.id) return sendError(res, 'invalid request', null, 400);
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body || {};
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return sendError(res, 'razorpay payment details are required', null, 400);
+    }
+    const result = await paymentsService.verifyPayment(applicationId, req.user.id, {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    });
+    return sendSuccess(res, 'payment verified', result);
+  } catch (err: any) {
+    if (err?.message?.includes('invalid')) return sendError(res, err.message, null, 400);
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     next(err);
   }
 };

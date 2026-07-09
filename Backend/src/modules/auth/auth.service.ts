@@ -4,7 +4,7 @@ import { hashPassword, comparePasswords } from '../../utils/password.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt.js';
 import { adminAgentNotification, adminStudentNotification, sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
-import { getDefaultTenantId } from '../../utils/tenant-default.js';
+import { getDefaultTenantId, resolveTenantForUser } from '../../utils/tenant-default.js';
 
 interface RegisterData {
   fullName: string;
@@ -389,30 +389,42 @@ export const login = async (email: string, password: string, loginType?: 'studen
 
   // Tenant gate: SUPER_ADMIN has no tenant; everyone else must belong to an
   // ACTIVE tenant. Suspended or archived → login refused with a clear reason.
+  let loginUser = user;
   if (user.role !== UserRole.SUPER_ADMIN) {
-    if (!user.tenant) {
+    if (!loginUser.tenant) {
+      const tenantId = await resolveTenantForUser(loginUser.id, loginUser.role);
+      if (!tenantId) {
+        throw new Error('User is not associated with any tenant');
+      }
+      loginUser = await prisma.user.update({
+        where: { id: loginUser.id },
+        data: { tenantId },
+        include: { tenant: true },
+      });
+    }
+    if (!loginUser.tenant) {
       throw new Error('User is not associated with any tenant');
     }
-    if (user.tenant.status !== 'ACTIVE') {
-      throw new Error(`Tenant is ${user.tenant.status.toLowerCase()}; contact your administrator`);
+    if (loginUser.tenant.status !== 'ACTIVE') {
+      throw new Error(`Tenant is ${loginUser.tenant.status.toLowerCase()}; contact your administrator`);
     }
   }
 
-  const isFirstLogin = user.lastLogin === null;
-  const mustChangePassword = user.mustChangePassword;
-  const showPolicyModal = user.role === UserRole.STUDENT && !user.policyAcceptedAt;
+  const isFirstLogin = loginUser.lastLogin === null;
+  const mustChangePassword = loginUser.mustChangePassword;
+  const showPolicyModal = loginUser.role === UserRole.STUDENT && !loginUser.policyAcceptedAt;
 
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: loginUser.id },
     data: { lastLogin: new Date() },
   });
 
   const payload = {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    tenantId: user.tenantId ?? null,
-    permissionRole: user.permissionRole ?? null,
+    id: loginUser.id,
+    email: loginUser.email,
+    role: loginUser.role,
+    tenantId: loginUser.tenantId ?? null,
+    permissionRole: loginUser.permissionRole ?? null,
   };
 
   const accessToken = generateAccessToken(payload);
@@ -426,7 +438,7 @@ export const login = async (email: string, password: string, loginType?: 'studen
     },
   });
 
-  return { user, accessToken, refreshToken, isFirstLogin, mustChangePassword, showPolicyModal };
+  return { user: loginUser, accessToken, refreshToken, isFirstLogin, mustChangePassword, showPolicyModal };
 };
 
 export const refreshToken = async (token: string) => {
