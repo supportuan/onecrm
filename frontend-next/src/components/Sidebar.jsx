@@ -608,6 +608,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
 
   const filteredNavMenu = useMemo(() => {
     if (!user) return [];
+    if (user.role === "STUDENT") return [];
     if (user.role === "SUPER_ADMIN") return [];
 
     const enabledModules = Array.isArray(user.enabledModules)
