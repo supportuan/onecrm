@@ -14,6 +14,8 @@ import {
   getVisaWorkflowForCountry,
   normalizeVisaDocuments,
 } from './visa-workflows.js';
+import { assertStageAdvanceAllowed } from './application-gates.js';
+import { seedDefaultApplicationFee } from './payments.service.js';
 
 type Actor = { id?: number; role?: string };
 
@@ -89,17 +91,57 @@ export const getStudentByUserId = async (userId: number) => {
   if (!user?.email) return null;
 
   student = await prisma.student.findFirst({
-    where: { email: user.email, deletedAt: null },
+    where: { email: { equals: user.email, mode: 'insensitive' }, deletedAt: null },
     include: STUDENT_INCLUDE,
   });
-  if (student && !student.userId) {
-    await prisma.student.update({ where: { id: student.id }, data: { userId } });
-    student = await prisma.student.findFirst({
-      where: { id: student.id },
-      include: STUDENT_INCLUDE,
-    });
+  if (student) {
+    if (!student.userId) {
+      await prisma.student.update({ where: { id: student.id }, data: { userId } });
+      student = await prisma.student.findFirst({
+        where: { id: student.id },
+        include: STUDENT_INCLUDE,
+      });
+    }
+    return student;
   }
-  return student;
+
+  if (user.role !== UserRole.STUDENT) return null;
+
+  const lead = await prisma.lead.findFirst({
+    where: {
+      OR: [
+        { studentUserId: userId },
+        { email: { equals: user.email, mode: 'insensitive' } },
+      ],
+    },
+    include: { source: true },
+  });
+
+  const countryRow = lead?.preferredCountry || lead?.country
+    ? await resolveCountry(lead.preferredCountry || lead.country || '')
+    : null;
+
+  const created = await prisma.student.create({
+    data: {
+      ...studentDataFromPayload({
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        preferredCountry: lead?.preferredCountry || lead?.country || null,
+        sourceLeadId: lead?.id,
+        source: lead?.source?.name || 'student_portal',
+        countryId: countryRow?.id,
+      }),
+      userId,
+    } as any,
+    include: STUDENT_INCLUDE,
+  });
+
+  if (created.countryId) {
+    await seedStudentChecklists(created.id, created.countryId);
+  }
+
+  return created;
 };
 
 const buildFullName = (data: { firstName?: string; lastName?: string; fullName?: string }) => {
@@ -190,14 +232,11 @@ export const updateStudent = async (id: number, data: Record<string, any>, actor
   return getStudent(id, actor);
 };
 
-/** Student self-service update — may repeat until counsellor marks enrolled. */
-export const updateMyStudentProfile = async (userId: number, data: Record<string, any>) => {
-  const current = await getStudentByUserId(userId);
-  if (!current) throw new Error('student profile not found');
-  if (current.isEnrolled) {
-    throw new Error('Your profile is locked. Contact your counsellor to request changes.');
-  }
-  return updateStudent(current.id, data, { id: userId, role: 'STUDENT' });
+/** Student self-service update — profile is counsellor-managed. */
+export const updateMyStudentProfile = async (_userId: number, _data: Record<string, any>) => {
+  throw new Error(
+    'Your profile is managed by your counsellor. Contact them to request any changes.',
+  );
 };
 
 export const listMyApplications = async (userId: number) => {
@@ -354,6 +393,8 @@ const APPLICATION_INCLUDE = {
   student: true,
   assignedTo: { select: { id: true, fullName: true, email: true, role: true } },
   documents: { orderBy: { id: 'asc' as const } },
+  fees: { orderBy: { id: 'asc' as const } },
+  payments: { orderBy: { createdAt: 'desc' as const } },
   offerLetter: true,
   visaTracking: true,
   stageEvents: {
@@ -450,13 +491,19 @@ export const createApplication = async (data: {
       assignedToId: data.assignedToId || null,
       deadline: data.deadline ? new Date(data.deadline) : null,
       notes: data.notes || null,
-      stage: 'DRAFT',
+      stage: 'DOCUMENTS_PENDING',
     },
   });
   await prisma.applicationStageEvent.create({
-    data: { applicationId: app.id, fromStage: null, toStage: 'DRAFT', notes: 'application created' },
+    data: {
+      applicationId: app.id,
+      fromStage: null,
+      toStage: 'DOCUMENTS_PENDING',
+      notes: 'application created',
+    },
   });
   await seedChecklistFor(app.id, data.country, data.university);
+  await seedDefaultApplicationFee(app.id);
 
   if (data.assignedToId) {
     const student = await prisma.student.findUnique({ where: { id: data.studentId } });
@@ -533,6 +580,8 @@ export const setStage = async (
     include: { student: true, assignedTo: true },
   });
   if (!current) throw new Error('application not found');
+
+  await assertStageAdvanceAllowed(applicationId, toStage);
 
   await prisma.application.update({ where: { id: applicationId }, data: { stage: toStage } });
   await prisma.applicationStageEvent.create({

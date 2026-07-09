@@ -32,7 +32,7 @@ export default function StudentLoginPage() {
         router.push('/applicant/accept-policy');
         return;
       }
-      router.push('/applicant/profile/view');
+      router.push('/applicant/applications');
     } catch (err) {
       setError(err.message || 'Login failed');
     } finally {

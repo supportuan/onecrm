@@ -115,6 +115,39 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
     },
   },
 
+  'application.payment_due_student': {
+    key: 'application.payment_due_student',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Payment due — ${fallbackVar(v.feeLabel, 'application fee')}`;
+      const body = `Your application ${fallbackVar(v.applicationCode, '')} requires payment of ₹${fallbackVar(v.amount)} for ${fallbackVar(v.feeLabel, 'the application fee')}.`;
+      const link = v.applicationId ? `/applicant/applications/${v.applicationId}` : '/applicant/payments';
+      return { title, body, html: wrapEmailHtml(title, body, link, 'Pay now'), link };
+    },
+  },
+
+  'application.payment_received_student': {
+    key: 'application.payment_received_student',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Payment received`;
+      const body = `We received your payment of ₹${fallbackVar(v.amount)} for ${fallbackVar(v.feeLabel)} on application ${fallbackVar(v.applicationCode, '')}. Receipt: ${fallbackVar(v.receiptNumber)}.`;
+      const link = v.applicationId ? `/applicant/payments` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'View receipts'), link };
+    },
+  },
+
+  'application.payment_received': {
+    key: 'application.payment_received',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `Student payment received`;
+      const body = `${fallbackVar(v.studentName, 'A student')} paid ₹${fallbackVar(v.amount)} (${fallbackVar(v.feeLabel)}) for application ${fallbackVar(v.applicationCode, '')}.`;
+      const link = v.applicationId ? `/student-crm/applications?app=${v.applicationId}` : undefined;
+      return { title, body, html: wrapEmailHtml(title, body, link, 'Open application'), link };
+    },
+  },
+
   'application.deadline_reminder': {
     key: 'application.deadline_reminder',
     defaultChannels: ['IN_APP', 'EMAIL'],
