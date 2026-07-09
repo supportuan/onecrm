@@ -117,7 +117,7 @@ export default function StudentManagement() {
     } finally {
       setLoading(false);
     }
-  }, [search, searchParams, selectedId]);
+  }, [search, searchParams]);
 
   const loadProfile = useCallback(async () => {
     if (!selectedId) {
@@ -358,8 +358,8 @@ export default function StudentManagement() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-3 ui-panel flex flex-col max-h-[calc(100vh-180px)] overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:h-[calc(100vh-11rem)] lg:min-h-0">
+          <div className="lg:col-span-3 ui-panel flex flex-col min-h-0 lg:h-full overflow-hidden">
             <div className="p-4 border-b border-[var(--ui-border)] space-y-3">
               <div className="flex justify-between items-center">
                 <h2 className="ui-text-strong">Students</h2>
@@ -375,7 +375,7 @@ export default function StudentManagement() {
                 />
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto">
               {loading && !students.length ? (
                 <p className="p-8 text-center ui-text-meta">Loading…</p>
               ) : students.length === 0 ? (
@@ -400,7 +400,7 @@ export default function StudentManagement() {
             </div>
           </div>
 
-          <div className="lg:col-span-9 space-y-4">
+          <div className="lg:col-span-9 min-h-0 overflow-y-auto space-y-4">
             {!profile || !form ? (
               <div className="ui-panel p-12 text-center text-neutral-500">
                 <User size={32} className="mx-auto mb-3 opacity-50" />
