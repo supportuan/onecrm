@@ -407,7 +407,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Command, LogOut } from "lucide-react";
+import { ChevronDown, Command, LogOut, Menu, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import MenuItem from "./MenuItem";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -454,7 +454,7 @@ const filterSubItemsByModuleAccess = (item, access) =>
     return access[item.label]?.[optName]?.length > 0;
   }) || [];
 
-const Sidebar = ({ sidebarOpen, onClose }) => {
+const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
   const location = usePathname() || "";
   const router = useRouter();
 
@@ -617,12 +617,14 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
           width: sidebarOpen ? "288px" : "80px",
         }}
       >
+
         <div className="flex-none p-5 pb-3">
           <div className="flex items-center justify-between gap-3 border-b border-neutral-200 pb-4">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-900">
                 <Command className="h-4 w-4" />
               </div>
+
 
               {sidebarOpen && (
                 <div className="min-w-0">
@@ -637,6 +639,14 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
             </div>
           </div>
         </div>
+        {/* <button
+          type="button"
+          onClick={onToggleSidebar}
+          className=" inline-flex pl-8 h-15 w-15 shrink-0 items-center rounded-xl text-slate-700 cursor-pointer"
+          aria-label="Toggle sidebar"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
 
         {sidebarOpen && (
           <div className="px-5 py-2 flex-none">
@@ -650,7 +660,37 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
               </p>
             </div>
           </div>
-        )}
+        )} */}
+
+        <div className="flex items-center justify-between gap-2  px-4 py-2">
+          {/* User Info */}
+          {sidebarOpen && (
+            <div className="ml-4 flex-1">
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-5 py-1">
+                <p className="text-xs text-neutral-500">Logged in as</p>
+                <p className="text-sm font-medium text-neutral-900">
+                  {user?.role || "User"}
+                </p>
+                <p className="text-xs text-neutral-500 truncate">
+                  {user?.fullName || user?.email}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="flex h-12 w-12 items-center ml-1.5 justify-center rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            aria-label="Toggle sidebar"
+          >
+            {sidebarOpen ? (
+              <ChevronLeft className="h-5 w-5" />
+            ) : (
+              <ChevronRight className="h-5 w-5" />
+            )}
+          </button>
+        </div>
 
         <div
           className={`
@@ -663,6 +703,7 @@ const Sidebar = ({ sidebarOpen, onClose }) => {
 
             return (
               <div key={item.label} className="space-y-1">
+
                 {hasSubItems ? (
                   <>
                     <button

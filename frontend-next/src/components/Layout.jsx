@@ -119,13 +119,13 @@ const Layout = ({ children }) => {
         <Sidebar
           sidebarOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          onToggleSidebar={() => setSidebarOpen(true)}
+          onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
 
         />
       </div>
 
       <div className="fixed inset-x-0 top-0 z-40 bg-slate-50 shadow-sm">
-        <TopNavbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
+        <TopNavbar />
       </div>
       <div
         className="fixed top-0 right-0 bottom-0 transition-all duration-300"

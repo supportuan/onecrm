@@ -270,14 +270,14 @@ const TopNavbar = ({ onToggleSidebar }) => {
         <header className="flex items-center justify-between bg-white px-4 sm:px-6 lg:px-8 gap-4 py-4 sm:px-6 lg:px-8">
             {/* Left */}
             <div className="flex min-w-0 items-center gap-6">
-                <button
+                {/* <button
                     type="button"
                     onClick={onToggleSidebar}
                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 cursor-pointer"
                     aria-label="Toggle sidebar"
                 >
                     <Menu className="h-5 w-5" />
-                </button>
+                </button> */}
 
                 <Image
                     src="/images/applyUniNow.png"
@@ -325,9 +325,9 @@ const TopNavbar = ({ onToggleSidebar }) => {
                 <div className="flex items-center gap-3">
                     {user && (
                         <div className="hidden items-center gap-2 sm:flex">
-                            <div className="text-sm font-semibold text-slate-700">
+                            {/* <div className="text-sm font-semibold text-slate-700">
                                 {user.fullName}
-                            </div>
+                            </div> */}
                         </div>
                     )}
 
