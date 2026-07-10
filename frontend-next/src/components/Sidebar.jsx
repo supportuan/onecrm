@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, LogOut, PanelLeftClose } from "lucide-react";
+import { ChevronDown, Command, LogOut, Menu, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import MenuItem from "./MenuItem";
 import { AppBrand, AppLogo } from "./AppBrand";
 import { navMenu } from "../lib/menu";
@@ -245,6 +245,50 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
         >
           <Menu className="h-5 w-5" />
         </button>
+
+        {sidebarOpen && (
+          <div className="px-5 py-2 flex-none">
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+              <p className="text-xs text-neutral-500">Logged in as</p>
+              <p className="text-sm font-medium text-neutral-900 mt-0.5">
+                {user?.role || "User"}
+              </p>
+              <p className="text-xs text-neutral-500 mt-1 truncate">
+                {user?.fullName || user?.email}
+              </p>
+            </div>
+          </div>
+        )} */}
+
+        <div className="flex items-center justify-between gap-2  px-4 py-2">
+          {/* User Info */}
+          {sidebarOpen && (
+            <div className="ml-4 flex-1">
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-5 py-1">
+                <p className="text-xs text-neutral-500">Logged in as</p>
+                <p className="text-sm font-medium text-neutral-900">
+                  {user?.role || "User"}
+                </p>
+                <p className="text-xs text-neutral-500 truncate">
+                  {user?.fullName || user?.email}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="flex h-12 w-12 items-center ml-1.5 justify-center rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            aria-label="Toggle sidebar"
+          >
+            {sidebarOpen ? (
+              <ChevronLeft className="h-5 w-5" />
+            ) : (
+              <ChevronRight className="h-5 w-5" />
+            )}
+          </button>
+        </div>
 
         <div
           className={`
