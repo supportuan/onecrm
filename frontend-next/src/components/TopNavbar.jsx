@@ -1,14 +1,12 @@
 'use client';
 
-import { LogOut, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/lib/auth/AuthContext';
 import { getStaffPageMeta } from '@/lib/staff-page-meta';
 import NotificationBell from '@/components/NotificationBell';
 
 const TopNavbar = ({ sidebarOpen, onToggleSidebar }) => {
   const pathname = usePathname() || '';
-  const { user, logout } = useAuth();
   const { title } = getStaffPageMeta(pathname);
 
   return (
@@ -28,23 +26,8 @@ const TopNavbar = ({ sidebarOpen, onToggleSidebar }) => {
         </h1>
       </div>
 
-      <div className="flex shrink-0 items-center gap-4">
+      <div className="flex shrink-0 items-center">
         <NotificationBell />
-
-        {user && (
-          <div className="hidden text-sm font-semibold text-neutral-700 sm:block">
-            {user.fullName}
-          </div>
-        )}
-
-        <button
-          type="button"
-          className="rounded-lg p-1.5 text-neutral-400 transition hover:bg-red-50 hover:text-red-600"
-          onClick={logout}
-          title="Log out"
-        >
-          <LogOut className="h-4 w-4" strokeWidth={1.75} />
-        </button>
       </div>
     </header>
   );
