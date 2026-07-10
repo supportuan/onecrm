@@ -1,104 +1,3 @@
-// 'use client';
-
-// import { useState } from 'react';
-// import { useRouter } from 'next/navigation';
-// import { useAuth } from '@/lib/auth/AuthContext';
-
-// export default function LoginPage() {
-//   const router = useRouter();
-//   const { login } = useAuth();
-//   const [email, setEmail] = useState('');
-//   const [password, setPassword] = useState('');
-//   const [error, setError] = useState('');
-//   const [loading, setLoading] = useState(false);
-
-//   const handleSubmit = async (event) => {
-//     event.preventDefault();
-//     setLoading(true);
-//     setError('');
-
-//     try {
-//       const data = await login({ email, password });
-
-//       let targetRoute = '/';
-//       const role = data.user?.role;
-//       if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
-//         targetRoute = '/marketing';
-//       } else if (role === 'HR') {
-//         targetRoute = '/hr/employee-directory';
-//       } else if (role === 'COUNSELLOR') {
-//         targetRoute = '/marketing';
-//       } else if (role === 'AGENT') {
-//         targetRoute = '/agency-crm/agency-management';
-//       } else if (role === 'STUDENT') {
-//         targetRoute = '/student-crm/student-management';
-//       }
-
-//       if (data.isFirstLogin) {
-//         localStorage.setItem('postPasswordChangeRedirect', targetRoute);
-//         router.push('/change-password');
-//       } else {
-//         router.push(targetRoute);
-//       }
-//     } catch (err) {
-//       setError(err.message || 'Login failed');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 px-4 py-12">
-//       <div className="w-auto rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
-//         <div className="mb-6 text-center">
-//           <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">OneCRM Secure Login</p>
-//           <h1 className="mt-4 text-2xl font-semibold text-neutral-900">Sign in to your account</h1>
-//         </div>
-
-//         <form className="space-y-5" onSubmit={handleSubmit}>
-//           <div>
-//             <label className="mb-2 block text-sm font-medium text-neutral-600">Email</label>
-//             <input
-//               type="email"
-//               value={email}
-//               onChange={(e) => setEmail(e.target.value)}
-//               className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-//               required
-//             />
-//           </div>
-
-//           <div>
-//             <label className="mb-2 block text-sm font-medium text-neutral-600">Password</label>
-//             <input
-//               type="password"
-//               value={password}
-//               onChange={(e) => setPassword(e.target.value)}
-//               className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-//               required
-//             />
-//           </div>
-
-//           {error && <div className="rounded-lg bg-red-50 border border-red-500/20 p-3 text-sm text-red-700">{error}</div>}
-
-//           <button
-//             type="submit"
-//             disabled={loading}
-//             className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
-//           >
-//             {loading ? 'Signing in...' : 'Sign in'}
-//           </button>
-
-//           <div className="text-center text-sm text-neutral-500">
-//             <button type="button" className="text-neutral-700 hover:text-neutral-900" onClick={() => router.push('/forgot-password')}>
-//               Forgot your password?
-//             </button>
-//           </div>
-//         </form>
-//       </div>
-//     </main>
-//   );
-// }
-
 
 'use client';
 
@@ -145,15 +44,11 @@ export default function LoginPage() {
       let targetRoute = '/';
       const role = data.user?.role;
 
-      if (role === 'SUPER_ADMIN') {
-        targetRoute = '/super-admin';
-      } else if (role === 'GLOBAL_ADMIN') {
-        targetRoute = '/marketing';
-      } else if (role === 'HR') {
-        targetRoute = getDefaultHrRoute(role) || '/hr';
-      } else if (role === 'COUNSELLOR') {
-        targetRoute = '/marketing';
-      } else if (role === 'AGENT' || role === 'AGENCY_FREELANCER') {
+      if (role === 'SUPER_ADMIN') targetRoute = '/super-admin';
+      else if (role === 'GLOBAL_ADMIN') targetRoute = '/marketing';
+      else if (role === 'HR') targetRoute = getDefaultHrRoute(role) || '/hr';
+      else if (role === 'COUNSELLOR') targetRoute = '/marketing';
+      else if (role === 'AGENT' || role === 'AGENCY_FREELANCER') {
         targetRoute = '/student-crm/applications';
       } else if (role === 'STUDENT') {
         targetRoute = '/applicant/applications';
@@ -252,12 +147,25 @@ export default function LoginPage() {
     }
   };
 
+  const inputClass =
+    'h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white px-3 sm:px-4 text-sm font-medium text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100';
+
+  const labelClass =
+    'mb-2 block text-sm font-semibold text-slate-600';
+
   return (
-    <main className="ui-page flex items-center justify-center">
-      <div className="ui-card">
-        <div className="mb-8">
-          <p className="ui-section-title">OneCRM</p>
-          <h1 className="mt-3 ui-text-h2">
+    <main className="min-h-screen overflow-y-auto bg-slate-50 px-4 py-6 sm:px-6 lg:px-8 flex items-center justify-center">
+      <div
+        className={`mx-auto w-full rounded-2xl border border-slate-200 bg-white shadow-sm ${isRegister
+          ? 'max-w-6xl p-5 sm:p-8 lg:p-10'
+          : 'max-w-md p-6 sm:p-8'
+          }`}
+      >
+        <div className="mb-6 sm:mb-8">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">
+            OneCRM
+          </p>
+          <h1 className="mt-3 text-2xl font-bold text-slate-950 sm:text-3xl">
             {isRegister ? 'Create account' : 'Sign in'}
           </h1>
         </div>
@@ -265,45 +173,62 @@ export default function LoginPage() {
         {!isRegister ? (
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label className="ui-label">Email</label>
+              <label className={labelClass}>Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="ui-input"
+                className={inputClass}
                 required
               />
             </div>
 
             <div>
-              <label className="ui-label">Password</label>
+              <label className={labelClass}>Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="ui-input"
+                className={inputClass}
                 required
               />
             </div>
 
-            {error && <div className="ui-error">{error}</div>}
-            {success && <div className="ui-success">{success}</div>}
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                {error}
+              </div>
+            )}
 
-            <button type="submit" disabled={loading} className="ui-btn-primary w-full py-3">
+            {success && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+                {success}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="h-12 w-full rounded-xl bg-slate-950 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
 
             <div className="text-center">
-              <button type="button" className="ui-link" onClick={() => router.push('/forgot-password')}>
+              <button
+                type="button"
+                className="text-sm font-semibold text-slate-600 hover:text-slate-950"
+                onClick={() => router.push('/forgot-password')}
+              >
                 Forgot password?
               </button>
             </div>
 
-            <div className="text-center ui-text-meta">
+            <div className="text-center text-sm text-slate-500">
               No account?{' '}
               <button
                 type="button"
-                className="ui-link"
+                className="font-semibold text-slate-700 hover:text-slate-950"
                 onClick={() => {
                   setError('');
                   setSuccess('');
@@ -316,179 +241,149 @@ export default function LoginPage() {
           </form>
         ) : (
           <form
-            className="grid grid-cols-1 gap-6 lg:grid-cols-2"
             onSubmit={handleRegisterSubmit}
+            className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_0.85fr]"
           >
-            <section className="space-y-4 rounded-lg border border-neutral-200 bg-neutral-50 p-5">
-              <h2 className="text-lg font-bold text-neutral-700">
+            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
+              <h2 className="mb-5 text-xl font-bold text-slate-800">
                 Personal Details
               </h2>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-neutral-600">
-                  Register As
-                </label>
-                <select
-                  name="role"
-                  value={registerForm.role}
-                  onChange={handleRegisterChange}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                >
-                  <option value="STUDENT">Student</option>
-                  <option value="AGENT">Agent</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-5">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-neutral-600">
-                    Full Name
-                  </label>
-                  <input
-                    name="fullName"
-                    value={registerForm.fullName}
+                  <label className={labelClass}>Register As</label>
+                  <select
+                    name="role"
+                    value={registerForm.role}
                     onChange={handleRegisterChange}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
+                    className={`${inputClass} cursor-pointer`}
+                  >
+                    <option value="STUDENT">Student</option>
+                    <option value="AGENT">Agent</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Full Name</label>
+                    <input
+                      name="fullName"
+                      value={registerForm.fullName}
+                      onChange={handleRegisterChange}
+                      className={inputClass}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Phone</label>
+                    <input
+                      name="phone"
+                      value={registerForm.phone}
+                      onChange={handleRegisterChange}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={registerForm.email}
+                    onChange={handleRegisterChange}
+                    className={inputClass}
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-neutral-600">
-                    Phone
-                  </label>
-                  <input
-                    name="phone"
-                    value={registerForm.phone}
-                    onChange={handleRegisterChange}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                  />
-                </div>
-              </div>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Password</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={registerForm.password}
+                      onChange={handleRegisterChange}
+                      className={inputClass}
+                      required
+                    />
+                  </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-neutral-600">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={registerForm.email}
-                  onChange={handleRegisterChange}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-neutral-600">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={registerForm.password}
-                    onChange={handleRegisterChange}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-neutral-600">
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={registerForm.confirmPassword}
-                    onChange={handleRegisterChange}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                    required
-                  />
+                  <div>
+                    <label className={labelClass}>Confirm Password</label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={registerForm.confirmPassword}
+                      onChange={handleRegisterChange}
+                      className={inputClass}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
             </section>
 
-            <section className="space-y-4 rounded-lg border border-neutral-200 bg-neutral-50 p-5">
-              <h2 className="text-lg font-bold text-neutral-700">
+            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
+              <h2 className="mb-5 text-xl font-bold text-slate-800">
                 {registerForm.role === 'AGENT'
                   ? 'Agency Details'
                   : 'Student Registration'}
               </h2>
 
               {registerForm.role === 'AGENT' ? (
-                <>
+                <div className="space-y-5">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-neutral-600">
-                      Agency Name
-                    </label>
+                    <label className={labelClass}>Agency Name</label>
                     <input
                       name="agencyName"
                       value={registerForm.agencyName}
                       onChange={handleRegisterChange}
-                      className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
+                      className={inputClass}
                       required
                     />
                   </div>
 
-                  {/* <div>
-                    <label className="mb-2 block text-sm font-medium text-neutral-600">
-                      Agency Code
-                    </label>
-                    <input
-                      name="agencyCode"
-                      value={registerForm.agencyCode}
-                      onChange={handleRegisterChange}
-                      className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
-                    />
-                  </div> */}
-
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-neutral-600">
-                      Agency Address
-                    </label>
+                    <label className={labelClass}>Agency Address</label>
                     <input
                       name="agencyAddress"
                       value={registerForm.agencyAddress}
                       onChange={handleRegisterChange}
-                      className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
+                      className={inputClass}
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-neutral-600">
-                        City
-                      </label>
+                      <label className={labelClass}>City</label>
                       <input
                         name="agencyCity"
                         value={registerForm.agencyCity}
                         onChange={handleRegisterChange}
-                        className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
+                        className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-neutral-600">
-                        Country
-                      </label>
+                      <label className={labelClass}>Country</label>
                       <input
                         name="agencyCountry"
                         value={registerForm.agencyCountry}
                         onChange={handleRegisterChange}
-                        className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
+                        className={inputClass}
                       />
                     </div>
                   </div>
-                </>
+                </div>
               ) : (
-                <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-5 text-sm leading-6 text-neutral-600">
-                  <p className="font-semibold text-neutral-800">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+                  <p className="text-base font-bold text-slate-900">
                     Student account registration
                   </p>
-                  <p className="mt-2">
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
                     Student users can register using their personal details.
                     After login, they will be redirected to the Student CRM
                     module.
@@ -499,13 +394,13 @@ export default function LoginPage() {
 
             <div className="lg:col-span-2">
               {error && (
-                <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-700">
+                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
                   {error}
                 </div>
               )}
 
               {success && (
-                <div className="mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-700">
+                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
                   {success}
                 </div>
               )}
@@ -513,16 +408,16 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
+                className="h-12 w-full rounded-xl bg-slate-950 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? 'Creating account...' : 'Register'}
               </button>
 
-              <div className="mt-4 text-center text-sm text-neutral-500">
+              <div className="mt-5 text-center text-sm text-slate-500">
                 Already have an account?{' '}
                 <button
                   type="button"
-                  className="font-semibold text-neutral-700 hover:text-neutral-900 cursor-pointer"
+                  className="font-semibold text-slate-700 hover:text-slate-950"
                   onClick={() => {
                     setError('');
                     setSuccess('');
