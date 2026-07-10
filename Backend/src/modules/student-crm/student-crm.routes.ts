@@ -111,6 +111,11 @@ router.get(
 );
 router.post('/applications/:id/fees', manage, controller.upsertApplicationFeeHandler);
 router.get('/payments/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.listMyPaymentsHandler);
+router.get(
+  '/payments/:id/receipt',
+  studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'),
+  controller.getPaymentReceiptHandler,
+);
 router.post(
   '/applications/:id/payments/create-order',
   studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'),

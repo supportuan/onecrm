@@ -142,6 +142,9 @@ export const upsertApplicationFee = async (applicationId, payload) =>
 
 export const listMyPayments = async () => handleResponse(await tenantFetch(`${API_URL}/payments/me`));
 
+export const getPaymentReceipt = async (paymentId) =>
+  handleResponse(await tenantFetch(`${API_URL}/payments/${paymentId}/receipt`));
+
 export const createPaymentOrder = async (applicationId, feeId) =>
   handleResponse(
     await tenantFetch(`${API_URL}/applications/${applicationId}/payments/create-order`, json({ feeId }))

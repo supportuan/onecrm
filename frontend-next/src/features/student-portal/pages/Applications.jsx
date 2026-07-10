@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Circle, FileText, ChevronRight } from 'lucide-react';
-import { getMyStudent, listMyApplications, getProcessStages } from '@/services/studentCrmApi';
-import { STAGE_LABELS } from '../constants';
+import { ChevronRight, FileText, CreditCard, Clock } from 'lucide-react';
+import { getMyStudent, listMyApplications, getProcessStages, getApplicationReadiness } from '@/services/studentCrmApi';
 import { formatDate } from '@/features/student-crm/components/ApplicationParts';
+import { getStageLabel } from '@/features/student-crm/constants';
+import StudentWorkflowGuide, { resolveStudentWorkflow } from '../components/StudentWorkflowGuide';
+import StudentOverallJourney from '../components/StudentOverallJourney';
+import { StudentPageHeader } from '../layout/StudentPortalLayoutContext';
+import { sp, StudentPortalPage, StudentPortalPanel } from '../student-portal-ui';
 
 const docProgress = (app) => {
   const docs = app.documents || [];
@@ -18,144 +22,162 @@ const docProgress = (app) => {
 export default function ApplicationsPage() {
   const [profile, setProfile] = useState(null);
   const [apps, setApps] = useState([]);
+  const [readinessMap, setReadinessMap] = useState({});
   const [processStages, setProcessStages] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([getMyStudent(), listMyApplications()])
-      .then(async ([pRes, aRes]) => {
-        const p = pRes?.data || null;
-        setProfile(p);
-        setApps(Array.isArray(aRes?.data) ? aRes.data : []);
-        const country = p?.country?.name || p?.preferredCountry;
-        if (country) {
-          const stagesRes = await getProcessStages(country);
-          const stages = stagesRes?.data?.stages || [];
-          setProcessStages(stages);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [pRes, aRes] = await Promise.all([getMyStudent(), listMyApplications()]);
+      const p = pRes?.data || null;
+      const items = Array.isArray(aRes?.data) ? aRes.data : [];
+      setProfile(p);
+      setApps(items);
+
+      const readinessEntries = await Promise.all(
+        items.map(async (app) => {
+          try {
+            const res = await getApplicationReadiness(app.id);
+            return [app.id, res?.data || null];
+          } catch {
+            return [app.id, null];
+          }
+        })
+      );
+      setReadinessMap(Object.fromEntries(readinessEntries));
+
+      const country = p?.country?.name || p?.preferredCountry || items[0]?.country;
+      if (country) {
+        const stagesRes = await getProcessStages(country);
+        setProcessStages(stagesRes?.data?.stages || []);
+      } else {
+        setProcessStages([]);
+      }
+    } catch {
+      /* keep prior state */
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const stageList = processStages.length > 0 ? processStages : Object.keys(STAGE_LABELS);
-  const currentIdx = stageList.indexOf(profile?.processStage || '');
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  if (loading) return <p className="text-sm text-neutral-500">Loading application…</p>;
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadData();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadData]);
+
+  const stageList = processStages;
+  const primaryApp = apps[0] || null;
+  const primaryReadiness = primaryApp ? readinessMap[primaryApp.id] : null;
+  const primaryWorkflow = primaryApp ? resolveStudentWorkflow(primaryApp, primaryReadiness) : null;
+
+  if (loading) {
+    return (
+      <StudentPortalPage>
+        <p className={sp.body}>Loading application…</p>
+      </StudentPortalPage>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-neutral-900">My application</h1>
-        <p className="text-sm text-neutral-500 mt-1">Track your progress through each stage of the journey.</p>
-      </div>
+    <StudentPortalPage>
+      <StudentPageHeader
+        title="Applications"
+        description="Upload documents, pay fees, then your counsellor handles university submission."
+      />
 
-      <section className="ui-panel p-5">
-        <h2 className="text-sm font-semibold text-neutral-900 mb-4">Application journey</h2>
-        <ol className="space-y-2">
-          {stageList.map((stage, idx) => {
-            const done = currentIdx > idx;
-            const active = profile?.processStage === stage;
-            return (
-              <li
-                key={stage}
-                className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${
-                  active
-                    ? 'border-neutral-900 bg-neutral-900 text-white'
-                    : done
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                      : 'border-neutral-200 bg-white text-neutral-600'
-                }`}
-              >
-                {done ? (
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-                ) : (
-                  <Circle className={`h-5 w-5 shrink-0 ${active ? 'text-white' : 'text-neutral-300'}`} />
-                )}
-                <div className="flex-1">
-                  <span className="font-medium">{idx + 1}. {STAGE_LABELS[stage] || stage.replace(/_/g, ' ')}</span>
-                  {active && profile && (
-                    <p className={`text-xs mt-0.5 ${active ? 'text-neutral-300' : 'text-neutral-500'}`}>
-                      {profile.completedCheckList} of {profile.totalCheckList} checklist items complete
+      {primaryApp && primaryWorkflow?.nextAction && (
+        <StudentPortalPanel className={`${sp.panelPad} border-l-[3px] border-l-neutral-900`}>
+          <p className={sp.sectionEyebrow}>What to do next</p>
+          <p className="text-base font-semibold tracking-tight text-neutral-900 mt-2">
+            {primaryWorkflow.nextAction.title}
+          </p>
+          <p className={`${sp.body} mt-1.5`}>{primaryWorkflow.nextAction.detail}</p>
+          <Link href={`/applicant/applications/${primaryApp.id}`} className={`${sp.btnPrimary} mt-5`}>
+            Continue application <ChevronRight size={14} />
+          </Link>
+        </StudentPortalPanel>
+      )}
+
+      {primaryApp && <StudentWorkflowGuide app={primaryApp} readiness={primaryReadiness} />}
+
+      <StudentOverallJourney profile={profile} stageList={stageList} />
+
+      <section className="space-y-4">
+        <div>
+          <p className={sp.sectionEyebrow}>Your universities</p>
+          <h2 className={`${sp.sectionTitle} mt-1`}>Application list</h2>
+        </div>
+
+        {apps.length === 0 ? (
+          <div className={sp.empty}>No applications linked yet. Your counsellor will add these.</div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {apps.map((a) => {
+              const readiness = readinessMap[a.id];
+              const { nextAction } = resolveStudentWorkflow(a, readiness);
+              const { required, done, rejected } = docProgress(a);
+              const overdue = a.deadline && new Date(a.deadline) < new Date();
+              const feesPaid = readiness?.feesPaid;
+
+              return (
+                <StudentPortalPanel
+                  key={a.id}
+                  className={`${sp.panelPad} flex flex-col gap-4 transition hover:shadow-[0_8px_24px_rgba(15,23,42,0.06)]`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={sp.sectionEyebrow}>{a.applicationCode}</p>
+                      <h3 className="text-base font-semibold tracking-tight text-neutral-900 mt-1">{a.university}</h3>
+                      <p className={`${sp.body} mt-1`}>{a.course}</p>
+                      <p className="text-xs text-neutral-400 mt-1">{a.country}</p>
+                    </div>
+                    <span className={sp.badge}>{getStageLabel(a.stage)}</span>
+                  </div>
+
+                  <StudentWorkflowGuide app={a} readiness={readiness} compact />
+
+                  <div className="flex flex-wrap gap-2">
+                    <span className={sp.badge}>
+                      <FileText size={12} className="mr-1 text-neutral-400" />
+                      {required > 0 ? `${done}/${required} docs` : 'No checklist'}
+                      {rejected > 0 && <span className="text-rose-600 ml-1">· {rejected} rejected</span>}
+                    </span>
+                    <span className={sp.badge}>
+                      <CreditCard size={12} className="mr-1 text-neutral-400" />
+                      {feesPaid ? 'Fee paid' : readiness?.canPay ? 'Payment due' : 'Fee pending'}
+                    </span>
+                    {a.deadline && (
+                      <span className={`${sp.badge} ${overdue ? 'border-rose-200 bg-rose-50 text-rose-700' : ''}`}>
+                        <Clock size={12} className="mr-1" />
+                        {formatDate(a.deadline)}
+                      </span>
+                    )}
+                  </div>
+
+                  {nextAction && (
+                    <p className="text-xs leading-relaxed text-neutral-500 border-t border-neutral-100 pt-3">
+                      <span className="font-medium text-neutral-700">Next · </span>
+                      {nextAction.title}
                     </p>
                   )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
 
-      <section className="ui-panel overflow-hidden">
-        <div className="px-5 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-semibold text-neutral-900">University applications</h2>
-        </div>
-        {apps.length === 0 ? (
-          <p className="p-6 text-sm text-neutral-500">No applications linked yet. Your counsellor will add these.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
-                <tr>
-                  <th className="px-5 py-3 font-medium">Code</th>
-                  <th className="px-5 py-3 font-medium">University</th>
-                  <th className="px-5 py-3 font-medium">Course</th>
-                  <th className="px-5 py-3 font-medium">Country</th>
-                  <th className="px-5 py-3 font-medium">Stage</th>
-                  <th className="px-5 py-3 font-medium">Deadline</th>
-                  <th className="px-5 py-3 font-medium">Documents</th>
-                  <th className="px-5 py-3 font-medium" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {apps.map((a) => {
-                  const { required, done, rejected } = docProgress(a);
-                  const overdue = a.deadline && new Date(a.deadline) < new Date();
-                  return (
-                  <tr key={a.id} className="hover:bg-neutral-50/80">
-                    <td className="px-5 py-3 font-medium">{a.applicationCode}</td>
-                    <td className="px-5 py-3">{a.university}</td>
-                    <td className="px-5 py-3 text-neutral-600">{a.course}</td>
-                    <td className="px-5 py-3 text-neutral-600">{a.country}</td>
-                    <td className="px-5 py-3">
-                      <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-700">
-                        {a.stage}
-                      </span>
-                    </td>
-                    <td className={`px-5 py-3 text-xs ${overdue ? 'text-rose-600 font-medium' : 'text-neutral-500'}`}>
-                      {a.deadline ? formatDate(a.deadline) : '—'}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2 text-xs text-neutral-600">
-                        <FileText size={12} className="text-neutral-400" />
-                        {required > 0 ? (
-                          <span>
-                            {done}/{required} uploaded
-                            {rejected > 0 && (
-                              <span className="text-rose-600 ml-1">· {rejected} rejected</span>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="text-neutral-400">No checklist yet</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <Link
-                        href={`/applicant/applications/${a.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-neutral-700 hover:text-neutral-900"
-                      >
-                        Open <ChevronRight size={12} />
-                      </Link>
-                    </td>
-                  </tr>
-                );
-                })}
-              </tbody>
-            </table>
+                  <Link href={`/applicant/applications/${a.id}`} className={`${sp.btnPrimary} mt-auto w-full`}>
+                    Open application <ChevronRight size={14} />
+                  </Link>
+                </StudentPortalPanel>
+              );
+            })}
           </div>
         )}
       </section>
-    </div>
+    </StudentPortalPage>
   );
 }

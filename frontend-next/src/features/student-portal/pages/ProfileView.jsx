@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { getMyStudent } from '@/services/studentCrmApi';
 import { STAGE_LABELS } from '../constants';
+import { StudentPageHeader } from '../layout/StudentPortalLayoutContext';
+import { sp, StudentPortalPage, StudentPortalPanel } from '../student-portal-ui';
 
 export default function ProfileViewPage() {
   const [profile, setProfile] = useState(null);
@@ -15,7 +17,13 @@ export default function ProfileViewPage() {
   }, []);
 
   if (error) return <p className="ui-error">{error}</p>;
-  if (!profile) return <p className="text-sm text-neutral-500">Loading profile…</p>;
+  if (!profile) {
+    return (
+      <StudentPortalPage>
+        <p className={sp.body}>Loading profile…</p>
+      </StudentPortalPage>
+    );
+  }
 
   const examScores = [
     profile.ieltsScore != null && { label: 'IELTS', value: profile.ieltsScore },
@@ -25,15 +33,11 @@ export default function ProfileViewPage() {
   ].filter(Boolean);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">My profile</h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            View-only. Your counsellor maintains these details — contact them to request changes.
-          </p>
-        </div>
-      </div>
+    <StudentPortalPage>
+      <StudentPageHeader
+        title="Profile"
+        description="View-only. Your counsellor maintains these details — contact them to request changes."
+      />
 
       <div className="grid lg:grid-cols-2 gap-4">
         <Card title="Personal">
@@ -79,11 +83,11 @@ export default function ProfileViewPage() {
 
       {Array.isArray(profile.academicHistory) && profile.academicHistory.length > 0 && (
         <Card title="Academic history">
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {profile.academicHistory.map((row, i) => (
-              <li key={i} className="text-sm text-neutral-700 flex justify-between gap-4 border-b border-neutral-100 pb-2 last:border-0">
-                <span>{row.degree || '—'}{row.institution ? ` · ${row.institution}` : ''}</span>
-                <span className="text-neutral-500">{row.grade || '—'} · {row.year || '—'}</span>
+              <li key={i} className="flex justify-between gap-4 text-sm border-b border-neutral-100 pb-3 last:border-0 last:pb-0">
+                <span className="text-neutral-700">{row.degree || '—'}{row.institution ? ` · ${row.institution}` : ''}</span>
+                <span className="text-neutral-400 shrink-0">{row.grade || '—'} · {row.year || '—'}</span>
               </li>
             ))}
           </ul>
@@ -92,32 +96,32 @@ export default function ProfileViewPage() {
 
       {Array.isArray(profile.educationDetails) && profile.educationDetails.length > 0 && (
         <Card title="Education background">
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {profile.educationDetails.map((ed, i) => (
-              <li key={i} className="text-sm text-neutral-700 flex justify-between gap-4 border-b border-neutral-100 pb-2 last:border-0">
-                <span>{ed.label || ed.type}</span>
-                <span className="text-neutral-500">{ed.grade || '—'} · {ed.passing_year || '—'}</span>
+              <li key={i} className="flex justify-between gap-4 text-sm border-b border-neutral-100 pb-3 last:border-0 last:pb-0">
+                <span className="text-neutral-700">{ed.label || ed.type}</span>
+                <span className="text-neutral-400 shrink-0">{ed.grade || '—'} · {ed.passing_year || '—'}</span>
               </li>
             ))}
           </ul>
         </Card>
       )}
-    </div>
+    </StudentPortalPage>
   );
 }
 
 function Card({ title, children }) {
   return (
-    <section className="ui-panel p-5 space-y-3">
-      <h2 className="text-sm font-semibold text-neutral-900 border-b border-neutral-100 pb-2">{title}</h2>
+    <StudentPortalPanel className={`${sp.panelPad} space-y-4`}>
+      <h2 className={`${sp.sectionTitle} border-b border-neutral-100 pb-3`}>{title}</h2>
       {children}
-    </section>
+    </StudentPortalPanel>
   );
 }
 
 function Row({ label, value }) {
   return (
-    <div className="flex justify-between gap-4 text-sm py-1">
+    <div className="flex justify-between gap-4 text-sm py-0.5">
       <span className="text-neutral-500">{label}</span>
       <span className="text-neutral-900 text-right font-medium">{value || '—'}</span>
     </div>

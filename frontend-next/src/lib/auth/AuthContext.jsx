@@ -27,22 +27,24 @@ export const AuthProvider = ({ children }) => {
   const [refreshToken, setRefreshToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const syncProfile = () => {
-    return import('@/lib/api')
-      .then(({ default: authFetch }) => authFetch('/api/auth/me'))
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to fetch profile');
-      })
-      .then((data) => {
-        if (data?.success && data?.data) {
-          setUser(data.data);
-          localStorage.setItem('currentUser', JSON.stringify(data.data));
+  const syncProfile = async () => {
+    try {
+      const { default: authFetch } = await import('@/lib/api');
+      const res = await authFetch('/api/auth/me');
+      if (!res.ok) {
+        if (res.status !== 401) {
+          console.warn('[Permissions Sync] Profile sync failed:', res.status);
         }
-      })
-      .catch((err) => {
-        console.error('[Permissions Sync] Failed to sync profile:', err);
-      });
+        return;
+      }
+      const data = await res.json();
+      if (data?.success && data?.data) {
+        setUser(data.data);
+        localStorage.setItem('currentUser', JSON.stringify(data.data));
+      }
+    } catch (err) {
+      console.warn('[Permissions Sync] Could not reach auth API:', err?.message || err);
+    }
   };
 
   useEffect(() => {

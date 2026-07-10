@@ -22,7 +22,8 @@ export const getStagesForCountry = (countryName?: string | null): ApplicationPro
 };
 
 export const computeProcessProgress = (
-  items: { completed: boolean; checkList: { stage: ApplicationProcessStage; required: boolean } }[]
+  items: { completed: boolean; checkList: { stage: ApplicationProcessStage; required: boolean } }[],
+  countryName?: string | null
 ) => {
   const total = items.length;
   const completed = items.filter((i) => i.completed).length;
@@ -36,8 +37,12 @@ export const computeProcessProgress = (
     byStage.set(stage, cur);
   }
 
-  let processStage: ApplicationProcessStage = 'GATHERING_CHECKLIST';
-  for (const [stage, counts] of byStage) {
+  const stageOrder = getStagesForCountry(countryName);
+  let processStage: ApplicationProcessStage = stageOrder[0] || 'GATHERING_CHECKLIST';
+
+  for (const stage of stageOrder) {
+    const counts = byStage.get(stage);
+    if (!counts) continue;
     if (counts.done < counts.total) {
       processStage = stage;
       break;

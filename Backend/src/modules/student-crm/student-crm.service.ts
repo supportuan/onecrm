@@ -85,7 +85,13 @@ export const getStudentByUserId = async (userId: number) => {
     where: { userId, deletedAt: null },
     include: STUDENT_INCLUDE,
   });
-  if (student) return student;
+  if (student) {
+    await ensureStudentChecklistsAndProgress(student.id);
+    return prisma.student.findFirst({
+      where: { id: student.id },
+      include: STUDENT_INCLUDE,
+    });
+  }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.email) return null;
@@ -97,12 +103,12 @@ export const getStudentByUserId = async (userId: number) => {
   if (student) {
     if (!student.userId) {
       await prisma.student.update({ where: { id: student.id }, data: { userId } });
-      student = await prisma.student.findFirst({
-        where: { id: student.id },
-        include: STUDENT_INCLUDE,
-      });
     }
-    return student;
+    await ensureStudentChecklistsAndProgress(student.id);
+    return prisma.student.findFirst({
+      where: { id: student.id },
+      include: STUDENT_INCLUDE,
+    });
   }
 
   if (user.role !== UserRole.STUDENT) return null;
@@ -141,7 +147,44 @@ export const getStudentByUserId = async (userId: number) => {
     await seedStudentChecklists(created.id, created.countryId);
   }
 
-  return created;
+  await ensureStudentChecklistsAndProgress(created.id);
+  return prisma.student.findFirst({
+    where: { id: created.id },
+    include: STUDENT_INCLUDE,
+  });
+};
+
+/** Ensure country-linked checklist rows exist and progress fields match counsellor updates. */
+const ensureStudentChecklistsAndProgress = async (studentId: number) => {
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    include: {
+      country: true,
+      applications: { take: 1, orderBy: { createdAt: 'desc' } },
+      checklists: { take: 1 },
+    },
+  });
+  if (!student) return;
+
+  let countryId = student.countryId;
+  if (!countryId && (student.preferredCountry || student.applications[0]?.country)) {
+    const countryRow = await resolveCountry(
+      student.preferredCountry || student.applications[0]?.country || ''
+    );
+    if (countryRow) {
+      countryId = countryRow.id;
+      await prisma.student.update({
+        where: { id: studentId },
+        data: { countryId },
+      });
+    }
+  }
+
+  if (countryId && !student.checklists?.length) {
+    await seedStudentChecklists(studentId, countryId);
+  } else {
+    await refreshStudentProgress(studentId);
+  }
 };
 
 const buildFullName = (data: { firstName?: string; lastName?: string; fullName?: string }) => {
@@ -313,11 +356,25 @@ export const seedStudentChecklists = async (studentId: number, countryId: number
 };
 
 export const refreshStudentProgress = async (studentId: number) => {
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    include: {
+      country: true,
+      applications: { take: 1, orderBy: { createdAt: 'desc' } },
+    },
+  });
+  if (!student) return;
+
   const items = await prisma.studentChecklist.findMany({
     where: { studentId },
     include: { checkList: true },
   });
-  const progress = computeProcessProgress(items);
+  const countryName =
+    student.country?.name ||
+    student.preferredCountry ||
+    student.applications[0]?.country ||
+    null;
+  const progress = computeProcessProgress(items, countryName);
   await prisma.student.update({ where: { id: studentId }, data: progress });
 };
 

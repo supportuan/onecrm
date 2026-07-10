@@ -18,6 +18,7 @@ import {
   formatDate,
 } from '@/features/student-crm/components/ApplicationParts';
 import StudentPaymentPanel from '../components/StudentPaymentPanel';
+import StudentWorkflowGuide, { resolveStudentWorkflow } from '../components/StudentWorkflowGuide';
 import { getStageLabel } from '@/features/student-crm/constants';
 
 export default function StudentApplicationDetail({ applicationId }) {
@@ -111,6 +112,15 @@ export default function StudentApplicationDetail({ applicationId }) {
     );
   }
 
+  const { currentStepId } = resolveStudentWorkflow(app, readiness);
+  const showDocs = ['documents', 'payment', 'review'].includes(currentStepId);
+  const showPayment = ['payment', 'review'].includes(currentStepId) || (readiness && !readiness.feesPaid);
+  const showOffer =
+    currentStepId === 'offer' ||
+    (app.stage === 'OFFER_RECEIVED' && app.offerLetter) ||
+    ['OFFER_ACCEPTED', 'OFFER_REJECTED'].includes(app.stage);
+  const showVisa = ['visa'].includes(currentStepId) || ['VISA_PROCESS', 'ENROLLED', 'OFFER_ACCEPTED'].includes(app.stage);
+
   return (
     <div className="space-y-6">
       {toast.msg && (
@@ -140,24 +150,43 @@ export default function StudentApplicationDetail({ applicationId }) {
         </p>
       </div>
 
-      <StudentOfferPanel
-        app={app}
-        busy={offerBusy}
-        onAccept={() => handleOfferDecision('ACCEPTED')}
-        onReject={() => handleOfferDecision('REJECTED')}
-      />
+      <StudentWorkflowGuide app={app} readiness={readiness} />
 
-      <DocumentChecklist
-        app={app}
-        canManage={false}
-        canUpload
-        onUpload={handleDocUpload}
-        uploadingDocId={uploadingDocId}
-      />
+      {showOffer && (
+        <StudentOfferPanel
+          app={app}
+          busy={offerBusy}
+          onAccept={() => handleOfferDecision('ACCEPTED')}
+          onReject={() => handleOfferDecision('REJECTED')}
+        />
+      )}
 
-      <StudentPaymentPanel app={app} readiness={readiness} onPaid={fetchDetail} />
+      {showDocs && (
+        <DocumentChecklist
+          app={app}
+          canManage={false}
+          canUpload={currentStepId === 'documents' || app.documents?.some((d) => d.status === 'REJECTED')}
+          onUpload={handleDocUpload}
+          uploadingDocId={uploadingDocId}
+        />
+      )}
 
-      <StudentVisaPanel app={app} workflow={workflow} />
+      {showPayment && (
+        <StudentPaymentPanel app={app} readiness={readiness} onPaid={fetchDetail} />
+      )}
+
+      {showVisa && (
+        <StudentVisaPanel app={app} workflow={workflow} />
+      )}
+
+      {currentStepId === 'review' && !showOffer && (
+        <section className="ui-panel p-5 text-center">
+          <p className="text-sm font-medium text-neutral-900">Your application is with your counsellor</p>
+          <p className="text-sm text-neutral-500 mt-2">
+            Documents and fees are complete. You will be notified when there is an update from the university.
+          </p>
+        </section>
+      )}
     </div>
   );
 }
