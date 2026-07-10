@@ -685,6 +685,23 @@ export const listMyPaymentsHandler = async (req: Request, res: Response, next: N
   }
 };
 
+export const getPaymentReceiptHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const paymentId = numId(req.params.id);
+    if (!paymentId || !req.user?.id) return sendError(res, 'invalid request', null, 400);
+    const result = await paymentsService.getPaymentReceipt(
+      paymentId,
+      req.user.id,
+      req.user.role,
+    );
+    return sendSuccess(res, 'payment receipt', result);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('only available')) return sendError(res, err.message, null, 400);
+    next(err);
+  }
+};
+
 export const createPaymentOrderHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const applicationId = numId(req.params.id);

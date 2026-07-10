@@ -4,6 +4,7 @@ import { prisma } from '../../prisma.js';
 import { safeNotify } from '../notifications/recipients.js';
 import { getApplicationReadiness } from './application-gates.js';
 import { getApplication } from './student-crm.service.js';
+import { buildPaymentReceiptHtml } from './payment-receipt.js';
 
 const getRazorpay = () => {
   const key_id = process.env.RAZORPAY_KEY_ID?.trim();
@@ -48,6 +49,57 @@ export const listMyPayments = async (studentUserId: number) =>
       fee: { select: { id: true, label: true, feeType: true } },
     },
   });
+
+export const getPaymentReceipt = async (
+  paymentId: number,
+  userId: number,
+  role?: string,
+) => {
+  const payment = await prisma.applicationPayment.findUnique({
+    where: { id: paymentId },
+    include: {
+      application: {
+        include: { student: { select: { fullName: true, email: true } } },
+      },
+      fee: { select: { label: true, feeType: true } },
+      studentUser: { select: { fullName: true, email: true } },
+    },
+  });
+
+  if (!payment) throw new Error('payment not found');
+  if (payment.status !== 'PAID') {
+    throw new Error('receipt is only available for completed payments');
+  }
+
+  const isStudent = role === 'STUDENT';
+  if (isStudent && payment.studentUserId !== userId) {
+    throw new Error('payment not found');
+  }
+
+  if (!isStudent) {
+    const app = await getApplication(payment.applicationId, { id: userId, role });
+    if (!app) throw new Error('payment not found');
+  }
+
+  const html = buildPaymentReceiptHtml(payment);
+
+  return {
+    html,
+    payment: {
+      id: payment.id,
+      receiptNumber: payment.receiptNumber,
+      amountPaise: payment.amountPaise,
+      paidAt: payment.paidAt,
+      status: payment.status,
+      application: {
+        id: payment.applicationId,
+        applicationCode: payment.application.applicationCode,
+        university: payment.application.university,
+      },
+      fee: payment.fee,
+    },
+  };
+};
 
 export const upsertApplicationFee = async (
   applicationId: number,

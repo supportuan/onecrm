@@ -1,16 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
-import { CreditCard, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
+import { CreditCard, CheckCircle2, AlertCircle, Lock, Download } from 'lucide-react';
 import { createPaymentOrder, verifyPayment } from '@/services/studentCrmApi';
 import { openRazorpayCheckout } from '@/lib/razorpay';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { sp, StudentPortalPanel } from '../student-portal-ui';
 
 const formatInr = (paise) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format((paise || 0) / 100);
 
 const feeIsPaid = (fee, payments = []) =>
-  payments.some((p) => p.feeId === fee.id && p.status === 'PAID');
+  payments.find((p) => p.feeId === fee.id && p.status === 'PAID') || null;
 
 export default function StudentPaymentPanel({ app, readiness, onPaid }) {
   const { user } = useAuth();
@@ -22,10 +24,10 @@ export default function StudentPaymentPanel({ app, readiness, onPaid }) {
 
   if (!fees.length) {
     return (
-      <section className="ui-panel p-5">
-        <h2 className="text-sm font-semibold text-neutral-900">Fees & payments</h2>
-        <p className="text-sm text-neutral-500 mt-2">No fees have been assigned to this application yet.</p>
-      </section>
+      <StudentPortalPanel className={`${sp.panelPad} space-y-2`}>
+        <h2 className={sp.sectionTitle}>Fees & payments</h2>
+        <p className={sp.body}>No fees have been assigned to this application yet.</p>
+      </StudentPortalPanel>
     );
   }
 
@@ -66,54 +68,71 @@ export default function StudentPaymentPanel({ app, readiness, onPaid }) {
   };
 
   return (
-    <section className="ui-panel p-5 space-y-4">
+    <StudentPortalPanel className={`${sp.panelPad} space-y-5`}>
       <div>
-        <h2 className="text-sm font-semibold text-neutral-900">Fees & payments</h2>
-        <p className="text-sm text-neutral-500 mt-1">
-          Upload all required documents first, then pay your application fees securely via Razorpay.
+        <h2 className={sp.sectionTitle}>Fees & payments</h2>
+        <p className={`${sp.body} mt-1.5`}>
+          Upload all required documents first, then pay securely via Razorpay.
         </p>
         {fees.some((f) => !feeIsPaid(f, payments)) && (
-          <p className="text-xs text-neutral-400 mt-2">
-            Test mode: pay with card <span className="font-mono">4111 1111 1111 1111</span>, any future expiry, any CVV.
-            UPI QR is disabled in test checkout because it often returns &quot;invalid UPI id&quot;.
+          <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
+            Test mode: card <span className="font-mono">4111 1111 1111 1111</span>, any future expiry, any CVV.
           </p>
         )}
       </div>
 
       {!readiness?.canPay && readiness?.missingDocuments?.length > 0 && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3.5 text-sm text-amber-900">
           <Lock className="h-4 w-4 shrink-0 mt-0.5" />
           <span>Upload all required documents before payment unlocks.</span>
         </div>
       )}
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-rose-600">
-          <AlertCircle className="h-4 w-4" />
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200/80 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
 
-      <ul className="divide-y divide-neutral-100 border border-neutral-100 rounded-lg overflow-hidden">
+      <ul className="space-y-2">
         {fees.map((fee) => {
-          const paid = feeIsPaid(fee, payments);
+          const paidPayment = feeIsPaid(fee, payments);
+          const paid = Boolean(paidPayment);
           const canPay = readiness?.canPay && !paid;
           return (
-            <li key={fee.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-white">
+            <li
+              key={fee.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50/40 px-4 py-3.5"
+            >
               <div>
-                <p className="text-sm font-medium text-neutral-900">{fee.label}</p>
+                <p className="text-sm font-semibold text-neutral-900">{fee.label}</p>
                 <p className="text-xs text-neutral-500 mt-0.5">{formatInr(fee.amountPaise)}</p>
               </div>
               {paid ? (
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" /> Paid
-                </span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={sp.badge}>
+                    <CheckCircle2 className="mr-1 h-3 w-3 text-emerald-600" />
+                    Paid
+                  </span>
+                  {paidPayment?.id && (
+                    <Link
+                      href={`/applicant/payments/${paidPayment.id}/receipt`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={sp.btnGhost}
+                    >
+                      <Download className="h-3 w-3" />
+                      Receipt
+                    </Link>
+                  )}
+                </div>
               ) : (
                 <button
                   type="button"
                   disabled={!canPay || payingFeeId === fee.id}
                   onClick={() => handlePay(fee)}
-                  className="ui-btn-primary inline-flex items-center gap-2 text-xs py-2 disabled:opacity-50"
+                  className={`${sp.btnPrimary} text-xs py-2 disabled:opacity-50`}
                 >
                   <CreditCard className="h-3.5 w-3.5" />
                   {payingFeeId === fee.id ? 'Processing…' : 'Pay now'}
@@ -123,6 +142,6 @@ export default function StudentPaymentPanel({ app, readiness, onPaid }) {
           );
         })}
       </ul>
-    </section>
+    </StudentPortalPanel>
   );
 }
