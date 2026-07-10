@@ -270,14 +270,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
         <header className="flex items-center justify-between bg-white px-4 sm:px-6 lg:px-8 gap-4 py-4 sm:px-6 lg:px-8">
             {/* Left */}
             <div className="flex min-w-0 items-center gap-6">
-                {/* <button
-                    type="button"
-                    onClick={onToggleSidebar}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 cursor-pointer"
-                    aria-label="Toggle sidebar"
-                >
-                    <Menu className="h-5 w-5" />
-                </button> */}
+
 
                 <Image
                     src="/images/applyUniNow.png"
@@ -289,11 +282,11 @@ const TopNavbar = ({ onToggleSidebar }) => {
 
                 <div className="hidden flex-col border-slate-200 pr-14 sm:flex">
                     <p className="text-lg font-bold leading-tight text-slate-900">
-                        ONECRM
+                        Unified Innovation
                     </p>
-                    {/* <p className="text-xs text-slate-500">
-                        Role based access
-                    </p> */}
+                    <p className="text-md font-bold leading-tight text-slate-900">
+                        Unlimited Possibilities
+                    </p>
                 </div>
 
                 <div className="flex min-w-0 flex-col">
