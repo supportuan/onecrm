@@ -23,11 +23,9 @@ const TopNavbar = ({ sidebarOpen, onToggleSidebar }) => {
           <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
 
-        {!sidebarOpen && (
-          <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-neutral-900">
-            {title}
-          </h1>
-        )}
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-neutral-900">
+          {title}
+        </h1>
       </div>
 
       <div className="flex shrink-0 items-center gap-4">

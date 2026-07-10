@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
-import { StaffAutoPageHeader, StaffLayoutProvider } from './StaffLayoutContext';
+import { StaffLayoutProvider } from './StaffLayoutContext';
 import { useAuth } from '@/lib/auth/AuthContext';
 import {
   SIDEBAR_OPEN,
@@ -86,7 +86,6 @@ const Layout = ({ children }) => {
 
         <main className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden px-4 pb-10 pt-6 sm:px-6 lg:px-8">
           <StaffLayoutProvider sidebarOpen={sidebarOpen}>
-            <StaffAutoPageHeader />
             {children}
           </StaffLayoutProvider>
         </main>
