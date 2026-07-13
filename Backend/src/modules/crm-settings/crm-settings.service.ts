@@ -269,6 +269,43 @@ export const createUniversity = (data: {
   logo?: string;
 }) => prisma.university.create({ data });
 
+/** Find an existing university in a country (case-insensitive) or create it. */
+export const findOrCreateUniversity = async (data: {
+  countryId: number;
+  name: string;
+  city?: string | null;
+}) => {
+  const name = data.name.trim();
+  if (!name) throw Object.assign(new Error('University name is required'), { status: 400 });
+  if (!data.countryId) throw Object.assign(new Error('countryId is required'), { status: 400 });
+
+  const country = await prisma.country.findFirst({
+    where: { id: data.countryId, ...notDeleted },
+    select: { id: true },
+  });
+  if (!country) throw Object.assign(new Error('Country not found'), { status: 404 });
+
+  const existing = await prisma.university.findFirst({
+    where: {
+      countryId: data.countryId,
+      deletedAt: null,
+      name: { equals: name, mode: 'insensitive' },
+    },
+    include: { country: true },
+  });
+  if (existing) return { university: existing, created: false };
+
+  const university = await prisma.university.create({
+    data: {
+      name,
+      countryId: data.countryId,
+      ...(data.city ? { city: data.city } : {}),
+    },
+    include: { country: true },
+  });
+  return { university, created: true };
+};
+
 export const updateUniversity = (
   id: number,
   data: Partial<{ name: string; countryId: number; city: string; location: string; logo: string }>

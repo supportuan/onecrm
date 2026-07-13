@@ -5,6 +5,7 @@ import {
   fetchAllCoursesForUniversity,
   fetchAllUniversitiesForCountry,
   findOrCreateCourse,
+  findOrCreateUniversity,
 } from '@/services/crmSettingsApi';
 
 const Field = ({ label, children }) => (
@@ -17,9 +18,9 @@ const Field = ({ label, children }) => (
 const str = (v) => (v == null || v === '' ? '' : String(v));
 
 /**
- * Country → university → course cascade.
- * Course field shows catalog suggestions but always allows typing a new name
- * and persists it to the Course table via find-or-create.
+ * Country → university → course.
+ * University and course show catalog suggestions but always allow typing a new name
+ * (persisted via find-or-create). These are form fields, not catalog filters.
  */
 export default function CatalogCourseFields({
   countries = [],
@@ -35,9 +36,13 @@ export default function CatalogCourseFields({
   const [courses, setCourses] = useState([]);
   const [loadingUnis, setLoadingUnis] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [savingUniversity, setSavingUniversity] = useState(false);
   const [savingCourse, setSavingCourse] = useState(false);
+  const [universityQuery, setUniversityQuery] = useState('');
   const [courseQuery, setCourseQuery] = useState('');
+  const [showUniSuggestions, setShowUniSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const uniBlurTimer = useRef(null);
   const blurTimer = useRef(null);
 
   const countryId = hideCountry
@@ -48,6 +53,10 @@ export default function CatalogCourseFields({
   const courseId = str(safeValue.courseId);
   const courseName = str(safeValue.course);
   const countryName = str(safeValue.country);
+
+  useEffect(() => {
+    setUniversityQuery(universityName);
+  }, [universityName, countryId]);
 
   useEffect(() => {
     setCourseQuery(courseName);
@@ -97,6 +106,21 @@ export default function CatalogCourseFields({
     };
   }, [universityId]);
 
+  const uniSuggestions = useMemo(() => {
+    const q = universityQuery.trim().toLowerCase();
+    let list = universities;
+    if (q) {
+      list = universities.filter((u) => u.name?.toLowerCase().includes(q));
+    }
+    return list.slice(0, 50);
+  }, [universities, universityQuery]);
+
+  const exactUniMatch = useMemo(() => {
+    const q = universityQuery.trim().toLowerCase();
+    if (!q) return null;
+    return universities.find((u) => u.name?.toLowerCase() === q) || null;
+  }, [universities, universityQuery]);
+
   const suggestions = useMemo(() => {
     const q = courseQuery.trim().toLowerCase();
     let list = courses;
@@ -124,22 +148,77 @@ export default function CatalogCourseFields({
       courseId: '',
       course: '',
     });
+    setUniversityQuery('');
     setCourseQuery('');
+    setShowUniSuggestions(false);
     setShowSuggestions(false);
   };
 
-  const onUniversityChange = (id) => {
-    const uni = universities.find((u) => String(u.id) === String(id));
+  const selectExistingUniversity = (uni) => {
     patch({
-      universityId: id,
-      university: uni?.name || '',
+      universityId: String(uni.id),
+      university: uni.name || '',
       countryId: uni?.countryId ? String(uni.countryId) : countryId,
       country: uni?.country?.name || countryName,
       courseId: '',
       course: '',
     });
+    setUniversityQuery(uni.name || '');
     setCourseQuery('');
+    setShowUniSuggestions(false);
     setShowSuggestions(false);
+  };
+
+  const commitUniversityName = async (rawName) => {
+    const name = (rawName ?? universityQuery).trim();
+    if (!name) {
+      patch({ universityId: '', university: '', courseId: '', course: '' });
+      setCourseQuery('');
+      return;
+    }
+
+    const existing =
+      universities.find((u) => u.name?.toLowerCase() === name.toLowerCase()) ||
+      (universityId && universities.find((u) => String(u.id) === universityId));
+
+    if (existing && existing.name?.toLowerCase() === name.toLowerCase()) {
+      selectExistingUniversity(existing);
+      return;
+    }
+
+    patch({ universityId: '', university: name, courseId: '', course: '' });
+    setUniversityQuery(name);
+    setCourseQuery('');
+
+    if (!countryId) return;
+
+    setSavingUniversity(true);
+    try {
+      const res = await findOrCreateUniversity({
+        countryId: Number(countryId),
+        name,
+      });
+      const uni = res?.data || res;
+      if (uni?.id) {
+        setUniversities((prev) => {
+          if (prev.some((u) => String(u.id) === String(uni.id))) return prev;
+          return [...prev, uni].sort((a, b) =>
+            String(a.name || '').localeCompare(String(b.name || ''))
+          );
+        });
+        patch({
+          universityId: String(uni.id),
+          university: uni.name || name,
+          courseId: '',
+          course: '',
+        });
+        setUniversityQuery(uni.name || name);
+      }
+    } catch {
+      patch({ universityId: '', university: name, courseId: '', course: '' });
+    } finally {
+      setSavingUniversity(false);
+    }
   };
 
   const selectExistingCourse = (course) => {
@@ -168,7 +247,6 @@ export default function CatalogCourseFields({
       return;
     }
 
-    // Keep the typed name even before DB save succeeds
     patch({ courseId: '', course: name });
     setCourseQuery(name);
 
@@ -192,7 +270,6 @@ export default function CatalogCourseFields({
         setCourseQuery(course.name || name);
       }
     } catch {
-      // Application can still save with free-text course name
       patch({ courseId: '', course: name });
     } finally {
       setSavingCourse(false);
@@ -233,41 +310,91 @@ export default function CatalogCourseFields({
 
       <Field label="University *">
         {loadingUnis ? (
-          <select disabled value="" className={`${inputClass} ui-select`}>
-            <option value="">Loading universities…</option>
-          </select>
-        ) : universities.length ? (
-          <select
-            required
-            disabled={disabled || !countryId}
-            value={universityId}
-            onChange={(e) => onUniversityChange(e.target.value)}
-            className={`${inputClass} ui-select`}
-          >
-            <option value="">{countryId ? 'Select university' : 'Select country first'}</option>
-            {universities.map((u) => (
-              <option key={u.id} value={String(u.id)}>
-                {u.name}
-                {u.city ? ` · ${u.city}` : ''}
-                {u.courseCount != null ? ` (${u.courseCount} courses)` : ''}
-              </option>
-            ))}
-          </select>
+          <input disabled value="" className={inputClass} placeholder="Loading universities…" />
         ) : (
-          <input
-            required
-            disabled={disabled}
-            value={universityName}
-            onChange={(e) => patch({ university: e.target.value, universityId: '' })}
-            className={inputClass}
-            placeholder={countryId ? 'No universities for this country' : 'Select country first'}
-          />
+          <div className="relative space-y-2">
+            <input
+              required
+              disabled={disabled || !countryId}
+              value={universityQuery}
+              onChange={(e) => {
+                const next = e.target.value;
+                setUniversityQuery(next);
+                patch({ university: next, universityId: '', courseId: '', course: '' });
+                setCourseQuery('');
+                setShowUniSuggestions(true);
+              }}
+              onFocus={() => setShowUniSuggestions(true)}
+              onBlur={() => {
+                if (uniBlurTimer.current) clearTimeout(uniBlurTimer.current);
+                uniBlurTimer.current = setTimeout(() => {
+                  setShowUniSuggestions(false);
+                  commitUniversityName(universityQuery);
+                }, 150);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setShowUniSuggestions(false);
+                  commitUniversityName(universityQuery);
+                }
+              }}
+              className={inputClass}
+              placeholder={
+                countryId
+                  ? 'Type to search or enter a new university'
+                  : 'Select country first'
+              }
+              autoComplete="off"
+            />
+
+            {showUniSuggestions && countryId && (uniSuggestions.length > 0 || universityQuery.trim()) && (
+              <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                {uniSuggestions.map((u) => (
+                  <li key={u.id}>
+                    <button
+                      type="button"
+                      className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm text-brand hover:bg-brand-soft"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectExistingUniversity(u)}
+                    >
+                      <span className="min-w-0 flex-1 truncate font-medium">{u.name}</span>
+                      {u.city && (
+                        <span className="shrink-0 text-xs text-brand-muted">{u.city}</span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+
+                {universityQuery.trim() && !exactUniMatch && (
+                  <li>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 border-t border-slate-100 px-3 py-2.5 text-left text-sm font-medium text-brand-accent hover:bg-brand-soft"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => commitUniversityName(universityQuery)}
+                    >
+                      Use new university: “{universityQuery.trim()}”
+                    </button>
+                  </li>
+                )}
+              </ul>
+            )}
+
+            <p className="text-xs text-brand-muted">
+              {savingUniversity
+                ? 'Saving university…'
+                : universityId
+                  ? `Linked to catalog (#${universityId})`
+                  : universityQuery.trim()
+                    ? 'New university names are saved for this country'
+                    : 'Pick a suggestion or type a new university name'}
+            </p>
+          </div>
         )}
       </Field>
 
-      <Field
-        label={`Course *${courses.length ? ` — ${courses.length.toLocaleString()} suggestions` : ''}`}
-      >
+      <Field label="Course *">
         {loadingCourses ? (
           <input disabled value="" className={inputClass} placeholder="Loading courses…" />
         ) : (
@@ -301,7 +428,7 @@ export default function CatalogCourseFields({
               placeholder={
                 universityId
                   ? 'Type to search or enter a new course name'
-                  : 'Select university first'
+                  : 'Select or enter university first'
               }
               autoComplete="off"
             />
@@ -338,10 +465,6 @@ export default function CatalogCourseFields({
                     </button>
                   </li>
                 )}
-
-                {courseQuery.trim() && suggestions.length === 0 && exactMatch && (
-                  <li className="px-3 py-2 text-xs text-brand-muted">Exact catalog match available above</li>
-                )}
               </ul>
             )}
 
@@ -351,10 +474,8 @@ export default function CatalogCourseFields({
                 : courseId
                   ? `Linked to catalog (#${courseId})`
                   : courseQuery.trim()
-                    ? 'New course names are saved to the catalog for this university'
-                    : courses.length
-                      ? 'Pick a suggestion or type a new course name'
-                      : 'No catalog courses yet — type a course name to add it'}
+                    ? 'New course names are saved for this university'
+                    : 'Pick a suggestion or type a new course name'}
             </p>
           </div>
         )}

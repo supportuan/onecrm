@@ -25,8 +25,13 @@ import {
   setStudentEnrolled,
   updateChecklistValue,
 } from '@/services/studentCrmApi';
-import { getFormOptions, listIndustries, listIndustrySubFields } from '@/services/crmSettingsApi';
-import { studyIdsFromProfile, toNumOrNull, toSelectId } from '../studyFormOptions';
+import { getFormOptions } from '@/services/crmSettingsApi';
+import {
+  resolveStudyCascades,
+  studyIdsFromProfile,
+  toNumOrNull,
+  toSelectId,
+} from '../studyFormOptions';
 import CatalogCourseFields from '../components/CatalogCourseFields';
 import { resolveCatalogCountryId, pickCatalogCountry } from '../catalogCountry';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
@@ -85,11 +90,6 @@ export default function StudentManagement() {
   const [saving, setSaving] = useState(false);
   const [counsellors, setCounsellors] = useState([]);
   const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
-  const [countryIndustries, setCountryIndustries] = useState([]);
-  const [loadingIndustries, setLoadingIndustries] = useState(false);
-  const [industryLoadError, setIndustryLoadError] = useState('');
-  const [subFields, setSubFields] = useState([]);
-  const [loadingSubFields, setLoadingSubFields] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showNewApp, setShowNewApp] = useState(false);
   const [toast, setToast] = useState({ kind: '', msg: '' });
@@ -154,38 +154,11 @@ export default function StudentManagement() {
 
   const [form, setForm] = useState(null);
 
-  useEffect(() => {
-    const catalogCountryId = resolveCatalogCountryId(form?.countryId);
-    if (!catalogCountryId) {
-      setCountryIndustries([]);
-      setIndustryLoadError('');
-      return;
-    }
-    setLoadingIndustries(true);
-    setIndustryLoadError('');
-    listIndustries({ countryId: catalogCountryId })
-      .then((r) => setCountryIndustries(Array.isArray(r?.data) ? r.data : []))
-      .catch((err) => {
-        console.error('Failed to load fields of study', err);
-        setCountryIndustries([]);
-        setIndustryLoadError(err?.message || 'Failed to load fields from catalog');
-      })
-      .finally(() => setLoadingIndustries(false));
-  }, [form?.countryId]);
-
-  useEffect(() => {
-    const catalogCountryId = resolveCatalogCountryId(form?.countryId);
-    const industryId = form?.industryId;
-    if (!catalogCountryId || !industryId) {
-      setSubFields([]);
-      return;
-    }
-    setLoadingSubFields(true);
-    listIndustrySubFields({ countryId: catalogCountryId, industryId })
-      .then((r) => setSubFields(Array.isArray(r?.data) ? r.data : []))
-      .catch(() => setSubFields([]))
-      .finally(() => setLoadingSubFields(false));
-  }, [form?.countryId, form?.industryId]);
+  const { subIndustries: programLevels } = resolveStudyCascades(
+    formOptions.industries,
+    form?.industryId,
+    form?.subIndustryId
+  );
 
   useEffect(() => {
     if (!profile) {
@@ -596,10 +569,8 @@ export default function StudentManagement() {
                             ...form,
                             countryId: catalogId,
                             preferredCountry: country?.name || '',
-                            industryId: '',
-                            subIndustryId: '',
-                            studyAreaId: '',
                             university: '',
+                            universityId: '',
                             courseId: '',
                             course: '',
                           });
@@ -609,67 +580,53 @@ export default function StudentManagement() {
                         {formOptions.countries?.map((c) => (
                           <option key={c.id} value={String(c.catalogCountryId ?? c.id)}>
                             {c.name}
-                            {c.courseCount > 0 ? ` (${c.courseCount.toLocaleString()} courses)` : ''}
                           </option>
                         ))}
                       </select>
                     </Field>
-                    <Field label={`Field of study${countryIndustries.length ? ` — ${countryIndustries.length} in catalog` : ''}`}>
+                    <Field label="Field of study">
                       <select
                         className={SELECT}
                         style={SELECT_BG}
                         value={form.industryId}
-                        disabled={!canManage || profile.isEnrolled || !form.countryId || loadingIndustries}
-                        onChange={(e) => setForm({ ...form, industryId: e.target.value, subIndustryId: '', studyAreaId: '' })}
+                        disabled={!canManage || profile.isEnrolled}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            industryId: e.target.value,
+                            subIndustryId: '',
+                            studyAreaId: '',
+                          })
+                        }
                       >
-                        <option value="">
-                          {!form.countryId
-                            ? 'Select country first'
-                            : loadingIndustries
-                              ? 'Scanning course catalog (first load may take ~1 min)…'
-                              : industryLoadError
-                                ? industryLoadError
-                                : countryIndustries.length
-                                  ? 'Select field of study'
-                                  : 'No fields matched for this country'}
-                        </option>
-                        {countryIndustries.map((i) => (
-                          <option key={i.id ?? i.name} value={i.id ? String(i.id) : ''} disabled={!i.id}>
+                        <option value="">Select field of study</option>
+                        {(formOptions.industries || []).map((i) => (
+                          <option key={i.id} value={String(i.id)}>
                             {i.name}
-                            {i.courseCount != null ? ` (${i.courseCount.toLocaleString()} courses)` : ''}
                           </option>
                         ))}
                       </select>
                     </Field>
-                    <Field label={`Program level${subFields.length ? ` — ${subFields.length} in catalog` : ''}`}>
+                    <Field label="Program level">
                       <select
                         className={SELECT}
                         style={SELECT_BG}
                         value={form.subIndustryId}
-                        disabled={!canManage || profile.isEnrolled || !form.industryId || loadingSubFields}
-                        onChange={(e) => {
-                          const selected = subFields.find((s) => s.id && String(s.id) === e.target.value);
+                        disabled={!canManage || profile.isEnrolled || !form.industryId}
+                        onChange={(e) =>
                           setForm({
                             ...form,
                             subIndustryId: e.target.value,
-                            level: selected?.name || form.level,
                             studyAreaId: '',
-                          });
-                        }}
+                          })
+                        }
                       >
                         <option value="">
-                          {!form.industryId
-                            ? 'Select field of study first'
-                            : loadingSubFields
-                              ? 'Loading program levels…'
-                              : subFields.length
-                                ? 'Select program level'
-                                : 'No program levels for this field'}
+                          {form.industryId ? 'Select program level' : 'Select field of study first'}
                         </option>
-                        {subFields.map((s) => (
-                          <option key={s.id ?? s.name} value={s.id ? String(s.id) : ''} disabled={!s.id}>
+                        {programLevels.map((s) => (
+                          <option key={s.id} value={String(s.id)}>
                             {s.name}
-                            {s.courseCount != null ? ` (${s.courseCount.toLocaleString()} courses)` : ''}
                           </option>
                         ))}
                       </select>

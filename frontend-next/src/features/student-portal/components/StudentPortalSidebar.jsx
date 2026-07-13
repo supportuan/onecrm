@@ -1,17 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   FileText,
-  LogOut,
   CreditCard,
   UserRound,
   PanelLeftClose,
 } from 'lucide-react';
-import { useAuth } from '@/lib/auth/AuthContext';
 import { StudentPortalBrand, StudentPortalLogo } from './StudentPortalBrand';
-import { SIDEBAR_OPEN, SIDEBAR_COLLAPSED, initials } from '@/lib/layout-shell';
+import { SIDEBAR_OPEN, SIDEBAR_COLLAPSED } from '@/lib/layout-shell';
 
 export { SIDEBAR_OPEN, SIDEBAR_COLLAPSED };
 
@@ -23,15 +21,6 @@ const NAV = [
 
 export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout } = useAuth();
-
-  const handleLogout = () => {
-    logout?.();
-    router.push('/student-login');
-    localStorage.clear();
-  };
-
   const width = sidebarOpen ? SIDEBAR_OPEN : SIDEBAR_COLLAPSED;
 
   return (
@@ -100,39 +89,6 @@ export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
           })}
         </ul>
       </nav>
-
-      <div className={`flex-none border-t border-neutral-100/80 ${sidebarOpen ? 'p-3' : 'p-2'}`}>
-        {sidebarOpen ? (
-          <div className="mb-2 flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-neutral-600 shadow-sm ring-1 ring-neutral-200/80">
-              {initials(user?.fullName, user?.email)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-neutral-800 truncate">{user?.fullName || 'Student'}</p>
-              <p className="text-[10px] text-neutral-400 truncate">{user?.email}</p>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-neutral-50 text-[10px] font-semibold text-neutral-600 ring-1 ring-neutral-200/80"
-            title={user?.fullName || user?.email}
-          >
-            {initials(user?.fullName, user?.email)}
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          title={!sidebarOpen ? 'Log out' : undefined}
-          className={`flex w-full items-center rounded-xl text-[13px] font-medium text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-800 ${
-            sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center p-2.5'
-          }`}
-        >
-          <LogOut className="h-[17px] w-[17px] shrink-0" strokeWidth={1.75} />
-          {sidebarOpen && <span>Log out</span>}
-        </button>
-      </div>
     </aside>
   );
 }

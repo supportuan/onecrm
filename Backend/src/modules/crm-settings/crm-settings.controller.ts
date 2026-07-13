@@ -85,6 +85,26 @@ export const createUniversity = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const findOrCreateUniversity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, countryId, city } = req.body || {};
+    if (!name || !countryId) return sendError(res, 'name and countryId are required', null, 400);
+    const result = await service.findOrCreateUniversity({
+      name: String(name),
+      countryId: Number(countryId),
+      city: city ? String(city) : null,
+    });
+    return sendSuccess(
+      res,
+      result.created ? 'university created' : 'university found',
+      result.university,
+      result.created ? 201 : 200
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const updateUniversity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = numId(req.params.id);

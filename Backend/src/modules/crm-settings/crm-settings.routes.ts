@@ -23,6 +23,7 @@ router.post('/study-areas', manage, controller.createStudyArea);
 
 router.get('/universities', view, controller.listUniversities);
 router.post('/universities', manage, controller.createUniversity);
+router.post('/universities/find-or-create', view, controller.findOrCreateUniversity);
 router.put('/universities/:id', manage, controller.updateUniversity);
 router.delete('/universities/:id', manage, controller.deleteUniversity);
 
