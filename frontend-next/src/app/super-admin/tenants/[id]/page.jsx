@@ -118,7 +118,7 @@ export default function TenantDetailPage() {
 
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">{tenant.name}</h1>
+          <h1 className="text-2xl font-semibold text-brand">{tenant.name}</h1>
           <p className="text-sm text-neutral-500 mt-1">
             slug: <code>{tenant.slug}</code> · {tenant.userCount} user{tenant.userCount === 1 ? '' : 's'}
           </p>
@@ -136,26 +136,26 @@ export default function TenantDetailPage() {
       </div>
 
       <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-6">
-        <h2 className="font-medium text-neutral-900 mb-3">Primary admin</h2>
+        <h2 className="font-medium text-brand mb-3">Primary admin</h2>
         {tenant.primaryAdmin ? (
           <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-sm">
             <div>
               <div className="text-xs text-neutral-500">Name</div>
-              <div className="text-neutral-900">{tenant.primaryAdmin.fullName}</div>
+              <div className="text-brand">{tenant.primaryAdmin.fullName}</div>
             </div>
             <div>
               <div className="text-xs text-neutral-500">Login email</div>
-              <div className="text-neutral-900 font-mono">{tenant.primaryAdmin.email}</div>
+              <div className="text-brand font-mono">{tenant.primaryAdmin.email}</div>
             </div>
             {tenant.primaryAdmin.phone && (
               <div>
                 <div className="text-xs text-neutral-500">Phone</div>
-                <div className="text-neutral-900">{tenant.primaryAdmin.phone}</div>
+                <div className="text-brand">{tenant.primaryAdmin.phone}</div>
               </div>
             )}
             <div>
               <div className="text-xs text-neutral-500">Last login</div>
-              <div className="text-neutral-900">
+              <div className="text-brand">
                 {tenant.primaryAdmin.lastLogin
                   ? new Date(tenant.primaryAdmin.lastLogin).toLocaleString()
                   : 'Never'}
@@ -210,7 +210,7 @@ export default function TenantDetailPage() {
 
       <section className="rounded-lg border border-neutral-200 bg-white p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-medium text-neutral-900">Modules</h2>
+          <h2 className="font-medium text-brand">Modules</h2>
           {msg && <span className="text-xs text-emerald-600">{msg}</span>}
         </div>
         <p className="text-xs text-neutral-500 mb-4">
@@ -226,7 +226,7 @@ export default function TenantDetailPage() {
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-neutral-900">{m.label}</span>
+                    <span className="text-sm font-medium text-brand">{m.label}</span>
                     {m.beta && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
                         Beta

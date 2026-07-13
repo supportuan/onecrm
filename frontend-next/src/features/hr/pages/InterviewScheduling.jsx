@@ -185,7 +185,7 @@ export default function InterviewScheduling() {
         </div>
         <button
           onClick={() => setShowScheduleModal(true)}
-          className="flex items-center gap-2 bg-neutral-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-800"
+          className="flex items-center gap-2 bg-neutral-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-hover"
         >
           <Plus className="w-4 h-4" /> Schedule Interview
         </button>
@@ -313,7 +313,7 @@ export default function InterviewScheduling() {
 
       {/* Schedule Modal */}
       {showScheduleModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-brand/30 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-auto p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900">Schedule Interview</h2>
@@ -354,7 +354,7 @@ export default function InterviewScheduling() {
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowScheduleModal(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600">Cancel</button>
               <button onClick={handleSchedule} disabled={submitting}
-                className="flex-1 bg-neutral-700 text-white rounded-lg py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 flex items-center justify-center gap-2">
+                className="flex-1 bg-neutral-700 text-white rounded-lg py-2 text-sm font-medium hover:bg-brand-hover disabled:opacity-50 flex items-center justify-center gap-2">
                 <Save className="w-4 h-4" /> Schedule
               </button>
             </div>
@@ -364,7 +364,7 @@ export default function InterviewScheduling() {
 
       {/* Feedback Modal */}
       {feedbackModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-brand/30 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900">Submit Feedback — {feedbackModal.candidateName}</h2>
@@ -421,7 +421,7 @@ export default function InterviewScheduling() {
             <div className="flex gap-3 mt-6">
               <button onClick={() => setFeedbackModal(null)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600">Cancel</button>
               <button onClick={handleFeedbackSubmit} disabled={submitting}
-                className="flex-1 bg-neutral-700 text-white rounded-lg py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50">
+                className="flex-1 bg-neutral-700 text-white rounded-lg py-2 text-sm font-medium hover:bg-brand-hover disabled:opacity-50">
                 Submit Feedback
               </button>
             </div>
@@ -430,7 +430,7 @@ export default function InterviewScheduling() {
       )}
 
       {rescheduleModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-brand/30 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
             <h2 className="font-semibold text-gray-900 mb-4">Reschedule interview</h2>
             <p className="text-sm text-gray-500 mb-4">{rescheduleModal.candidateName} — {rescheduleModal.round}</p>

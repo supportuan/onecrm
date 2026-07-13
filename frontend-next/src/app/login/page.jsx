@@ -1,10 +1,11 @@
-
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getDefaultHrRoute } from '@/features/hr/routing';
+import AuthPageShell from '@/components/AuthPageShell';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -69,7 +70,6 @@ export default function LoginPage() {
 
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
-
     setRegisterForm((prev) => ({
       ...prev,
       [name]: value,
@@ -147,88 +147,64 @@ export default function LoginPage() {
     }
   };
 
-  const inputClass =
-    'h-11 sm:h-12 w-full rounded-xl border border-slate-200 bg-white px-3 sm:px-4 text-sm font-medium text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100';
-
-  const labelClass =
-    'mb-2 block text-sm font-semibold text-slate-600';
-
   return (
-    <main className="min-h-screen overflow-y-auto bg-slate-50 px-4 py-6 sm:px-6 lg:px-8 flex items-center justify-center">
-      <div
-        className={`mx-auto w-full rounded-2xl border border-slate-200 bg-white shadow-sm ${isRegister
-          ? 'max-w-6xl p-5 sm:p-8 lg:p-10'
-          : 'max-w-md p-6 sm:p-8'
-          }`}
-      >
-        <div className="mb-6 sm:mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">
-            OneCRM
+    <AuthPageShell wide={isRegister}>
+      <div className={`ui-card ${isRegister ? 'max-w-none w-full' : ''}`}>
+        <div className="mb-8">
+          <p className="ui-section-title">Staff portal</p>
+          <h1 className="mt-3 ui-text-h2">{isRegister ? 'Create account' : 'Sign in'}</h1>
+          <p className="mt-2 ui-text-body">
+            {isRegister
+              ? 'Register as a student or agency partner to get started.'
+              : 'Sign in with your staff credentials to continue.'}
           </p>
-          <h1 className="mt-3 text-2xl font-bold text-slate-950 sm:text-3xl">
-            {isRegister ? 'Create account' : 'Sign in'}
-          </h1>
         </div>
 
         {!isRegister ? (
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <div>
-              <label className={labelClass}>Email</label>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <label className="block">
+              <span className="ui-label">Email</span>
               <input
                 type="email"
+                maxLength={150}
+                className="ui-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
                 required
               />
-            </div>
+            </label>
 
-            <div>
-              <label className={labelClass}>Password</label>
+            <label className="block">
+              <span className="ui-label">Password</span>
               <input
                 type="password"
+                minLength={8}
+                maxLength={64}
+                className="ui-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
                 required
               />
-            </div>
+            </label>
 
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-                {error}
-              </div>
-            )}
+            {error && <p className="ui-error">{error}</p>}
+            {success && <p className="ui-success">{success}</p>}
 
-            {success && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
-                {success}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="h-12 w-full rounded-xl bg-slate-950 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-            >
+            <button type="submit" disabled={loading} className="ui-btn-primary w-full">
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
 
-            <div className="text-center">
-              <button
-                type="button"
-                className="text-sm font-semibold text-slate-600 hover:text-slate-950"
-                onClick={() => router.push('/forgot-password')}
-              >
+            <p className="mt-2 text-center">
+              <Link href="/forgot-password" className="ui-link">
                 Forgot password?
-              </button>
-            </div>
+              </Link>
+            </p>
 
-            <div className="text-center text-sm text-slate-500">
+            <p className="text-center text-xs text-brand-muted">
               No account?{' '}
               <button
                 type="button"
-                className="font-semibold text-slate-700 hover:text-slate-950"
+                className="ui-link"
                 onClick={() => {
                   setError('');
                   setSuccess('');
@@ -237,200 +213,187 @@ export default function LoginPage() {
               >
                 Register
               </button>
-            </div>
+            </p>
+
+            <p className="text-center text-xs text-brand-muted">
+              Student?{' '}
+              <Link href="/student-login" className="ui-link">
+                Use student login
+              </Link>
+            </p>
           </form>
         ) : (
           <form
             onSubmit={handleRegisterSubmit}
             className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_0.85fr]"
           >
-            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
-              <h2 className="mb-5 text-xl font-bold text-slate-800">
-                Personal Details
-              </h2>
+            <section className="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-brand-soft/40 p-4 sm:p-6">
+              <h2 className="mb-5 ui-text-h3">Personal details</h2>
 
-              <div className="space-y-5">
-                <div>
-                  <label className={labelClass}>Register As</label>
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="ui-label">Register as</span>
                   <select
                     name="role"
                     value={registerForm.role}
                     onChange={handleRegisterChange}
-                    className={`${inputClass} cursor-pointer`}
+                    className="ui-input ui-select"
                   >
                     <option value="STUDENT">Student</option>
                     <option value="AGENT">Agent</option>
                   </select>
-                </div>
+                </label>
 
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  <div>
-                    <label className={labelClass}>Full Name</label>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="ui-label">Full name</span>
                     <input
                       name="fullName"
                       value={registerForm.fullName}
                       onChange={handleRegisterChange}
-                      className={inputClass}
+                      className="ui-input"
                       required
                     />
-                  </div>
+                  </label>
 
-                  <div>
-                    <label className={labelClass}>Phone</label>
+                  <label className="block">
+                    <span className="ui-label">Phone</span>
                     <input
                       name="phone"
                       value={registerForm.phone}
                       onChange={handleRegisterChange}
-                      className={inputClass}
+                      className="ui-input"
                     />
-                  </div>
+                  </label>
                 </div>
 
-                <div>
-                  <label className={labelClass}>Email</label>
+                <label className="block">
+                  <span className="ui-label">Email</span>
                   <input
                     type="email"
                     name="email"
                     value={registerForm.email}
                     onChange={handleRegisterChange}
-                    className={inputClass}
+                    className="ui-input"
                     required
                   />
-                </div>
+                </label>
 
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  <div>
-                    <label className={labelClass}>Password</label>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="ui-label">Password</span>
                     <input
                       type="password"
                       name="password"
                       value={registerForm.password}
                       onChange={handleRegisterChange}
-                      className={inputClass}
+                      className="ui-input"
                       required
                     />
-                  </div>
+                  </label>
 
-                  <div>
-                    <label className={labelClass}>Confirm Password</label>
+                  <label className="block">
+                    <span className="ui-label">Confirm password</span>
                     <input
                       type="password"
                       name="confirmPassword"
                       value={registerForm.confirmPassword}
                       onChange={handleRegisterChange}
-                      className={inputClass}
+                      className="ui-input"
                       required
                     />
-                  </div>
+                  </label>
                 </div>
               </div>
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
-              <h2 className="mb-5 text-xl font-bold text-slate-800">
-                {registerForm.role === 'AGENT'
-                  ? 'Agency Details'
-                  : 'Student Registration'}
+            <section className="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-brand-soft/40 p-4 sm:p-6">
+              <h2 className="mb-5 ui-text-h3">
+                {registerForm.role === 'AGENT' ? 'Agency details' : 'Student registration'}
               </h2>
 
               {registerForm.role === 'AGENT' ? (
-                <div className="space-y-5">
-                  <div>
-                    <label className={labelClass}>Agency Name</label>
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="ui-label">Agency name</span>
                     <input
                       name="agencyName"
                       value={registerForm.agencyName}
                       onChange={handleRegisterChange}
-                      className={inputClass}
+                      className="ui-input"
                       required
                     />
-                  </div>
+                  </label>
 
-                  <div>
-                    <label className={labelClass}>Agency Address</label>
+                  <label className="block">
+                    <span className="ui-label">Agency address</span>
                     <input
                       name="agencyAddress"
                       value={registerForm.agencyAddress}
                       onChange={handleRegisterChange}
-                      className={inputClass}
+                      className="ui-input"
                     />
-                  </div>
+                  </label>
 
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>City</label>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="ui-label">City</span>
                       <input
                         name="agencyCity"
                         value={registerForm.agencyCity}
                         onChange={handleRegisterChange}
-                        className={inputClass}
+                        className="ui-input"
                       />
-                    </div>
+                    </label>
 
-                    <div>
-                      <label className={labelClass}>Country</label>
+                    <label className="block">
+                      <span className="ui-label">Country</span>
                       <input
                         name="agencyCountry"
                         value={registerForm.agencyCountry}
                         onChange={handleRegisterChange}
-                        className={inputClass}
+                        className="ui-input"
                       />
-                    </div>
+                    </label>
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-                  <p className="text-base font-bold text-slate-900">
-                    Student account registration
-                  </p>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">
-                    Student users can register using their personal details.
-                    After login, they will be redirected to the Student CRM
-                    module.
+                <div className="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-white p-5">
+                  <p className="ui-text-strong">Student account registration</p>
+                  <p className="mt-3 ui-text-body">
+                    Students can register with personal details. After approval and login, they
+                    continue in the student portal.
                   </p>
                 </div>
               )}
             </section>
 
             <div className="lg:col-span-2">
-              {error && (
-                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-                  {error}
-                </div>
-              )}
+              {error && <p className="mb-4 ui-error">{error}</p>}
+              {success && <p className="mb-4 ui-success">{success}</p>}
 
-              {success && (
-                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
-                  {success}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="h-12 w-full rounded-xl bg-slate-950 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {loading ? 'Creating account...' : 'Register'}
+              <button type="submit" disabled={loading} className="ui-btn-primary w-full">
+                {loading ? 'Creating account…' : 'Register'}
               </button>
 
-              <div className="mt-5 text-center text-sm text-slate-500">
+              <p className="mt-5 text-center text-xs text-brand-muted">
                 Already have an account?{' '}
                 <button
                   type="button"
-                  className="font-semibold text-slate-700 hover:text-slate-950"
+                  className="ui-link"
                   onClick={() => {
                     setError('');
                     setSuccess('');
                     setIsRegister(false);
                   }}
                 >
-                  Login
+                  Sign in
                 </button>
-              </div>
+              </p>
             </div>
           </form>
         )}
       </div>
-    </main>
+    </AuthPageShell>
   );
 }

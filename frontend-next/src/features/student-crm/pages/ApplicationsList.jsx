@@ -28,6 +28,7 @@ import {
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
+import LogoLoader from '@/components/LogoLoader';
 import { APPLICATION_STAGES, getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
 import {
   NewStudentModal,
@@ -222,7 +223,7 @@ export default function ApplicationsList() {
   const openAppRoute = (id) => router.push(`/student-crm/applications/${id}`);
 
   return (
-    <div className="text-neutral-900">
+    <div className="text-brand">
       {toast.msg && (
         <div
           className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 ui-text-strong !text-white ${
@@ -266,7 +267,7 @@ export default function ApplicationsList() {
                 setPickedStudent(null);
                 setShowPickStudent(true);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl ui-text-strong !text-white bg-neutral-900 hover:bg-neutral-800 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl ui-text-strong !text-white bg-brand hover:bg-brand-hover transition-all"
             >
               <Plus size={13} /> New application
             </button>
@@ -284,7 +285,7 @@ export default function ApplicationsList() {
           ].map(([label, value]) => (
             <div key={label} className="ui-surface px-4 py-3">
               <p className="ui-text-meta">{label}</p>
-              <p className="text-xl font-semibold text-neutral-900 mt-0.5">{value ?? '—'}</p>
+              <p className="text-xl font-semibold text-brand mt-0.5">{value ?? '—'}</p>
             </div>
           ))}
         </div>
@@ -328,7 +329,7 @@ export default function ApplicationsList() {
                     type="button"
                     disabled={promotingId === lead.id}
                     onClick={() => handlePromoteLead(lead.id)}
-                    className="text-[12px] font-medium px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white disabled:opacity-50 transition-all"
+                    className="text-[12px] font-medium px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-hover text-white disabled:opacity-50 transition-all"
                   >
                     {promotingId === lead.id ? 'Creating…' : 'Create login + application'}
                   </button>
@@ -348,14 +349,14 @@ export default function ApplicationsList() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by code, student, university, course or country"
-              className="w-full pl-10 pr-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-neutral-900 placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
+              className="w-full pl-10 pr-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-brand placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
             />
           </div>
           {studentFilterId && (
             <button
               type="button"
               onClick={() => setStudentFilterId(null)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-900 text-white text-[12px] font-medium"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-white text-[12px] font-medium"
             >
               <Filter size={12} /> {studentById.get(studentFilterId)?.fullName || 'Student'}
               <X size={12} className="ml-0.5" />
@@ -375,10 +376,10 @@ export default function ApplicationsList() {
                 disabled={isEmpty}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${
                   active
-                    ? 'bg-neutral-900 text-white'
+                    ? 'bg-brand text-white'
                     : isEmpty
                     ? 'bg-neutral-50 text-neutral-300 cursor-not-allowed'
-                    : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                    : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-brand'
                 }`}
               >
                 {s.label}
@@ -396,7 +397,9 @@ export default function ApplicationsList() {
       {/* Applications table */}
       <div className="ui-surface overflow-hidden">
         {loading ? (
-          <div className="p-16 text-center ui-text-meta">Loading applications…</div>
+          <div className="flex items-center justify-center p-16">
+            <LogoLoader label="Loading applications…" size="md" />
+          </div>
         ) : filtered.length === 0 ? (
           <div className="p-16 text-center">
             <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-neutral-200 mx-auto flex items-center justify-center">
@@ -552,7 +555,7 @@ function PickStudentModal({ students, onClose, onPick, onNewStudent }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search students by name or email"
-            className="w-full pl-10 pr-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-neutral-900 placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
+            className="w-full pl-10 pr-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-brand placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
           />
         </div>
         <div className="max-h-72 overflow-y-auto border border-neutral-100 rounded-xl divide-y divide-neutral-100">
@@ -581,7 +584,7 @@ function PickStudentModal({ students, onClose, onPick, onNewStudent }) {
         <button
           type="button"
           onClick={onNewStudent}
-          className="w-full py-2.5 border border-dashed border-neutral-300 rounded-xl ui-text-strong text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 transition-all flex items-center justify-center gap-1.5"
+          className="w-full py-2.5 border border-dashed border-neutral-300 rounded-xl ui-text-strong text-neutral-600 hover:text-brand hover:bg-neutral-50 transition-all flex items-center justify-center gap-1.5"
         >
           <Plus size={13} /> Create new student instead
         </button>

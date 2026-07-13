@@ -140,7 +140,7 @@ export function resolveStudentWorkflow(app, readiness) {
 }
 
 const toneStyles = {
-  action: 'border-neutral-200 bg-neutral-50 text-neutral-900',
+  action: 'border-neutral-200 bg-neutral-50 text-brand',
   warning: 'border-amber-200/80 bg-amber-50 text-amber-950',
   wait: 'border-sky-200/80 bg-sky-50 text-sky-950',
   success: 'border-emerald-200/80 bg-emerald-50 text-emerald-950',
@@ -163,8 +163,8 @@ export default function StudentWorkflowGuide({ app, readiness, compact = false }
                 done
                   ? 'border-emerald-200/80 bg-emerald-50 text-emerald-800'
                   : active
-                    ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm'
-                    : 'border-neutral-200/80 bg-white text-neutral-400'
+                    ? 'border-brand bg-brand text-white shadow-sm'
+                    : 'border-slate-200/80 bg-white text-slate-400'
               }`}
             >
               {done ? <CheckCircle2 className="h-3 w-3" /> : active ? <Icon className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
@@ -201,10 +201,10 @@ export default function StudentWorkflowGuide({ app, readiness, compact = false }
               key={step.id}
               className={`relative rounded-2xl border p-4 transition ${
                 active
-                  ? 'border-neutral-900 bg-neutral-900 text-white shadow-md ring-4 ring-neutral-900/5'
+                  ? 'border-brand bg-brand text-white shadow-md ring-4 ring-brand/10'
                   : done
                     ? 'border-emerald-200/80 bg-emerald-50/70'
-                    : 'border-neutral-200/80 bg-neutral-50/40 text-neutral-400'
+                    : 'border-slate-200/80 bg-brand-soft/40 text-slate-400'
               }`}
             >
               <div className="flex items-center gap-2 mb-2">

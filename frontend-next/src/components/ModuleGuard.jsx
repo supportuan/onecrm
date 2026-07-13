@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
+import LogoLoader from '@/components/LogoLoader';
 
 /**
  * Permission-based page guard. Renders children only if the current user's
@@ -26,18 +27,14 @@ const ModuleGuard = ({ permissions, children, redirectTo = '/login' }) => {
   }, [loading, user, router, redirectTo]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-sm text-neutral-500">
-        Checking permissions...
-      </div>
-    );
+    return <LogoLoader fullscreen label="Checking permissions…" size="lg" />;
   }
 
   if (!allowed) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50 px-6 text-center">
-        <h2 className="text-xl font-semibold text-neutral-800">Access denied</h2>
-        <p className="mt-2 text-sm text-neutral-500">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-brand-page px-6 text-center">
+        <h2 className="text-xl font-semibold text-brand">Access denied</h2>
+        <p className="mt-2 text-sm text-brand-muted">
           Your role does not have permission to view this module.
         </p>
       </div>

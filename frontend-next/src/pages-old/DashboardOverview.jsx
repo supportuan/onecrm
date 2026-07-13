@@ -11,7 +11,7 @@ const DashboardOverview = () => {
         ].map((metric) => (
           <div key={metric.label} className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold text-neutral-500">{metric.label}</p>
-            <p className="mt-4 text-3xl font-semibold text-neutral-900">{metric.value}</p>
+            <p className="mt-4 text-3xl font-semibold text-brand">{metric.value}</p>
             <p className="mt-2 text-sm text-emerald-600">{metric.delta} vs last month</p>
           </div>
         ))}
@@ -21,7 +21,7 @@ const DashboardOverview = () => {
         <div className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900">Intake Trends</h2>
+              <h2 className="text-lg font-semibold text-brand">Intake Trends</h2>
               <p className="mt-1 text-sm text-neutral-500">Applications and enrollments over time</p>
             </div>
             <div className="flex gap-2 text-xs text-neutral-500">
@@ -36,13 +36,13 @@ const DashboardOverview = () => {
         </div>
 
         <div className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-neutral-900">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-brand">Quick Actions</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {['Add Student', 'New Application', 'Send Email', 'Schedule Meeting', 'Upload Documents', 'Send SMS'].map((action, idx) => (
               <button
                 key={action}
                 className={`rounded-lg py-4 text-sm font-semibold transition ${
-                  idx === 0 ? 'bg-neutral-900 text-white' : idx === 1 ? 'bg-amber-500 text-neutral-900' : idx === 2 ? 'bg-sky-500 text-white' : idx === 3 ? 'bg-emerald-500 text-neutral-900' : 'bg-slate-100 text-neutral-700'
+                  idx === 0 ? 'bg-brand text-white' : idx === 1 ? 'bg-amber-500 text-brand' : idx === 2 ? 'bg-sky-500 text-white' : idx === 3 ? 'bg-emerald-500 text-brand' : 'bg-slate-100 text-neutral-700'
                 }`}
               >
                 {action}

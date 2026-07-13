@@ -92,13 +92,13 @@ export const Field = ({ label, children }) => (
 );
 
 export const Modal = ({ title, onClose, children }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md animate-in fade-in duration-200">
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-md animate-in fade-in duration-200">
     <div className="ui-surface w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
       <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
         <h3 className="ui-text-h3">{title}</h3>
         <button
           onClick={onClose}
-          className="w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-neutral-900 flex items-center justify-center transition-all"
+          className="w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-brand flex items-center justify-center transition-all"
           aria-label="Close"
         >
           <X size={14} />
@@ -120,7 +120,7 @@ export const ModalFooter = ({ onClose, submitLabel }) => (
     </button>
     <button
       type="submit"
-      className="flex-1 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white transition-all"
+      className="flex-1 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl ui-text-strong !text-white transition-all"
     >
       {submitLabel}
     </button>
@@ -169,7 +169,7 @@ export const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal,
           {student && (
             <Link
               href={`/student-crm/student-management?student=${student.id}`}
-              className="flex items-center gap-1.5 text-neutral-700 hover:text-neutral-900 font-medium"
+              className="flex items-center gap-1.5 text-neutral-700 hover:text-brand font-medium"
             >
               <ExternalLink size={12} /> Student profile
             </Link>
@@ -179,7 +179,7 @@ export const ApplicationHeader = ({ app, student, canManage, onAdvance, isFinal,
       {canManage && !isFinal && (
         <button
           onClick={onAdvance}
-          className="shrink-0 px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white flex items-center gap-1.5 transition-all"
+          className="shrink-0 px-4 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl ui-text-strong !text-white flex items-center gap-1.5 transition-all"
         >
           Advance stage <ArrowRight size={14} />
         </button>
@@ -231,7 +231,7 @@ export const ApplicationMetaEditor = ({ app, counsellors, canManage, onSave }) =
             assignedToId: assignedToId ? Number(assignedToId) : null,
           })
         }
-        className="px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white shrink-0 transition-all"
+        className="px-4 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl ui-text-strong !text-white shrink-0 transition-all"
       >
         Save
       </button>
@@ -274,9 +274,9 @@ export const StageStepper = ({ app, onJump }) => {
                   disabled={!onJump}
                   className={`group relative w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold transition-all z-10 ${
                     isActive
-                      ? 'bg-neutral-900 text-white ring-4 ring-neutral-100'
+                      ? 'bg-brand text-white ring-4 ring-neutral-100'
                       : isPassed
-                      ? 'bg-neutral-900 text-white'
+                      ? 'bg-brand text-white'
                       : 'bg-white border border-neutral-200 text-neutral-400'
                   } ${onJump ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
                   aria-current={isActive ? 'step' : undefined}
@@ -286,7 +286,7 @@ export const StageStepper = ({ app, onJump }) => {
                 </button>
                 <span
                   className={`mt-2 text-[11px] font-medium text-center leading-tight tracking-tight px-0.5 ${
-                    isActive ? 'text-neutral-900' : isPassed ? 'text-neutral-700' : 'text-neutral-400'
+                    isActive ? 'text-brand' : isPassed ? 'text-neutral-700' : 'text-neutral-400'
                   }`}
                 >
                   {s.label}
@@ -391,7 +391,7 @@ export const DocumentChecklist = ({
               <span>{pct}%</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
-              <div className="h-full rounded-full bg-neutral-900 transition-all" style={{ width: `${pct}%` }} />
+              <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
             </div>
           </div>
         )}
@@ -457,7 +457,7 @@ export const DocumentChecklist = ({
                           href={d.fileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition"
+                          className="p-2 text-neutral-500 hover:text-brand hover:bg-neutral-100 rounded-lg transition"
                           title="View / download"
                         >
                           <Eye size={14} />
@@ -468,7 +468,7 @@ export const DocumentChecklist = ({
                           className={`p-2 rounded-lg transition cursor-pointer ${
                             isUploading
                               ? 'text-neutral-400 bg-neutral-50'
-                              : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'
+                              : 'text-neutral-500 hover:text-brand hover:bg-neutral-100'
                           }`}
                           title={hasFile ? 'Replace file' : 'Upload file'}
                         >
@@ -598,7 +598,7 @@ export const DocumentChecklist = ({
                 setAddName('');
               }
             }}
-            className="shrink-0 px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white flex items-center gap-1 transition-all"
+            className="shrink-0 px-4 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl ui-text-strong !text-white flex items-center gap-1 transition-all"
           >
             <Plus size={12} /> Add
           </button>
@@ -678,7 +678,7 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
               </a>
               {canManage && (
                 <label
-                  className={`px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white ui-text-strong !text-white flex items-center gap-1.5 cursor-pointer transition ${
+                  className={`px-3 py-2 rounded-lg bg-brand hover:bg-brand-hover text-white ui-text-strong !text-white flex items-center gap-1.5 cursor-pointer transition ${
                     uploading ? 'opacity-60 pointer-events-none' : ''
                   }`}
                 >
@@ -790,7 +790,7 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
         <div className="flex justify-end">
           <button
             onClick={() => onSave(form)}
-            className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white transition-all"
+            className="px-5 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl ui-text-strong !text-white transition-all"
           >
             Save
           </button>
@@ -888,7 +888,7 @@ export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading, workflo
               />
             </Field>
             <label
-              className={`px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white ui-text-strong !text-white flex items-center justify-center gap-1.5 cursor-pointer transition ${
+              className={`px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white ui-text-strong !text-white flex items-center justify-center gap-1.5 cursor-pointer transition ${
                 uploading ? 'opacity-60 pointer-events-none' : ''
               }`}
             >
@@ -997,7 +997,7 @@ export const StudentOfferPanel = ({ app, onAccept, onReject, busy }) => {
   return (
     <div className="ui-panel p-5 space-y-4">
       <div>
-        <h2 className="text-sm font-semibold text-neutral-900">Offer letter</h2>
+        <h2 className="text-sm font-semibold text-brand">Offer letter</h2>
         <p className="text-xs text-neutral-500 mt-1">
           Review your offer and accept or decline before the deadline.
         </p>
@@ -1061,7 +1061,7 @@ export const StudentVisaPanel = ({ app, workflow = [] }) => {
   return (
     <div className="ui-panel p-5 space-y-4">
       <div>
-        <h2 className="text-sm font-semibold text-neutral-900">Visa status</h2>
+        <h2 className="text-sm font-semibold text-brand">Visa status</h2>
         <p className="text-xs text-neutral-500 mt-1">
           {visa?.country || app.country} — {getVisaStatusLabel(visa?.status || 'NOT_STARTED')}
         </p>
@@ -1096,7 +1096,7 @@ export const StudentVisaPanel = ({ app, workflow = [] }) => {
                 href={doc.fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-neutral-700 hover:text-neutral-900 underline"
+                className="text-sm text-neutral-700 hover:text-brand underline"
               >
                 {doc.label || doc.filename || `Visa document ${i + 1}`}
               </a>
@@ -1119,7 +1119,7 @@ export const AuditTimeline = ({ app }) => (
     <ol className="relative border-l border-neutral-200 pl-6 space-y-3 ml-2">
       {(app.stageEvents || []).map((e) => (
         <li key={e.id} className="relative">
-          <span className="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-neutral-900 border-2 border-white" />
+          <span className="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-brand border-2 border-white" />
           <p className="ui-text-strong">
             {e.fromStage
               ? `${getStageLabel(e.fromStage)} → ${getStageLabel(e.toStage)}`

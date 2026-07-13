@@ -96,7 +96,7 @@ export default function ApplicationsPage() {
       {primaryApp && primaryWorkflow?.nextAction && (
         <StudentPortalPanel className={`${sp.panelPad} border-l-[3px] border-l-neutral-900`}>
           <p className={sp.sectionEyebrow}>What to do next</p>
-          <p className="text-base font-semibold tracking-tight text-neutral-900 mt-2">
+          <p className="text-base font-semibold tracking-tight text-brand mt-2">
             {primaryWorkflow.nextAction.title}
           </p>
           <p className={`${sp.body} mt-1.5`}>{primaryWorkflow.nextAction.detail}</p>
@@ -135,7 +135,7 @@ export default function ApplicationsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className={sp.sectionEyebrow}>{a.applicationCode}</p>
-                      <h3 className="text-base font-semibold tracking-tight text-neutral-900 mt-1">{a.university}</h3>
+                      <h3 className="text-base font-semibold tracking-tight text-brand mt-1">{a.university}</h3>
                       <p className={`${sp.body} mt-1`}>{a.course}</p>
                       <p className="text-xs text-neutral-400 mt-1">{a.country}</p>
                     </div>

@@ -189,7 +189,7 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
   const managerOptions = allEmployees.filter((e) => e.id !== employee.id);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="ui-modal w-full max-w-3xl max-h-[90vh] flex flex-col scale-100 animate-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50 shrink-0">
           <div>
@@ -209,7 +209,7 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
             onClick={() => setTab('profile')}
             className={`py-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
               tab === 'profile'
-                ? 'border-neutral-900 text-neutral-900'
+                ? 'border-brand text-brand'
                 : 'border-transparent text-neutral-500 hover:text-neutral-700'
             }`}
           >
@@ -220,7 +220,7 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
             onClick={() => setTab('documents')}
             className={`py-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
               tab === 'documents'
-                ? 'border-neutral-900 text-neutral-900'
+                ? 'border-brand text-brand'
                 : 'border-transparent text-neutral-500 hover:text-neutral-700'
             }`}
           >
@@ -421,7 +421,7 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-3 bg-neutral-900 text-white rounded-lg font-semibold text-[10px] disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 bg-brand text-white rounded-lg font-semibold text-[10px] disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {submitting ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                   Save profile
@@ -462,7 +462,7 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
                   type="button"
                   onClick={handleUpload}
                   disabled={!uploadFile || docBusy}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 text-white rounded-lg text-xs font-semibold disabled:opacity-40"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-brand text-white rounded-lg text-xs font-semibold disabled:opacity-40"
                 >
                   {docBusy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                   Upload
@@ -505,7 +505,7 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
                           href={doc.fileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 text-neutral-600 hover:text-neutral-900 border border-neutral-200 rounded-lg bg-white"
+                          className="p-2 text-neutral-600 hover:text-brand border border-neutral-200 rounded-lg bg-white"
                           title="Open"
                         >
                           <ExternalLink size={14} />

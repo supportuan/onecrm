@@ -96,7 +96,7 @@ const AlliedServices = () => {
                 {service.title}
               </h2>
 
-              <p className="mt-3 text-sm leading-relaxed text-black">
+              <p className="mt-3 text-sm leading-relaxed text-brand">
                 {service.description}
               </p>
             </button>

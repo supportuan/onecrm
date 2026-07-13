@@ -32,7 +32,7 @@ export default function SuperAdminTenantsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Tenants</h1>
+          <h1 className="text-2xl font-semibold text-brand">Tenants</h1>
           <p className="text-sm text-neutral-500 mt-1">
             Onboard organizations and control which modules they can access.
           </p>
@@ -46,7 +46,7 @@ export default function SuperAdminTenantsPage() {
           </Link>
           <Link
             href="/super-admin/tenants/new"
-            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
           >
             + Onboard tenant
           </Link>
@@ -80,7 +80,7 @@ export default function SuperAdminTenantsPage() {
               )}
               {tenants.map((t) => (
                 <tr key={t.id}>
-                  <td className="px-4 py-3 font-medium text-neutral-900">{t.name}</td>
+                  <td className="px-4 py-3 font-medium text-brand">{t.name}</td>
                   <td className="px-4 py-3 text-neutral-600">{t.slug}</td>
                   <td className="px-4 py-3">
                     <span
@@ -98,7 +98,7 @@ export default function SuperAdminTenantsPage() {
                   <td className="px-4 py-3 text-neutral-600">
                     {t.primaryAdmin ? (
                       <div className="flex flex-col">
-                        <span className="text-neutral-900">{t.primaryAdmin.fullName}</span>
+                        <span className="text-brand">{t.primaryAdmin.fullName}</span>
                         <span className="text-xs text-neutral-500">{t.primaryAdmin.email}</span>
                       </div>
                     ) : (
@@ -112,7 +112,7 @@ export default function SuperAdminTenantsPage() {
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/super-admin/tenants/${t.id}`}
-                      className="text-sm font-medium text-neutral-700 hover:text-neutral-900"
+                      className="text-sm font-medium text-neutral-700 hover:text-brand"
                     >
                       Manage →
                     </Link>

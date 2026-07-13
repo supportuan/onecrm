@@ -10,8 +10,8 @@ const MenuItem = ({ icon: Icon, label, path, onClick, nested = false, children }
     nested ? 'pl-8 pr-3' : 'px-3'
   } ${
     active
-      ? 'font-medium text-[var(--ui-text)]'
-      : 'text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]'
+      ? 'font-medium text-brand bg-brand-soft'
+      : 'text-[var(--ui-text-muted)] hover:text-brand hover:bg-brand-soft/60'
   }`;
 
   const content = (

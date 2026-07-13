@@ -64,14 +64,14 @@ export default function NewTenantPage() {
       >
         ← Back to tenants
       </button>
-      <h1 className="text-2xl font-semibold text-neutral-900">Onboard tenant</h1>
+      <h1 className="text-2xl font-semibold text-brand">Onboard tenant</h1>
       <p className="text-sm text-neutral-500 mt-1 mb-6">
         Creates the tenant, enables selected modules, and provisions the initial admin account.
       </p>
 
       <form onSubmit={submit} className="space-y-8">
         <section className="rounded-lg border border-neutral-200 bg-white p-6 space-y-4">
-          <h2 className="font-medium text-neutral-900">Organization</h2>
+          <h2 className="font-medium text-brand">Organization</h2>
           <div className="grid grid-cols-2 gap-4">
             <Field
               label="Name"
@@ -90,7 +90,7 @@ export default function NewTenantPage() {
         </section>
 
         <section className="rounded-lg border border-neutral-200 bg-white p-6 space-y-4">
-          <h2 className="font-medium text-neutral-900">Modules</h2>
+          <h2 className="font-medium text-brand">Modules</h2>
           <p className="text-xs text-neutral-500">
             Only enabled modules appear in the tenant's sidebar and pass through API guards.
           </p>
@@ -108,7 +108,7 @@ export default function NewTenantPage() {
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-neutral-900">{m.label}</span>
+                    <span className="text-sm font-medium text-brand">{m.label}</span>
                     {m.beta && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
                         Beta
@@ -123,7 +123,7 @@ export default function NewTenantPage() {
         </section>
 
         <section className="rounded-lg border border-neutral-200 bg-white p-6 space-y-4">
-          <h2 className="font-medium text-neutral-900">Primary admin user</h2>
+          <h2 className="font-medium text-brand">Primary admin user</h2>
           <p className="text-xs text-neutral-500">
             Hand these credentials to the client. They can manage their own users from Admin Settings.
           </p>
@@ -163,7 +163,7 @@ export default function NewTenantPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+            className="rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
           >
             {submitting ? 'Creating…' : 'Create tenant'}
           </button>
@@ -182,7 +182,7 @@ function Field({ label, value, onChange, type = 'text', required = false, hint }
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+        className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
       />
       {hint && <span className="block text-xs text-neutral-500 mt-1">{hint}</span>}
     </label>

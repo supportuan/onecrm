@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { forgotPassword } from '@/lib/apiService';
+import AuthPageShell from '@/components/AuthPageShell';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="ui-page flex items-center justify-center">
+    <AuthPageShell>
       <div className="ui-card">
         <div className="mb-8">
           <p className="ui-section-title">Account recovery</p>
@@ -63,6 +64,6 @@ export default function ForgotPasswordPage() {
           </div>
         </form>
       </div>
-    </main>
+    </AuthPageShell>
   );
 }

@@ -106,7 +106,7 @@ export default function StudentPaymentPanel({ app, readiness, onPaid }) {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50/40 px-4 py-3.5"
             >
               <div>
-                <p className="text-sm font-semibold text-neutral-900">{fee.label}</p>
+                <p className="text-sm font-semibold text-brand">{fee.label}</p>
                 <p className="text-xs text-neutral-500 mt-0.5">{formatInr(fee.amountPaise)}</p>
               </div>
               {paid ? (

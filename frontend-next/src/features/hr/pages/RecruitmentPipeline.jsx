@@ -73,15 +73,15 @@ export default function RecruitmentPipeline() {
                 type="button"
                 onClick={() => setTab(t.key)}
                 className={`relative flex items-center gap-2 px-4 py-3 ui-text-strong whitespace-nowrap transition-all ${
-                  isActive ? 'text-neutral-900' : '!text-neutral-500 hover:!text-neutral-800'
+                  isActive ? 'text-brand' : '!text-neutral-500 hover:!text-neutral-800'
                 }`}
               >
-                <Icon size={14} className={isActive ? 'text-neutral-900' : 'text-neutral-400'} />
+                <Icon size={14} className={isActive ? 'text-brand' : 'text-neutral-400'} />
                 <span className="hidden sm:inline">{t.label}</span>
                 <span className="sm:hidden">{t.short}</span>
                 <span
                   className={`absolute left-3 right-3 -bottom-px h-[2px] rounded-full transition-all ${
-                    isActive ? 'bg-neutral-900' : 'bg-transparent'
+                    isActive ? 'bg-brand' : 'bg-transparent'
                   }`}
                 />
               </button>

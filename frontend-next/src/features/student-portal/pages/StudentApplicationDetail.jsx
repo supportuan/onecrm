@@ -104,7 +104,7 @@ export default function StudentApplicationDetail({ applicationId }) {
   if (!app) {
     return (
       <div className="space-y-4">
-        <Link href="/applicant/applications" className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900">
+        <Link href="/applicant/applications" className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-brand">
           <ArrowLeft size={14} /> Back to applications
         </Link>
         <p className="text-sm text-neutral-500">Application not found.</p>
@@ -137,11 +137,11 @@ export default function StudentApplicationDetail({ applicationId }) {
       <div>
         <Link
           href="/applicant/applications"
-          className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-4"
+          className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-brand mb-4"
         >
           <ArrowLeft size={14} /> Back to applications
         </Link>
-        <h1 className="text-2xl font-semibold text-neutral-900">{app.university}</h1>
+        <h1 className="text-2xl font-semibold text-brand">{app.university}</h1>
         <p className="text-sm text-neutral-500 mt-1">
           {app.applicationCode} · {app.course} · {getStageLabel(app.stage)}
           {app.deadline && (
@@ -181,7 +181,7 @@ export default function StudentApplicationDetail({ applicationId }) {
 
       {currentStepId === 'review' && !showOffer && (
         <section className="ui-panel p-5 text-center">
-          <p className="text-sm font-medium text-neutral-900">Your application is with your counsellor</p>
+          <p className="text-sm font-medium text-brand">Your application is with your counsellor</p>
           <p className="text-sm text-neutral-500 mt-2">
             Documents and fees are complete. You will be notified when there is an update from the university.
           </p>

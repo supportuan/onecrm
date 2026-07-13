@@ -14,7 +14,7 @@ const CHANNEL_BADGE = {
   EMAIL: 'bg-emerald-50 border-emerald-200 text-emerald-700',
   SMS: 'bg-sky-50 border-sky-200 text-sky-700',
   WHATSAPP: 'bg-lime-50 border-lime-200 text-lime-700',
-  IN_APP: 'bg-neutral-100 border-neutral-200 text-neutral-900',
+  IN_APP: 'bg-neutral-100 border-neutral-200 text-brand',
 };
 
 const STATUS_BADGE = {
@@ -87,7 +87,7 @@ export default function NotificationsInbox() {
       <div className="ui-container">
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900 flex items-center gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-brand flex items-center gap-3">
             <Bell size={24} className="text-neutral-700" />
             Notifications
           </h1>
@@ -99,22 +99,22 @@ export default function NotificationsInbox() {
             onClick={() => setUnreadOnly((v) => !v)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition-all border ${
               unreadOnly
-                ? 'bg-neutral-900 text-white border-neutral-900'
-                : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-neutral-900'
+                ? 'bg-brand text-white border-neutral-900'
+                : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-brand'
             }`}
           >
             <Filter size={12} /> {unreadOnly ? 'Unread only' : 'all'}
           </button>
           <button
             onClick={fetchItems}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-neutral-900 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-brand transition-all"
           >
             <RefreshCw size={12} /> refresh
           </button>
           <button
             onClick={handleMarkAll}
             disabled={unreadCount === 0}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold bg-brand hover:bg-brand-hover text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <CheckCheck size={12} /> Mark all read
           </button>
@@ -140,11 +140,11 @@ export default function NotificationsInbox() {
                   className={`p-5 hover:bg-neutral-50/50 transition flex items-start gap-4 ${isRead ? '' : 'bg-neutral-100/20'}`}
                 >
                   <div className="mt-1.5">
-                    <span className={`block w-2.5 h-2.5 rounded-full ${isRead ? 'bg-slate-300' : 'bg-neutral-900'}`} />
+                    <span className={`block w-2.5 h-2.5 rounded-full ${isRead ? 'bg-slate-300' : 'bg-brand'}`} />
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`text-sm ${isRead ? 'font-medium text-neutral-600' : 'font-semibold text-neutral-900'}`}>
+                      <p className={`text-sm ${isRead ? 'font-medium text-neutral-600' : 'font-semibold text-brand'}`}>
                         {n.title}
                       </p>
                       <span
@@ -172,7 +172,7 @@ export default function NotificationsInbox() {
                             if (!n.readAt) handleMarkRead(n.id);
                             router.push(n.link);
                           }}
-                          className="text-neutral-700 hover:text-neutral-900 font-semibold"
+                          className="text-neutral-700 hover:text-brand font-semibold"
                         >
                           open →
                         </button>
@@ -183,7 +183,7 @@ export default function NotificationsInbox() {
                     {!isRead && (
                       <button
                         onClick={() => handleMarkRead(n.id)}
-                        className="px-3 py-1.5 bg-white border border-neutral-200 hover:border-neutral-400 text-neutral-600 hover:text-neutral-900 rounded-xl text-[10px] font-semibold transition"
+                        className="px-3 py-1.5 bg-white border border-neutral-200 hover:border-neutral-400 text-neutral-600 hover:text-brand rounded-xl text-[10px] font-semibold transition"
                       >
                         Mark read
                       </button>

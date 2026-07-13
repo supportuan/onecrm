@@ -388,7 +388,7 @@ const MarketingDashboard = () => {
 
           <div className="flex h-[420px] flex-col justify-between rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm">
             <div>
-              <h2 className="text-[17px] font-extrabold text-neutral-900">
+              <h2 className="text-[17px] font-extrabold text-brand">
                 Quick Actions
               </h2>
               <p className="mt-1 text-[12px] font-medium text-neutral-500">
@@ -478,7 +478,7 @@ const MarketingDashboard = () => {
                       </div>
 
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold text-neutral-900">
+                        <p className="truncate text-sm font-extrabold text-brand">
                           {lead.fullName}
                         </p>
                         <p className="truncate text-xs font-semibold text-neutral-500">
@@ -522,7 +522,7 @@ function KpiCard({ title, value, trend, icon }) {
       </div>
 
       <div className="relative mt-4">
-        <h3 className="text-[28px] font-extrabold tracking-tight text-neutral-900">
+        <h3 className="text-[28px] font-extrabold tracking-tight text-brand">
           {value}
         </h3>
 
@@ -540,7 +540,7 @@ function Panel({ title, subtitle, children, height = 'h-auto' }) {
       className={`flex flex-col overflow-hidden rounded-[20px] border border-neutral-200 bg-white shadow-sm ${height}`}
     >
       <div className="flex-shrink-0 border-b border-neutral-100 p-6">
-        <h2 className="text-[17px] font-extrabold text-neutral-900">
+        <h2 className="text-[17px] font-extrabold text-brand">
           {title}
         </h2>
         <p className="mt-1 text-[12px] font-medium text-neutral-500">
@@ -563,7 +563,7 @@ function JourneyBar({ label, value, total, color, helper }) {
     <div className="mb-5 space-y-1.5">
       <div className="flex justify-between text-xs font-bold text-neutral-500">
         <span>{label}</span>
-        <span className="font-extrabold text-neutral-900">
+        <span className="font-extrabold text-brand">
           {formatNumber(value)}
         </span>
       </div>
@@ -604,7 +604,7 @@ function InfoRow({ label, value }) {
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="font-bold text-neutral-500">{label}</span>
-      <span className="font-extrabold text-neutral-900">{value}</span>
+      <span className="font-extrabold text-brand">{value}</span>
     </div>
   );
 }

@@ -24,10 +24,13 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <Providers>
-          <Layout>{children}</Layout>
-        </Providers>
+      <body className="relative min-h-full flex flex-col bg-brand-page">
+        <div className="app-watermark" aria-hidden="true" />
+        <div className="relative z-[1] flex min-h-full flex-1 flex-col">
+          <Providers>
+            <Layout>{children}</Layout>
+          </Providers>
+        </div>
       </body>
     </html>
   );

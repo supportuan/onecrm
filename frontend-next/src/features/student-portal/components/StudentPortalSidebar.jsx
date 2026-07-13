@@ -83,13 +83,13 @@ export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
                     sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center p-2.5'
                   } rounded-xl ${
                     active
-                      ? 'bg-neutral-900 text-white shadow-sm'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                      ? 'bg-brand text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-brand-soft hover:text-brand'
                   }`}
                 >
                   <Icon
                     className={`h-[17px] w-[17px] shrink-0 ${
-                      active ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-600'
+                      active ? 'text-white' : 'text-slate-400 group-hover:text-brand'
                     }`}
                     strokeWidth={1.75}
                   />

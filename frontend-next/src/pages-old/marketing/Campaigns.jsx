@@ -235,7 +235,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             <select
               value={launchDetails.platform || 'FACEBOOK'}
               onChange={(e) => updateDetails('platform', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
             >
               <option value="FACEBOOK">Facebook</option>
               <option value="INSTAGRAM">Instagram</option>
@@ -247,7 +247,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             <select
               value={launchDetails.objective || 'LEAD_GENERATION'}
               onChange={(e) => updateDetails('objective', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
             >
               <option value="LEAD_GENERATION">Lead Generation</option>
               <option value="TRAFFIC">Traffic</option>
@@ -264,7 +264,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
               value={launchDetails.targetCountry || ''}
               onChange={(e) => updateDetails('targetCountry', e.target.value)}
               placeholder="e.g. India"
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
             />
           </div>
           <div className="space-y-1">
@@ -274,7 +274,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
               value={launchDetails.targetAgeRange || ''}
               onChange={(e) => updateDetails('targetAgeRange', e.target.value)}
               placeholder="e.g. 18-35"
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
             />
           </div>
         </div>
@@ -288,7 +288,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             value={launchDetails.dailyBudget || ''}
             onChange={(e) => updateDetails('dailyBudget', e.target.value)}
             placeholder="e.g. 500"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
           />
           <p className="text-[10px] text-neutral-500 font-semibold">
             This is the per-day ad spend for Facebook / Instagram campaigns.
@@ -311,7 +311,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
               ) : (
                 <Upload className="w-6 h-6 text-neutral-400 group-hover:text-neutral-700 transition" />
               )}
-              <span className="text-xs font-semibold text-neutral-600 group-hover:text-neutral-900 transition">
+              <span className="text-xs font-semibold text-neutral-600 group-hover:text-brand transition">
                 {uploading ? 'Uploading to Meta...' : 'Drag & drop or click to upload'}
               </span>
               <span className="text-[10px] text-neutral-400">
@@ -360,7 +360,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             required
             value={launchDetails.smsContent || ''}
             onChange={(e) => updateDetails('smsContent', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white resize-none"
           />
           <p className="text-[10px] text-neutral-500 text-right mt-1">
             {launchDetails.smsContent?.length || 0} characters
@@ -379,7 +379,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             required
             value={launchDetails.whatsappTemplate || ''}
             onChange={(e) => updateDetails('whatsappTemplate', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
           />
         </div>
         <div className="space-y-1">
@@ -388,7 +388,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             rows="3"
             value={launchDetails.whatsappContent || ''}
             onChange={(e) => updateDetails('whatsappContent', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white resize-none"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -398,7 +398,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
               type="text"
               value={launchDetails.ctaText || ''}
               onChange={(e) => updateDetails('ctaText', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
             />
           </div>
           <div className="space-y-1">
@@ -407,7 +407,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
               type="url"
               value={launchDetails.ctaUrl || ''}
               onChange={(e) => updateDetails('ctaUrl', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
             />
           </div>
         </div>
@@ -422,7 +422,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
           <select
             value={launchDetails.goal || ''}
             onChange={(e) => updateDetails('goal', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
           >
             <option value="LEADS">Leads</option>
             <option value="WEBSITE_TRAFFIC">Website Traffic</option>
@@ -438,7 +438,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             value={launchDetails.landingPageUrl || ''}
             onChange={(e) => updateDetails('landingPageUrl', e.target.value)}
             placeholder="https://..."
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
           />
         </div>
         <div className="space-y-1">
@@ -448,7 +448,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             value={launchDetails.headlines || ''}
             onChange={(e) => updateDetails('headlines', e.target.value)}
             placeholder="Headline 1, Headline 2, ..."
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white resize-none"
           />
         </div>
         <div className="space-y-1">
@@ -458,7 +458,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             value={launchDetails.descriptions || ''}
             onChange={(e) => updateDetails('descriptions', e.target.value)}
             placeholder="Description 1, Description 2, ..."
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white resize-none"
           />
         </div>
         <div className="space-y-1">
@@ -468,7 +468,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             value={launchDetails.keywords || ''}
             onChange={(e) => updateDetails('keywords', e.target.value)}
             placeholder="Keyword1, Keyword2, ..."
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white resize-none"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white resize-none"
           />
         </div>
         <div className="space-y-1">
@@ -479,7 +479,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             required
             value={launchDetails.dailyBudget || ''}
             onChange={(e) => updateDetails('dailyBudget', e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
           />
         </div>
         <div className="space-y-1">
@@ -489,7 +489,7 @@ const CampaignTypeFields = ({ type, launchDetails, onChange }) => {
             value={launchDetails.targetLocation || ''}
             onChange={(e) => updateDetails('targetLocation', e.target.value)}
             placeholder="e.g. United States"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none bg-white"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none bg-white"
           />
         </div>
       </div>
@@ -1004,7 +1004,7 @@ const Campaigns = () => {
     <div className="space-y-6">
       {/* FILTER & ACTIONS BAR - high-fidelity rounded pills */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-4 py-3 rounded-lg border border-neutral-200/50 shadow-xs">
-        <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 sm:max-w-md shadow-xs transition-all focus-within:ring-2 focus-within:ring-neutral-900/20 focus-within:border-neutral-900/60">
+        <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 sm:max-w-md shadow-xs transition-all focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-neutral-900/60">
           <Search className="h-5 w-5 text-neutral-500 flex-shrink-0" />
           <input
             type="text"
@@ -1083,7 +1083,7 @@ const Campaigns = () => {
               });
               setIsCreateOpen(true);
             }}
-            className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md active:scale-95 hover:shadow-lg"
+            className="bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md active:scale-95 hover:shadow-lg"
           >
             <Plus className="h-4 w-4 stroke-[3]" />
             Create Campaign
@@ -1102,7 +1102,7 @@ const Campaigns = () => {
       {/* TABLE PERFORMANCE GRID OR EMPTY/LOADING STATES */}
       {loading && campaigns.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 bg-white rounded-lg border border-neutral-200 shadow-xs">
-          <Loader2 className="h-10 w-10 text-neutral-900 animate-spin" />
+          <Loader2 className="h-10 w-10 text-brand animate-spin" />
           <p className="text-sm text-neutral-500 font-semibold mt-4">Gathering outreach campaigns database...</p>
         </div>
       ) : campaigns.length === 0 ? (
@@ -1238,7 +1238,7 @@ const Campaigns = () => {
                       </td>
 
                       {/* Budget */}
-                      <td className="px-5 py-4.5 text-neutral-900 font-semibold">
+                      <td className="px-5 py-4.5 text-brand font-semibold">
                         <span className="block">{formatBudgetValue(camp)}</span>
                         {camp.type !== 'EMAIL' && parseLaunchDetails(camp.launchDetails)?.dailyBudget && (
                           <span className="text-[11px] text-neutral-500 font-semibold block mt-0.5">
@@ -1253,7 +1253,7 @@ const Campaigns = () => {
                           <span className="text-neutral-500 font-semibold block">N/A</span>
                         ) : (
                           <>
-                            <span className="text-neutral-900 font-semibold block">{formatCurrency(camp.spent)}</span>
+                            <span className="text-brand font-semibold block">{formatCurrency(camp.spent)}</span>
                             {camp.budget > 0 && (
                               <span className="text-[11px] text-neutral-500 font-semibold block mt-0.5">
                                 {spentPercent}% spent
@@ -1362,17 +1362,17 @@ const Campaigns = () => {
         <div className="bg-[#f8fafc] border border-neutral-200/80 rounded-lg px-6 py-4 flex items-center gap-8 shadow-2xs font-semibold text-neutral-800 text-sm">
           <div>
             <span className="text-xs text-neutral-500 font-semibold block">Total Budget</span>
-            <strong className="text-base text-neutral-900 mt-0.5 block">{formatCurrency(summary.totalBudget)}</strong>
+            <strong className="text-base text-brand mt-0.5 block">{formatCurrency(summary.totalBudget)}</strong>
           </div>
           <div className="h-8 w-px bg-slate-200"></div>
           <div>
             <span className="text-xs text-neutral-500 font-semibold block">Total Spent</span>
-            <strong className="text-base text-neutral-900 mt-0.5 block">{formatCurrency(summary.totalSpent)}</strong>
+            <strong className="text-base text-brand mt-0.5 block">{formatCurrency(summary.totalSpent)}</strong>
           </div>
           <div className="h-8 w-px bg-slate-200"></div>
           <div>
             <span className="text-xs text-neutral-500 font-semibold block">Total Leads</span>
-            <strong className="text-base text-neutral-900 mt-0.5 block">
+            <strong className="text-base text-brand mt-0.5 block">
               {new Intl.NumberFormat('en-US').format(summary.totalLeads)}
             </strong>
           </div>
@@ -1394,7 +1394,7 @@ const Campaigns = () => {
               key={p}
               onClick={() => setPage(p)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${page === p
-                ? 'bg-neutral-900 text-white shadow-xs'
+                ? 'bg-brand text-white shadow-xs'
                 : 'border border-neutral-200 hover:bg-neutral-50'
                 }`}
             >
@@ -1413,18 +1413,18 @@ const Campaigns = () => {
 
       {/* VIEW SLIDE-OVER DRAWER PERFORMANCE */}
       {isViewOpen && selectedCampaign && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-xs transition duration-200 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex justify-end bg-brand/20 backdrop-blur-xs transition duration-200 animate-fade-in">
           <div className="w-auto bg-white h-screen flex flex-col justify-between shadow-sm animate-slide-in p-1 border-l border-neutral-100">
 
             {/* Slide Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-neutral-900 line-clamp-1">{selectedCampaign.name}</h3>
+                <h3 className="text-lg font-semibold text-brand line-clamp-1">{selectedCampaign.name}</h3>
                 <p className="text-xs text-neutral-500 mt-0.5">Campaign Type: {mapTypeLabel(selectedCampaign.type)}</p>
               </div>
               <button
                 onClick={() => setIsViewOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-neutral-50 text-neutral-500 hover:text-neutral-900 transition"
+                className="p-1.5 rounded-lg hover:bg-neutral-50 text-neutral-500 hover:text-brand transition"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1448,13 +1448,13 @@ const Campaigns = () => {
                     <div className="grid grid-cols-2 gap-4 text-xs pt-2">
                       <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                         <span className="text-neutral-500 block font-semibold">Budget Allocated</span>
-                        <strong className="text-base font-semibold text-neutral-900 mt-1 block">
+                        <strong className="text-base font-semibold text-brand mt-1 block">
                           {campaignDetails?.type === 'EMAIL' ? 'N/A' : formatCurrency(campaignDetails?.budget)}
                         </strong>
                       </div>
                       <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                         <span className="text-neutral-500 block font-semibold">Outreach Spent</span>
-                        <strong className="text-base font-semibold text-neutral-900 mt-1 block">
+                        <strong className="text-base font-semibold text-brand mt-1 block">
                           {campaignDetails?.type === 'EMAIL' ? 'N/A' : formatCurrency(campaignDetails?.spent)}
                         </strong>
                       </div>
@@ -1501,7 +1501,7 @@ const Campaigns = () => {
                       </h4>
                       <button
                         onClick={handleOpenPlanner}
-                        className="text-xs font-semibold text-neutral-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/50 px-3 py-1 rounded-full border border-blue-100 transition active:scale-95"
+                        className="text-xs font-semibold text-brand hover:text-blue-700 bg-blue-50 hover:bg-blue-100/50 px-3 py-1 rounded-full border border-blue-100 transition active:scale-95"
                       >
                         {/* Enroll Warm Leads */}
                         Enroll {campaignDetails?.audienceType || 'All'} Leads
@@ -1542,21 +1542,21 @@ const Campaigns = () => {
 
       {/* TARGET AUDIENCE CHECKLIST PLANNER MODAL */}
       {isPlannerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/20 backdrop-blur-xs transition p-4 animate-fade-in">
           <div className="w-auto bg-white rounded-[24px] border border-neutral-100 shadow-sm flex flex-col justify-between overflow-hidden">
 
             {/* Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-neutral-900 text-lg flex items-center gap-1.5">
-                  <Target className="h-5 w-5 text-neutral-900" />
+                <h3 className="font-semibold text-brand text-lg flex items-center gap-1.5">
+                  <Target className="h-5 w-5 text-brand" />
                   Target Audience Planner
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">Select candidates to register into this campaign stream</p>
               </div>
               <button
                 onClick={() => setIsPlannerOpen(false)}
-                className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition"
+                className="p-1 text-neutral-500 hover:text-brand rounded-lg hover:bg-neutral-50 transition"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1566,7 +1566,7 @@ const Campaigns = () => {
             <div className="p-6 flex-1 max-h-[300px] overflow-y-auto space-y-3 bg-neutral-50/50">
               {loadingLeads ? (
                 <div className="text-center py-12">
-                  <Loader2 className="h-6 w-6 text-neutral-900 animate-spin mx-auto" />
+                  <Loader2 className="h-6 w-6 text-brand animate-spin mx-auto" />
                 </div>
               ) : warmLeads.length === 0 ? (
                 <div className="text-center py-12 text-neutral-500 text-xs font-semibold">
@@ -1586,7 +1586,7 @@ const Campaigns = () => {
                           prev.includes(lead.id) ? prev.filter(id => id !== lead.id) : [...prev, lead.id]
                         );
                       }}
-                      className="h-4.5 w-4.5 rounded border-slate-300 text-neutral-900 focus:ring-neutral-900"
+                      className="h-4.5 w-4.5 rounded border-slate-300 text-brand focus:ring-brand"
                     />
                     <div>
                       <strong className="text-neutral-800 text-sm block font-semibold leading-tight">{lead.fullName}</strong>
@@ -1604,7 +1604,7 @@ const Campaigns = () => {
               <button
                 onClick={handleEnrollLeadsSubmit}
                 disabled={selectedLeadIds.length === 0}
-                className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-semibold shadow-sm transition disabled:opacity-50 active:scale-95"
+                className="flex-1 py-3 bg-brand hover:bg-brand-hover text-white rounded-xl text-sm font-semibold shadow-sm transition disabled:opacity-50 active:scale-95"
               >
                 {/* Enroll {selectedLeadIds.length} Warm Leads */}
                 Enroll {selectedLeadIds.length} {campaignDetails?.audienceType || 'All'} Leads
@@ -1623,21 +1623,21 @@ const Campaigns = () => {
 
       {/* CREATE CAMPAIGN MODAL */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/20 backdrop-blur-xs transition p-4 animate-fade-in">
           <div className="w-auto bg-white rounded-[24px] border border-neutral-100 shadow-sm flex flex-col justify-between overflow-hidden">
 
             {/* Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-neutral-900 text-lg flex items-center gap-1.5">
-                  <Megaphone className="h-5 w-5 text-neutral-900 animate-pulse" />
+                <h3 className="font-semibold text-brand text-lg flex items-center gap-1.5">
+                  <Megaphone className="h-5 w-5 text-brand animate-pulse" />
                   Launch Campaign
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">Establish outreach channel broadcast specifications</p>
               </div>
               <button
                 onClick={() => setIsCreateOpen(false)}
-                className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition "
+                className="p-1 text-neutral-500 hover:text-brand rounded-lg hover:bg-neutral-50 transition "
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1654,7 +1654,7 @@ const Campaigns = () => {
                   placeholder="e.g. Sep 2026 UK Intake Ads"
                   value={campaignForm.name}
                   onChange={(e) => setCampaignForm(p => ({ ...p, name: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 outline-none transition font-semibold text-neutral-700 bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition font-semibold text-neutral-700 bg-white"
                 />
               </div>
 
@@ -1681,7 +1681,7 @@ const Campaigns = () => {
                         launchDetails: normalizeLaunchDetails(selectedType, p.launchDetails),
                       }));
                     }}
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="EMAIL">Email Marketing</option>
                     {/* <option value="SMS">SMS Promo Broadcast</option> */}
@@ -1698,7 +1698,7 @@ const Campaigns = () => {
                   <select
                     value={campaignForm.status}
                     onChange={(e) => setCampaignForm(p => ({ ...p, status: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="DRAFT">Draft</option>
                     <option value="ACTIVE">Active</option>
@@ -1719,7 +1719,7 @@ const Campaigns = () => {
                       placeholder="e.g. 5000"
                       value={campaignForm.budget}
                       onChange={(e) => setCampaignForm(p => ({ ...p, budget: e.target.value }))}
-                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -1730,7 +1730,7 @@ const Campaigns = () => {
                       placeholder="0"
                       value={campaignForm.spent}
                       onChange={(e) => setCampaignForm(p => ({ ...p, spent: parseFloat(e.target.value) || 0 }))}
-                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                     />
                   </div>
                 </div>
@@ -1743,7 +1743,7 @@ const Campaigns = () => {
                     type="date"
                     value={campaignForm.startDate}
                     onChange={(e) => setCampaignForm(p => ({ ...p, startDate: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1752,7 +1752,7 @@ const Campaigns = () => {
                     type="date"
                     value={campaignForm.endDate}
                     onChange={(e) => setCampaignForm(p => ({ ...p, endDate: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
               </div>
@@ -1766,7 +1766,7 @@ const Campaigns = () => {
                     onChange={(e) =>
                       setCampaignForm((p) => ({ ...p, audienceType: e.target.value }))
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     {AUDIENCE_TYPES.map((item) => (
                       <option key={item.value} value={item.value}>
@@ -1788,7 +1788,7 @@ const Campaigns = () => {
                   placeholder="Ad copywriting guidelines, objectives, conversion metrics..."
                   value={campaignForm.description}
                   onChange={(e) => setCampaignForm(p => ({ ...p, description: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white resize-none"
                 />
               </div>
 
@@ -1802,7 +1802,7 @@ const Campaigns = () => {
               <div className="pt-4 border-t border-neutral-100 flex items-center gap-3">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95 "
+                  className="flex-1 py-3 bg-brand hover:bg-brand-hover text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95 "
                 >
                   {campaignForm.type === 'SOCIAL_MEDIA' ? 'Save & Launch Ad' : 'Save & Launch'}
                 </button>
@@ -1823,13 +1823,13 @@ const Campaigns = () => {
 
       {/* EDIT CAMPAIGN MODAL */}
       {isEditOpen && selectedCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs transition p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/20 backdrop-blur-xs transition p-4 animate-fade-in">
           <div className="w-auto bg-white rounded-[24px] border border-neutral-100 shadow-sm flex flex-col justify-between overflow-hidden">
 
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-neutral-900 text-lg flex items-center gap-1.5">
-                  <Megaphone className="h-5 w-5 text-neutral-900" />
+                <h3 className="font-semibold text-brand text-lg flex items-center gap-1.5">
+                  <Megaphone className="h-5 w-5 text-brand" />
                   Edit Campaign Detail
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">
@@ -1838,7 +1838,7 @@ const Campaigns = () => {
               </div>
               <button
                 onClick={() => setIsEditOpen(false)}
-                className="p-1 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-50 transition"
+                className="p-1 text-neutral-500 hover:text-brand rounded-lg hover:bg-neutral-50 transition"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1858,7 +1858,7 @@ const Campaigns = () => {
                   onChange={(e) =>
                     setCampaignForm((p) => ({ ...p, name: e.target.value }))
                   }
-                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/20 outline-none transition font-semibold text-neutral-700 bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition font-semibold text-neutral-700 bg-white"
                 />
               </div>
 
@@ -1884,7 +1884,7 @@ const Campaigns = () => {
                         launchDetails: normalizeLaunchDetails(selectedType, p.launchDetails),
                       }));
                     }}
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="EMAIL">Email Marketing</option>
                     {/* <option value="SMS">SMS Promo Broadcast</option> */}
@@ -1903,7 +1903,7 @@ const Campaigns = () => {
                     onChange={(e) =>
                       setCampaignForm((p) => ({ ...p, status: e.target.value }))
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     <option value="DRAFT">Draft</option>
                     <option value="ACTIVE">Active</option>
@@ -1926,7 +1926,7 @@ const Campaigns = () => {
                       onChange={(e) =>
                         setCampaignForm((p) => ({ ...p, budget: e.target.value }))
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                     />
                   </div>
 
@@ -1943,7 +1943,7 @@ const Campaigns = () => {
                           spent: parseFloat(e.target.value) || 0,
                         }))
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                     />
                   </div>
                 </div>
@@ -1958,7 +1958,7 @@ const Campaigns = () => {
                     onChange={(e) =>
                       setCampaignForm((p) => ({ ...p, startDate: e.target.value }))
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
 
@@ -1970,7 +1970,7 @@ const Campaigns = () => {
                     onChange={(e) =>
                       setCampaignForm((p) => ({ ...p, endDate: e.target.value }))
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   />
                 </div>
               </div>
@@ -1982,7 +1982,7 @@ const Campaigns = () => {
                     onChange={(e) =>
                       setCampaignForm((p) => ({ ...p, audienceType: e.target.value }))
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                   >
                     {AUDIENCE_TYPES.map((item) => (
                       <option key={item.value} value={item.value}>
@@ -2008,7 +2008,7 @@ const Campaigns = () => {
                       targetAudience: e.target.value,
                     }))
                   }
-                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
                 />
               </div>
 
@@ -2021,7 +2021,7 @@ const Campaigns = () => {
                   onChange={(e) =>
                     setCampaignForm((p) => ({ ...p, description: e.target.value }))
                   }
-                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-neutral-900 outline-none transition font-semibold text-neutral-700 bg-white resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white resize-none"
                 />
               </div>
 
@@ -2034,7 +2034,7 @@ const Campaigns = () => {
               <div className="pt-4 border-t border-neutral-100 flex items-center gap-3">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95"
+                  className="flex-1 py-3 bg-brand hover:bg-brand-hover text-white rounded-xl text-sm font-semibold shadow-sm transition active:scale-95"
                 >
                   Save & Apply Changes
                 </button>

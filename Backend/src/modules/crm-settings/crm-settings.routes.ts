@@ -29,5 +29,6 @@ router.delete('/universities/:id', manage, controller.deleteUniversity);
 router.get('/catalog/stats', view, controller.getCatalogStats);
 router.get('/catalog', view, controller.listCatalog);
 router.get('/courses', view, controller.listCourses);
+router.post('/courses', view, controller.findOrCreateCourse);
 
 export default router;

@@ -55,7 +55,7 @@ export default function StudentPaymentsPage() {
             <li key={p.id}>
               <StudentPortalPanel className={`${sp.panelPad} flex flex-wrap items-center justify-between gap-4`}>
                 <div className="min-w-0">
-                  <p className="text-[15px] font-semibold tracking-tight text-neutral-900">
+                  <p className="text-[15px] font-semibold tracking-tight text-brand">
                     {p.fee?.label || 'Application fee'}
                   </p>
                   <p className={`${sp.body} mt-1`}>
@@ -67,7 +67,7 @@ export default function StudentPaymentsPage() {
                 </div>
 
                 <div className="flex flex-col items-end gap-2 text-right">
-                  <p className="text-lg font-semibold tracking-tight text-neutral-900">
+                  <p className="text-lg font-semibold tracking-tight text-brand">
                     {formatInr(p.amountPaise)}
                   </p>
                   <span className={sp.badge}>
@@ -87,7 +87,7 @@ export default function StudentPaymentsPage() {
                     {p.application?.id && (
                       <Link
                         href={`/applicant/applications/${p.application.id}`}
-                        className="text-xs font-medium text-neutral-500 transition hover:text-neutral-900"
+                        className="text-xs font-medium text-neutral-500 transition hover:text-brand"
                       >
                         View application
                       </Link>

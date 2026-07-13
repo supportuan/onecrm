@@ -46,11 +46,11 @@ function ResetPasswordContent() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 px-4 py-12">
+    <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-brand px-4 py-12">
       <div className="w-auto rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
         <div className="mb-6 text-center">
           <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">OneCRM Reset Password</p>
-          <h1 className="mt-4 text-2xl font-semibold text-neutral-900">Set a new password</h1>
+          <h1 className="mt-4 text-2xl font-semibold text-brand">Set a new password</h1>
           <p className="mt-2 text-sm text-neutral-500">Enter your new password to continue.</p>
         </div>
 
@@ -61,7 +61,7 @@ function ResetPasswordContent() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
+              className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-brand outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
               required
             />
           </div>
@@ -71,7 +71,7 @@ function ResetPasswordContent() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
+              className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-brand outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
               required
             />
           </div>
@@ -80,7 +80,7 @@ function ResetPasswordContent() {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex w-full justify-center rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex w-full justify-center rounded-lg bg-brand px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? 'Resetting...' : 'Reset password'}
           </button>
@@ -93,7 +93,7 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-900 px-4 py-12">
+      <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-brand px-4 py-12">
         <div className="text-center text-sm text-neutral-500">Loading...</div>
       </main>
     }>

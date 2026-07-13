@@ -229,7 +229,7 @@ const Automation = () => {
     <div className="space-y-6">
       {/* FILTER & ACTIONS BAR */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-2 py-1.5 rounded-lg border border-neutral-200/50 shadow-xs">
-        <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 sm:max-w-md shadow-xs transition focus-within:ring-2 focus-within:ring-neutral-900/20 focus-within:border-neutral-900/60">
+        <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 sm:max-w-md shadow-xs transition focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-neutral-900/60">
           <Search className="h-5 w-5 text-neutral-500 flex-shrink-0" />
           <input
             type="text"
@@ -260,7 +260,7 @@ const Automation = () => {
             });
             setIsCreateOpen(true);
           }}
-          className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
+          className="bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md active:scale-95 hover:shadow-lg"
         >
           <Plus className="h-4 w-4 stroke-[3]" />
           Add flow
@@ -278,7 +278,7 @@ const Automation = () => {
       {/* DUAL SECTION LAYOUT */}
       {loading && automations.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 bg-white rounded-lg border border-neutral-200 shadow-xs">
-          <Loader2 className="h-10 w-10 text-neutral-900 animate-spin" />
+          <Loader2 className="h-10 w-10 text-brand animate-spin" />
           <p className="text-sm text-neutral-500 font-semibold mt-4">Retrieving active marketing automations...</p>
         </div>
       ) : (
@@ -288,7 +288,7 @@ const Automation = () => {
           <div className="lg:col-span-3 bg-white border border-neutral-200/80 rounded-[20px] shadow-2xs overflow-hidden flex flex-col justify-between min-h-[480px]">
             <div>
               <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100">
-                <h2 className="text-lg font-extrabold text-neutral-900 tracking-tight">Active Automation Workflows</h2>
+                <h2 className="text-lg font-extrabold text-brand tracking-tight">Active Automation Workflows</h2>
                 <button
                   onClick={() => setSearch('')}
                   className="border border-neutral-200 hover:bg-neutral-50 px-4 py-1.5 rounded-lg text-xs font-semibold text-neutral-600 flex items-center gap-1.5 transition cursor-pointer shadow-3xs active:scale-95"
@@ -321,7 +321,7 @@ const Automation = () => {
                         <tr key={flow.id} className="hover:bg-neutral-50/50 transition">
                           {/* Workflow Name */}
                           <td className="px-6 py-4.5">
-                            <span className="font-semibold text-neutral-900 block leading-tight">{flow.workflowName}</span>
+                            <span className="font-semibold text-brand block leading-tight">{flow.workflowName}</span>
                           </td>
                           {/* Trigger */}
                           <td className="px-5 py-4.5 text-xs text-neutral-500 font-semibold max-w-[150px] truncate">
@@ -382,7 +382,7 @@ const Automation = () => {
                     <button
                       key={p}
                       onClick={() => setPage(p)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition active:scale-95 ${page === p ? 'bg-neutral-900 text-white font-extrabold shadow-sm' : 'bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-600'}`}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition active:scale-95 ${page === p ? 'bg-brand text-white font-extrabold shadow-sm' : 'bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-600'}`}
                     >
                       {p}
                     </button>
@@ -402,44 +402,44 @@ const Automation = () => {
           {/* Right Side: Automation Performance Summary Card (2/5 columns) */}
           <div className="lg:col-span-2 bg-white border border-neutral-200/80 rounded-[20px] shadow-2xs p-6 flex flex-col justify-between min-h-[480px]">
             <div>
-              <h2 className="text-[17px] font-semibold text-neutral-900 tracking-tight border-b border-neutral-100 pb-4 mb-2 text-left">
+              <h2 className="text-[17px] font-semibold text-brand tracking-tight border-b border-neutral-100 pb-4 mb-2 text-left">
                 Automation Performance Summary
               </h2>
 
               <div className="divide-y divide-neutral-100 font-semibold text-[13.5px] text-neutral-600">
                 <div className="py-4 flex justify-between items-center">
                   <span>Total active Workflows</span>
-                  <strong className="text-[15px] text-neutral-900 font-semibold">
+                  <strong className="text-[15px] text-brand font-semibold">
                     {summary.totalActiveWorkflows || 0}
                   </strong>
                 </div>
                 <div className="py-4 flex justify-between items-center">
                   <span>Leads Automated</span>
-                  <strong className="text-[15px] text-neutral-900 font-semibold">
+                  <strong className="text-[15px] text-brand font-semibold">
                     {new Intl.NumberFormat('en-US').format(summary.leadsAutomated || 0)}
                   </strong>
                 </div>
                 <div className="py-4 flex justify-between items-center">
                   <span>Email Sent (30 days)</span>
-                  <strong className="text-[15px] text-neutral-900 font-semibold">
+                  <strong className="text-[15px] text-brand font-semibold">
                     {new Intl.NumberFormat('en-US').format(summary.emailsSent || 0)}
                   </strong>
                 </div>
                 <div className="py-4 flex justify-between items-center">
                   <span>WhatsApp Messages</span>
-                  <strong className="text-[15px] text-neutral-900 font-semibold">
+                  <strong className="text-[15px] text-brand font-semibold">
                     {new Intl.NumberFormat('en-US').format(summary.whatsappMessages || 0)}
                   </strong>
                 </div>
                 <div className="py-4 flex justify-between items-center">
                   <span>SMS Sent</span>
-                  <strong className="text-[15px] text-neutral-900 font-semibold">
+                  <strong className="text-[15px] text-brand font-semibold">
                     {new Intl.NumberFormat('en-US').format(summary.smsSent || 0)}
                   </strong>
                 </div>
                 <div className="py-4 flex justify-between items-center border-b border-neutral-100">
                   <span>Average Engagement Rate</span>
-                  <strong className="text-[15.5px] text-neutral-900 font-semibold">
+                  <strong className="text-[15.5px] text-brand font-semibold">
                     {summary.engagementRate !== undefined ? `${summary.engagementRate.toFixed(1)}%` : '34.5%'}
                   </strong>
                 </div>
@@ -447,7 +447,7 @@ const Automation = () => {
             </div>
 
             <div className="bg-neutral-50 border border-neutral-200/50 rounded-xl p-4.5 mt-6 text-xs leading-relaxed text-neutral-500 font-semibold flex items-start gap-2.5">
-              <Info className="h-4.5 w-4.5 text-neutral-900 flex-shrink-0 stroke-[2.5]" />
+              <Info className="h-4.5 w-4.5 text-brand flex-shrink-0 stroke-[2.5]" />
               <span>
                 Performance summary calculations aggregate historical email telemetry, landing page captures, and WhatsApp response actions in active campaigns.
               </span>
@@ -459,10 +459,10 @@ const Automation = () => {
 
       {/* CREATE FLOW MODAL */}
       {isCreateOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-brand/20 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white border border-neutral-200 rounded-[24px] shadow-sm w-auto overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
             <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 bg-[#f8fafc]">
-              <h3 className="text-lg font-extrabold text-neutral-900">Create New Automation Stream</h3>
+              <h3 className="text-lg font-extrabold text-brand">Create New Automation Stream</h3>
               <button
                 onClick={() => setIsCreateOpen(false)}
                 className="p-1 hover:bg-slate-200 rounded-full text-neutral-500 hover:text-neutral-600 transition"
@@ -480,7 +480,7 @@ const Automation = () => {
                   placeholder="e.g. New Lead Welcome"
                   value={workflowForm.workflowName}
                   onChange={(e) => setWorkflowForm({ ...workflowForm, workflowName: e.target.value })}
-                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
 
@@ -493,7 +493,7 @@ const Automation = () => {
                     placeholder="e.g. New Lead Created"
                     value={workflowForm.trigger}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, trigger: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
                 <div>
@@ -504,7 +504,7 @@ const Automation = () => {
                     placeholder="e.g. Email, WhatsApp"
                     value={workflowForm.action}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, action: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
               </div>
@@ -515,7 +515,7 @@ const Automation = () => {
                   <select
                     value={workflowForm.status}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, status: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 bg-white outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 bg-white outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   >
                     <option value="ACTIVE">Active</option>
                     <option value="PAUSED">Paused</option>
@@ -528,7 +528,7 @@ const Automation = () => {
                     type="number"
                     value={workflowForm.leadsAutomated}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, leadsAutomated: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
               </div>
@@ -540,7 +540,7 @@ const Automation = () => {
                     type="number"
                     value={workflowForm.emailsSent}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, emailsSent: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
                 <div>
@@ -549,7 +549,7 @@ const Automation = () => {
                     type="number"
                     value={workflowForm.whatsappMessages}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, whatsappMessages: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
                 <div>
@@ -558,7 +558,7 @@ const Automation = () => {
                     type="number"
                     value={workflowForm.smsSent}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, smsSent: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
               </div>
@@ -571,7 +571,7 @@ const Automation = () => {
                   max="100"
                   value={workflowForm.engagementRate}
                   onChange={(e) => setWorkflowForm({ ...workflowForm, engagementRate: e.target.value })}
-                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
 
@@ -585,7 +585,7 @@ const Automation = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-2.5 rounded-xl font-semibold transition cursor-pointer shadow-md"
+                  className="bg-brand hover:bg-brand-hover text-white px-6 py-2.5 rounded-xl font-semibold transition cursor-pointer shadow-md"
                 >
                   Create Flow
                 </button>
@@ -597,10 +597,10 @@ const Automation = () => {
 
       {/* EDIT FLOW MODAL */}
       {isEditOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-brand/20 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white border border-neutral-200 rounded-[24px] shadow-sm w-auto overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
             <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 bg-[#f8fafc]">
-              <h3 className="text-lg font-extrabold text-neutral-900">Edit Automation Stream</h3>
+              <h3 className="text-lg font-extrabold text-brand">Edit Automation Stream</h3>
               <button
                 onClick={() => setIsEditOpen(false)}
                 className="p-1 hover:bg-slate-200 rounded-full text-neutral-500 hover:text-neutral-600 transition"
@@ -617,7 +617,7 @@ const Automation = () => {
                   required
                   value={workflowForm.workflowName}
                   onChange={(e) => setWorkflowForm({ ...workflowForm, workflowName: e.target.value })}
-                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
 
@@ -629,7 +629,7 @@ const Automation = () => {
                     required
                     value={workflowForm.trigger}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, trigger: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
                 <div>
@@ -639,7 +639,7 @@ const Automation = () => {
                     required
                     value={workflowForm.action}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, action: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
               </div>
@@ -650,7 +650,7 @@ const Automation = () => {
                   <select
                     value={workflowForm.status}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, status: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 bg-white outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 bg-white outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   >
                     <option value="ACTIVE">Active</option>
                     <option value="PAUSED">Paused</option>
@@ -663,7 +663,7 @@ const Automation = () => {
                     type="number"
                     value={workflowForm.leadsAutomated}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, leadsAutomated: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
               </div>
@@ -675,7 +675,7 @@ const Automation = () => {
                     type="number"
                     value={workflowForm.emailsSent}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, emailsSent: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
                 <div>
@@ -684,7 +684,7 @@ const Automation = () => {
                     type="number"
                     value={workflowForm.whatsappMessages}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, whatsappMessages: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
                 <div>
@@ -693,7 +693,7 @@ const Automation = () => {
                     type="number"
                     value={workflowForm.smsSent}
                     onChange={(e) => setWorkflowForm({ ...workflowForm, smsSent: e.target.value })}
-                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                    className="w-full border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                   />
                 </div>
               </div>
@@ -706,7 +706,7 @@ const Automation = () => {
                   max="100"
                   value={workflowForm.engagementRate}
                   onChange={(e) => setWorkflowForm({ ...workflowForm, engagementRate: e.target.value })}
-                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-neutral-900/20 focus:border-neutral-900"
+                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
                 />
               </div>
 
@@ -720,7 +720,7 @@ const Automation = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-2.5 rounded-xl font-semibold transition cursor-pointer shadow-md"
+                  className="bg-brand hover:bg-brand-hover text-white px-6 py-2.5 rounded-xl font-semibold transition cursor-pointer shadow-md"
                 >
                   Save Changes
                 </button>

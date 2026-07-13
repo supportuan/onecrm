@@ -53,7 +53,7 @@ export default function StaffApplicationFees({ app, canManage, onSaved }) {
             const paid = payments.some((p) => p.feeId === fee.id && p.status === 'PAID');
             return (
               <li key={fee.id} className="flex justify-between gap-3 px-4 py-3 text-sm bg-white">
-                <span className="font-medium text-neutral-900">{fee.label}</span>
+                <span className="font-medium text-brand">{fee.label}</span>
                 <span className={paid ? 'text-emerald-700 font-medium' : 'text-neutral-600'}>
                   {formatInr(fee.amountPaise)} {paid ? '· Paid' : '· Unpaid'}
                 </span>

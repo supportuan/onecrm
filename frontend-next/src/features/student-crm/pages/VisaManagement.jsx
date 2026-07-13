@@ -46,7 +46,7 @@ export default function VisaManagementPage() {
       <div className="ui-container space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-neutral-900 flex items-center gap-2">
+            <h1 className="text-2xl font-semibold text-brand flex items-center gap-2">
               <Plane className="h-6 w-6" />
               Visa management
             </h1>
@@ -99,7 +99,7 @@ export default function VisaManagementPage() {
                     return (
                       <tr key={r.id} className="hover:bg-neutral-50/80">
                         <td className="px-5 py-3">
-                          <p className="font-medium text-neutral-900">{app.student?.fullName}</p>
+                          <p className="font-medium text-brand">{app.student?.fullName}</p>
                           <p className="text-xs text-neutral-500">{app.student?.email}</p>
                         </td>
                         <td className="px-5 py-3">
@@ -118,7 +118,7 @@ export default function VisaManagementPage() {
                         <td className="px-5 py-3 text-right">
                           <Link
                             href={`/student-crm/applications/${app.id}`}
-                            className="text-xs font-medium text-neutral-700 hover:text-neutral-900"
+                            className="text-xs font-medium text-neutral-700 hover:text-brand"
                           >
                             Open
                           </Link>

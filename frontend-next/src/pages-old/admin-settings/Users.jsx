@@ -517,7 +517,7 @@ export default function UserManagementPage() {
             <button
               onClick={() => setActiveTab("all")}
               className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold transition cursor-pointer ${activeTab === "all"
-                ? "border-black text-black"
+                ? "border-brand text-brand"
                 : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
             >
@@ -527,7 +527,7 @@ export default function UserManagementPage() {
             <button
               onClick={() => setActiveTab("pending-agents")}
               className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold cursor-pointer transition ${activeTab === "pending-agents"
-                ? "border-black text-black"
+                ? "border-brand text-brand"
                 : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
             >
@@ -542,13 +542,13 @@ export default function UserManagementPage() {
             <button
               onClick={() => setActiveTab("pending-students")}
               className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-bold cursor-pointer transition ${activeTab === "pending-students"
-                ? "border-black text-black"
+                ? "border-brand text-brand"
                 : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
             >
               Pending Students
               {pendingStudents.length > 0 && (
-                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-black">
+                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-brand">
                   {pendingStudents.length}
                 </span>
               )}
@@ -557,7 +557,7 @@ export default function UserManagementPage() {
 
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-black px-5 py-3 text-sm font-bold text-white shadow-lg shadow-black/20 transition hover:bg-neutral-800 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-bold text-white shadow-lg shadow-black/20 transition hover:bg-brand-hover cursor-pointer"
           >
             <UserPlus className="h-4 w-4" />
             Create User
@@ -607,7 +607,7 @@ export default function UserManagementPage() {
                 setStatusFilter("ALL");
                 setSearch("");
               }}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-black hover:bg-gray-100  cursor-pointer"
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-brand hover:bg-gray-100  cursor-pointer"
             >
               Clear Filters
             </button>
@@ -745,7 +745,7 @@ export default function UserManagementPage() {
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => handleAssignCounsellor(user.id)}
-                                className="rounded-xl bg-black px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-gray-700 cursor-pointer"
+                                className="rounded-xl bg-brand px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-hover cursor-pointer"
                               >
                                 Assign
                               </button>
@@ -1151,7 +1151,7 @@ export default function UserManagementPage() {
 
               <button
                 onClick={handleSaveUser}
-                className="rounded-2xl bg-black px-5 py-2.5 text-sm font-bold text-white hover:bg-black/80 cursor-pointer"
+                className="rounded-2xl bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-hover cursor-pointer"
               >
                 {modalMode === "edit" ? "Update Access" : "Create User"}
               </button>

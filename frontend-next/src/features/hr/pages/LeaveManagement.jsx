@@ -467,7 +467,7 @@ export default function LeaveManagement() {
       <LeaveWorkspaceHeader workspaceTab={workspaceTab} setWorkspaceTab={setWorkspaceTab} canManageLeave={canManageLeave} />
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-[17px] font-semibold tracking-tight text-neutral-900">Policies & holidays</h2>
+          <h2 className="text-[17px] font-semibold tracking-tight text-brand">Policies & holidays</h2>
           <p className="text-neutral-500 text-[13px] mt-1">
             Configure leave policies, entitlement plans, employee assignments, and the holiday calendar.
           </p>
@@ -477,7 +477,7 @@ export default function LeaveManagement() {
           <button
             onClick={() => setActiveMainTab('plans')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
-              activeMainTab === 'plans' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
+              activeMainTab === 'plans' ? 'bg-brand text-white shadow-sm' : 'text-neutral-600 hover:text-brand hover:bg-white'
             }`}
           >
             <Palmtree size={12} />
@@ -486,7 +486,7 @@ export default function LeaveManagement() {
           <button
             onClick={() => setActiveMainTab('holidays')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
-              activeMainTab === 'holidays' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
+              activeMainTab === 'holidays' ? 'bg-brand text-white shadow-sm' : 'text-neutral-600 hover:text-brand hover:bg-white'
             }`}
           >
             <CalendarIcon size={12} />
@@ -495,7 +495,7 @@ export default function LeaveManagement() {
           <button
             onClick={() => setActiveMainTab('categories')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
-              activeMainTab === 'categories' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
+              activeMainTab === 'categories' ? 'bg-brand text-white shadow-sm' : 'text-neutral-600 hover:text-brand hover:bg-white'
             }`}
           >
             <Tag size={12} />
@@ -528,7 +528,7 @@ export default function LeaveManagement() {
                   <input
                     type="text"
                     placeholder="search plans..."
-                    className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[13px] font-medium text-neutral-800 placeholder-slate-400 outline-none focus:border-neutral-900 transition-all"
+                    className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-[13px] font-medium text-neutral-800 placeholder-slate-400 outline-none focus:border-brand transition-all"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -553,7 +553,7 @@ export default function LeaveManagement() {
                       <div>
                         <p
                           className={`text-[13px] font-semibold ${
-                            selectedPlan?.id === plan.id ? 'text-neutral-900' : 'text-neutral-800'
+                            selectedPlan?.id === plan.id ? 'text-brand' : 'text-neutral-800'
                           }`}
                         >
                           {plan.name}
@@ -617,7 +617,7 @@ export default function LeaveManagement() {
                           onClick={() => setActiveInnerTab(tab.id)}
                           className={`py-4 text-[11px] font-semibold border-b-2 transition-all flex items-center gap-2 ${
                             activeInnerTab === tab.id
-                              ? 'border-neutral-900 text-neutral-700'
+                              ? 'border-brand text-neutral-700'
                               : 'border-transparent text-neutral-500 hover:text-neutral-800'
                           }`}
                         >
@@ -644,7 +644,7 @@ export default function LeaveManagement() {
                               setTypeForm({ ...DEFAULT_TYPE_FORM });
                               setShowTypeModal(true);
                             }}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[11px] font-semibold transition-all"
+                            className="flex items-center gap-1.5 px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded-xl text-[11px] font-semibold transition-all"
                           >
                             <Plus size={14} /> add definition
                           </button>
@@ -668,7 +668,7 @@ export default function LeaveManagement() {
                                     <tr key={def.id} className="hover:bg-neutral-50/50 transition-all">
                                       <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                          <div className="w-8 h-8 rounded-lg bg-neutral-100 text-neutral-900 flex items-center justify-center font-semibold text-[11px] border border-neutral-200">
+                                          <div className="w-8 h-8 rounded-lg bg-neutral-100 text-brand flex items-center justify-center font-semibold text-[11px] border border-neutral-200">
                                             {def.type_code || def.leave_type_code || 'LV'}
                                           </div>
                                           <div>
@@ -758,7 +758,7 @@ export default function LeaveManagement() {
                           </div>
                           <button
                             onClick={handleOpenAssignModal}
-                            className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[11px] font-semibold transition-all"
+                            className="px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded-xl text-[11px] font-semibold transition-all"
                           >
                             assign employees
                           </button>
@@ -842,7 +842,7 @@ export default function LeaveManagement() {
                 <input
                   type="text"
                   placeholder="filter holidays by name..."
-                  className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-medium text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full pl-12 pr-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-medium text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
                   value={holidaySearchQuery}
                   onChange={(e) => setHolidaySearchQuery(e.target.value)}
                 />
@@ -919,7 +919,7 @@ export default function LeaveManagement() {
                   <button
                     type="button"
                     onClick={handleAddHolidayFolder}
-                    className="text-[11px] font-semibold text-neutral-700 hover:text-neutral-900 transition-colors"
+                    className="text-[11px] font-semibold text-neutral-700 hover:text-brand transition-colors"
                   >
                     + custom category
                   </button>
@@ -931,7 +931,7 @@ export default function LeaveManagement() {
                     <input
                       required
                       type="text"
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
                       placeholder="e.g. independence day"
                       value={newHoliday.name}
                       onChange={(e) => setNewHoliday({ ...newHoliday, name: e.target.value })}
@@ -943,7 +943,7 @@ export default function LeaveManagement() {
                     <input
                       required
                       type="date"
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                       value={newHoliday.date}
                       onChange={(e) => setNewHoliday({ ...newHoliday, date: e.target.value })}
                     />
@@ -952,7 +952,7 @@ export default function LeaveManagement() {
                   <div className="space-y-2">
                     <label className="text-[11px] font-semibold text-neutral-500 ml-1">Category</label>
                     <select
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                       value={newHoliday.type}
                       onChange={(e) => setNewHoliday({ ...newHoliday, type: e.target.value })}
                     >
@@ -967,7 +967,7 @@ export default function LeaveManagement() {
                   <button
                     type="submit"
                     disabled={holidaysSubmitting}
-                    className="w-full py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-neutral-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 bg-brand text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-brand-hover transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {holidaysSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={14} />}
                     add to calendar
@@ -1001,7 +1001,7 @@ export default function LeaveManagement() {
               <div className="bg-white border border-neutral-200/80 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                 <div className="px-7 pt-7 pb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-neutral-100">
                   <div>
-                    <h3 className="text-[17px] font-semibold tracking-tight text-neutral-900 leading-tight">
+                    <h3 className="text-[17px] font-semibold tracking-tight text-brand leading-tight">
                       Leave categories
                     </h3>
                     <p className="text-[12px] text-neutral-500 mt-1.5 leading-relaxed">
@@ -1040,16 +1040,16 @@ export default function LeaveManagement() {
                             key={cat.id}
                             className={`group relative bg-white border rounded-2xl px-5 py-4 transition-all ${
                               isEditing
-                                ? 'border-neutral-900 shadow-[0_0_0_3px_rgba(0,0,0,0.04)]'
+                                ? 'border-brand shadow-[0_0_0_3px_rgba(0,0,0,0.04)]'
                                 : 'border-neutral-200/80 hover:border-neutral-300 hover:shadow-[0_1px_3px_rgba(0,0,0,0.05)]'
                             }`}
                           >
                             <div className="flex items-start gap-3.5">
-                              <div className="shrink-0 w-10 h-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center text-[11px] font-semibold tracking-wide">
+                              <div className="shrink-0 w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center text-[11px] font-semibold tracking-wide">
                                 {cat.code.slice(0, 3).toUpperCase()}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-[14px] font-semibold text-neutral-900 leading-snug truncate">
+                                <p className="text-[14px] font-semibold text-brand leading-snug truncate">
                                   {cat.name}
                                 </p>
                                 <p className="text-[11px] font-medium text-neutral-500 mt-0.5 tracking-wide uppercase">
@@ -1082,7 +1082,7 @@ export default function LeaveManagement() {
               {/* Add / edit card */}
               <div className="bg-white border border-neutral-200/80 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
                 <div className="px-7 pt-7 pb-5 border-b border-neutral-100">
-                  <h3 className="text-[15px] font-semibold tracking-tight text-neutral-900">
+                  <h3 className="text-[15px] font-semibold tracking-tight text-brand">
                     {editingCategoryId ? 'Edit category' : 'Add category'}
                   </h3>
                   <p className="text-[12px] text-neutral-500 mt-1.5 leading-relaxed">
@@ -1102,7 +1102,7 @@ export default function LeaveManagement() {
                       value={categoryForm.name}
                       onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                       placeholder="e.g. Paternity leave"
-                      className="w-full px-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-neutral-900 placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
+                      className="w-full px-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-brand placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
                     />
                   </div>
 
@@ -1122,7 +1122,7 @@ export default function LeaveManagement() {
                         })
                       }
                       placeholder="e.g. PAT"
-                      className="w-full px-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] font-medium tracking-wide text-neutral-900 placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all uppercase"
+                      className="w-full px-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] font-medium tracking-wide text-brand placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all uppercase"
                     />
                     <p className="text-[10.5px] text-neutral-400 pl-0.5">Letters, numbers, dash, underscore.</p>
                   </div>
@@ -1131,7 +1131,7 @@ export default function LeaveManagement() {
                     <button
                       type="submit"
                       disabled={categorySubmitting}
-                      className="flex-1 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[12.5px] font-medium tracking-tight transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-brand hover:bg-brand-hover text-white rounded-xl text-[12.5px] font-medium tracking-tight transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {categorySubmitting ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1178,7 +1178,7 @@ export default function LeaveManagement() {
 
       {/* Plan modal */}
       {showPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="ui-modal scale-100 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50">
               <h2 className="text-[13px] font-semibold text-neutral-800">{isEditingPlan ? 'update plan' : 'create new plan'}</h2>
@@ -1192,7 +1192,7 @@ export default function LeaveManagement() {
                 <input
                   required
                   type="text"
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
                   placeholder="e.g. interns policy plan"
                   value={newPlan.name}
                   onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
@@ -1201,7 +1201,7 @@ export default function LeaveManagement() {
               <div className="space-y-2">
                 <label className="text-[11px] font-semibold text-neutral-500 ml-1">Default cycle</label>
                 <select
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                   value={newPlan.cycle}
                   onChange={(e) => setNewPlan({ ...newPlan, cycle: e.target.value })}
                 >
@@ -1211,7 +1211,7 @@ export default function LeaveManagement() {
               </div>
               <button
                 type="submit"
-                className="w-full py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-neutral-800 transition-all"
+                className="w-full py-3.5 bg-brand text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-brand-hover transition-all"
               >
                 save plan
               </button>
@@ -1222,7 +1222,7 @@ export default function LeaveManagement() {
 
       {/* Type definition modal */}
       {showTypeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="ui-modal scale-100 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50">
               <h2 className="text-[13px] font-semibold text-neutral-800">
@@ -1241,7 +1241,7 @@ export default function LeaveManagement() {
                     <select
                       required
                       disabled={isEditingType}
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                       value={typeForm.leaveTypeId}
                       onChange={(e) => setTypeForm({ ...typeForm, leaveTypeId: e.target.value })}
                     >
@@ -1280,7 +1280,7 @@ export default function LeaveManagement() {
                           type="number"
                           step="0.5"
                           min="0"
-                          className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                          className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                           value={typeForm.accrualRate}
                           onChange={(e) => {
                             const rate = parseFloat(e.target.value) || 0;
@@ -1304,7 +1304,7 @@ export default function LeaveManagement() {
                           <input
                             type="number"
                             disabled={typeForm.isUnlimited}
-                            className="flex-1 px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all disabled:opacity-30"
+                            className="flex-1 px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all disabled:opacity-30"
                             value={typeForm.annualQuota}
                             onChange={(e) => setTypeForm({ ...typeForm, annualQuota: parseFloat(e.target.value) })}
                           />
@@ -1325,7 +1325,7 @@ export default function LeaveManagement() {
                   <div className="space-y-2">
                     <label className="text-[11px] font-semibold text-neutral-500 ml-1">Accrual mode</label>
                     <select
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                       value={typeForm.accrualType}
                       onChange={(e) => {
                         const accrualType = e.target.value;
@@ -1352,7 +1352,7 @@ export default function LeaveManagement() {
                   <div className="space-y-2">
                     <label className="text-[11px] font-semibold text-neutral-500 ml-1">Year-end rule</label>
                     <select
-                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                      className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                       value={typeForm.yearEndPolicy}
                       onChange={(e) => setTypeForm({ ...typeForm, yearEndPolicy: e.target.value })}
                     >
@@ -1367,7 +1367,7 @@ export default function LeaveManagement() {
                       <label className="text-[11px] font-semibold text-neutral-500 ml-1">Max carry-forward</label>
                       <input
                         type="number"
-                        className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                        className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                         placeholder="max days to carry over"
                         value={typeForm.carryForwardMax}
                         onChange={(e) => setTypeForm({ ...typeForm, carryForwardMax: parseFloat(e.target.value) })}
@@ -1385,7 +1385,7 @@ export default function LeaveManagement() {
                           onClick={() => setTypeForm({ ...typeForm, gender: g })}
                           className={`flex-1 py-3.5 rounded-lg text-[11px] font-semibold border transition-all ${
                             typeForm.gender === g
-                              ? 'bg-neutral-900 text-white border-transparent shadow-sm'
+                              ? 'bg-brand text-white border-transparent shadow-sm'
                               : 'bg-neutral-50 border-neutral-200 text-neutral-600 hover:text-neutral-800 hover:bg-slate-100'
                           }`}
                         >
@@ -1407,7 +1407,7 @@ export default function LeaveManagement() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-neutral-900 text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-neutral-800 transition-all flex items-center gap-2"
+                  className="px-6 py-3 bg-brand text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-brand-hover transition-all flex items-center gap-2"
                 >
                   <Save size={13} />
                   save definition
@@ -1420,7 +1420,7 @@ export default function LeaveManagement() {
 
       {/* Employee assignment modal */}
       {showAssignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="ui-modal scale-100 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50">
               <h2 className="text-[13px] font-semibold text-neutral-800">Assign employees to plan</h2>
@@ -1445,7 +1445,7 @@ export default function LeaveManagement() {
                           isAlreadyAssigned
                             ? 'bg-neutral-50 border-neutral-200 opacity-50 cursor-not-allowed'
                             : selectedEmployees.includes(emp.id)
-                            ? 'bg-neutral-100 border-neutral-200 text-neutral-900'
+                            ? 'bg-neutral-100 border-neutral-200 text-brand'
                             : 'bg-neutral-50 border-neutral-200 hover:border-slate-300'
                         }`}
                       >
@@ -1490,7 +1490,7 @@ export default function LeaveManagement() {
                 <button
                   onClick={handleAssignEmployeesSubmit}
                   disabled={selectedEmployees.length === 0}
-                  className="flex-1 py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-neutral-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 py-3.5 bg-brand text-white rounded-lg font-semibold text-[11px] shadow-sm hover:bg-brand-hover transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   enrol employees
                 </button>
@@ -1511,7 +1511,7 @@ function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave })
             type="button"
             onClick={() => setWorkspaceTab('my')}
             className={`px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
-              workspaceTab === 'my' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
+              workspaceTab === 'my' ? 'bg-brand text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
             }`}
           >
             My leave
@@ -1521,7 +1521,7 @@ function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave })
               type="button"
               onClick={() => setWorkspaceTab('approvals')}
               className={`px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
-                workspaceTab === 'approvals' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
+                workspaceTab === 'approvals' ? 'bg-brand text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
               }`}
             >
               Approvals
@@ -1532,7 +1532,7 @@ function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave })
               type="button"
               onClick={() => setWorkspaceTab('policies')}
               className={`px-4 py-2 rounded-xl text-[11px] font-semibold transition-all ${
-                workspaceTab === 'policies' ? 'bg-neutral-900 text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
+                workspaceTab === 'policies' ? 'bg-brand text-white shadow-sm' : 'text-neutral-600 hover:bg-white'
               }`}
             >
               Policies

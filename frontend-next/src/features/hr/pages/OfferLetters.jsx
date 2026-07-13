@@ -306,7 +306,7 @@ export default function OfferLetters() {
   const filtered = filterStatus === 'ALL' ? letters : letters.filter((l) => l.status === filterStatus);
 
   return (
-    <div className="text-neutral-900">
+    <div className="text-brand">
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl bg-emerald-500 text-white ui-text-strong !text-white flex items-center gap-2">
           <CheckCircle2 size={14} /> {toast}
@@ -333,7 +333,7 @@ export default function OfferLetters() {
               setForm(emptyForm);
               setShowCreate(true);
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl ui-text-strong !text-white bg-neutral-900 hover:bg-neutral-800 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl ui-text-strong !text-white bg-brand hover:bg-brand-hover transition-all"
           >
             <Plus size={13} /> Generate offer
           </button>
@@ -497,7 +497,7 @@ export default function OfferLetters() {
             <button
               onClick={handleCreate}
               disabled={submitting}
-              className="flex-1 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+              className="flex-1 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl ui-text-strong !text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               <Save size={13} /> Generate
             </button>
@@ -532,7 +532,7 @@ export default function OfferLetters() {
             {previewMeta && (
               <button
                 onClick={() => handlePrint(previewMeta.id)}
-                className="flex-1 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl ui-text-strong !text-white transition-all flex items-center justify-center gap-1.5"
               >
                 <Printer size={13} /> Open print view
               </button>
@@ -643,7 +643,7 @@ export default function OfferLetters() {
               />
               <button
                 onClick={handleCreateTemplate}
-                className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl ui-text-strong !text-white transition-all"
+                className="w-full py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl ui-text-strong !text-white transition-all"
               >
                 Save template
               </button>
@@ -658,8 +658,8 @@ export default function OfferLetters() {
 function FilterChip({ label, count, active, onClick, icon: Icon, tint }) {
   const base = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all';
   const className = active
-    ? `${base} bg-neutral-900 text-white`
-    : `${base} bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900`;
+    ? `${base} bg-brand text-white`
+    : `${base} bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-brand`;
   return (
     <button type="button" onClick={onClick} className={className}>
       {Icon && <Icon size={12} className={active ? 'text-white' : 'text-neutral-400'} />}
@@ -707,7 +707,7 @@ function FormField({ label, type = 'text', value, onChange }) {
 
 function Modal({ title, onClose, children, wide }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-md animate-in fade-in duration-200">
       <div
         className={`ui-surface shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150 w-full ${
           wide ? 'max-w-2xl' : 'max-w-md'
@@ -717,7 +717,7 @@ function Modal({ title, onClose, children, wide }) {
           <h3 className="ui-text-h3">{title}</h3>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-neutral-900 flex items-center justify-center transition-all"
+            className="w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-brand flex items-center justify-center transition-all"
           >
             <X size={14} />
           </button>

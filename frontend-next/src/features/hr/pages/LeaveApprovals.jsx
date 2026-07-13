@@ -43,7 +43,7 @@ export default function LeaveApprovals() {
     <div className="ui-page">
       <div className="ui-panel overflow-hidden">
         <div className="px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-brand flex items-center gap-2">
             <Inbox size={16} className="text-neutral-700" />
             Pending approvals
           </h2>
@@ -61,7 +61,7 @@ export default function LeaveApprovals() {
             {requests.map((r) => (
               <li key={r.id} className="px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-neutral-900">{r.employeeName || r.employeeEmail}</p>
+                  <p className="text-sm font-semibold text-brand">{r.employeeName || r.employeeEmail}</p>
                   <p className="text-xs text-neutral-500">{r.employeeEmail}</p>
                   <p className="text-sm text-neutral-700 mt-2">
                     <span className="font-medium">{r.leaveTypeName}</span> · {r.fromDate} → {r.toDate} ·{' '}

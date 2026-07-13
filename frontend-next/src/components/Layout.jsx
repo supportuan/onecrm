@@ -58,7 +58,7 @@ const Layout = ({ children }) => {
 
   if (isPublicPage || isStudentPortal) {
     return (
-      <div className="min-h-screen bg-[#f4f4f5] text-neutral-900">
+      <div className="min-h-screen text-brand">
         {children}
       </div>
     );
@@ -71,7 +71,7 @@ const Layout = ({ children }) => {
     : SIDEBAR_OPEN;
 
   return (
-    <div className="h-screen overflow-hidden bg-[#f4f4f5] text-neutral-900 antialiased">
+    <div className="h-screen overflow-hidden text-brand antialiased">
       <Sidebar
         sidebarOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

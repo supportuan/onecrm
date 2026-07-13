@@ -92,7 +92,7 @@ export default function EmployeeSelfService() {
   return (
     <div className="ui-page text-neutral-800 font-sans">
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white px-4 py-2.5 rounded-xl text-[13px] font-medium shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 bg-brand text-white px-4 py-2.5 rounded-xl text-[13px] font-medium shadow-lg">
           {toast}
         </div>
       )}
@@ -113,7 +113,7 @@ export default function EmployeeSelfService() {
           <div className="ui-panel p-6 space-y-4">
             <div className="flex items-center gap-2">
               <Fingerprint size={18} className="text-neutral-700" />
-              <h2 className="text-[15px] font-semibold text-neutral-900">Attendance today</h2>
+              <h2 className="text-[15px] font-semibold text-brand">Attendance today</h2>
             </div>
             <span
               className={`inline-block px-2.5 py-1 text-[11px] font-bold tracking-wide rounded-lg border ${
@@ -131,7 +131,7 @@ export default function EmployeeSelfService() {
                 type="button"
                 onClick={() => handleClock(false)}
                 disabled={clockBusy || status === 'clocked_in'}
-                className="flex items-center justify-center gap-2 py-3 rounded-lg bg-neutral-900 text-white text-[13px] font-semibold disabled:opacity-40"
+                className="flex items-center justify-center gap-2 py-3 rounded-lg bg-brand text-white text-[13px] font-semibold disabled:opacity-40"
               >
                 <LogIn size={14} /> Clock in
               </button>
@@ -154,7 +154,7 @@ export default function EmployeeSelfService() {
             )}
             <Link
               href="/hr/attendance"
-              className="block text-center text-[11px] font-semibold text-neutral-700 hover:text-neutral-900 pt-2"
+              className="block text-center text-[11px] font-semibold text-neutral-700 hover:text-brand pt-2"
             >
               View full attendance →
             </Link>
@@ -165,11 +165,11 @@ export default function EmployeeSelfService() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-neutral-700" />
-                <h2 className="text-[15px] font-semibold text-neutral-900">Leave balance</h2>
+                <h2 className="text-[15px] font-semibold text-brand">Leave balance</h2>
               </div>
               <Link
                 href="/hr/leave-management"
-                className="text-[11px] font-semibold text-neutral-700 hover:text-neutral-900"
+                className="text-[11px] font-semibold text-neutral-700 hover:text-brand"
               >
                 Apply for leave →
               </Link>
@@ -225,7 +225,7 @@ export default function EmployeeSelfService() {
                         {MONTHS[(p.month || 1) - 1]} {p.year}
                       </span>
                     </div>
-                    <span className="text-[15px] font-semibold text-neutral-900">
+                    <span className="text-[15px] font-semibold text-brand">
                       {typeof p.netSalary === 'number' ? p.netSalary.toLocaleString() : '—'}
                     </span>
                   </li>
@@ -242,7 +242,7 @@ export default function EmployeeSelfService() {
             <AlertCircle size={18} className="text-amber-600 shrink-0" />
             <p className="text-[13px] text-amber-900">
               you have {data.pendingRegularizations} pending regularization request(s).{' '}
-              <Link href="/hr/attendance" className="font-semibold text-neutral-900 underline">
+              <Link href="/hr/attendance" className="font-semibold text-brand underline">
                 view attendance
               </Link>
             </p>

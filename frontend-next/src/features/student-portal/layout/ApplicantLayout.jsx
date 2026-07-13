@@ -51,7 +51,7 @@ export default function ApplicantLayout({ children }) {
 
   return (
     <StudentPortalGuard>
-      <div className="student-portal h-screen overflow-hidden bg-[#f4f4f5] text-neutral-900 antialiased">
+      <div className="student-portal h-screen overflow-hidden text-brand antialiased">
         <StudentPortalSidebar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
 
         <div

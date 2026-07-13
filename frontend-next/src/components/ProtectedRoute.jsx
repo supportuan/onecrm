@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../lib/auth/AuthContext';
+import LogoLoader from './LogoLoader';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth();
@@ -22,7 +23,7 @@ const ProtectedRoute = ({ children }) => {
   }, [isAuthenticated, loading, user, pathname, router]);
 
   if (loading || !isAuthenticated) {
-    return <div className="min-h-screen flex items-center justify-center">Loading authentication...</div>;
+    return <LogoLoader fullscreen label="Signing you in…" size="lg" />;
   }
 
   return <>{children}</>;

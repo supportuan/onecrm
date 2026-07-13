@@ -36,7 +36,7 @@ export default function Home() {
   }, [isAuthenticated, loading, user, router]);
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-center items-center bg-neutral-50 text-neutral-900 font-sans select-none">
+    <div className="relative min-h-screen flex flex-col justify-center items-center bg-neutral-50 text-brand font-sans select-none">
       <div className="flex flex-col items-center gap-4">
         <div className="relative flex items-center justify-center h-12 w-12 rounded-lg border border-neutral-200 bg-white text-neutral-600">
           <RefreshCw className="h-5 w-5 animate-spin" />
