@@ -21,9 +21,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY Backend/package.json Backend/package-lock.json ./
-RUN npm ci
+# Schema must exist before npm ci — package.json postinstall runs `prisma generate`
 COPY Backend/prisma ./prisma
-RUN npx prisma generate
+RUN npm ci
 
 # ===========================================================================
 # 2. Backend build — TypeScript -> dist/ (plain JS)
