@@ -1,16 +1,16 @@
-import express from "express";
+import express from 'express';
 
 import {
   getLeadActivities,
   createLeadActivity,
-} from "../controllers/lead-activity.controller.js";
+} from '../controllers/lead-activity.controller.js';
 
 import {
   sendEmailToLead,
   sendSMSToLead,
   sendWhatsAppToLead,
   scheduleMeetingForLead,
-} from "../controllers/lead-communication.controller.js";
+} from '../controllers/lead-communication.controller.js';
 
 const router = express.Router();
 
@@ -30,7 +30,7 @@ const router = express.Router();
  *       200:
  *         description: Activities retrieved successfully
  */
-router.get("/leads/:id/activities", getLeadActivities);
+router.get('/leads/:id/activities', getLeadActivities);
 
 /**
  * @swagger
@@ -65,7 +65,7 @@ router.get("/leads/:id/activities", getLeadActivities);
  *       200:
  *         description: Activity created successfully
  */
-router.post("/leads/:id/activities", createLeadActivity);
+router.post('/leads/:id/activities', createLeadActivity);
 
 /**
  * @swagger
@@ -97,7 +97,7 @@ router.post("/leads/:id/activities", createLeadActivity);
  *       200:
  *         description: Email sent successfully
  */
-router.post("/leads/:id/send-email", sendEmailToLead);
+router.post('/leads/:id/send-email', sendEmailToLead);
 
 /**
  * @swagger
@@ -126,7 +126,7 @@ router.post("/leads/:id/send-email", sendEmailToLead);
  *       200:
  *         description: SMS sent successfully
  */
-router.post("/leads/:id/send-sms", sendSMSToLead);
+router.post('/leads/:id/send-sms', sendSMSToLead);
 
 /**
  * @swagger
@@ -155,7 +155,7 @@ router.post("/leads/:id/send-sms", sendSMSToLead);
  *       200:
  *         description: WhatsApp message sent successfully
  */
-router.post("/leads/:id/send-whatsapp", sendWhatsAppToLead);
+router.post('/leads/:id/send-whatsapp', sendWhatsAppToLead);
 
 /**
  * @swagger
@@ -190,6 +190,6 @@ router.post("/leads/:id/send-whatsapp", sendWhatsAppToLead);
  *       200:
  *         description: Meeting scheduled successfully
  */
-router.post("/leads/:id/schedule-meeting", scheduleMeetingForLead);
+router.post('/leads/:id/schedule-meeting', scheduleMeetingForLead);
 
 export default router;
