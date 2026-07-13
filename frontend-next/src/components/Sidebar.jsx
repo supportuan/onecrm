@@ -545,13 +545,11 @@ import MenuItem from "./MenuItem";
 import { AppBrand, AppLogo } from "./AppBrand";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useWorkspace } from "../lib/workspaceContext";
 import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
 import {
   SIDEBAR_OPEN,
   SIDEBAR_COLLAPSED,
-  initials,
 } from "@/lib/layout-shell";
 
 const getPermissionOptionName = (subLabel) => {
@@ -597,9 +595,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
   const location = usePathname() || "";
   const router = useRouter();
 
-  const { user, logout } = useAuth();
-  const { logout: workspaceLogout } = useWorkspace();
-  const { logout: authLogout } = useAuth();
+  const { user } = useAuth();
   const { can, permissionMap } = usePermissions();
 
   const [openSections, setOpenSections] = useState({});
@@ -737,12 +733,6 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
     flyoutCloseTimer.current = setTimeout(() => {
       setFlyoutMenu(null);
     }, 150);
-  };
-
-  const handleLogout = () => {
-    logout?.();
-    router.push("/login");
-    localStorage.clear();
   };
 
   return (

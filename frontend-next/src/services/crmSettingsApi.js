@@ -51,6 +51,18 @@ export const createUniversity = async (payload) =>
     })
   );
 
+/** Find existing university in a country or create it when the name is new. */
+export const findOrCreateUniversity = async ({ countryId, name, city } = {}) => {
+  if (!countryId || !name?.trim()) throw new Error('countryId and name are required');
+  return handleResponse(
+    await authFetch(`${API_URL}/universities/find-or-create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...tenantHeaders() },
+      body: JSON.stringify({ countryId, name: name.trim(), city }),
+    })
+  );
+};
+
 export const listCourses = async ({ universityId, page = 1, limit = 50, search } = {}) => {
   if (!universityId) throw new Error('universityId is required');
   const params = new URLSearchParams();
