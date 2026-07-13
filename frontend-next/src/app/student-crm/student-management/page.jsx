@@ -1,9 +1,10 @@
 import { Suspense } from 'react';
 import StudentManagement from '@/features/student-crm/pages/StudentManagement';
+import { LogoLoaderPage } from '@/components/LogoLoader';
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-neutral-500">Loading students…</div>}>
+    <Suspense fallback={<LogoLoaderPage label="Loading students…" />}>
       <StudentManagement />
     </Suspense>
   );

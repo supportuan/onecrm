@@ -41,14 +41,14 @@ export default function OfferLetterPrintPage({ params }) {
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900">
+    <div className="min-h-screen bg-neutral-100 text-brand">
       {/* On-screen toolbar — hidden when printing */}
       <div className="print:hidden sticky top-0 z-10 bg-white/85 backdrop-blur-md border-b border-neutral-200/80">
         <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between">
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="flex items-center gap-1.5 text-[12.5px] font-medium text-neutral-600 hover:text-neutral-900 transition-all"
+            className="flex items-center gap-1.5 text-[12.5px] font-medium text-neutral-600 hover:text-brand transition-all"
           >
             <ArrowLeft size={13} /> Back
           </button>
@@ -59,7 +59,7 @@ export default function OfferLetterPrintPage({ params }) {
             type="button"
             onClick={() => window.print()}
             disabled={!html}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[12.5px] font-medium transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-brand hover:bg-brand-hover text-white rounded-xl text-[12.5px] font-medium transition-all disabled:opacity-50"
           >
             <Printer size={13} /> Print / save PDF
           </button>

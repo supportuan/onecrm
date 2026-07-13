@@ -91,7 +91,7 @@ export default function LeaveMyRequests() {
       />
 
       <div className="ui-panel p-6">
-        <h2 className="text-[15px] font-semibold text-neutral-900 flex items-center gap-2">
+        <h2 className="text-[15px] font-semibold text-brand flex items-center gap-2">
           <Send size={16} className="text-neutral-700" />
           Apply for leave
         </h2>
@@ -156,7 +156,7 @@ export default function LeaveMyRequests() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white text-[15px] font-semibold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-brand hover:bg-brand-hover text-white text-[15px] font-semibold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Submit request
@@ -168,7 +168,7 @@ export default function LeaveMyRequests() {
       <div className="ui-panel overflow-hidden">
         <div className="px-6 py-4 border-b border-neutral-200 flex items-center gap-2">
           <Calendar size={16} className="text-neutral-700" />
-          <h2 className="text-[15px] font-semibold text-neutral-900">My requests</h2>
+          <h2 className="text-[15px] font-semibold text-brand">My requests</h2>
         </div>
         {loading ? (
           <div className="p-10 text-center text-[13px] text-neutral-500">Loading...</div>

@@ -31,7 +31,7 @@ export default function AuditPage() {
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Super-admin audit</h1>
+          <h1 className="text-2xl font-semibold text-brand">Super-admin audit</h1>
           <p className="text-sm text-neutral-500 mt-1">
             Append-only log of every super-admin write action.
           </p>
@@ -69,14 +69,14 @@ export default function AuditPage() {
                   <td className="px-4 py-3 text-neutral-600 whitespace-nowrap">
                     {new Date(r.createdAt).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-neutral-900">
+                  <td className="px-4 py-3 text-brand">
                     {ACTION_LABEL[r.action] || r.action}
                   </td>
                   <td className="px-4 py-3 text-neutral-600">
                     {r.tenant ? (
                       <Link
                         href={`/super-admin/tenants/${r.tenant.id}`}
-                        className="text-neutral-900 hover:underline"
+                        className="text-brand hover:underline"
                       >
                         {r.tenant.name}
                       </Link>

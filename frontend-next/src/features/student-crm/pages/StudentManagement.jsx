@@ -411,7 +411,7 @@ export default function StudentManagement() {
                 <div className="ui-panel p-5 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-lg font-semibold text-neutral-900">{form.fullName}</h2>
+                      <h2 className="text-lg font-semibold text-brand">{form.fullName}</h2>
                       {profile.isEnrolled && (
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
                           Enrolled
@@ -472,7 +472,7 @@ export default function StudentManagement() {
                         key={t.id}
                         type="button"
                         onClick={() => setTab(t.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium ${tab === t.id ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'
+                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium ${tab === t.id ? 'bg-brand text-white' : 'text-neutral-600 hover:bg-neutral-50'
                           }`}
                       >
                         <Icon size={14} />
@@ -1004,7 +1004,7 @@ export default function StudentManagement() {
                             className="mt-1"
                           />
                           <div>
-                            <p className="text-sm font-medium text-neutral-900">{item.checkList?.name}</p>
+                            <p className="text-sm font-medium text-brand">{item.checkList?.name}</p>
                             <p className="text-xs text-neutral-500">
                               {PROCESS_STAGE_LABELS[item.checkList?.stage] || item.checkList?.stage}
                             </p>
@@ -1023,7 +1023,7 @@ export default function StudentManagement() {
                       </h3>
                       <Link
                         href={`/student-crm/applications?student=${selectedId}`}
-                        className="text-xs font-medium text-neutral-700 hover:text-neutral-900 inline-flex items-center gap-1"
+                        className="text-xs font-medium text-neutral-700 hover:text-brand inline-flex items-center gap-1"
                       >
                         Open in tracker <ExternalLink size={12} />
                       </Link>
@@ -1036,7 +1036,7 @@ export default function StudentManagement() {
                           <li key={app.id} className="px-5 py-4 flex flex-wrap justify-between gap-3 hover:bg-neutral-50">
                             <div>
                               <p className="text-xs font-mono text-neutral-500">{app.applicationCode}</p>
-                              <p className="text-sm font-medium text-neutral-900 mt-0.5">
+                              <p className="text-sm font-medium text-brand mt-0.5">
                                 {app.university} · {app.course}
                               </p>
                               <p className="text-xs text-neutral-500">
@@ -1287,7 +1287,7 @@ function NewAppModal({ student, countries = [], counsellors, onClose, onCreated 
 
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/30">
       <div className="ui-panel w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="px-5 py-3 border-b border-neutral-200 flex justify-between items-center">
           <h3 className="text-sm font-semibold">{title}</h3>

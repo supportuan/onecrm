@@ -1,21 +1,15 @@
 'use client';
 import { Suspense } from 'react';
 import LeadManagement from '@/pages-old/marketing/LeadManagement';
-import { Loader2 } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import RoleGuard from '@/components/RoleGuard';
+import { LogoLoaderPage } from '@/components/LogoLoader';
 
 export default function Page() {
   return (
     <ProtectedRoute>
       <RoleGuard allowedRoles={["SUPER_ADMIN", "GLOBAL_ADMIN", "COUNSELLOR"]}>
-        <Suspense
-          fallback={
-            <div className="flex h-screen items-center justify-center bg-neutral-50">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-            </div>
-          }
-        >
+        <Suspense fallback={<LogoLoaderPage label="Loading leads…" />}>
           <LeadManagement />
         </Suspense>
       </RoleGuard>

@@ -852,8 +852,8 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                           : "justify-center p-2.5"
                         }
                         ${isSectionActive(item)
-                          ? "bg-neutral-100 text-neutral-900"
-                          : "text-neutral-600 hover:bg-neutral-50"
+                          ? "bg-brand-soft text-brand"
+                          : "text-slate-600 hover:bg-brand-soft/60"
                         }
                       `}
                       onMouseEnter={(e) => {
@@ -935,8 +935,8 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                         : "justify-center p-2.5"
                       }
                       ${location === item.path
-                        ? "bg-neutral-100 text-neutral-900"
-                        : "text-neutral-600 hover:bg-neutral-50"
+                        ? "bg-brand-soft text-brand"
+                        : "text-slate-600 hover:bg-brand-soft/60"
                       }
                     `}
                     onClick={() => {
@@ -1044,8 +1044,8 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                 className={` cursor-pointer
                   flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition
                   ${location.startsWith(sub.path)
-                    ? "bg-neutral-100 text-neutral-900"
-                    : "text-neutral-600 hover:bg-neutral-50"
+                    ? "bg-brand-soft text-brand"
+                    : "text-slate-600 hover:bg-brand-soft/60"
                   }
                 `}
               >

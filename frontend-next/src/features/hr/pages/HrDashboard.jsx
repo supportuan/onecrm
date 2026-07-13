@@ -178,7 +178,7 @@ export default function HrDashboard() {
   const firstName = (user?.name || user?.fullName || '').split(' ')[0];
 
   return (
-    <div className="text-neutral-900">
+    <div className="text-brand">
       {toast.msg && (
         <div
           className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-[13px] font-medium text-white ${
@@ -208,7 +208,7 @@ export default function HrDashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10.5px] font-medium text-neutral-400 tracking-wide uppercase">Today</p>
-                  <h3 className="text-[18px] font-semibold tracking-tight text-neutral-900 mt-1">
+                  <h3 className="text-[18px] font-semibold tracking-tight text-brand mt-1">
                     {clockState.status === 'clocked_in'
                       ? 'On the clock'
                       : clockState.status === 'clocked_out'
@@ -221,7 +221,7 @@ export default function HrDashboard() {
                       : 'No activity recorded yet.'}
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
                   <Fingerprint size={16} />
                 </div>
               </div>
@@ -230,14 +230,14 @@ export default function HrDashboard() {
                 <button
                   onClick={() => handleClock(false)}
                   disabled={clockBusy || clockState.status === 'clocked_in'}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[12.5px] font-medium bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-all"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[12.5px] font-medium bg-brand text-white hover:bg-brand-hover disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-all"
                 >
                   <LogIn size={13} /> Clock in
                 </button>
                 <button
                   onClick={() => handleClock(true)}
                   disabled={clockBusy || clockState.status !== 'clocked_in'}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[12.5px] font-medium bg-neutral-50 border border-neutral-200 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-[12.5px] font-medium bg-neutral-50 border border-neutral-200 text-neutral-700 hover:bg-neutral-100 hover:text-brand disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   <LogOut size={13} /> Clock out
                 </button>
@@ -299,7 +299,7 @@ export default function HrDashboard() {
               {kpi.pendingLeaveRequests > 0 && can('MANAGE_LEAVE') && (
                 <Link
                   href="/hr/leave-management?tab=approvals"
-                  className="px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white text-[12px] font-medium rounded-lg transition-all"
+                  className="px-3.5 py-2 bg-brand hover:bg-brand-hover text-white text-[12px] font-medium rounded-lg transition-all"
                 >
                   Review leave
                 </Link>
@@ -320,13 +320,13 @@ export default function HrDashboard() {
           <div className="bg-white border border-neutral-200/80 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
             <div className="px-6 pt-6 pb-4 flex items-end justify-between gap-4 border-b border-neutral-100">
               <div>
-                <h3 className="text-[15px] font-semibold tracking-tight text-neutral-900">Upcoming holidays</h3>
+                <h3 className="text-[15px] font-semibold tracking-tight text-brand">Upcoming holidays</h3>
                 <p className="text-[12px] text-neutral-500 mt-1">Public and restricted holidays in the next 90 days.</p>
               </div>
               {can('VIEW_ATTENDANCE') && (
                 <Link
                   href="/hr/leave-management?tab=holidays"
-                  className="text-[12px] font-medium text-neutral-600 hover:text-neutral-900"
+                  className="text-[12px] font-medium text-neutral-600 hover:text-brand"
                 >
                   Manage calendar
                 </Link>
@@ -342,7 +342,7 @@ export default function HrDashboard() {
                     <CalendarDays size={15} className="text-neutral-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-neutral-900 truncate">{holiday.name}</p>
+                    <p className="text-[13px] font-medium text-brand truncate">{holiday.name}</p>
                     <p className="text-[11px] text-neutral-500 mt-0.5">
                       {new Date(`${holiday.date}T12:00:00`).toLocaleDateString([], {
                         weekday: 'short',
@@ -366,7 +366,7 @@ export default function HrDashboard() {
           <div className="bg-white border border-neutral-200/80 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
             <div className="px-6 pt-6 pb-4 flex items-end justify-between gap-4 border-b border-neutral-100">
               <div>
-                <h3 className="text-[15px] font-semibold tracking-tight text-neutral-900">Quick access</h3>
+                <h3 className="text-[15px] font-semibold tracking-tight text-brand">Quick access</h3>
                 <p className="text-[12px] text-neutral-500 mt-1">Jump into any HR module you have access to.</p>
               </div>
               <span className="text-[11px] font-medium text-neutral-400 whitespace-nowrap">
@@ -380,7 +380,7 @@ export default function HrDashboard() {
                   href={path}
                   className="group flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-neutral-50 transition-all"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-neutral-100 group-hover:bg-neutral-900 flex items-center justify-center transition-all">
+                  <div className="w-9 h-9 rounded-xl bg-neutral-100 group-hover:bg-brand flex items-center justify-center transition-all">
                     <Icon size={15} className="text-neutral-600 group-hover:text-white transition-all" />
                   </div>
                   <span className="text-[13px] font-medium text-neutral-800 tracking-tight">{label}</span>
@@ -418,7 +418,7 @@ const KpiTile = ({ label, value, icon: Icon, visible, href, accent }) => {
           <Icon size={12} />
         </div>
       </div>
-      <p className="text-[26px] font-semibold text-neutral-900 tracking-tight leading-none mt-2">
+      <p className="text-[26px] font-semibold text-brand tracking-tight leading-none mt-2">
         {value === null ? '—' : value}
       </p>
     </>

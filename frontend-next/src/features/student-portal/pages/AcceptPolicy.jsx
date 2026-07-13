@@ -34,7 +34,7 @@ export default function AcceptPolicyPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-neutral-50 px-4 py-12">
       <div className="ui-card w-full max-w-lg">
-        <h1 className="text-xl font-semibold text-neutral-900">Terms &amp; conditions</h1>
+        <h1 className="text-xl font-semibold text-brand">Terms &amp; conditions</h1>
         <p className="mt-4 text-sm text-neutral-600 leading-relaxed">
           By continuing you agree to our privacy policy, data processing terms, and student portal usage guidelines.
           Your assigned counsellor may access your application data to support your study abroad journey.

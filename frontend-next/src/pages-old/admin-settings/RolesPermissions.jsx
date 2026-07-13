@@ -99,7 +99,7 @@ export default function RolesPermissions() {
       <div className="ui-page text-neutral-800 font-sans flex items-center justify-center">
         <div className="ui-card w-auto text-center space-y-3">
           <ShieldAlert size={36} className="text-rose-500 mx-auto" />
-          <h2 className="text-base font-semibold text-neutral-900">Access denied</h2>
+          <h2 className="text-base font-semibold text-brand">Access denied</h2>
           <p className="text-sm text-neutral-500">
             This page is restricted to administrators. Signed in as{' '}
             <span className="font-medium">{user?.role || 'unknown'}</span>.
@@ -201,7 +201,7 @@ export default function RolesPermissions() {
   return (
     <div className="ui-page text-neutral-800 font-sans">
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium">
+        <div className="fixed bottom-6 right-6 z-50 bg-brand text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium">
           <CheckCircle2 size={16} /> {toast}
         </div>
       )}
@@ -209,7 +209,7 @@ export default function RolesPermissions() {
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">Roles & Permissions</h1>
+          <h1 className="text-2xl font-semibold text-brand tracking-tight">Roles & Permissions</h1>
           <p className="text-neutral-500 text-sm mt-1">
             Manage role responsibilities, member assignments, and access permissions.
             {!canEdit && ' Read-only view.'}
@@ -292,7 +292,7 @@ export default function RolesPermissions() {
                               {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                             </span>
                             <div>
-                              <p className="text-sm font-semibold text-neutral-900">{titleCaseRole(role)}</p>
+                              <p className="text-sm font-semibold text-brand">{titleCaseRole(role)}</p>
                               <p className="text-xs text-neutral-500 font-mono mt-0.5 tracking-wide">{role}</p>
                               {isDirty && (
                                 <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
@@ -437,7 +437,7 @@ export default function RolesPermissions() {
                           <td colSpan={4} className="px-6 py-5">
                             <div className="flex items-center justify-between gap-4 mb-4">
                               <div>
-                                <h3 className="text-sm font-semibold text-neutral-900">
+                                <h3 className="text-sm font-semibold text-brand">
                                   Permissions — {titleCaseRole(role)}
                                 </h3>
                                 <p className="text-xs text-neutral-500 mt-0.5">
@@ -449,7 +449,7 @@ export default function RolesPermissions() {
                                   type="button"
                                   onClick={() => handleSaveRole(role)}
                                   disabled={!isDirty || savingRole === role}
-                                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-neutral-900 rounded-md hover:bg-neutral-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-brand rounded-md hover:bg-brand-hover transition disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   {savingRole === role ? (
                                     <Loader2 size={14} className="animate-spin" />
@@ -496,7 +496,7 @@ export default function RolesPermissions() {
                                           >
                                             <div className="mt-0.5 shrink-0">
                                               {granted ? (
-                                                <div className="w-4 h-4 bg-neutral-900 rounded flex items-center justify-center">
+                                                <div className="w-4 h-4 bg-brand rounded flex items-center justify-center">
                                                   <Check size={10} className="text-white stroke-[3]" />
                                                 </div>
                                               ) : (
@@ -506,7 +506,7 @@ export default function RolesPermissions() {
                                             <div className="min-w-0">
                                               <p
                                                 className={`text-xs font-medium ${
-                                                  granted ? 'text-neutral-900' : 'text-neutral-600'
+                                                  granted ? 'text-brand' : 'text-neutral-600'
                                                 }`}
                                               >
                                                 {perm.name}

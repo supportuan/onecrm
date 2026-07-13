@@ -135,7 +135,7 @@ export default function UserManagementPage() {
           <p className="text-sm font-semibold text-neutral-700">
             Admin & Settings
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-neutral-900">
+          <h1 className="mt-1 text-2xl font-bold text-brand">
             User Management
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
@@ -146,7 +146,7 @@ export default function UserManagementPage() {
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sm hover:bg-neutral-800"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sm hover:bg-brand-hover"
         >
           <UserPlus className="h-4 w-4" />
           Create User
@@ -191,7 +191,7 @@ export default function UserManagementPage() {
                   </td>
                   <td className="px-5 py-4 text-neutral-500">{user.email}</td>
                   <td className="px-5 py-4">
-                    <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-900">
+                    <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-brand">
                       {user.role}
                     </span>
                   </td>
@@ -234,11 +234,11 @@ export default function UserManagementPage() {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/20 p-4">
           <div className="max-h-[92vh] w-auto overflow-y-auto rounded-lg bg-white shadow-sm">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-5">
               <div>
-                <h2 className="text-xl font-bold text-neutral-900">
+                <h2 className="text-xl font-bold text-brand">
                   Create User
                 </h2>
                 <p className="text-sm text-neutral-500">
@@ -427,7 +427,7 @@ export default function UserManagementPage() {
 
               <button
                 onClick={handleCreateUser}
-                className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
+                className="rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-hover"
               >
                 Create User
               </button>
@@ -598,7 +598,7 @@ export default function UserManagementPage() {
 //           <p className="text-sm font-semibold text-neutral-700">
 //             Admin & Settings
 //           </p>
-//           <h1 className="mt-1 text-2xl font-bold text-neutral-900">
+//           <h1 className="mt-1 text-2xl font-bold text-brand">
 //             User Management
 //           </h1>
 //           <p className="mt-1 text-sm text-neutral-500">
@@ -608,7 +608,7 @@ export default function UserManagementPage() {
 
 //         <button
 //           onClick={() => setShowCreateModal(true)}
-//           className="inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sm hover:bg-neutral-800"
+//           className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sm hover:bg-brand-hover"
 //         >
 //           <UserPlus className="h-4 w-4" />
 //           Create User
@@ -654,7 +654,7 @@ export default function UserManagementPage() {
 //                   </td>
 //                   <td className="px-5 py-4 text-neutral-500">{user.email}</td>
 //                   <td className="px-5 py-4">
-//                     <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-900">
+//                     <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-brand">
 //                       {user.role}
 //                     </span>
 //                   </td>
@@ -699,11 +699,11 @@ export default function UserManagementPage() {
 //       </div>
 
 //       {showCreateModal && (
-//         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
+//         <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/20 p-4">
 //           <div className="max-h-[92vh] w-auto overflow-y-auto rounded-lg bg-white shadow-sm">
 //             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-5">
 //               <div>
-//                 <h2 className="text-xl font-bold text-neutral-900">
+//                 <h2 className="text-xl font-bold text-brand">
 //                   Create User
 //                 </h2>
 //                 <p className="text-sm text-neutral-500">
@@ -780,7 +780,7 @@ export default function UserManagementPage() {
 //                       <label
 //                         key={moduleName}
 //                         className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-semibold ${allowed
-//                           ? "border-neutral-400 bg-neutral-100 text-neutral-900"
+//                           ? "border-neutral-400 bg-neutral-100 text-brand"
 //                           : "border-neutral-200 bg-neutral-50 text-neutral-500"
 //                           }`}
 //                       >
@@ -848,7 +848,7 @@ export default function UserManagementPage() {
 
 //               <button
 //                 onClick={handleCreateUser}
-//                 className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
+//                 className="rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-hover"
 //               >
 //                 Create User
 //               </button>

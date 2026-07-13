@@ -39,13 +39,13 @@ export default function PaymentReceiptPage({ params }) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900">
+    <div className="min-h-screen bg-neutral-100 text-brand">
       <div className="print:hidden sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-neutral-200">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => window.history.back()}
-            className="flex items-center gap-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900"
+            className="flex items-center gap-1.5 text-sm font-medium text-neutral-600 hover:text-brand"
           >
             <ArrowLeft size={14} /> Back
           </button>
@@ -65,7 +65,7 @@ export default function PaymentReceiptPage({ params }) {
               type="button"
               onClick={() => window.print()}
               disabled={!html}
-              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-medium disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-medium disabled:opacity-50"
             >
               <Printer size={13} /> Save PDF
             </button>

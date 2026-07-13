@@ -216,7 +216,7 @@ const LandingPagesForms = () => {
 
         <button
           onClick={handleOpenCreate}
-          className="flex items-center justify-center gap-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 text-sm font-semibold shadow-sm transition"
+          className="flex items-center justify-center gap-2 rounded-lg bg-brand hover:bg-brand-hover text-white px-5 py-2.5 text-sm font-semibold shadow-sm transition"
         >
           <Plus className="h-4.5 w-4.5 stroke-[2.5]" />
           Add page
@@ -233,7 +233,7 @@ const LandingPagesForms = () => {
       {/* Main Content Layout Grid */}
       {loading && pages.length === 0 ? (
         <div className="text-center py-24 bg-white rounded-xl border border-neutral-200 shadow-sm flex flex-col items-center justify-center">
-          <Loader2 className="h-8 w-8 text-neutral-900 animate-spin mb-3" />
+          <Loader2 className="h-8 w-8 text-brand animate-spin mb-3" />
           <span className="text-sm text-neutral-500 font-medium">Fetching analytics performance...</span>
         </div>
       ) : (
@@ -243,7 +243,7 @@ const LandingPagesForms = () => {
             <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
               {/* Card Header */}
               <div className="px-6 py-5 flex items-center justify-between border-b border-neutral-100">
-                <h2 className="text-lg font-semibold text-neutral-900">
+                <h2 className="text-lg font-semibold text-brand">
                   Landing pages performance
                 </h2>
                 <button
@@ -276,7 +276,7 @@ const LandingPagesForms = () => {
                       {pages.map((page) => (
                         <tr key={page.id} className="hover:bg-neutral-50/55 transition duration-150">
                           <td className="px-6 py-4">
-                            <div className="font-semibold text-neutral-900 leading-tight">
+                            <div className="font-semibold text-brand leading-tight">
                               {page.title}
                             </div>
                             <div className="text-xs text-neutral-500 mt-0.5">
@@ -288,13 +288,13 @@ const LandingPagesForms = () => {
                               {getTypeLabel(page.type)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right font-semibold text-neutral-900">
+                          <td className="px-6 py-4 text-right font-semibold text-brand">
                             {page.visits?.toLocaleString() || 0}
                           </td>
-                          <td className="px-6 py-4 text-right font-semibold text-neutral-900">
+                          <td className="px-6 py-4 text-right font-semibold text-brand">
                             {page.leads?.toLocaleString() || 0}
                           </td>
-                          <td className="px-6 py-4 text-right font-semibold text-neutral-900">
+                          <td className="px-6 py-4 text-right font-semibold text-brand">
                             {page.conversionRate ? `${page.conversionRate.toFixed(1)}%` : '0.0%'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -329,7 +329,7 @@ const LandingPagesForms = () => {
             <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
               {/* Card Header */}
               <div className="px-6 py-5 border-b border-neutral-100">
-                <h2 className="text-lg font-semibold text-neutral-900">
+                <h2 className="text-lg font-semibold text-brand">
                   Forms Performance Summary
                 </h2>
               </div>
@@ -338,37 +338,37 @@ const LandingPagesForms = () => {
               <div className="divide-y divide-neutral-100 text-sm font-medium text-neutral-600">
                 <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Total Forms Published</span>
-                  <span className="text-neutral-900 font-semibold text-base">
+                  <span className="text-brand font-semibold text-base">
                     {summary.totalFormsPublished || 0}
                   </span>
                 </div>
                 <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Total Leads Captured</span>
-                  <span className="text-neutral-900 font-semibold text-base">
+                  <span className="text-brand font-semibold text-base">
                     {summary.totalLeadsCaptured?.toLocaleString() || 0}
                   </span>
                 </div>
                 <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Avg. Conversion Rate</span>
-                  <span className="text-neutral-900 font-semibold text-base">
+                  <span className="text-brand font-semibold text-base">
                     {summary.averageConversionRate ? `${summary.averageConversionRate.toFixed(1)}%` : '0.0%'}
                   </span>
                 </div>
                 <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Visits (30 days)</span>
-                  <span className="text-neutral-900 font-semibold text-base">
+                  <span className="text-brand font-semibold text-base">
                     {summary.visits30Days?.toLocaleString() || 0}
                   </span>
                 </div>
                 <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Leads (30 days)</span>
-                  <span className="text-neutral-900 font-semibold text-base">
+                  <span className="text-brand font-semibold text-base">
                     {summary.leads30Days?.toLocaleString() || 0}
                   </span>
                 </div>
                 <div className="px-6 py-4.5 flex justify-between items-center hover:bg-neutral-50/30 transition">
                   <span>Average Engagement Rate</span>
-                  <span className="text-neutral-900 font-semibold text-base">
+                  <span className="text-brand font-semibold text-base">
                     {summary.averageEngagementRate ? `${summary.averageEngagementRate.toFixed(1)}%` : '0.0%'}
                   </span>
                 </div>
@@ -380,11 +380,11 @@ const LandingPagesForms = () => {
 
       {/* Modal Dialog for Create/Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/20 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-xl w-auto max-h-[90vh] overflow-y-auto border border-neutral-200 flex flex-col">
             {/* Modal Header */}
             <div className="px-6 py-4.5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
-              <h3 className="text-lg font-semibold text-neutral-900">
+              <h3 className="text-lg font-semibold text-brand">
                 {isEditing ? 'Edit Landing Page' : 'Add New Landing Page'}
               </h3>
               <button
@@ -544,7 +544,7 @@ const LandingPagesForms = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-semibold transition flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg bg-brand hover:bg-brand-hover text-white text-sm font-semibold transition flex items-center gap-1.5"
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {isEditing ? 'Save changes' : 'Add page'}

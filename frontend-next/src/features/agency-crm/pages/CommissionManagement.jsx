@@ -145,14 +145,14 @@ export default function CommissionManagement() {
       <div className="ui-container space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-neutral-900">Commission management</h1>
+            <h1 className="text-2xl font-semibold text-brand">Commission management</h1>
             <p className="text-sm text-neutral-500 mt-1">Track agency earnings, approvals, and payouts.</p>
           </div>
           {canManage && (
             <button
               type="button"
               onClick={() => setShowNew(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm rounded-lg"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm rounded-lg"
             >
               <Plus className="w-4 h-4" />
               Add commission
@@ -214,7 +214,7 @@ export default function CommissionManagement() {
               <input className={INPUT} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </label>
             <div className="md:col-span-2 flex gap-2">
-              <button type="submit" className="px-4 py-2 bg-neutral-900 text-white text-sm rounded-lg">Save</button>
+              <button type="submit" className="px-4 py-2 bg-brand text-white text-sm rounded-lg">Save</button>
               <button type="button" className="px-4 py-2 text-sm" onClick={() => setShowNew(false)}>Cancel</button>
             </div>
           </form>
@@ -312,7 +312,7 @@ export default function CommissionManagement() {
                 <option value="FIXED">Fixed</option>
               </select>
               <input className={INPUT} type="number" placeholder="Amount" value={ruleForm.amount} onChange={(e) => setRuleForm({ ...ruleForm, amount: e.target.value })} />
-              <button type="submit" className="px-3 py-2 bg-neutral-900 text-white text-sm rounded-lg">Add rule</button>
+              <button type="submit" className="px-3 py-2 bg-brand text-white text-sm rounded-lg">Add rule</button>
             </form>
             <ul className="text-sm space-y-2">
               {rules.map((rule) => (

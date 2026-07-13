@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { login as loginRequest } from '@/lib/apiService';
+import AuthPageShell from '@/components/AuthPageShell';
 
 export default function StudentLoginPage() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function StudentLoginPage() {
   };
 
   return (
-    <main className="ui-page flex items-center justify-center">
+    <AuthPageShell>
       <div className="ui-card">
         <div className="mb-8">
           <p className="ui-section-title">Student portal</p>
@@ -54,11 +55,26 @@ export default function StudentLoginPage() {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block">
             <span className="ui-label">Email</span>
-            <input type="email" maxLength={150} className="ui-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input
+              type="email"
+              maxLength={150}
+              className="ui-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </label>
           <label className="block">
             <span className="ui-label">Password</span>
-            <input type="password" minLength={8} maxLength={15} className="ui-input" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input
+              type="password"
+              minLength={8}
+              maxLength={15}
+              className="ui-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </label>
           {error && <p className="ui-error">{error}</p>}
           <button type="submit" disabled={loading} className="ui-btn-primary w-full">
@@ -67,12 +83,17 @@ export default function StudentLoginPage() {
         </form>
 
         <p className="mt-6 text-center">
-          <Link href="/forgot-password" className="ui-link">Forgot password?</Link>
+          <Link href="/forgot-password" className="ui-link">
+            Forgot password?
+          </Link>
         </p>
-        <p className="mt-3 text-center text-xs text-neutral-400">
-          Staff member? <Link href="/login" className="ui-link">Use staff login</Link>
+        <p className="mt-3 text-center text-xs text-brand-muted">
+          Staff member?{' '}
+          <Link href="/login" className="ui-link">
+            Use staff login
+          </Link>
         </p>
       </div>
-    </main>
+    </AuthPageShell>
   );
 }

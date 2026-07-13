@@ -273,7 +273,7 @@ export default function Attendance() {
       {toast.msg && (
         <div
           className={`fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 text-white ${
-            toast.type === 'ok' ? 'bg-neutral-900' : 'bg-red-600'
+            toast.type === 'ok' ? 'bg-brand' : 'bg-red-600'
           }`}
         >
           {toast.type === 'ok' ? <Check size={16} /> : <X size={16} />}
@@ -292,7 +292,7 @@ export default function Attendance() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-neutral-900 text-white'
+                    ? 'bg-brand text-white'
                     : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
               >
@@ -309,7 +309,7 @@ export default function Attendance() {
               <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">
                 {now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
-              <p className="text-5xl md:text-6xl font-light text-neutral-900 mt-3 tabular-nums tracking-tight">
+              <p className="text-5xl md:text-6xl font-light text-brand mt-3 tabular-nums tracking-tight">
                 {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </p>
 
@@ -342,7 +342,7 @@ export default function Attendance() {
                   type="button"
                   onClick={() => handleClock(false)}
                   disabled={clockBusy || clockState === 'clocked_in' || !data?.employee}
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {clockBusy ? <RefreshCw className="animate-spin" size={16} /> : <LogIn size={16} />}
                   Clock in
@@ -362,19 +362,19 @@ export default function Attendance() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="ui-panel p-5">
                 <p className="text-xs text-neutral-500 font-medium">Clock in</p>
-                <p className="text-xl font-semibold text-neutral-900 mt-1 tabular-nums">
+                <p className="text-xl font-semibold text-brand mt-1 tabular-nums">
                   {formatTime(todayRecord?.checkIn)}
                 </p>
               </div>
               <div className="ui-panel p-5">
                 <p className="text-xs text-neutral-500 font-medium">Clock out</p>
-                <p className="text-xl font-semibold text-neutral-900 mt-1 tabular-nums">
+                <p className="text-xl font-semibold text-brand mt-1 tabular-nums">
                   {formatTime(todayRecord?.checkOut)}
                 </p>
               </div>
               <div className="ui-panel p-5">
                 <p className="text-xs text-neutral-500 font-medium">Hours today</p>
-                <p className="text-xl font-semibold text-neutral-900 mt-1 tabular-nums">
+                <p className="text-xl font-semibold text-brand mt-1 tabular-nums">
                   {workedHours(todayRecord?.checkIn, todayRecord?.checkOut) || '—'}
                 </p>
               </div>
@@ -390,7 +390,7 @@ export default function Attendance() {
                   { label: 'Half day', value: summary.halfDay },
                 ].map((s) => (
                   <div key={s.label} className="flex items-center gap-2 text-sm">
-                    <span className="font-semibold text-neutral-900">{s.value}</span>
+                    <span className="font-semibold text-brand">{s.value}</span>
                     <span className="text-neutral-500">{s.label}</span>
                   </div>
                 ))}
@@ -402,7 +402,7 @@ export default function Attendance() {
         {activeTab === 'history' && (
           <div className="ui-panel overflow-hidden">
             <div className="px-5 py-4 border-b border-neutral-200 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-neutral-900">My attendance history</h2>
+              <h2 className="text-sm font-semibold text-brand">My attendance history</h2>
               <div className="flex gap-2">
                 <select
                   value={selectedMonth}
@@ -436,7 +436,7 @@ export default function Attendance() {
                 {data.records.map((row) => (
                   <div key={row.id || row.date} className="px-5 py-4 flex flex-wrap items-center justify-between gap-3 hover:bg-neutral-50/50">
                     <div>
-                      <p className="text-sm font-medium text-neutral-900">{formatDate(row.date)}</p>
+                      <p className="text-sm font-medium text-brand">{formatDate(row.date)}</p>
                       <p className="text-xs text-neutral-500 mt-0.5 flex items-center gap-1">
                         <Clock size={12} />
                         In {formatTime(row.check_in)} · Out {formatTime(row.check_out)}
@@ -461,7 +461,7 @@ export default function Attendance() {
               <button
                 type="button"
                 onClick={() => setIsRegModalOpen(true)}
-                className="px-4 py-2 text-xs font-medium bg-neutral-900 text-white rounded-lg hover:bg-neutral-800"
+                className="px-4 py-2 text-xs font-medium bg-brand text-white rounded-lg hover:bg-brand-hover"
               >
                 Request regularization
               </button>
@@ -473,7 +473,7 @@ export default function Attendance() {
                 regularizations.map((reg) => (
                   <div key={reg.id} className="px-5 py-4 flex flex-wrap justify-between items-start gap-3">
                     <div>
-                      <p className="text-sm font-medium text-neutral-900">{reg.name || user?.fullName}</p>
+                      <p className="text-sm font-medium text-brand">{reg.name || user?.fullName}</p>
                       <p className="text-xs text-neutral-500 mt-1">
                         {reg.date} · {reg.type} at {reg.time}
                       </p>
@@ -485,7 +485,7 @@ export default function Attendance() {
                           <button
                             type="button"
                             onClick={() => handleProcessReg(reg.id, 'APPROVED')}
-                            className="px-3 py-1.5 text-xs font-medium bg-neutral-900 text-white rounded-lg"
+                            className="px-3 py-1.5 text-xs font-medium bg-brand text-white rounded-lg"
                           >
                             Approve
                           </button>
@@ -521,7 +521,7 @@ export default function Attendance() {
             <div className="ui-card">
               <div className="flex flex-wrap items-end justify-between gap-4 mb-4">
                 <div>
-                  <h3 className="text-base font-semibold text-neutral-900">Team attendance</h3>
+                  <h3 className="text-base font-semibold text-brand">Team attendance</h3>
                   <p className="text-xs text-neutral-500 mt-1">
                     Every record in your tenant for the selected day.
                   </p>
@@ -543,7 +543,7 @@ export default function Attendance() {
                     onClick={() => setTeamDate('all')}
                     className={`text-xs font-medium px-2 py-1 rounded-md border transition-colors ${
                       teamDate === 'all'
-                        ? 'bg-neutral-900 text-white border-neutral-900'
+                        ? 'bg-brand text-white border-neutral-900'
                         : 'text-neutral-600 border-neutral-200 hover:bg-neutral-50'
                     }`}
                   >
@@ -552,7 +552,7 @@ export default function Attendance() {
                   <button
                     onClick={loadTeamAttendance}
                     disabled={teamLoading}
-                    className="text-xs font-medium text-neutral-600 hover:text-neutral-900 inline-flex items-center gap-1"
+                    className="text-xs font-medium text-neutral-600 hover:text-brand inline-flex items-center gap-1"
                   >
                     <RefreshCw size={12} className={teamLoading ? 'animate-spin' : ''} />
                     Refresh
@@ -574,7 +574,7 @@ export default function Attendance() {
                         className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white border border-amber-200 px-3 py-2"
                       >
                         <div className="flex-1 min-w-0 text-xs">
-                          <div className="font-medium text-neutral-900 truncate">{r.name}</div>
+                          <div className="font-medium text-brand truncate">{r.name}</div>
                           <div className="text-neutral-500">
                             {r.type} · {r.date} · {r.time} · "{r.reason}"
                           </div>
@@ -625,7 +625,7 @@ export default function Attendance() {
                         .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
                         .map((ev) => (
                           <tr key={ev.id}>
-                            <td className="px-4 py-3 text-neutral-900 font-medium">{ev.employeeName || '—'}</td>
+                            <td className="px-4 py-3 text-brand font-medium">{ev.employeeName || '—'}</td>
                             <td className="px-4 py-3 text-neutral-500 font-mono text-xs">{ev.employeeId || '—'}</td>
                             <td className="px-4 py-3 text-neutral-600">{formatDate(ev.date)}</td>
                             <td className="px-4 py-3 text-neutral-700">{formatTime(ev.check_in)}</td>
@@ -670,7 +670,7 @@ export default function Attendance() {
                     setAdminBusy(false);
                   }
                 }}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-neutral-900 text-white rounded-lg disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-xs font-medium bg-brand text-white rounded-lg disabled:opacity-50"
               >
                 <Activity size={14} />
                 Process biometric logs
@@ -679,7 +679,7 @@ export default function Attendance() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="ui-panel p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-neutral-900">Biometric devices</h3>
+                <h3 className="text-sm font-semibold text-brand">Biometric devices</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {devices.map((d) => (
                     <div key={d.id} className="flex justify-between items-center py-2 border-b border-neutral-100 last:border-0">
@@ -727,7 +727,7 @@ export default function Attendance() {
               </div>
 
               <div className="ui-panel p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-brand flex items-center gap-2">
                   <Wifi size={14} /> IP networks
                 </h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -776,7 +776,7 @@ export default function Attendance() {
       </div>
 
       {isRegModalOpen && (
-        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-brand/20 flex items-center justify-center z-50 p-4">
           <div className="bg-white border border-neutral-200 w-auto rounded-lg shadow-lg p-6 relative">
             <button
               type="button"
@@ -785,7 +785,7 @@ export default function Attendance() {
             >
               <X size={18} />
             </button>
-            <h3 className="text-sm font-semibold text-neutral-900 mb-1">Request regularization</h3>
+            <h3 className="text-sm font-semibold text-brand mb-1">Request regularization</h3>
             <p className="text-xs text-neutral-500 mb-4">Correct a missed clock-in or clock-out.</p>
             <form onSubmit={handleRequestRegularization} className="space-y-3">
               <input

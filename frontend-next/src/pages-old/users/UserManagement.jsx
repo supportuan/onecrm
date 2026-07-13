@@ -142,7 +142,7 @@ const UserManagement = () => {
       <div className="bg-white border border-neutral-200 rounded-lg p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">User Management</h1>
+            <h1 className="text-xl font-bold text-brand">User Management</h1>
             <p className="text-sm text-neutral-500 font-semibold mt-1">
               Create Admin, Counsellor, Student and HR users
             </p>
@@ -150,7 +150,7 @@ const UserManagement = () => {
 
           <button
             onClick={() => setIsOpen(true)}
-            className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+            className="bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             Add User
@@ -187,7 +187,7 @@ const UserManagement = () => {
       <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-neutral-900" />
+            <Loader2 className="h-8 w-8 animate-spin text-brand" />
           </div>
         ) : (
           <table className="w-full text-left">
@@ -268,11 +268,11 @@ const UserManagement = () => {
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-brand/20 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-auto shadow-sm">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-4 mb-4">
               <div>
-                <h2 className="text-lg font-bold text-neutral-900">Create User</h2>
+                <h2 className="text-lg font-bold text-brand">Create User</h2>
                 <p className="text-xs text-neutral-500 font-semibold mt-1">
                   Add user with role-based access
                 </p>
@@ -359,7 +359,7 @@ const UserManagement = () => {
 
                 <button
                   type="submit"
-                  className="bg-neutral-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold"
+                  className="bg-brand text-white px-6 py-2.5 rounded-xl text-sm font-semibold"
                 >
                   Create
                 </button>
@@ -368,11 +368,11 @@ const UserManagement = () => {
           </div>
         </div>
       {isConversionOpen && (
-        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-brand/20 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-auto shadow-sm">
             <div className="flex justify-between items-center border-b border-neutral-100 pb-4 mb-4">
               <div>
-                <h2 className="text-lg font-bold text-neutral-900">Convert Student to Lead</h2>
+                <h2 className="text-lg font-bold text-brand">Convert Student to Lead</h2>
                 <p className="text-xs text-neutral-500 font-semibold mt-1">
                   Assign counsellor and capture student metadata for follow-up
                 </p>

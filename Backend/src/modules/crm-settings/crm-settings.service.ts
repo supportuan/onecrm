@@ -277,6 +277,43 @@ export const updateUniversity = (
 export const deleteUniversity = (id: number) =>
   prisma.university.update({ where: { id }, data: { deletedAt: new Date() } });
 
+/** Find an existing course under a university (case-insensitive) or create it. */
+export const findOrCreateCourse = async (data: {
+  universityId: number;
+  name: string;
+  level?: string | null;
+  duration?: string | null;
+}) => {
+  const name = data.name.trim();
+  if (!name) throw Object.assign(new Error('Course name is required'), { status: 400 });
+  if (!data.universityId) throw Object.assign(new Error('universityId is required'), { status: 400 });
+
+  const university = await prisma.university.findFirst({
+    where: { id: data.universityId, ...notDeleted },
+    select: { id: true },
+  });
+  if (!university) throw Object.assign(new Error('University not found'), { status: 404 });
+
+  const existing = await prisma.course.findFirst({
+    where: {
+      universityId: data.universityId,
+      deletedAt: null,
+      name: { equals: name, mode: 'insensitive' },
+    },
+  });
+  if (existing) return { course: existing, created: false };
+
+  const course = await prisma.course.create({
+    data: {
+      name,
+      universityId: data.universityId,
+      level: data.level || null,
+      duration: data.duration || null,
+    },
+  });
+  return { course, created: true };
+};
+
 export const listCourses = async (opts: {
   universityId?: number;
   page?: number;

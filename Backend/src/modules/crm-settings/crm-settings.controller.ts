@@ -143,6 +143,31 @@ export const listCourses = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const findOrCreateCourse = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const universityId = numId(req.body?.universityId);
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    if (!universityId || !name) {
+      return sendError(res, 'universityId and name are required', null, 400);
+    }
+    const result = await service.findOrCreateCourse({
+      universityId,
+      name,
+      level: req.body?.level ?? null,
+      duration: req.body?.duration ?? null,
+    });
+    return sendSuccess(
+      res,
+      result.created ? 'course created' : 'course found',
+      result.course,
+      result.created ? 201 : 200
+    );
+  } catch (err: any) {
+    if (err?.status) return sendError(res, err.message, null, err.status);
+    next(err);
+  }
+};
+
 export const listIndustries = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const countryId = req.query.countryId ? numId(req.query.countryId) : undefined;

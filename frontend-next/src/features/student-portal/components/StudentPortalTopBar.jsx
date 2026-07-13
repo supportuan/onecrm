@@ -19,22 +19,20 @@ export default function StudentPortalTopBar({ sidebarOpen, onToggleSidebar }) {
   };
 
   return (
-    <header className="flex-none z-40 flex h-14 w-full min-w-0 items-center justify-between gap-3 border-b border-neutral-200/70 bg-white/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+    <header className="flex-none z-40 flex h-14 w-full min-w-0 items-center justify-between gap-3 border-b border-slate-200/70 bg-white/85 px-4 backdrop-blur-md sm:px-6 lg:px-8">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-800 lg:hidden"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-brand-muted transition hover:bg-brand-soft hover:text-brand lg:hidden"
           aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
         >
           <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
 
-        {!sidebarOpen && (
-          <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-neutral-900">
-            {meta.title}
-          </h1>
-        )}
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-brand">
+          {meta.title}
+        </h1>
       </div>
 
       <div className="flex shrink-0 items-center">

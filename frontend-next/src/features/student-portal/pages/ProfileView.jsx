@@ -123,7 +123,7 @@ function Row({ label, value }) {
   return (
     <div className="flex justify-between gap-4 text-sm py-0.5">
       <span className="text-neutral-500">{label}</span>
-      <span className="text-neutral-900 text-right font-medium">{value || '—'}</span>
+      <span className="text-brand text-right font-medium">{value || '—'}</span>
     </div>
   );
 }

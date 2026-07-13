@@ -141,7 +141,7 @@ export default function CrmSettingsPage() {
     <div className="ui-page">
       <div className="ui-container space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">CRM settings</h1>
+          <h1 className="text-2xl font-semibold text-brand">CRM settings</h1>
           <p className="text-sm text-neutral-500 mt-1">
             Universities and courses mapped from ApplyUniNow — one row per course.
           </p>
@@ -159,7 +159,7 @@ export default function CrmSettingsPage() {
             ].map(([label, value]) => (
               <div key={label} className="ui-panel p-4">
                 <p className="text-xs text-neutral-500">{label}</p>
-                <p className="text-xl font-semibold text-neutral-900 mt-1">{value}</p>
+                <p className="text-xl font-semibold text-brand mt-1">{value}</p>
               </div>
             ))}
           </div>
@@ -175,7 +175,7 @@ export default function CrmSettingsPage() {
                 onClick={() => setCountryFilter(countryFilter === String(c.id) ? '' : String(c.id))}
                 className={`text-xs px-3 py-1.5 rounded-full border transition ${
                   countryFilter === String(c.id)
-                    ? 'bg-neutral-900 text-white border-neutral-900'
+                    ? 'bg-brand text-white border-neutral-900'
                     : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400'
                 }`}
               >
@@ -264,7 +264,7 @@ export default function CrmSettingsPage() {
                   rows.map((r) => (
                     <tr key={r.courseId} className="hover:bg-neutral-50/80">
                       <td className="px-5 py-3 text-neutral-600 whitespace-nowrap">{r.countryName}</td>
-                      <td className="px-5 py-3 font-medium text-neutral-900 max-w-[200px]">{r.universityName}</td>
+                      <td className="px-5 py-3 font-medium text-brand max-w-[200px]">{r.universityName}</td>
                       <td className="px-5 py-3 text-neutral-500 whitespace-nowrap">{r.universityCity || '—'}</td>
                       <td className="px-5 py-3 text-neutral-800 max-w-[280px]">{r.courseName}</td>
                       <td className="px-5 py-3 text-neutral-500 whitespace-nowrap">{r.level || '—'}</td>

@@ -27,9 +27,9 @@ export function AppBrand({
       <AppLogo className={compact ? 'h-8 w-8' : 'h-9 w-9'} />
       {!compact && (
         <div className="min-w-0 overflow-hidden">
-          <p className="text-sm font-bold tracking-tight text-neutral-900 truncate">{title}</p>
+          <p className="text-sm font-bold tracking-tight text-brand truncate">{title}</p>
           {subtitle && (
-            <p className="text-[10px] text-neutral-400 truncate leading-snug">{subtitle}</p>
+            <p className="text-[10px] text-brand-muted truncate leading-snug">{subtitle}</p>
           )}
         </div>
       )}

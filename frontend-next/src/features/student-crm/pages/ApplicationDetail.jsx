@@ -273,7 +273,7 @@ export default function ApplicationDetail({ applicationId }) {
 
   if (loading) {
     return (
-      <div className="text-neutral-900">
+      <div className="text-brand">
         <BackLink />
         <div className="ui-surface p-16 text-center ui-text-meta">Loading application…</div>
       </div>
@@ -282,7 +282,7 @@ export default function ApplicationDetail({ applicationId }) {
 
   if (!app) {
     return (
-      <div className="text-neutral-900">
+      <div className="text-brand">
         <BackLink />
         <div className="ui-surface p-16 text-center">
           <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-neutral-200 mx-auto flex items-center justify-center">
@@ -298,7 +298,7 @@ export default function ApplicationDetail({ applicationId }) {
   const student = app.student || null;
 
   return (
-    <div className="text-neutral-900">
+    <div className="text-brand">
       {toast.msg && (
         <div
           className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 ui-text-strong !text-white ${
@@ -341,10 +341,10 @@ export default function ApplicationDetail({ applicationId }) {
                     type="button"
                     onClick={() => setActiveTab(t.key)}
                     className={`relative flex items-center gap-2 px-4 py-3 ui-text-strong whitespace-nowrap transition-all ${
-                      isActive ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-800'
+                      isActive ? 'text-brand' : 'text-neutral-500 hover:text-neutral-800'
                     }`}
                   >
-                    <Icon size={14} className={isActive ? 'text-neutral-900' : 'text-neutral-400'} />
+                    <Icon size={14} className={isActive ? 'text-brand' : 'text-neutral-400'} />
                     {t.label}
                     {badge != null && (
                       <span className="ml-0.5 px-1.5 py-px rounded-full bg-rose-100 text-rose-700 text-[10px] font-semibold">
@@ -353,7 +353,7 @@ export default function ApplicationDetail({ applicationId }) {
                     )}
                     <span
                       className={`absolute left-3 right-3 -bottom-px h-[2px] rounded-full transition-all ${
-                        isActive ? 'bg-neutral-900' : 'bg-transparent'
+                        isActive ? 'bg-brand' : 'bg-transparent'
                       }`}
                     />
                   </button>
@@ -420,7 +420,7 @@ function BackLink() {
   return (
     <Link
       href="/student-crm/applications"
-      className="inline-flex items-center gap-1.5 text-[12px] font-medium text-neutral-500 hover:text-neutral-900 mb-4 transition-all"
+      className="inline-flex items-center gap-1.5 text-[12px] font-medium text-neutral-500 hover:text-brand mb-4 transition-all"
     >
       <ArrowLeft size={13} /> All applications
     </Link>

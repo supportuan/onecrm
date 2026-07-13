@@ -116,7 +116,7 @@ export default function AgencyLeads() {
     <div className="ui-page">
       <div className="ui-container space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Agency leads</h1>
+          <h1 className="text-2xl font-semibold text-brand">Agency leads</h1>
           <p className="text-sm text-neutral-500 mt-1">
             Referrals and applications attributed to agency partners.
           </p>
@@ -152,7 +152,7 @@ export default function AgencyLeads() {
               <span className="text-xs text-neutral-500">Notes</span>
               <input className={INPUT} value={referralForm.notes} onChange={(e) => setReferralForm({ ...referralForm, notes: e.target.value })} />
             </label>
-            <button type="submit" className="px-4 py-2 bg-neutral-900 text-white text-sm rounded-lg h-[38px]">
+            <button type="submit" className="px-4 py-2 bg-brand text-white text-sm rounded-lg h-[38px]">
               Link referral
             </button>
             {referralMsg && <p className="text-xs text-neutral-600 md:col-span-4">{referralMsg}</p>}
@@ -169,7 +169,7 @@ export default function AgencyLeads() {
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className={`px-4 py-2 text-sm ${tab === t.id ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-700'}`}
+                className={`px-4 py-2 text-sm ${tab === t.id ? 'bg-brand text-white' : 'bg-white text-neutral-700'}`}
               >
                 {t.label}
               </button>

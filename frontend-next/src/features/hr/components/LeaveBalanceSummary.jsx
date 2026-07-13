@@ -15,7 +15,7 @@ function StatCard({ icon: Icon, label, value, sub, accent = 'text-neutral-700' }
     <div className="ui-panel p-4 sm:p-5 flex items-start justify-between gap-3">
       <div className="min-w-0">
         <p className="text-[11px] font-medium text-neutral-500 tracking-tight truncate">{label}</p>
-        <p className="text-[22px] font-semibold text-neutral-900 mt-1.5 leading-none">{value}</p>
+        <p className="text-[22px] font-semibold text-brand mt-1.5 leading-none">{value}</p>
         {sub && <p className="text-[11px] text-neutral-500 mt-1.5 truncate">{sub}</p>}
       </div>
       <div className="shrink-0 w-9 h-9 rounded-xl bg-neutral-50 border border-neutral-200 flex items-center justify-center">
@@ -93,13 +93,13 @@ export function LeaveBalanceCards({ balances = [], className = '' }) {
               <p className="text-[13px] font-semibold text-neutral-700 truncate">{b.leaveType}</p>
               <p className="text-[11px] text-neutral-500 shrink-0">{quotaLabel}</p>
             </div>
-            <p className="text-[22px] font-semibold text-neutral-900 mt-1">
+            <p className="text-[22px] font-semibold text-brand mt-1">
               {b.remaining}
               <span className="text-[13px] font-medium text-neutral-400"> left</span>
             </p>
             <div className="mt-2 h-1.5 w-full rounded-full bg-neutral-200 overflow-hidden">
               <div
-                className="h-full rounded-full bg-neutral-900 transition-all"
+                className="h-full rounded-full bg-brand transition-all"
                 style={{ width: `${usedPct}%` }}
               />
             </div>
@@ -122,7 +122,7 @@ export default function LeaveBalanceSummary({ leaveSummary, attendanceSummary, l
       <div className="ui-panel p-6">
         <div className="flex items-center gap-2 mb-4">
           <Calendar size={18} className="text-neutral-700" />
-          <h2 className="text-[15px] font-semibold text-neutral-900">Remaining leave</h2>
+          <h2 className="text-[15px] font-semibold text-brand">Remaining leave</h2>
         </div>
         <LeaveBalanceCards balances={leaveBalances} />
       </div>

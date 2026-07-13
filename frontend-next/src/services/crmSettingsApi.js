@@ -61,6 +61,18 @@ export const listCourses = async ({ universityId, page = 1, limit = 50, search }
   return handleResponse(await authFetch(`${API_URL}/courses?${params.toString()}`, { headers: tenantHeaders() }));
 };
 
+/** Find existing course under a university or create it when the name is new. */
+export const findOrCreateCourse = async ({ universityId, name, level, duration } = {}) => {
+  if (!universityId || !name?.trim()) throw new Error('universityId and name are required');
+  return handleResponse(
+    await authFetch(`${API_URL}/courses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...tenantHeaders() },
+      body: JSON.stringify({ universityId, name: name.trim(), level, duration }),
+    })
+  );
+};
+
 /** Paginate through all universities for a country (full catalog). */
 export const fetchAllUniversitiesForCountry = async (countryId) => {
   const limit = 500;

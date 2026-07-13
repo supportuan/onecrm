@@ -23,7 +23,7 @@ export function StudentPageHeader({ title, description }) {
 
   return (
     <header className="mb-6 space-y-2">
-      <h1 className="text-[1.65rem] font-semibold tracking-tight text-neutral-900">{title}</h1>
+      <h1 className="text-[1.65rem] font-semibold tracking-tight text-brand">{title}</h1>
       {description && <p className={`${sp.body} max-w-2xl`}>{description}</p>}
     </header>
   );

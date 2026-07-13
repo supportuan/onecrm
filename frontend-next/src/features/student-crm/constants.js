@@ -63,5 +63,5 @@ export const stageBadgeClass = (stageKey) => {
   if (stageKey === 'OFFER_REJECTED') return 'bg-rose-50 border-rose-200 text-rose-700';
   if (stageKey?.startsWith('OFFER')) return 'bg-amber-50 border-amber-200 text-amber-700';
   if (stageKey === 'DOCUMENTS_PENDING') return 'bg-amber-50 border-amber-200 text-amber-700';
-  return 'bg-neutral-100 border-neutral-200 text-neutral-900';
+  return 'bg-neutral-100 border-neutral-200 text-brand';
 };

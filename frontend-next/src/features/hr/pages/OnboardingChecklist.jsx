@@ -350,7 +350,7 @@ export default function OnboardingChecklist() {
       )}
 
       {showTemplates && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-brand/30 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900">Onboarding Templates</h2>
@@ -380,7 +380,7 @@ export default function OnboardingChecklist() {
                 placeholder="Template name"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
               />
-              <button onClick={handleCreateTemplate} className="w-full bg-neutral-900 text-white py-2 rounded-lg text-sm">
+              <button onClick={handleCreateTemplate} className="w-full bg-brand text-white py-2 rounded-lg text-sm">
                 Save template
               </button>
             </div>
@@ -390,7 +390,7 @@ export default function OnboardingChecklist() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-brand/30 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900">New Onboarding Checklist</h2>

@@ -22,6 +22,7 @@ import { getCounsellors } from '../../services/userApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useLeadBulkUpload } from '../../hooks/useLeadBulkUpload';
 import CountryDropdown from '@/lib/CountryDropdown/CountryDropdown';
+import LogoLoader from '@/components/LogoLoader';
 
 import {
   Search,
@@ -704,10 +705,9 @@ const LeadManagement = () => {
   return (
     <div className="space-y-6 w-full">
 
-
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#0084ff]/20 focus-within:border-[#0084ff]/60 xl:max-w-md">
+          <div className="flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 shadow-sm transition-all focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand/60 xl:max-w-md">
             <Search className="h-5 w-5 text-slate-400 flex-shrink-0" />
 
             <input
@@ -763,7 +763,7 @@ const LeadManagement = () => {
 
             <button
               onClick={() => setIsIntakeOpen(true)}
-              className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md active:scale-95 hover:shadow-lg"
+              className="bg-brand hover:bg-brand-hover text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md active:scale-95 hover:shadow-lg"
             >
               <Plus className="h-4 w-4 stroke-[3]" />
               Add Lead
@@ -862,10 +862,7 @@ const LeadManagement = () => {
 
       {loading && displayedLeads.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200 shadow-sm">
-          <Loader2 className="h-10 w-10 text-[#0084ff] animate-spin" />
-          <p className="text-sm text-slate-400 font-semibold mt-4">
-            Loading active leads database...
-          </p>
+          <LogoLoader label="Loading active leads database…" size="md" />
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-red-200/80 shadow-sm">
@@ -965,7 +962,7 @@ const LeadManagement = () => {
                           <a
                             href={`mailto:${lead.email}`}
                             title={lead.email}
-                            className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
+                            className="hover:text-brand flex items-center gap-1.5 transition font-semibold"
                           >
                             <Mail className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
                             <span className="truncate max-w-[150px]">
@@ -978,7 +975,7 @@ const LeadManagement = () => {
                           <a
                             href={`tel:${lead.phone}`}
                             title={lead.phone}
-                            className="hover:text-[#0084ff] flex items-center gap-1.5 transition font-semibold"
+                            className="hover:text-brand flex items-center gap-1.5 transition font-semibold"
                           >
                             <Phone className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
                             <span>{lead.phone}</span>
@@ -1255,7 +1252,7 @@ const LeadManagement = () => {
 
             {loadingActivities ? (
               <div className="flex justify-center py-20">
-                <Loader2 className="h-6 w-6 text-[#0084ff] animate-spin" />
+                <Loader2 className="h-6 w-6 text-brand animate-spin" />
               </div>
             ) : activities.length === 0 ? (
               <div className="text-center py-20 text-slate-400 text-xs font-semibold">
@@ -1282,13 +1279,13 @@ const LeadManagement = () => {
                       <div
                         className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm border ${isInbound
                           ? 'bg-white border-slate-200 text-slate-700 rounded-bl-md'
-                          : 'bg-[#0084ff] border-[#0084ff] text-white rounded-br-md'
+                          : 'bg-brand border-brand text-white rounded-br-md'
                           }`}
                       >
                         <div className="flex items-center justify-between gap-4 mb-2">
                           <div className="flex items-center gap-2">
                             <span
-                              className={`text-[10px] font-extrabold uppercase tracking-wide ${isInbound ? 'text-[#0084ff]' : 'text-white/90'
+                              className={`text-[10px] font-extrabold uppercase tracking-wide ${isInbound ? 'text-brand' : 'text-white/90'
                                 }`}
                             >
                               {senderName}
@@ -1330,7 +1327,7 @@ const LeadManagement = () => {
                             href={metadata.meetingLink}
                             target="_blank"
                             rel="noreferrer"
-                            className={`mt-2 inline-block text-[11px] font-bold underline ${isInbound ? 'text-[#0084ff]' : 'text-white'
+                            className={`mt-2 inline-block text-[11px] font-bold underline ${isInbound ? 'text-brand' : 'text-white'
                               }`}
                           >
                             Join Meeting
@@ -1386,13 +1383,13 @@ const LeadManagement = () => {
                 onChange={(e) =>
                   setActivityForm((p) => ({ ...p, comment: e.target.value }))
                 }
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition bg-slate-50"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none transition bg-slate-50"
               />
 
               <button
                 type="submit"
                 disabled={!activityForm.comment.trim()}
-                className="rounded-xl bg-[#0084ff] hover:bg-[#0070d9] disabled:bg-slate-100 disabled:text-slate-400 text-white p-2.5 shadow-sm transition flex-shrink-0 "
+                className="rounded-xl bg-brand hover:bg-brand-hover disabled:bg-slate-100 disabled:text-slate-400 text-white p-2.5 shadow-sm transition flex-shrink-0 "
               >
                 <Send className="h-4 w-4 stroke-[2.5]" />
               </button>

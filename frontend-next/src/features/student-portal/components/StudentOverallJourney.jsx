@@ -47,19 +47,19 @@ export default function StudentOverallJourney({ profile, stageList }) {
                 key={stage}
                 className={`rounded-2xl border overflow-hidden transition ${
                   active
-                    ? 'border-neutral-900/20 shadow-sm'
+                    ? 'border-brand/25 shadow-sm'
                     : done
                       ? 'border-emerald-200/80'
-                      : 'border-neutral-200/80'
+                      : 'border-slate-200/80'
                 }`}
               >
                 <div
                   className={`flex items-center gap-3 px-4 py-3.5 text-sm ${
                     active
-                      ? 'bg-neutral-900 text-white'
+                      ? 'bg-brand text-white'
                       : done
                         ? 'bg-emerald-50/80 text-emerald-900'
-                        : 'bg-white text-neutral-600'
+                        : 'bg-white text-slate-600'
                   }`}
                 >
                   {done ? (

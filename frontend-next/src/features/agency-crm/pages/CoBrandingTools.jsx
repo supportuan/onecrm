@@ -113,7 +113,7 @@ export default function CoBrandingTools() {
     <div className="ui-page">
       <div className="ui-container space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Co-branding tools</h1>
+          <h1 className="text-2xl font-semibold text-brand">Co-branding tools</h1>
           <p className="text-sm text-neutral-500 mt-1">
             Referral links and branded assets for {partner.agencyName}.
           </p>
@@ -139,7 +139,7 @@ export default function CoBrandingTools() {
 
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="rounded-lg border border-neutral-200 bg-white p-6 space-y-4">
-            <h2 className="font-medium text-neutral-900">Referral link</h2>
+            <h2 className="font-medium text-brand">Referral link</h2>
             <p className="text-sm text-neutral-500">
               Share this link so leads are attributed to agency code <strong>{partner.agencyCode}</strong>.
             </p>
@@ -166,7 +166,7 @@ export default function CoBrandingTools() {
         </div>
 
         <form onSubmit={save} className="rounded-lg border border-neutral-200 bg-white p-6 space-y-4">
-          <h2 className="font-medium text-neutral-900">Brand settings</h2>
+          <h2 className="font-medium text-brand">Brand settings</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <label className="block space-y-1">
               <span className="text-xs text-neutral-500">Tagline</span>
@@ -186,7 +186,7 @@ export default function CoBrandingTools() {
             </label>
           </div>
           {canManage && (
-            <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm rounded-lg">
+            <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm rounded-lg">
               <Save className="w-4 h-4" />
               Save branding
             </button>

@@ -153,7 +153,7 @@ export default function PayrollInputs() {
       {/* Premium Title */}
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">
+          <h1 className="text-3xl font-semibold tracking-tight text-brand">
             Payroll & Financial Inputs
           </h1>
           <p className="text-slate-550 text-sm mt-1">
@@ -167,7 +167,7 @@ export default function PayrollInputs() {
             onClick={() => { setActiveTab('structures'); setSearchQuery(''); }}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
               activeTab === 'structures'
-                ? 'bg-neutral-900 text-white shadow-md'
+                ? 'bg-brand text-white shadow-md'
                 : 'text-neutral-600 hover:text-slate-855'
             }`}
           >
@@ -178,7 +178,7 @@ export default function PayrollInputs() {
             onClick={() => { setActiveTab('execute'); setSearchQuery(''); }}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
               activeTab === 'execute'
-                ? 'bg-neutral-900 text-white shadow-md'
+                ? 'bg-brand text-white shadow-md'
                 : 'text-neutral-600 hover:text-slate-855'
             }`}
           >
@@ -189,7 +189,7 @@ export default function PayrollInputs() {
             onClick={() => { setActiveTab('payslips'); setSearchQuery(''); }}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
               activeTab === 'payslips'
-                ? 'bg-neutral-900 text-white shadow-md'
+                ? 'bg-brand text-white shadow-md'
                 : 'text-neutral-600 hover:text-slate-855'
             }`}
           >
@@ -223,7 +223,7 @@ export default function PayrollInputs() {
                 <input
                   type="text"
                   placeholder="Filter personnel by name or university ID..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-800 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -286,7 +286,7 @@ export default function PayrollInputs() {
                             <td className="px-6 py-5 text-right">
                               <button 
                                 onClick={() => setEditingStruct(struct)}
-                                className="p-2 bg-white border border-neutral-200 hover:border-neutral-900 text-neutral-500 hover:text-neutral-700 rounded-xl transition-all"
+                                className="p-2 bg-white border border-neutral-200 hover:border-brand text-neutral-500 hover:text-neutral-700 rounded-xl transition-all"
                               >
                                 <Edit2 size={13} />
                               </button>
@@ -314,7 +314,7 @@ export default function PayrollInputs() {
             {/* Batch execution controls */}
             <div className="ui-card flex flex-col lg:flex-row lg:items-center justify-between gap-8">
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-neutral-900">Launch Calculation Batch</h3>
+                <h3 className="text-lg font-semibold text-brand">Launch Calculation Batch</h3>
                 <p className="text-xs text-neutral-600 max-w-lg">
                   Run the background simulation engine for the active cycle. This merges biometric clock hours, leave days, and locks payslips.
                 </p>
@@ -340,7 +340,7 @@ export default function PayrollInputs() {
                 <button 
                   type="submit"
                   disabled={submitting} 
-                  className="bg-neutral-900 text-white px-6 py-3 rounded-xl font-semibold text-[10px] flex items-center justify-center gap-2 hover:bg-neutral-800 transition-all disabled:opacity-50"
+                  className="bg-brand text-white px-6 py-3 rounded-xl font-semibold text-[10px] flex items-center justify-center gap-2 hover:bg-brand-hover transition-all disabled:opacity-50"
                 >
                   {submitting ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
                   {submitting ? 'Running...' : 'Execute Ledger Cycle'}
@@ -355,7 +355,7 @@ export default function PayrollInputs() {
                   <span className="text-[10px] font-semibold text-neutral-500">Monthly Net Payouts</span>
                   <TrendingUp size={20} className="text-neutral-700 opacity-60" />
                 </div>
-                <p className="text-3xl font-semibold text-neutral-900 tracking-tight">₹{totalPayout.toLocaleString('en-IN')}</p>
+                <p className="text-3xl font-semibold text-brand tracking-tight">₹{totalPayout.toLocaleString('en-IN')}</p>
                 <div className="text-[9px] font-semibold text-neutral-500 mt-1">Disbursed Funds Liquidated</div>
               </div>
 
@@ -364,7 +364,7 @@ export default function PayrollInputs() {
                   <span className="text-[10px] font-semibold text-neutral-500">Batch LOP Deductions</span>
                   <TrendingDown size={20} className="text-red-500 opacity-60" />
                 </div>
-                <p className="text-3xl font-semibold text-neutral-900 tracking-tight">₹{totalDeductions.toLocaleString('en-IN')}</p>
+                <p className="text-3xl font-semibold text-brand tracking-tight">₹{totalDeductions.toLocaleString('en-IN')}</p>
                 <div className="text-[9px] font-semibold text-neutral-500 mt-1">Tax withheld / Unpaid Leaves</div>
               </div>
 
@@ -373,7 +373,7 @@ export default function PayrollInputs() {
                   <span className="text-[10px] font-semibold text-neutral-500">Disbursed Statements</span>
                   <Users size={20} className="text-emerald-500 opacity-60" />
                 </div>
-                <p className="text-3xl font-semibold text-neutral-900 tracking-tight">{payslips.length}</p>
+                <p className="text-3xl font-semibold text-brand tracking-tight">{payslips.length}</p>
                 <div className="text-[9px] font-semibold text-neutral-500 mt-1">Personnel Entries Mapped</div>
               </div>
             </div>
@@ -399,7 +399,7 @@ export default function PayrollInputs() {
                 <input
                   type="text"
                   placeholder="Search generated statements by name or employee ID..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-slate-850 placeholder-slate-400 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-slate-850 placeholder-slate-400 focus:border-brand outline-none transition-all"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -461,7 +461,7 @@ export default function PayrollInputs() {
                           <td className="px-6 py-5 text-right">
                             <button 
                               onClick={() => setSelectedPayslip(pay)}
-                              className="p-2 bg-white border border-neutral-200 hover:border-neutral-900 text-neutral-600 hover:text-neutral-700 rounded-xl transition-all inline-flex items-center gap-1.5 text-[9px] font-semibold"
+                              className="p-2 bg-white border border-neutral-200 hover:border-brand text-neutral-600 hover:text-neutral-700 rounded-xl transition-all inline-flex items-center gap-1.5 text-[9px] font-semibold"
                             >
                               <Eye size={13} /> View
                             </button>
@@ -485,7 +485,7 @@ export default function PayrollInputs() {
 
       {/* Editing Structure Parameters Modal */}
       {editingStruct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="ui-modal scale-100 animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-neutral-200 flex justify-between items-center bg-neutral-50">
               <h2 className="text-xs font-semibold text-neutral-800">Override Salary Ledger</h2>
@@ -509,7 +509,7 @@ export default function PayrollInputs() {
                   required
                   value={editingStruct.basicSalary}
                   onChange={e => setEditingStruct({ ...editingStruct, basicSalary: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                 />
               </div>
 
@@ -520,7 +520,7 @@ export default function PayrollInputs() {
                   required
                   value={editingStruct.allowances}
                   onChange={e => setEditingStruct({ ...editingStruct, allowances: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                 />
               </div>
 
@@ -532,7 +532,7 @@ export default function PayrollInputs() {
                     min="0"
                     value={editingStruct.incentivePerEnrollment ?? 0}
                     onChange={e => setEditingStruct({ ...editingStruct, incentivePerEnrollment: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                   />
                 </div>
                 <div className="space-y-2">
@@ -544,7 +544,7 @@ export default function PayrollInputs() {
                     step="0.01"
                     value={editingStruct.incentiveRevenueShare ?? 0}
                     onChange={e => setEditingStruct({ ...editingStruct, incentiveRevenueShare: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-neutral-900 outline-none transition-all"
+                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                   />
                 </div>
               </div>
@@ -559,7 +559,7 @@ export default function PayrollInputs() {
                   required
                   value={editingStruct.deductions}
                   onChange={e => setEditingStruct({ ...editingStruct, deductions: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-red-655 focus:border-neutral-900 outline-none transition-all"
+                  className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-red-655 focus:border-brand outline-none transition-all"
                 />
               </div>
 
@@ -574,7 +574,7 @@ export default function PayrollInputs() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-3.5 bg-neutral-900 text-white rounded-lg font-semibold text-[10px] hover:bg-neutral-800 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3.5 bg-brand text-white rounded-lg font-semibold text-[10px] hover:bg-brand-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {submitting && <Loader2 size={12} className="animate-spin" />}
                   Deploy Structure
@@ -587,7 +587,7 @@ export default function PayrollInputs() {
 
       {/* Statement Sheet Viewer Modal */}
       {selectedPayslip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-250">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-sm animate-in fade-in duration-250">
           <div className="ui-modal scale-100 animate-in zoom-in-95 duration-250">
             {/* Sheet header */}
             <div className="px-8 py-5 border-b border-neutral-200 bg-neutral-50 flex justify-between items-center">
@@ -701,7 +701,7 @@ export default function PayrollInputs() {
                 onClick={() => {
                   window.print();
                 }}
-                className="px-6 py-3 bg-neutral-900 text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-neutral-800 transition-all flex items-center gap-1.5"
+                className="px-6 py-3 bg-brand text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-brand-hover transition-all flex items-center gap-1.5"
               >
                 <Download size={13} />
                 Export / Print Statement

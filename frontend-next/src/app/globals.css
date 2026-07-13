@@ -7,19 +7,39 @@
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* ApplyUniNow / ONECRM logo palette */
+  --brand: #0b2a5b;
+  --brand-hover: #143a73;
+  --brand-soft: #e8eef7;
+  --brand-muted: #5a6f8f;
+  --brand-accent: #e31837;
+  --brand-accent-hover: #c4142f;
+  --brand-page: #f3f5f9;
+
   --ui-bg: #ffffff;
-  --ui-bg-page: #fafafa;
-  --ui-border: #ebebeb;
-  --ui-border-strong: #d4d4d4;
-  --ui-text: #0a0a0a;
-  --ui-text-secondary: #525252;
-  --ui-text-muted: #a3a3a3;
-  --ui-accent: #0a0a0a;
-  --ui-accent-hover: #262626;
+  --ui-bg-page: var(--brand-page);
+  --ui-border: #e2e8f0;
+  --ui-border-strong: #cbd5e1;
+  --ui-text: #0b2a5b;
+  --ui-text-secondary: #475569;
+  --ui-text-muted: #94a3b8;
+  --ui-accent: var(--brand);
+  --ui-accent-hover: var(--brand-hover);
   --ui-radius: 6px;
   --ui-sidebar-open: 240px;
   --ui-sidebar-collapsed: 56px;
   --ui-header-height: 56px;
+}
+
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-hover: var(--brand-accent-hover);
+  --color-brand-page: var(--brand-page);
 }
 
 html {
@@ -31,6 +51,72 @@ body {
   min-height: 100vh;
   background: var(--ui-bg-page);
   color: var(--ui-text);
+}
+
+/* Soft brand mark behind the whole app (polished 5% opacity) */
+.app-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/images/applyUniNow-mark.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: min(52vmin, 440px);
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+}
+
+/* Login / auth pages — larger watermark around the card */
+.auth-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/images/applyUniNow-mark.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: min(88vmin, 720px);
+  opacity: 0.08;
+  mix-blend-mode: multiply;
+}
+
+/* Branded logo lazy-loader */
+.logo-loader {
+  display: grid;
+  place-items: center;
+}
+
+.logo-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--brand) 18%, transparent);
+  border-top-color: var(--brand);
+  border-right-color: var(--brand-accent);
+  animation: logo-loader-spin 0.9s linear infinite;
+}
+
+.logo-loader-mark {
+  animation: logo-loader-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes logo-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes logo-loader-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.94);
+    opacity: 0.88;
+  }
 }
 
 button,
@@ -111,38 +197,42 @@ textarea {
   }
 
   .ui-input {
-    @apply w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-white px-3 py-2.5 text-[14px] text-[var(--ui-text)] outline-none transition placeholder:text-[var(--ui-text-muted)] focus:border-[var(--ui-border-strong)] focus:outline-none;
+    @apply w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-white px-3 py-2.5 text-[14px] text-[var(--ui-text)] outline-none transition placeholder:text-[var(--ui-text-muted)] focus:border-brand focus:ring-2 focus:ring-brand/15 focus:outline-none;
   }
 
   .ui-field {
-    @apply w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-white px-3 py-2.5 text-[14px] text-[var(--ui-text)] placeholder:text-[var(--ui-text-muted)] outline-none transition focus:border-[var(--ui-border-strong)] disabled:opacity-50 disabled:bg-[var(--ui-bg-page)];
+    @apply w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-white px-3 py-2.5 text-[14px] text-[var(--ui-text)] placeholder:text-[var(--ui-text-muted)] outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-50 disabled:bg-[var(--ui-bg-page)];
   }
 
   .ui-select {
     @apply appearance-none cursor-pointer bg-[length:14px] bg-[right_10px_center] bg-no-repeat pr-9;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 
-  /* ── Buttons — restrained ── */
+  /* ── Buttons — brand navy primary, red accent CTA ── */
   .ui-btn-primary {
-    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] bg-[var(--ui-accent)] px-4 py-2.5 text-[13px] font-medium text-white transition hover:bg-[var(--ui-accent-hover)] disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] bg-brand px-4 py-2.5 text-[13px] font-medium text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .ui-btn-accent {
+    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] bg-brand-accent px-4 py-2.5 text-[13px] font-medium text-white transition hover:bg-brand-accent-hover disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .ui-btn-secondary {
-    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-white px-4 py-2.5 text-[13px] font-medium text-[var(--ui-text)] transition hover:border-[var(--ui-border-strong)] disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-white px-4 py-2.5 text-[13px] font-medium text-[var(--ui-text)] transition hover:border-[var(--ui-border-strong)] hover:bg-brand-soft/60 disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .ui-btn-ghost {
-    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] px-3 py-2 text-[13px] font-medium text-[var(--ui-text-secondary)] transition hover:text-[var(--ui-text)] hover:bg-[var(--ui-bg-page)];
+    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] px-3 py-2 text-[13px] font-medium text-[var(--ui-text-secondary)] transition hover:text-brand hover:bg-brand-soft;
   }
 
   .ui-link {
-    @apply text-[13px] text-[var(--ui-text-secondary)] underline-offset-4 hover:text-[var(--ui-text)] hover:underline;
+    @apply text-[13px] text-brand underline-offset-4 hover:text-brand-hover hover:underline;
   }
 
   /* ── Feedback ── */
   .ui-overlay {
-    @apply fixed inset-0 z-50 bg-black/10;
+    @apply fixed inset-0 z-50 bg-brand/20;
   }
 
   .ui-error {
@@ -159,11 +249,11 @@ textarea {
   }
 
   .ui-nav-item {
-    @apply flex w-full items-center gap-3 rounded-[var(--ui-radius)] px-3 py-2 text-[13px] text-[var(--ui-text-secondary)] transition hover:text-[var(--ui-text)];
+    @apply flex w-full items-center gap-3 rounded-[var(--ui-radius)] px-3 py-2 text-[13px] text-[var(--ui-text-secondary)] transition hover:text-brand hover:bg-brand-soft;
   }
 
   .ui-nav-item-active {
-    @apply font-medium text-[var(--ui-text)] bg-[var(--ui-bg-page)];
+    @apply font-medium text-brand bg-brand-soft;
   }
 
   .ui-divider {
@@ -189,7 +279,7 @@ textarea {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(11, 42, 91, 0.25);
 }
 
 .user-modal-box {
@@ -237,6 +327,4 @@ option {
 
 button {
   cursor: pointer !important;
-
 }
-
