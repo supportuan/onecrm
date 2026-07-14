@@ -8,6 +8,8 @@ import crypto from 'crypto';
 import {
   validateDuplicateLead,
   validateDuplicateUser,
+  normalizeEmail,
+  normalizePhone,
   normalizeValue,
 } from "../../../utils/validation.js";
 import { buildCampaignEmailTemplate } from './emailTemplate.service.js';
@@ -247,17 +249,61 @@ export const getSources = async () => {
 //   });
 // };
 
-export const createLead = async (data: any) => {
-  await validateDuplicateLead(data.email, data.phone);
+// export const createLead = async (data: any) => {
+//   await validateDuplicateLead(data.email, data.phone);
 
-  const referralCode = data.referralCode || data.agencyRef || data.ref;
-  const { referralCode: _r, agencyRef: _a, ref: _ref, ...leadData } = data;
+//   const referralCode = data.referralCode || data.agencyRef || data.ref;
+//   const { referralCode: _r, agencyRef: _a, ref: _ref, ...leadData } = data;
+
+//   const lead = await prisma.lead.create({
+//     data: {
+//       ...leadData,
+//       email: normalizeValue(data.email),
+//       phone: normalizeValue(data.phone),
+//     },
+//     include: {
+//       source: true,
+//       assignedCounsellor: true,
+//       assignedBy: true,
+//     },
+//   });
+
+//   if (referralCode) {
+//     try {
+//       const { attachReferralToLead } = await import(
+//         '../../agency-crm/agency-referral.service.js'
+//       );
+//       await attachReferralToLead(lead.id, String(referralCode));
+//     } catch (err) {
+//       console.warn('[Agency CRM] referral attach skipped:', (err as Error)?.message);
+//     }
+//   }
+
+//   return lead;
+// };
+export const createLead = async (data: any) => {
+  const email = normalizeEmail(data.email);
+  const phone = normalizePhone(data.phone);
+
+  await validateDuplicateLead(email, phone);
+
+  const referralCode =
+    data.referralCode ||
+    data.agencyRef ||
+    data.ref;
+
+  const {
+    referralCode: _r,
+    agencyRef: _a,
+    ref: _ref,
+    ...leadData
+  } = data;
 
   const lead = await prisma.lead.create({
     data: {
       ...leadData,
-      email: normalizeValue(data.email),
-      phone: normalizeValue(data.phone),
+      email,
+      phone,
     },
     include: {
       source: true,
@@ -271,9 +317,16 @@ export const createLead = async (data: any) => {
       const { attachReferralToLead } = await import(
         '../../agency-crm/agency-referral.service.js'
       );
-      await attachReferralToLead(lead.id, String(referralCode));
+
+      await attachReferralToLead(
+        lead.id,
+        String(referralCode)
+      );
     } catch (err) {
-      console.warn('[Agency CRM] referral attach skipped:', (err as Error)?.message);
+      console.warn(
+        '[Agency CRM] referral attach skipped:',
+        (err as Error)?.message
+      );
     }
   }
 
@@ -1834,7 +1887,7 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
   const passwordHash = await hashPassword(tempPassword);
 
   // 4️⃣ Create STUDENT user
-  const tenantId = await getDefaultTenantId(lead.assignedCounsellorId ?? null);
+  // const tenantId = await getDefaultTenantId(lead.assignedCounsellorId ?? null);
   const user = await prisma.user.create({
     data: {
       fullName: lead.fullName,
@@ -1842,7 +1895,7 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
       phone: lead.phone,
       passwordHash,
       role: UserRole.STUDENT,
-      tenantId,
+      // tenantId,
       isActive: true,
       isApproved: true,
       mustChangePassword: true,

@@ -2,14 +2,19 @@
 'use client';
 
 import Image from 'next/image';
-import { Bell, LogOut, Menu } from 'lucide-react';
+import { Bell, LogOut, Menu, Plus } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
+import NotificationBell from '@/components/NotificationBell';
+import AddLeadModal from '@/components/AddLeadModal';
+import { useState } from 'react';
+
 
 const TopNavbar = ({ onToggleSidebar }) => {
     const router = useRouter();
     const pathname = usePathname();
     const { user, logout } = useAuth();
+    const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
 
     let breadcrumb = '';
     let title = 'Welcome back!';
@@ -130,16 +135,17 @@ const TopNavbar = ({ onToggleSidebar }) => {
 
             {/* Right */}
             <div className="flex shrink-0 items-center gap-5">
-                <button
+                {/* <button
                     type="button"
                     className="relative text-slate-400 transition hover:text-slate-600 cursor-pointer"
                     onClick={() => router.push('/notifications')}
-                >
-                    <Bell className="h-5 w-5 stroke-[1.5]" />
-                    <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-bold text-slate-950 ring-1 ring-white">
+                > */}
+                {/* <Bell className="h-5 w-5 stroke-[1.5]" /> */}
+                <NotificationBell />
+                {/* <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-yellow-400 px-1 text-[9px] font-bold text-slate-950 ring-1 ring-white">
                         5
-                    </span>
-                </button>
+                    </span> */}
+                {/* </button> */}
 
                 <div className="flex items-center gap-3">
                     {user && (
@@ -149,6 +155,15 @@ const TopNavbar = ({ onToggleSidebar }) => {
                             </div> */}
                         </div>
                     )}
+                    <button
+                        type="button"
+                        onClick={() => setIsAddLeadOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-gray"
+                        title="Add new lead"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add Lead
+                    </button>
 
                     <button
                         type="button"
@@ -160,6 +175,12 @@ const TopNavbar = ({ onToggleSidebar }) => {
                     </button>
                 </div>
             </div>
+            <AddLeadModal
+                open={isAddLeadOpen}
+                onClose={() =>
+                    setIsAddLeadOpen(false)
+                }
+            />
         </header>
     );
 };

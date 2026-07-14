@@ -21,6 +21,7 @@ import {
 import { getCounsellors } from '../../services/userApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useLeadBulkUpload } from '../../hooks/useLeadBulkUpload';
+import CountryDropdown from '@/lib/CountryDropdown/CountryDropdown';
 
 import {
   Search,
@@ -38,6 +39,7 @@ import {
   MessageSquare,
   Send
 } from 'lucide-react';
+import AddLeadModal from '@/components/AddLeadModal';
 
 const LEAD_RATING_OPTIONS = ['HOT', 'WARM', 'COLD', 'MAYBE'];
 const LEAD_STATUS_OPTIONS = [
@@ -144,6 +146,7 @@ const getRatingClasses = (rating) => {
 const LeadManagement = () => {
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
 
   const [leads, setLeads] = useState([]);
   const [sourcesList, setSourcesList] = useState([]);
@@ -356,12 +359,12 @@ const LeadManagement = () => {
         subject: `Study Abroad Consultation - ${lead.fullName}`,
         message: `Hi ${lead.fullName},
 
-Thank you for your interest in ${course} in ${country}.
+    Thank you for your interest in ${course} in ${country}.
 
-Our counsellor will contact you shortly and guide you with the next steps.
+    Our counsellor will contact you shortly and guide you with the next steps.
 
-Regards,
-ApplyUniNow`
+    Regards,
+    ApplyUniNow`
       };
     }
 
@@ -512,59 +515,7 @@ ApplyUniNow`
     }
   };
 
-  // const handleExport = () => {
-  //   if (leads.length === 0) {
-  //     alert('No leads found to export.');
-  //     return;
-  //   }
-
-  //   const headers = [
-  //     'Lead Name',
-  //     'Country',
-  //     'Email',
-  //     'Phone',
-  //     'Source',
-  //     'Interested In',
-  //     'Lead Status',
-  //     'Assigned By',
-  //     'Assigned To',
-  //     'Remark',
-  //     'Created At'
-  //   ];
-
-  //   const rows = leads.map((lead) => [
-  //     lead.fullName,
-  //     lead.country || '',
-  //     lead.email,
-  //     lead.phone || '',
-  //     lead.source?.name || '',
-  //     lead.interestedIn || lead.preferredCourse || '',
-  //     lead.rating || 'WARM',
-  //     lead.assignedBy?.name || '-',
-  //     lead.assignedCounsellor?.name || 'Unassigned',
-  //     lead.remark || '',
-  //     new Date(lead.createdAt).toLocaleString()
-  //   ]);
-
-  //   const csvContent =
-  //     'data:text/csv;charset=utf-8,' +
-  //     [headers.join(','), ...rows.map((e) =>
-  //       e.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',')
-  //     )].join('\n');
-
-  //   const encodedUri = encodeURI(csvContent);
-  //   const link = document.createElement('a');
-
-  //   link.setAttribute('href', encodedUri);
-  //   link.setAttribute(
-  //     'download',
-  //     `leads_export_${new Date().toISOString().slice(0, 10)}.csv`
-  //   );
-
-  //   document.body.appendChild(link);
-  //   link.click();
-  //   document.body.removeChild(link);
-  // };
+  
 
   const handleExport = async () => {
     try {
@@ -752,70 +703,7 @@ ApplyUniNow`
 
   return (
     <div className="space-y-6 w-full">
-      {/* <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-1 py-1 rounded-2xl">
-        <div className="flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 sm:max-w-md shadow-sm transition-all focus-within:ring-2 focus-within:ring-[#0084ff]/20 focus-within:border-[#0084ff]/60">
-          <Search className="h-5 w-5 text-slate-400 flex-shrink-0" />
 
-          <input
-            type="text"
-            placeholder="Search leads..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 font-semibold"
-          />
-
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleBulkUpload}
-            className="hidden"
-          />
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingLeads}
-            className="border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition  shadow-sm active:scale-95"
-          >
-            {uploadingLeads ? (
-              <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 text-slate-600 stroke-[2.5]" />
-            )}
-            {uploadingLeads ? 'Uploading...' : 'Upload'}
-          </button>
-
-          <button
-            onClick={handleExport}
-            className="border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 rounded-full text-sm font-semibold text-slate-700 flex items-center gap-2 transition  shadow-sm active:scale-95"
-          >
-            <Download className="h-4 w-4 text-slate-600 stroke-[2.5]" />
-            Export
-          </button>
-
-          <button
-            onClick={() => setIsIntakeOpen(true)}
-            className="bg-[#1a2b4c] hover:bg-[#253b66] text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition  shadow-md active:scale-95 hover:shadow-lg"
-          >
-            <Plus className="h-4 w-4 stroke-[3]" />
-            Add Lead
-          </button>
-        </div>
-      </div> */}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -1202,13 +1090,13 @@ ApplyUniNow`
                         {!lead.isStudentLoginCreated ? (
                           <button
                             onClick={() => handleCreateStudentLogin(lead.id)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap "
+                            className="bg-red-800 hover:bg-red-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap "
                             title="Create Student Login"
                           >
                             Create Login
                           </button>
                         ) : (
-                          <span className="text-slate-400 text-[11px] font-medium border border-slate-200 bg-slate-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+                          <span className=" bg-emerald-600 text-white text-[11px] font-medium border border-slate-200  px-2 py-0.5 rounded-full whitespace-nowrap">
                             Login Active
                           </span>
                         )}
@@ -1275,240 +1163,6 @@ ApplyUniNow`
           </div>
         </div>
       )}
-      {isIntakeOpen && (
-        <div className="fixed left-[80px] right-0 top-[108px] bottom-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-5 backdrop-blur-sm">
-          <div className="flex h-[calc(100vh-150px)] w-[min(720px,calc(100vw-130px))] flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl">
-            {/* Header */}
-            <div className="flex flex-none items-center justify-between border-b border-slate-100 px-6 py-4">
-              <div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  Add New Lead
-                </h3>
-                <p className="mt-0.5 text-xs font-semibold text-slate-400">
-                  Integrate counselor intake logs with CRM automation
-                </p>
-              </div>
-
-              <button
-                onClick={() => setIsIntakeOpen(false)}
-                className="rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <form
-              onSubmit={handleIntakeSubmit}
-              className="flex flex-1 flex-col overflow-hidden"
-            >
-              <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Rahul Sharma"
-                      value={intakeForm.fullName}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({ ...p, fullName: e.target.value }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="rahul@example.com"
-                      value={intakeForm.email}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({ ...p, email: e.target.value }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Phone Number
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="+91 9876543210"
-                      value={intakeForm.phone}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({ ...p, phone: e.target.value }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Country of Origin
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="India"
-                      value={intakeForm.country}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({ ...p, country: e.target.value }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Preferred Course
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="MBA"
-                      value={intakeForm.preferredCourse}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({
-                          ...p,
-                          preferredCourse: e.target.value
-                        }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Preferred Country
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Canada"
-                      value={intakeForm.preferredCountry}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({
-                          ...p,
-                          preferredCountry: e.target.value
-                        }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Lead Source
-                    </label>
-                    <select
-                      value={intakeForm.sourceId}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({ ...p, sourceId: e.target.value }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    >
-                      <option value="">Select source</option>
-                      {sourcesList.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Assigned Counsellor
-                    </label>
-                    <select
-                      value={intakeForm.assignedCounsellorId || ''}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({
-                          ...p,
-                          assignedCounsellorId: e.target.value
-                        }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    >
-                      <option value="">Select counsellor</option>
-                      {counsellorsList.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.fullName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Lead Status
-                    </label>
-                    <select
-                      value={intakeForm.rating || 'WARM'}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({ ...p, rating: e.target.value }))
-                      }
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition"
-                    >
-                      {LEAD_RATING_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-slate-500">
-                      Counselor Remarks
-                    </label>
-                    <textarea
-                      placeholder="Call after 1 week. Interested in MBA programs."
-                      value={intakeForm.remark}
-                      onChange={(e) =>
-                        setIntakeForm((p) => ({ ...p, remark: e.target.value }))
-                      }
-                      rows="3"
-                      className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold rounded-xl focus:border-[#0084ff] focus:ring-2 focus:ring-[#0084ff]/20 focus:outline-none transition resize-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="flex flex-none justify-end gap-3 border-t border-slate-100 px-6 py-4">
-                <button
-                  type="button"
-                  onClick={() => setIsIntakeOpen(false)}
-                  className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={submittingLead}
-                  className="flex items-center gap-2 rounded-xl bg-[#0084ff] px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#0070d9] hover:shadow-lg disabled:bg-[#0084ff]/50"
-                >
-                  {submittingLead ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Lead"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {isActivityOpen && activeLead && (
         <div
@@ -1521,7 +1175,6 @@ ApplyUniNow`
                   duration-300
                 "
         >
-          {/* // <div className="fixed inset-y-0 right-0 z-50 w-[420px] max-w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col h-full transform transition-transform duration-300"> */}
           <div className="px-3 py-4 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1747,6 +1400,14 @@ ApplyUniNow`
           </form>
         </div>
       )}
+
+      <AddLeadModal
+        open={isIntakeOpen}
+        onClose={() =>
+          setIsIntakeOpen(false)
+        }
+      />
+
     </div>
   );
 };

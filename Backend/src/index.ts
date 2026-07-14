@@ -24,7 +24,7 @@ import { startNotificationScheduler } from './modules/notifications/scheduler.js
 import { startHrPerformanceReviewScheduler } from './modules/hr/hr-performance.scheduler.js';
 import { startStudentCrmScheduler } from './modules/student-crm/student-crm.scheduler.js';
 import { warmIndustryCache } from './modules/crm-settings/crm-settings.service.js';
-
+import countryRoutes from './modules/countries/country.routes.js';
 const app = express();
 const port = process.env.PORT || 4000;
 
@@ -54,6 +54,7 @@ app.use('/api/agency-crm/public', agencyCrmPublicRouter);
 app.use('/api/agency-crm', agencyCrmRouter);
 app.use('/api/super-admin', superAdminRouter);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/api/countries', countryRoutes);
 
 // Mount global error handling middleware
 app.use(errorHandler);
