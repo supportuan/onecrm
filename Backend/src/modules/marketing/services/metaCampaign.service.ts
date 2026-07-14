@@ -1,5 +1,6 @@
 
 import axios from 'axios';
+import { applyOptimizedExtension, optimizeUploadBuffer } from '../../../lib/optimize-upload.js';
 import { buildSocialMediaPostTemplate } from './socialMediaTemplate.service.js';
 import { prisma } from "../../../prisma.js";
 
@@ -525,12 +526,25 @@ export const uploadMediaToMeta = async (file: any): Promise<{ hash: string; type
     console.log(`[Meta Campaign Service] Video uploaded successfully. ID: ${videoId}`);
     return { hash: videoId, type: 'VIDEO' };
   } else {
+    // Shrink creatives before Meta Graph API transfer (third-party bandwidth).
+    const optimized = await optimizeUploadBuffer(file.buffer, file.mimetype, {
+      maxDimension: 2048,
+      quality: 85,
+    });
+    const filename = applyOptimizedExtension(file.originalname || 'image.jpg', optimized.extension);
+    if (optimized.optimized) {
+      console.log(
+        `[Meta Campaign Service] Optimized image ${optimized.originalBytes} → ${optimized.optimizedBytes} bytes`,
+      );
+    }
+
     const formData = new globalThis.FormData();
-    const blob = new globalThis.Blob([file.buffer], { type: file.mimetype });
-    formData.append('filename', blob, file.originalname);
+    const blob = new globalThis.Blob([new Uint8Array(optimized.buffer)], {
+      type: optimized.contentType,
+    });
+    formData.append('filename', blob, filename);
     formData.append('access_token', accessToken);
 
-    // console.log(`[Meta Campaign Service] Uploading image to act_${adAccountId}/adimages...`);
     console.log(`[Meta Campaign Service] Uploading image to ${adAccountId}/adimages...`);
     const response = await axios.post(`${baseUrl}/${adAccountId}/adimages`, formData, {
       headers: {
