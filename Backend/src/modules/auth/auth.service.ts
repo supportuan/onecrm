@@ -5,6 +5,7 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '.
 import { adminAgentNotification, adminStudentNotification, sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
 import { getDefaultTenantId, resolveTenantForUser } from '../../utils/tenant-default.js';
+import { deleteStoredFile, resolveFileRef } from '../../lib/file-storage.js';
 
 interface RegisterData {
   fullName: string;
@@ -482,13 +483,14 @@ export const logout = async (token: string) => {
 };
 
 export const getUserProfile = async (id: number) => {
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id },
     select: {
       id: true,
       fullName: true,
       email: true,
       phone: true,
+      profilePhotoUrl: true,
       role: true,
       roleLabel: true,
       permissionRole: true,
@@ -502,6 +504,35 @@ export const getUserProfile = async (id: number) => {
       moduleAccess: true,
     },
   });
+  if (!user) return null;
+  return {
+    ...user,
+    profilePhotoUrl: (await resolveFileRef(user.profilePhotoUrl)) || null,
+  };
+};
+
+/** Authenticated users may upload/replace their own profile photo. */
+export const uploadProfilePhoto = async (userId: number, fileUrl: string) => {
+  const current = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, profilePhotoUrl: true },
+  });
+  if (!current) throw new Error('User not found');
+
+  if (current.profilePhotoUrl) {
+    try {
+      await deleteStoredFile(current.profilePhotoUrl);
+    } catch {
+      /* ignore stale file cleanup */
+    }
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { profilePhotoUrl: fileUrl },
+  });
+
+  return getUserProfile(userId);
 };
 
 export const changePassword = async (userId: number, currentPassword: string, newPassword: string) => {

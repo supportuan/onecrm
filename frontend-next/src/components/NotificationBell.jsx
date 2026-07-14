@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell } from 'lucide-react';
+import { Bell, Trash2 } from 'lucide-react';
 import {
   getNotifications,
   getUnreadCount,
@@ -124,7 +124,9 @@ const NotificationBell = () => {
       >
         <Bell className="h-[16px] w-[16px]" strokeWidth={1.5} />
         {unread > 0 && (
-          <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[var(--ui-text)]" />
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-accent px-1 text-[9px] font-bold text-white">
+            {unread > 9 ? '9+' : unread}
+          </span>
         )}
       </button>
 
@@ -153,16 +155,32 @@ const NotificationBell = () => {
                   return (
                     <li
                       key={n.id}
-                      className={`group px-4 py-3 hover:bg-[var(--ui-bg-page)] transition cursor-pointer ${
+                      className={`group relative px-4 py-3 hover:bg-[var(--ui-bg-page)] transition cursor-pointer ${
                         isRead ? '' : 'bg-[var(--ui-bg-page)]/50'
                       }`}
                       onClick={() => handleItemClick(n)}
                     >
-                      <p className={`text-[13px] truncate ${isRead ? 'text-[var(--ui-text-secondary)]' : 'font-medium text-[var(--ui-text)]'}`}>
-                        {n.title}
-                      </p>
-                      <p className="ui-text-meta mt-0.5 line-clamp-2">{n.body}</p>
-                      <p className="ui-text-caption normal-case tracking-normal mt-1.5">{formatRelative(n.createdAt)}</p>
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-[13px] truncate ${isRead ? 'text-[var(--ui-text-secondary)]' : 'font-medium text-[var(--ui-text)]'}`}>
+                            {n.title}
+                          </p>
+                          <p className="ui-text-meta mt-0.5 line-clamp-2">{n.body}</p>
+                          <p className="ui-text-caption normal-case tracking-normal mt-1.5">{formatRelative(n.createdAt)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          title="Delete"
+                          aria-label="Delete notification"
+                          className="shrink-0 rounded-lg p-1.5 text-neutral-400 opacity-0 transition hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(n.id);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </li>
                   );
                 })}

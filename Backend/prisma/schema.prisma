@@ -646,6 +646,7 @@ model User {
   fullName           String
   email              String    @unique
   phone              String?
+  profilePhotoUrl    String?
   passwordHash       String
   role               UserRole
   roleLabel          String?
@@ -833,6 +834,7 @@ model Student {
   phone               String?
   dob                 DateTime?
   nationality         String?
+  profilePhotoUrl     String?
   preferredCountry    String?
   level               String?
   countryId           Int?

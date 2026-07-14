@@ -55,3 +55,18 @@ export async function resetPassword(token, newPassword) {
     body: JSON.stringify({ token, newPassword }),
   });
 }
+
+export async function uploadProfilePhoto(file) {
+  const { default: authFetch } = await import("@/lib/api");
+  const form = new FormData();
+  form.append("file", file);
+  const response = await authFetch(`${AUTH_API_BASE}/profile-photo`, {
+    method: "POST",
+    body: form,
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(body?.message || body?.error || "Upload failed");
+  }
+  return body;
+}

@@ -350,13 +350,24 @@ export const DocumentChecklist = ({
   const [addName, setAddName] = useState('');
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectNotes, setRejectNotes] = useState('');
+  const [dragOverDocId, setDragOverDocId] = useState(null);
   const canUpload = canUploadProp ?? canManage;
   const docs = app.documents || [];
   const required = docs.filter((d) => d.required);
   const done = required.filter((d) => ['UPLOADED', 'VERIFIED'].includes(d.status)).length;
+  const rejected = docs.filter((d) => d.status === 'REJECTED').length;
+  const missing = required.filter((d) => d.status === 'PENDING');
   const pct = required.length ? Math.round((done / required.length) * 100) : 0;
 
   const studentMayUpload = (d) => canUpload && ['PENDING', 'REJECTED'].includes(d.status);
+
+  const acceptDroppedFile = (docId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragOverDocId(null);
+    const file = event.dataTransfer?.files?.[0];
+    if (file) onUpload?.(docId, file);
+  };
 
   const submitReject = (docId) => {
     onReject?.(docId, rejectNotes.trim() || undefined);
@@ -373,6 +384,7 @@ export const DocumentChecklist = ({
             <h4 className="ui-text-h3">Document management</h4>
             <p className="ui-text-meta mt-0.5">
               {docs.length} items · {done}/{required.length} required uploaded
+              {rejected > 0 ? ` · ${rejected} rejected` : ''}
             </p>
           </div>
           {canManage && missingCount > 0 && (
@@ -395,6 +407,17 @@ export const DocumentChecklist = ({
             </div>
           </div>
         )}
+        {!canManage && (missing.length > 0 || rejected > 0) && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-900">
+            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <p>
+              {rejected > 0
+                ? `${rejected} document${rejected === 1 ? '' : 's'} need re-upload after counsellor review.`
+                : `${missing.length} required document${missing.length === 1 ? '' : 's'} still missing.`}
+              {' '}Drag and drop a file onto a row, or use the upload button.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Document list */}
@@ -406,8 +429,29 @@ export const DocumentChecklist = ({
             {docs.map((d) => {
               const hasFile = Boolean(d.fileUrl);
               const isUploading = uploadingDocId === d.id;
+              const droppable = studentMayUpload(d) && !isUploading;
+              const isDragOver = dragOverDocId === d.id;
               return (
-                <div key={d.id} className="px-5 py-4 hover:bg-neutral-50/50 transition">
+                <div
+                  key={d.id}
+                  className={`px-5 py-4 transition ${
+                    isDragOver
+                      ? 'bg-brand-soft/80 ring-2 ring-inset ring-brand/30'
+                      : 'hover:bg-neutral-50/50'
+                  }`}
+                  onDragOver={(e) => {
+                    if (!droppable) return;
+                    e.preventDefault();
+                    setDragOverDocId(d.id);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverDocId === d.id) setDragOverDocId(null);
+                  }}
+                  onDrop={(e) => {
+                    if (!droppable) return;
+                    acceptDroppedFile(d.id, e);
+                  }}
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     {/* Icon + name */}
                     <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -416,7 +460,9 @@ export const DocumentChecklist = ({
                           hasFile ? 'bg-sky-50 border-sky-100 text-sky-600' : 'bg-neutral-50 border-neutral-200 text-neutral-400'
                         }`}
                       >
-                        {hasFile ? (
+                        {isUploading ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : hasFile ? (
                           <span className="text-[9px] font-bold">{fileExt(d.filename) || 'FILE'}</span>
                         ) : (
                           <Paperclip size={14} />
@@ -428,11 +474,16 @@ export const DocumentChecklist = ({
                           {d.required && (
                             <span className="text-[10px] font-semibold text-rose-600 uppercase">required</span>
                           )}
+                          {isDragOver && (
+                            <span className="text-[10px] font-semibold uppercase text-brand">Drop to upload</span>
+                          )}
                         </div>
                         {d.filename ? (
                           <p className="text-[11px] text-neutral-500 mt-0.5 truncate font-mono">{d.filename}</p>
                         ) : (
-                          <p className="text-[11px] text-neutral-400 mt-0.5">No file uploaded</p>
+                          <p className="text-[11px] text-neutral-400 mt-0.5">
+                            {droppable ? 'No file — click upload or drag & drop' : 'No file uploaded'}
+                          </p>
                         )}
                         {d.uploadedAt && (
                           <p className="text-[11px] text-neutral-400 mt-0.5">
@@ -453,15 +504,25 @@ export const DocumentChecklist = ({
                     {/* Actions */}
                     <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
                       {hasFile && d.fileUrl && (
-                        <a
-                          href={d.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 text-neutral-500 hover:text-brand hover:bg-neutral-100 rounded-lg transition"
-                          title="View / download"
-                        >
-                          <Eye size={14} />
-                        </a>
+                        <>
+                          <a
+                            href={d.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-neutral-500 hover:text-brand hover:bg-neutral-100 rounded-lg transition"
+                            title="Preview"
+                          >
+                            <Eye size={14} />
+                          </a>
+                          <a
+                            href={d.fileUrl}
+                            download={d.filename || undefined}
+                            className="p-2 text-neutral-500 hover:text-brand hover:bg-neutral-100 rounded-lg transition"
+                            title="Download"
+                          >
+                            <Download size={14} />
+                          </a>
+                        </>
                       )}
                       {(canManage || studentMayUpload(d)) && (
                         <label
@@ -1057,52 +1118,127 @@ export const StudentVisaPanel = ({ app, workflow = [] }) => {
 
   const docs = normalizeVisaDocs(visa?.documents);
   const statusIdx = workflow.findIndex((s) => s.suggestedStatus === visa?.status);
+  const progressPct =
+    workflow.length > 0
+      ? Math.round(((Math.max(statusIdx, 0) + (statusIdx >= 0 ? 1 : 0)) / workflow.length) * 100)
+      : visa?.status === 'APPROVED'
+        ? 100
+        : visa?.status && visa.status !== 'NOT_STARTED'
+          ? 40
+          : 0;
+
+  const upcoming = [];
+  if (visa?.appointmentDate) {
+    const when = new Date(visa.appointmentDate);
+    upcoming.push({
+      label: when < new Date() ? 'Biometrics / visa appointment (past)' : 'Upcoming biometrics / visa appointment',
+      detail: formatDate(visa.appointmentDate),
+      overdue: when < new Date() && !['APPROVED', 'REJECTED'].includes(visa?.status),
+    });
+  }
+  if (visa?.decisionDate) {
+    upcoming.push({
+      label: 'Visa decision',
+      detail: formatDate(visa.decisionDate),
+      overdue: false,
+    });
+  }
 
   return (
-    <div className="ui-panel p-5 space-y-4">
-      <div>
-        <h2 className="text-sm font-semibold text-brand">Visa status</h2>
-        <p className="text-xs text-neutral-500 mt-1">
-          {visa?.country || app.country} — {getVisaStatusLabel(visa?.status || 'NOT_STARTED')}
-        </p>
+    <div className="ui-panel p-5 space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-brand">Visa status</h2>
+          <p className="text-xs text-neutral-500 mt-1">
+            {visa?.country || app.country} — {getVisaStatusLabel(visa?.status || 'NOT_STARTED')}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-semibold text-brand">{progressPct}%</p>
+          <p className="text-[11px] text-neutral-400">Visa progress</p>
+        </div>
       </div>
+
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${progressPct}%` }} />
+      </div>
+
       {workflow.length > 0 && (
-        <ol className="space-y-2">
-          {workflow.map((step, idx) => (
-            <li
-              key={step.key}
-              className={`text-sm rounded-lg px-3 py-2 border ${
-                statusIdx >= idx
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                  : 'border-neutral-200 text-neutral-600'
-              }`}
-            >
-              {idx + 1}. {step.label}
-            </li>
-          ))}
+        <ol className="relative space-y-0 border-l border-neutral-200 ml-2 pl-5">
+          {workflow.map((step, idx) => {
+            const done = statusIdx >= idx;
+            const active = statusIdx === idx;
+            return (
+              <li key={step.key} className="relative pb-4 last:pb-0">
+                <span
+                  className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-white ${
+                    done ? 'bg-emerald-500' : active ? 'bg-brand' : 'bg-neutral-300'
+                  }`}
+                />
+                <p
+                  className={`text-sm font-medium ${
+                    done ? 'text-emerald-800' : active ? 'text-brand' : 'text-neutral-500'
+                  }`}
+                >
+                  {idx + 1}. {step.label}
+                </p>
+                {step.description && (
+                  <p className="mt-0.5 text-[11px] text-neutral-400">{step.description}</p>
+                )}
+              </li>
+            );
+          })}
         </ol>
       )}
-      {(visa?.appointmentDate || visa?.decisionDate) && (
-        <div className="text-sm text-neutral-600 space-y-1">
-          {visa.appointmentDate && <p>Appointment: {formatDate(visa.appointmentDate)}</p>}
-          {visa.decisionDate && <p>Decision: {formatDate(visa.decisionDate)}</p>}
+
+      {upcoming.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
+            Upcoming visa tasks
+          </p>
+          <ul className="space-y-2">
+            {upcoming.map((item, i) => (
+              <li
+                key={i}
+                className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-sm ${
+                  item.overdue ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-neutral-200 bg-neutral-50'
+                }`}
+              >
+                <span className="font-medium">{item.label}</span>
+                <span className="text-xs text-neutral-500 shrink-0">{item.detail}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
+
+      {visa?.notes && (
+        <p className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+          {visa.notes}
+        </p>
+      )}
+
       {docs.length > 0 && (
-        <ul className="space-y-2">
-          {docs.map((doc, i) => (
-            <li key={i}>
-              <a
-                href={doc.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-neutral-700 hover:text-brand underline"
-              >
-                {doc.label || doc.filename || `Visa document ${i + 1}`}
-              </a>
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
+            Visa documents
+          </p>
+          <ul className="space-y-2">
+            {docs.map((doc, i) => (
+              <li key={i}>
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-neutral-700 hover:text-brand underline"
+                >
+                  <FileText size={14} />
+                  {doc.label || doc.filename || `Visa document ${i + 1}`}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

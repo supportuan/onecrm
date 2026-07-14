@@ -30,6 +30,9 @@ export function getStaffPageMeta(pathname = '') {
   } else if (pathname.startsWith('/notifications')) {
     title = 'Notifications';
     description = 'Manage your notifications';
+  } else if (pathname.startsWith('/profile')) {
+    title = 'Profile';
+    description = 'Your account details and profile photo';
   } else if (pathname.startsWith('/hr/me')) {
     title = 'My Details';
     description = 'Manage your HR activities';

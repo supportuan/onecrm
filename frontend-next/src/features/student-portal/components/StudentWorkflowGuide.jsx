@@ -148,6 +148,10 @@ const toneStyles = {
 
 export default function StudentWorkflowGuide({ app, readiness, compact = false }) {
   const { steps, nextAction } = resolveStudentWorkflow(app, readiness);
+  const doneCount = steps.filter((s) => s.status === 'done').length;
+  const progressPct = Math.round(
+    ((doneCount + (steps.some((s) => s.status === 'active') ? 0.5 : 0)) / steps.length) * 100
+  );
 
   if (compact) {
     return (
@@ -178,10 +182,22 @@ export default function StudentWorkflowGuide({ app, readiness, compact = false }
 
   return (
     <StudentPortalPanel className={`${sp.panelPad} space-y-5`}>
-      <div>
-        <p className={sp.sectionEyebrow}>Progress</p>
-        <h2 className={`${sp.sectionTitle} mt-1`}>Your application workflow</h2>
-        <p className={`${sp.body} mt-1.5`}>Complete each step in order. Your counsellor handles university submission.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className={sp.sectionEyebrow}>Progress</p>
+          <h2 className={`${sp.sectionTitle} mt-1`}>Your application workflow</h2>
+          <p className={`${sp.body} mt-1.5`}>Complete each step in order. Your counsellor handles university submission.</p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-semibold text-brand">{progressPct}%</p>
+          <p className="text-[11px] text-slate-400">
+            {doneCount}/{steps.length} steps complete
+          </p>
+        </div>
+      </div>
+
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${progressPct}%` }} />
       </div>
 
       {nextAction && (

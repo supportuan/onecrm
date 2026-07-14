@@ -52,7 +52,7 @@ export const getStudent = async (req: Request, res: Response, next: NextFunction
 export const getMyStudent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
-    const item = await service.getStudentByUserId(req.user.id);
+    const item = await resolveFileRefsDeep(await service.getStudentByUserId(req.user.id));
     if (!item) return sendError(res, 'student profile not found', null, 404);
     return sendSuccess(res, 'my student profile', item);
   } catch (err) {
@@ -103,6 +103,30 @@ export const updateMyStudent = async (req: Request, res: Response, next: NextFun
     if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     if (err?.message?.includes('enrolled')) return sendError(res, err.message, null, 403);
     if (err?.message?.includes('counsellor')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const uploadMyProfilePhoto = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
+    const file = req.file;
+    if (!file) {
+      return sendError(res, 'image is required (jpg, jpeg, png, webp, max 5MB)', null, 400);
+    }
+
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/student-crm/profiles/${req.user.id}/${storedName}`;
+    const { ref: fileUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    const updated = await resolveFileRefsDeep(await service.uploadMyProfilePhoto(req.user.id, fileUrl));
+    return sendSuccess(res, 'profile photo updated', updated);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     next(err);
   }
 };
@@ -273,6 +297,26 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
     const updated = await service.updateApplication(id, req.body || {});
     return sendSuccess(res, 'application updated', updated);
   } catch (err) {
+    next(err);
+  }
+};
+
+export const bulkAssignApplications = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ids = Array.isArray(req.body?.applicationIds) ? req.body.applicationIds : [];
+    const rawAssignee = req.body?.assignedToId;
+    const assignedToId =
+      rawAssignee === null || rawAssignee === '' || rawAssignee === undefined
+        ? null
+        : numId(rawAssignee);
+    if (rawAssignee != null && rawAssignee !== '' && !assignedToId) {
+      return sendError(res, 'invalid assignedToId', null, 400);
+    }
+    const result = await service.bulkAssignApplications(ids, assignedToId, actor(req));
+    return sendSuccess(res, 'applications assigned', result);
+  } catch (err: any) {
+    if (err?.message?.includes('required')) return sendError(res, err.message, null, 400);
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     next(err);
   }
 };

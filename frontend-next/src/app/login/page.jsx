@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { UserRound } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getDefaultHrRoute } from '@/features/hr/routing';
 import AuthPageShell from '@/components/AuthPageShell';
@@ -151,6 +152,9 @@ export default function LoginPage() {
     <AuthPageShell wide={isRegister}>
       <div className={`ui-card ${isRegister ? 'max-w-none w-full' : ''}`}>
         <div className="mb-8">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#e8eef7] text-[#0b2a5b]">
+            <UserRound className="h-7 w-7" strokeWidth={1.75} />
+          </div>
           <p className="ui-section-title">Staff portal</p>
           <h1 className="mt-3 ui-text-h2">{isRegister ? 'Create account' : 'Sign in'}</h1>
           <p className="mt-2 ui-text-body">
