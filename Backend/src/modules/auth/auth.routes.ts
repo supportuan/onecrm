@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as authController from './auth.controller.js';
 import { authenticateToken } from '../../middleware/authenticate.js';
+import { profilePhotoUpload } from './auth.upload.js';
 
 const router = Router();
 
@@ -138,6 +139,12 @@ router.post('/logout', authController.logout);
  *         description: Authenticated user profile
  */
 router.get('/me', authenticateToken, authController.me);
+router.post(
+  '/profile-photo',
+  authenticateToken,
+  profilePhotoUpload.single('file'),
+  authController.uploadProfilePhoto,
+);
 
 /**
  * @swagger

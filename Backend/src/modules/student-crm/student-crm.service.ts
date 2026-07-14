@@ -282,6 +282,26 @@ export const updateMyStudentProfile = async (_userId: number, _data: Record<stri
   );
 };
 
+/** Students may upload/replace their own profile photo. */
+export const uploadMyProfilePhoto = async (userId: number, fileUrl: string) => {
+  const student = await getStudentByUserId(userId);
+  if (!student) throw new Error('student profile not found');
+
+  if (student.profilePhotoUrl) {
+    try {
+      await deleteStoredFile(student.profilePhotoUrl);
+    } catch {
+      /* ignore stale file cleanup */
+    }
+  }
+
+  return prisma.student.update({
+    where: { id: student.id },
+    data: { profilePhotoUrl: fileUrl },
+    include: STUDENT_INCLUDE,
+  });
+};
+
 export const listMyApplications = async (userId: number) => {
   const student = await getStudentByUserId(userId);
   if (!student) return [];
@@ -292,6 +312,14 @@ export const listMyApplications = async (userId: number) => {
       documents: true,
       offerLetter: true,
       visaTracking: true,
+      fees: true,
+      payments: { orderBy: { createdAt: 'desc' as const } },
+      assignedTo: { select: { id: true, fullName: true, email: true } },
+      stageEvents: {
+        orderBy: { createdAt: 'desc' as const },
+        take: 5,
+        include: { changedBy: { select: { id: true, fullName: true } } },
+      },
     },
   });
 };
@@ -614,6 +642,62 @@ export const updateApplication = async (id: number, data: Record<string, any>) =
   }
 
   return getApplication(id);
+};
+
+/** Assign many applications to one counsellor (or clear assignee when assignedToId is null). */
+export const bulkAssignApplications = async (
+  applicationIds: number[],
+  assignedToId: number | null,
+  actor?: Actor
+) => {
+  const ids = [...new Set(applicationIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0))];
+  if (!ids.length) throw new Error('applicationIds are required');
+
+  if (assignedToId != null) {
+    const counsellor = await prisma.user.findFirst({
+      where: { id: assignedToId, isActive: true, role: 'COUNSELLOR' },
+      select: { id: true },
+    });
+    if (!counsellor) throw new Error('counsellor not found');
+  }
+
+  const scope = applicationScopeWhere(actor);
+  const apps = await prisma.application.findMany({
+    where: { id: { in: ids }, ...scope },
+    include: { student: { select: { id: true, fullName: true } } },
+  });
+
+  if (!apps.length) throw new Error('no matching applications found');
+
+  const matchedIds = apps.map((a) => a.id);
+  await prisma.application.updateMany({
+    where: { id: { in: matchedIds } },
+    data: { assignedToId },
+  });
+
+  if (assignedToId != null) {
+    const newlyAssigned = apps.filter((a) => a.assignedToId !== assignedToId);
+    await Promise.all(
+      newlyAssigned.map((app) =>
+        safeNotify({
+          recipientId: assignedToId,
+          templateKey: 'application.task_assigned',
+          vars: {
+            taskTitle: 'Application assigned to you',
+            studentName: app.student?.fullName,
+            applicationId: app.id,
+          },
+        })
+      )
+    );
+  }
+
+  return {
+    updated: matchedIds.length,
+    applicationIds: matchedIds,
+    assignedToId,
+    skipped: ids.length - matchedIds.length,
+  };
 };
 
 /** Stage transitions: advance, regress, or jump. Records an audit row and fires notifications. */

@@ -139,6 +139,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (patch) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      try {
+        localStorage.setItem('currentUser', JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
   const value = useMemo(
     () => ({
       user,
@@ -151,6 +164,7 @@ export const AuthProvider = ({ children }) => {
       refreshAuthToken,
       syncProfile,
       saveSession,
+      updateUser,
     }),
     [user, accessToken, refreshToken, loading]
   );

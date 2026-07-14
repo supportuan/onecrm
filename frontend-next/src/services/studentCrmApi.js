@@ -52,6 +52,11 @@ export const createApplication = async (payload) =>
 export const updateApplication = async (id, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${id}`, putJson(payload)));
 
+export const bulkAssignApplications = async ({ applicationIds, assignedToId }) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/bulk-assign`, json({ applicationIds, assignedToId }))
+  );
+
 export const advanceApplicationStage = async (id, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${id}/advance`, json(payload)));
 
@@ -176,6 +181,15 @@ export const getMyStudent = async () => handleResponse(await tenantFetch(`${API_
 export const getFormOptions = async () => handleResponse(await tenantFetch(`${API_URL}/form-options`));
 export const updateMyStudent = async (payload) =>
   handleResponse(await tenantFetch(`${API_URL}/students/me`, putJson(payload)));
+export const uploadMyProfilePhoto = async (file) => {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await tenantFetch(`${API_URL}/students/me/profile-photo`, {
+    method: 'POST',
+    body: form,
+  });
+  return handleResponse(res);
+};
 export const listMyApplications = async () =>
   handleResponse(await tenantFetch(`${API_URL}/applications/me`));
 

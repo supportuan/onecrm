@@ -17,6 +17,7 @@ const FILE_URL_FIELDS = new Set([
   'attachmentUrl',
   'logo',
   'url',
+  'profilePhotoUrl',
 ]);
 
 export function safeUploadFilename(original: string): string {

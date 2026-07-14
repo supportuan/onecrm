@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { authenticateToken } from '../../middleware/authenticate.js';
 import { requirePermission } from '../rbac/rbac.middleware.js';
 import * as controller from './student-crm.controller.js';
-import { applicationDocUpload } from './student-crm.upload.js';
+import { applicationDocUpload, profilePhotoUpload } from './student-crm.upload.js';
 
 const router = Router();
 
@@ -25,6 +25,12 @@ router.get('/statistics', view, controller.getStatistics);
 // Students — self-service portal
 router.get('/students/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getMyStudent);
 router.put('/students/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.updateMyStudent);
+router.post(
+  '/students/me/profile-photo',
+  studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'),
+  profilePhotoUpload.single('file'),
+  controller.uploadMyProfilePhoto,
+);
 router.get('/applications/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.listMyApplications);
 router.get('/form-options', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getFormOptions);
 router.get('/students', view, controller.listStudents);
@@ -47,6 +53,7 @@ router.get('/applications/:id', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDEN
 
 // Applications — write
 router.post('/applications', manage, controller.createApplication);
+router.post('/applications/bulk-assign', manage, controller.bulkAssignApplications);
 router.put('/applications/:id', manage, controller.updateApplication);
 router.post('/applications/:id/advance', manage, controller.advanceStage);
 

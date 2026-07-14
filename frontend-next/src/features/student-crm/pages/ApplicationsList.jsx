@@ -14,6 +14,7 @@ import {
   Clock,
   X,
   Filter,
+  UserRound,
 } from 'lucide-react';
 import {
   listStudents,
@@ -25,6 +26,7 @@ import {
   promoteLead,
   promoteAllLeads,
   getStatistics,
+  bulkAssignApplications,
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
@@ -84,6 +86,9 @@ export default function ApplicationsList() {
   const [promotingId, setPromotingId] = useState(null);
   const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
   const [stats, setStats] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkCounsellorId, setBulkCounsellorId] = useState('');
+  const [bulkAssigning, setBulkAssigning] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -94,6 +99,7 @@ export default function ApplicationsList() {
       ]);
       setAllApps(Array.isArray(appsRes?.data) ? appsRes.data : []);
       setStudents(Array.isArray(studentsRes?.data) ? studentsRes.data : []);
+      setSelectedIds(new Set());
     } catch (e) {
       flash('err', e?.message || 'failed to load');
     } finally {
@@ -221,6 +227,63 @@ export default function ApplicationsList() {
   };
 
   const openAppRoute = (id) => router.push(`/student-crm/applications/${id}`);
+
+  const filteredIds = useMemo(() => filtered.map((a) => a.id), [filtered]);
+  const allFilteredSelected =
+    filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
+  const someFilteredSelected = filteredIds.some((id) => selectedIds.has(id));
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filteredIds.forEach((id) => next.delete(id));
+      } else {
+        filteredIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkAssign = async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const assignedToId = bulkCounsellorId === '' ? null : Number(bulkCounsellorId);
+    const label =
+      assignedToId == null
+        ? 'Unassigned'
+        : counsellors.find((c) => c.id === assignedToId)?.fullName || 'counsellor';
+    if (
+      !window.confirm(
+        assignedToId == null
+          ? `Clear counsellor on ${ids.length} selected application(s)?`
+          : `Assign ${ids.length} application(s) to ${label}?`
+      )
+    ) {
+      return;
+    }
+    setBulkAssigning(true);
+    try {
+      const res = await bulkAssignApplications({ applicationIds: ids, assignedToId });
+      const updated = res?.data?.updated ?? ids.length;
+      flash('ok', `Assigned ${updated} application${updated === 1 ? '' : 's'} to ${label}`);
+      setBulkCounsellorId('');
+      await refresh();
+    } catch (e) {
+      flash('err', e?.message || 'Bulk assign failed');
+    } finally {
+      setBulkAssigning(false);
+    }
+  };
 
   return (
     <div className="text-brand">
@@ -394,6 +457,46 @@ export default function ApplicationsList() {
         </div>
       </div>
 
+      {/* Bulk assign toolbar */}
+      {canManage && selectedIds.size > 0 && (
+        <div className="ui-surface mb-5 px-5 py-3.5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-[13px]">
+            <UserRound size={14} className="text-brand" />
+            <span className="font-medium text-brand">{selectedIds.size} selected</span>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-neutral-500 hover:text-brand underline-offset-2 hover:underline"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <select
+              value={bulkCounsellorId}
+              onChange={(e) => setBulkCounsellorId(e.target.value)}
+              className="ui-field !py-2 !text-[13px] min-w-[200px]"
+              aria-label="Assign counsellor"
+            >
+              <option value="">Unassigned</option>
+              {counsellors.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.fullName}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={bulkAssigning}
+              onClick={handleBulkAssign}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium text-white bg-brand hover:bg-brand-hover disabled:opacity-50 transition-all"
+            >
+              {bulkAssigning ? 'Assigning…' : 'Assign selected'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Applications table */}
       <div className="ui-surface overflow-hidden">
         {loading ? (
@@ -413,6 +516,20 @@ export default function ApplicationsList() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50/60">
+                  {canManage && (
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={allFilteredSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someFilteredSelected && !allFilteredSelected;
+                        }}
+                        onChange={toggleSelectAll}
+                        aria-label="Select all visible applications"
+                        className="h-4 w-4 rounded border-neutral-300 text-brand focus:ring-brand/30"
+                      />
+                    </th>
+                  )}
                   <th className="px-5 py-3 ui-text-caption uppercase">Student</th>
                   <th className="px-5 py-3 ui-text-caption uppercase">Application</th>
                   <th className="px-5 py-3 ui-text-caption uppercase">University & course</th>
@@ -430,12 +547,26 @@ export default function ApplicationsList() {
                     a.deadline &&
                     new Date(a.deadline) < new Date() &&
                     !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage);
+                  const isSelected = selectedIds.has(a.id);
                   return (
                     <tr
                       key={a.id}
                       onClick={() => openAppRoute(a.id)}
-                      className="cursor-pointer hover:bg-neutral-50/70 transition-all"
+                      className={`cursor-pointer transition-all ${
+                        isSelected ? 'bg-brand-soft/40 hover:bg-brand-soft/60' : 'hover:bg-neutral-50/70'
+                      }`}
                     >
+                      {canManage && (
+                        <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectOne(a.id)}
+                            aria-label={`Select ${a.applicationCode}`}
+                            className="h-4 w-4 rounded border-neutral-300 text-brand focus:ring-brand/30"
+                          />
+                        </td>
+                      )}
                       <td className="px-5 py-3.5">
                         <button
                           type="button"

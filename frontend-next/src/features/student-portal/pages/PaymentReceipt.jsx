@@ -41,7 +41,7 @@ export default function PaymentReceiptPage({ params }) {
   return (
     <div className="min-h-screen bg-neutral-100 text-brand">
       <div className="print:hidden sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-neutral-200">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div className="w-full px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => window.history.back()}
@@ -73,7 +73,7 @@ export default function PaymentReceiptPage({ params }) {
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 print:p-0 print:max-w-none">
+      <main className="w-full px-4 sm:px-6 py-8 print:p-0">
         {error && (
           <div className="ui-panel p-8 text-center">
             <p className="text-sm font-semibold text-rose-700">Could not load receipt</p>

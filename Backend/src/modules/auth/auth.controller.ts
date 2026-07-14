@@ -51,6 +51,9 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         const { user, accessToken, refreshToken, isFirstLogin, mustChangePassword, showPolicyModal } =
             await authService.login(data.email, data.password, data.type);
         const enabledModules = await resolveEnabledModules(user.role, user.tenantId ?? null);
+        const { resolveFileRef } = await import('../../lib/file-storage.js');
+        const profilePhotoUrl = (await resolveFileRef(user.profilePhotoUrl)) || null;
+
         return sendSuccess(res, 'Login successful', {
             user: {
                 id: user.id,
@@ -65,6 +68,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
                 mustChangePassword,
                 policyAcceptedAt: user.policyAcceptedAt ?? null,
                 showPolicyModal,
+                profilePhotoUrl,
             },
             accessToken,
             refreshToken,
@@ -147,6 +151,45 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
             enabledModules,
         });
     } catch (error) {
+        next(error);
+    }
+};
+
+export const uploadProfilePhoto = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.user?.id) return sendError(res, 'Unauthorized', null, 401);
+        const file = req.file;
+        if (!file) {
+            return sendError(res, 'image is required (jpg, jpeg, png, webp, max 5MB)', null, 400);
+        }
+
+        const { safeUploadFilename, storeUploadedFile } = await import('../../lib/file-storage.js');
+        const storedName = safeUploadFilename(file.originalname);
+        const relativePath = `uploads/users/profiles/${req.user.id}/${storedName}`;
+        const { ref: fileUrl } = await storeUploadedFile({
+            relativePath,
+            buffer: file.buffer,
+            contentType: file.mimetype,
+        });
+
+        const updated = await authService.uploadProfilePhoto(req.user.id, fileUrl);
+        let enabledModules: string[] = [];
+        try {
+            enabledModules = await resolveEnabledModules(
+                req.user.role,
+                req.user.tenantId ?? updated?.tenantId ?? null
+            );
+        } catch {
+            enabledModules = req.user.role === 'SUPER_ADMIN' ? allModuleKeys() : [];
+        }
+
+        return sendSuccess(res, 'profile photo updated', {
+            ...updated,
+            tenantId: req.user.tenantId ?? updated?.tenantId ?? null,
+            enabledModules,
+        });
+    } catch (error: any) {
+        if (error?.message?.includes('not found')) return sendError(res, error.message, null, 404);
         next(error);
     }
 };
