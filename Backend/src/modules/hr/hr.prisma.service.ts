@@ -209,6 +209,7 @@ const linkOfferLetterToEmployee = async (
     relativePath,
     buffer: Buffer.from(html, 'utf8'),
     contentType: 'text/html',
+    skipOptimize: true,
   });
 
   const existing = await tx.hrEmployeeDocument.findFirst({

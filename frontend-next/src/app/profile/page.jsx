@@ -62,10 +62,24 @@ export default function StaffProfilePage() {
             <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#e8eef7] text-xl font-semibold text-[#0b2a5b]">
               {user.profilePhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.profilePhotoUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                initials(user.fullName, user.email)
-              )}
+                <img
+                  src={user.profilePhotoUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <span
+                className="h-full w-full items-center justify-center"
+                style={{ display: user.profilePhotoUrl ? 'none' : 'flex' }}
+                aria-hidden
+              >
+                {initials(user.fullName, user.email)}
+              </span>
             </div>
             <button
               type="button"

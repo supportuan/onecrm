@@ -22,7 +22,7 @@ router.post('/', authenticateToken, requirePermission('MANAGE_STUDENT_CRM', 'VIE
 
     const storedName = safeUploadFilename(req.file.originalname);
     const relativePath = `uploads/${storedName}`;
-    const { ref, url } = await storeUploadedFile({
+    const { ref, url, bytesStored } = await storeUploadedFile({
       relativePath,
       buffer: req.file.buffer,
       contentType: req.file.mimetype,
@@ -33,7 +33,8 @@ router.post('/', authenticateToken, requirePermission('MANAGE_STUDENT_CRM', 'VIE
       ref,
       filename: req.file.originalname,
       storedAs: storedName,
-      size: req.file.size,
+      size: bytesStored,
+      originalSize: req.file.size,
     });
 
     return sendSuccess(res, 'file uploaded', payload, 201);

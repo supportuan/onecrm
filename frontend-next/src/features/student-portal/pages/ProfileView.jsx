@@ -136,10 +136,20 @@ export default function ProfileViewPage() {
                 src={profile.profilePhotoUrl}
                 alt=""
                 className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
               />
-            ) : (
-              initials(profile.fullName, profile.email)
-            )}
+            ) : null}
+            <span
+              className="h-full w-full items-center justify-center"
+              style={{ display: profile.profilePhotoUrl ? 'none' : 'flex' }}
+              aria-hidden
+            >
+              {initials(profile.fullName, profile.email)}
+            </span>
           </div>
           <button
             type="button"

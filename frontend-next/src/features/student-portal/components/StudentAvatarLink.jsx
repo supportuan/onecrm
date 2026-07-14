@@ -20,13 +20,16 @@ export function notifyProfilePhotoUpdated(photoUrl) {
 export default function StudentAvatarLink({ className = '', size = 'md' }) {
   const { user } = useAuth();
   const [photoUrl, setPhotoUrl] = useState(null);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const res = await getMyStudent();
       setPhotoUrl(res?.data?.profilePhotoUrl || null);
+      setImgFailed(false);
     } catch {
       setPhotoUrl(null);
+      setImgFailed(false);
     }
   }, []);
 
@@ -35,6 +38,7 @@ export default function StudentAvatarLink({ className = '', size = 'md' }) {
     const onUpdated = (e) => {
       if (e?.detail?.photoUrl !== undefined) {
         setPhotoUrl(e.detail.photoUrl || null);
+        setImgFailed(false);
       } else {
         load();
       }
@@ -45,6 +49,7 @@ export default function StudentAvatarLink({ className = '', size = 'md' }) {
 
   const sizeClass = size === 'lg' ? 'h-11 w-11 text-sm' : 'h-9 w-9 text-[11px]';
   const label = user?.fullName || user?.email || 'Profile';
+  const showPhoto = Boolean(photoUrl) && !imgFailed;
 
   return (
     <Link
@@ -53,9 +58,14 @@ export default function StudentAvatarLink({ className = '', size = 'md' }) {
       aria-label="View profile"
       className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e8eef7] font-semibold tracking-wide text-[#0b2a5b] transition hover:ring-2 hover:ring-brand/20 ${sizeClass} ${className}`}
     >
-      {photoUrl ? (
+      {showPhoto ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+        <img
+          src={photoUrl}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setImgFailed(true)}
+        />
       ) : (
         <span aria-hidden>{initials(user?.fullName, user?.email)}</span>
       )}

@@ -1,6 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import {
+  applyOptimizedExtension,
+  optimizeUploadBuffer,
+  type OptimizeUploadOptions,
+} from './optimize-upload.js';
+import {
   buildS3Key,
   deleteObject,
   getObjectBuffer,
@@ -43,31 +48,84 @@ export function isS3Ref(value: string): boolean {
   return value.startsWith('s3:');
 }
 
+function preferLocalStorage(): boolean {
+  const mode = (process.env.UPLOAD_STORAGE || '').toLowerCase();
+  return mode === 'local' || mode === 'disk';
+}
+
+/** Confirm a just-uploaded S3 object can actually be downloaded (Put≠Get for quarantined keys). */
+async function isSignedUrlReadable(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' } });
+    // 200 full body or 206 partial are fine; 403/404 mean browsers can't show the file.
+    return res.ok || res.status === 206;
+  } catch {
+    return false;
+  }
+}
+
+function writeLocalUpload(
+  relativePath: string,
+  buffer: Buffer,
+): { ref: string; url: string } {
+  const absPath = localPathFromUploadsRelative(relativePath);
+  const dir = path.dirname(absPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(absPath, buffer);
+  const ref = `${localUploadBaseUrl()}/${relativePath.replace(/^\/+/, '')}`;
+  return { ref, url: ref };
+}
+
 /** Persist a buffer and return the stored ref (s3:… or legacy http URL). */
 export async function storeUploadedFile(params: {
   relativePath: string;
   buffer: Buffer;
   contentType?: string;
-}): Promise<{ ref: string; url: string }> {
-  const { relativePath, buffer, contentType } = params;
+  /** Skip auto-resize/compress (e.g. already-optimized HTML). */
+  skipOptimize?: boolean;
+  optimizeOptions?: OptimizeUploadOptions;
+}): Promise<{ ref: string; url: string; bytesStored: number; optimized: boolean }> {
+  const { skipOptimize, optimizeOptions } = params;
+  let { relativePath, buffer, contentType } = params;
+  let optimized = false;
 
-  if (isS3Configured()) {
-    const key = buildS3Key(relativePath);
-    await putObject(key, buffer, contentType);
-    const ref = toS3Ref(key);
-    const url = await getPresignedGetUrl(key);
-    return { ref, url };
+  if (!skipOptimize) {
+    const result = await optimizeUploadBuffer(buffer, contentType, optimizeOptions);
+    buffer = result.buffer;
+    contentType = result.contentType;
+    relativePath = applyOptimizedExtension(relativePath, result.extension);
+    optimized = result.optimized;
+    if (optimized) {
+      console.log(
+        `[file-storage] optimized upload ${result.originalBytes} → ${result.optimizedBytes} bytes (${relativePath})`,
+      );
+    }
   }
 
-  const absPath = localPathFromUploadsRelative(relativePath);
-  const dir = path.dirname(absPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(absPath, buffer);
+  if (isS3Configured() && !preferLocalStorage()) {
+    try {
+      const key = buildS3Key(relativePath);
+      await putObject(key, buffer, contentType);
+      const url = await getPresignedGetUrl(key);
+      if (await isSignedUrlReadable(url)) {
+        return { ref: toS3Ref(key), url, bytesStored: buffer.length, optimized };
+      }
+      console.warn(
+        `[file-storage] S3 object not readable after upload (GetObject denied?). Falling back to local disk for ${relativePath}`,
+      );
+      try {
+        await deleteObject(key);
+      } catch {
+        /* orphan ok — keys may deny Delete too */
+      }
+    } catch (err) {
+      console.warn('[file-storage] S3 upload failed; falling back to local disk:', err);
+    }
+  }
 
-  const ref = `${localUploadBaseUrl()}/${relativePath.replace(/^\/+/, '')}`;
-  return { ref, url: ref };
+  const local = writeLocalUpload(relativePath, buffer);
+  return { ref: local.ref, url: local.url, bytesStored: buffer.length, optimized };
 }
-
 /** Read file bytes from S3 or local disk using a stored ref or legacy URL. */
 export async function readStoredFile(refOrUrl: string): Promise<Buffer> {
   const s3Key = parseS3Ref(refOrUrl);
