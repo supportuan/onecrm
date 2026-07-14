@@ -1,21 +1,15 @@
 
-
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, Command, LogOut, Menu, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import MenuItem from "./MenuItem";
-import { AppBrand, AppLogo } from "./AppBrand";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useWorkspace } from "../lib/workspaceContext";
 import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
-import {
-  SIDEBAR_OPEN,
-  SIDEBAR_COLLAPSED,
-  initials,
-} from "@/lib/layout-shell";
 
 const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Users") return "User Management";
@@ -60,7 +54,9 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
   const location = usePathname() || "";
   const router = useRouter();
 
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { logout: workspaceLogout } = useWorkspace();
+  const { logout: authLogout } = useAuth();
   const { can, permissionMap } = usePermissions();
 
   const [openSections, setOpenSections] = useState({});
@@ -69,7 +65,6 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
 
   const filteredNavMenu = useMemo(() => {
     if (!user) return [];
-    if (user.role === "STUDENT") return [];
     if (user.role === "SUPER_ADMIN") return [];
 
     const enabledModules = Array.isArray(user.enabledModules)
@@ -200,44 +195,47 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
     }, 150);
   };
 
+  const handleLogout = () => {
+    logout?.();
+    router.push("/login");
+    localStorage.clear();
+  };
+
   return (
     <>
       <aside
-        className="fixed inset-y-0 left-0 z-30 flex h-screen flex-col overflow-hidden border-r border-neutral-200/70 bg-white text-neutral-800 transition-[width] duration-200 ease-out"
+        className="
+          fixed inset-y-0 left-0 z-30 flex h-screen flex-col
+          border-r border-neutral-200 bg-white text-neutral-800
+          transition-[width] duration-300 ease-in-out
+        "
         style={{
-          width: sidebarOpen ? SIDEBAR_OPEN : SIDEBAR_COLLAPSED,
+          width: sidebarOpen ? "288px" : "80px",
         }}
       >
-        <div
-          className={`flex-none flex items-center border-b border-neutral-100/80 ${
-            sidebarOpen ? 'justify-between gap-2 px-4 h-14' : 'justify-center h-14'
-          }`}
-        >
-          {sidebarOpen ? (
-            <>
-              <AppBrand subtitle="Role based access" href="/marketing" />
-              <button
-                type="button"
-                onClick={onToggleSidebar}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
-                aria-label="Collapse sidebar"
-              >
-                <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-neutral-100"
-              aria-label="Expand sidebar"
-              title="Expand sidebar"
-            >
-              <AppLogo className="h-8 w-8" />
-            </button>
-          )}
+
+        <div className="flex-none p-5 pb-3">
+          <div className="flex items-center justify-between gap-3 border-b border-neutral-200 pb-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-900">
+                <Command className="h-4 w-4" />
+              </div>
+
+
+              {sidebarOpen && (
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-neutral-900">
+                    ONECRM
+                  </p>
+                  <p className="text-xs text-neutral-500 truncate">
+                    Role based access
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-         <button
+        {/* <button
           type="button"
           onClick={onToggleSidebar}
           className=" inline-flex pl-8 h-15 w-15 shrink-0 items-center rounded-xl text-slate-700 cursor-pointer"
@@ -293,7 +291,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
         <div
           className={`
             flex-1 overflow-y-auto sidebar-scrollbar py-3 space-y-1
-            ${sidebarOpen ? "px-3" : "px-2"}
+            ${sidebarOpen ? "px-5" : "px-3"}
           `}
         >
           {filteredNavMenu.map((item) => {
@@ -308,14 +306,14 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                       type="button"
                       title={!sidebarOpen ? (item.displayLabel || item.label) : ""}
                       className={`
-                        flex w-full items-center rounded-xl text-[13px] font-medium transition
+                        flex w-full items-center rounded-lg py-2.5 text-xs font-medium transition
                         ${sidebarOpen
-                          ? "justify-between gap-3 px-3 py-2.5"
-                          : "justify-center p-2.5"
+                          ? "justify-between gap-3 px-3"
+                          : "justify-center px-2"
                         }
                         ${isSectionActive(item)
-                          ? "bg-brand-soft text-brand"
-                          : "text-slate-600 hover:bg-brand-soft/60"
+                          ? "bg-neutral-100 text-neutral-900"
+                          : "text-neutral-600 hover:bg-neutral-50"
                         }
                       `}
                       onMouseEnter={(e) => {
@@ -391,14 +389,14 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                     type="button"
                     title={!sidebarOpen ? (item.displayLabel || item.label) : ""}
                     className={`
-                      flex w-full items-center rounded-xl text-[13px] font-medium transition
+                      flex w-full items-center rounded-lg py-2.5 text-xs font-medium transition
                       ${sidebarOpen
-                        ? "gap-3 px-3 py-2.5"
-                        : "justify-center p-2.5"
+                        ? "gap-3 px-3"
+                        : "justify-center px-2"
                       }
                       ${location === item.path
-                        ? "bg-brand-soft text-brand"
-                        : "text-slate-600 hover:bg-brand-soft/60"
+                        ? "bg-neutral-100 text-neutral-900"
+                        : "text-neutral-600 hover:bg-neutral-50"
                       }
                     `}
                     onClick={() => {
@@ -414,28 +412,43 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
           })}
         </div>
 
-        <div className={`flex-none border-t border-neutral-100/80 ${sidebarOpen ? 'p-3' : 'p-2'}`}>
-          {sidebarOpen ? (
-            <div className="mb-2 flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-neutral-600 shadow-sm ring-1 ring-neutral-200/80">
-                {initials(user?.fullName, user?.email)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-neutral-800 truncate">
-                  {user?.fullName || user?.role || 'User'}
-                </p>
-                <p className="text-[10px] text-neutral-400 truncate">{user?.email}</p>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-neutral-50 text-[10px] font-semibold text-neutral-600 ring-1 ring-neutral-200/80"
-              title={user?.fullName || user?.email}
-            >
-              {initials(user?.fullName, user?.email)}
-            </div>
-          )}
 
+        {/* <div className="flex-none w-full border-t border-neutral-200 bg-neutral-10 px-4 py-4">
+          <div className="mx-auto flex max-w-[220px] flex-col items-center justify-center text-center">
+            <p className="text-xs font-semibold text-neutral-700">
+              Created by AUN Tech Consulting
+            </p>
+
+            <p className="mt-1 text-[11px] text-neutral-500">
+              Version 3.3.1
+            </p>
+
+            <p className="text-[10px] leading-4 text-neutral-400">
+              Optimised Services & Performance Enhancements
+            </p>
+          </div>
+        </div> */}
+
+        {sidebarOpen &&
+          <div className="flex-none w-full border-t border-neutral-200 bg-neutral-10 px-4 py-4">
+            <div className="mx-auto flex max-w-[220px] flex-col items-center justify-center text-center">
+              <p className="text-xs font-semibold text-neutral-700">
+                Created by AUN Tech Consulting
+              </p>
+
+              <p className="mt-1 text-[11px] text-neutral-500">
+                Version 3.3.1
+              </p>
+
+              <p className="text-[10px] leading-4 text-neutral-400">
+                Optimised Services & Performance Enhancements
+              </p>
+            </div>
+          </div>
+
+        }
+
+        <div className="flex-none p-5 border-t border-neutral-200 bg-neutral-50">
           <button
             onClick={() => {
               handleLogout();
@@ -448,13 +461,11 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                 workspaceLogout();
               } catch (e) { }
             }}
-            title={!sidebarOpen ? "Log out" : undefined}
-            className={`flex w-full items-center rounded-xl text-[13px] font-medium text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-800 ${
-              sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center p-2.5'
-            }`}
+            title={!sidebarOpen ? "Logout" : ""}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white p-3 border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition"
           >
-            <LogOut className="h-[17px] w-[17px] shrink-0" strokeWidth={1.75} />
-            {sidebarOpen && <span>Log out</span>}
+            <LogOut className="h-4 w-4 shrink-0" />
+            {sidebarOpen && <span>Logout</span>}
           </button>
         </div>
       </aside>
@@ -463,7 +474,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
         <div
           className="fixed z-50 min-w-[240px] rounded-xl border border-neutral-200 bg-white p-2 shadow-xl "
           style={{
-            left: `${SIDEBAR_COLLAPSED + 8}px`,
+            left: "88px",
             top: `${flyoutMenu.top}px`,
           }}
           onMouseEnter={() => {
@@ -491,8 +502,8 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                 className={` cursor-pointer
                   flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition
                   ${location.startsWith(sub.path)
-                    ? "bg-brand-soft text-brand"
-                    : "text-slate-600 hover:bg-brand-soft/60"
+                    ? "bg-neutral-100 text-neutral-900"
+                    : "text-neutral-600 hover:bg-neutral-50"
                   }
                 `}
               >
