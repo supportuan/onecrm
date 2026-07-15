@@ -22,6 +22,77 @@ export const normalizePhone = (
   return phone && phone.length > 0 ? phone : null;
 };
 
+// export const validateDuplicateLead = async (
+//   email?: string | null,
+//   phone?: string | null,
+//   excludeLeadId?: number
+// ) => {
+//   const cleanEmail = normalizeEmail(email);
+//   const cleanPhone = normalizePhone(phone);
+
+//   if (!cleanEmail && !cleanPhone) {
+//     return;
+//   }
+
+//   const baseWhere = {
+//     deletedAt: null,
+//     ...(excludeLeadId
+//       ? {
+//         id: {
+//           not: excludeLeadId,
+//         },
+//       }
+//       : {}),
+//   };
+
+//   const [emailDuplicate, phoneDuplicate] = await Promise.all([
+//     cleanEmail
+//       ? prisma.lead.findFirst({
+//         where: {
+//           ...baseWhere,
+//           email: {
+//             equals: cleanEmail,
+//             mode: 'insensitive',
+//           },
+//         },
+//         select: {
+//           id: true,
+//         },
+//       })
+//       : null,
+
+//     cleanPhone
+//       ? prisma.lead.findFirst({
+//         where: {
+//           ...baseWhere,
+//           phone: cleanPhone,
+//         },
+//         select: {
+//           id: true,
+//         },
+//       })
+//       : null,
+//   ]);
+
+//   if (emailDuplicate && phoneDuplicate) {
+//     throw new Error(
+//       'Lead with this email and phone number already exists'
+//     );
+//   }
+
+//   if (emailDuplicate) {
+//     throw new Error(
+//       'Lead with this email already exists'
+//     );
+//   }
+
+//   if (phoneDuplicate) {
+//     throw new Error(
+//       'Lead with this phone number already exists'
+//     );
+//   }
+// };
+
 export const validateDuplicateLead = async (
   email?: string | null,
   phone?: string | null,
@@ -30,67 +101,80 @@ export const validateDuplicateLead = async (
   const cleanEmail = normalizeEmail(email);
   const cleanPhone = normalizePhone(phone);
 
-  if (!cleanEmail && !cleanPhone) {
+  const conditions: any[] = [];
+
+  if (cleanEmail) {
+    conditions.push({
+      email: {
+        equals: cleanEmail,
+        mode: 'insensitive',
+      },
+    });
+  }
+
+  if (cleanPhone) {
+    conditions.push({
+      phone: cleanPhone,
+    });
+  }
+
+  if (!conditions.length) {
     return;
   }
 
-  const baseWhere = {
-    deletedAt: null,
-    ...(excludeLeadId
-      ? {
-        id: {
-          not: excludeLeadId,
-        },
-      }
-      : {}),
-  };
+  const duplicate = await prisma.lead.findFirst({
+    where: {
+      deletedAt: null,
 
-  const [emailDuplicate, phoneDuplicate] = await Promise.all([
-    cleanEmail
-      ? prisma.lead.findFirst({
-        where: {
-          ...baseWhere,
-          email: {
-            equals: cleanEmail,
-            mode: 'insensitive',
+      OR: conditions,
+
+      ...(excludeLeadId
+        ? {
+          id: {
+            not: excludeLeadId,
           },
-        },
-        select: {
-          id: true,
-        },
-      })
-      : null,
+        }
+        : {}),
+    },
 
-    cleanPhone
-      ? prisma.lead.findFirst({
-        where: {
-          ...baseWhere,
-          phone: cleanPhone,
-        },
-        select: {
-          id: true,
-        },
-      })
-      : null,
-  ]);
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+    },
+  });
 
-  if (emailDuplicate && phoneDuplicate) {
+  if (!duplicate) {
+    return;
+  }
+
+  const duplicateEmail =
+    cleanEmail &&
+    normalizeEmail(duplicate.email) === cleanEmail;
+
+  const duplicatePhone =
+    cleanPhone &&
+    normalizePhone(duplicate.phone) === cleanPhone;
+
+  if (duplicateEmail && duplicatePhone) {
     throw new Error(
       'Lead with this email and phone number already exists'
     );
   }
 
-  if (emailDuplicate) {
+  if (duplicateEmail) {
     throw new Error(
       'Lead with this email already exists'
     );
   }
 
-  if (phoneDuplicate) {
+  if (duplicatePhone) {
     throw new Error(
       'Lead with this phone number already exists'
     );
   }
+
+  throw new Error('Duplicate lead found');
 };
 
 export const validateDuplicateUser = async (
