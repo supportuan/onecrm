@@ -12,11 +12,10 @@
     "dev:all": "bash scripts/run-dev.sh",
     "build": "npm run build --prefix Backend && npm run build --prefix frontend-next",
     "start:prod": "bash scripts/run-production.sh",
-    "docker:build": "bash scripts/docker-build.sh",
+    "docker:build": "docker compose build",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f",
-    "docker:run": "bash scripts/docker-run.sh"
+    "docker:logs": "docker compose logs -f"
   },
   "devDependencies": {
     "@prisma/internals": "^7.8.0",
