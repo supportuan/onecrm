@@ -8,10 +8,12 @@ import crypto from 'crypto';
 import {
   validateDuplicateLead,
   validateDuplicateUser,
+  normalizeEmail,
+  normalizePhone,
   normalizeValue,
 } from "../../../utils/validation.js";
 import { buildCampaignEmailTemplate } from './emailTemplate.service.js';
-import { getDefaultTenantId } from '../../../utils/tenant-default.js';
+import { syncMetaCampaignInsights } from './metaInsights.service.js';
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {
@@ -247,17 +249,61 @@ export const getSources = async () => {
 //   });
 // };
 
-export const createLead = async (data: any) => {
-  await validateDuplicateLead(data.email, data.phone);
+// export const createLead = async (data: any) => {
+//   await validateDuplicateLead(data.email, data.phone);
 
-  const referralCode = data.referralCode || data.agencyRef || data.ref;
-  const { referralCode: _r, agencyRef: _a, ref: _ref, ...leadData } = data;
+//   const referralCode = data.referralCode || data.agencyRef || data.ref;
+//   const { referralCode: _r, agencyRef: _a, ref: _ref, ...leadData } = data;
+
+//   const lead = await prisma.lead.create({
+//     data: {
+//       ...leadData,
+//       email: normalizeValue(data.email),
+//       phone: normalizeValue(data.phone),
+//     },
+//     include: {
+//       source: true,
+//       assignedCounsellor: true,
+//       assignedBy: true,
+//     },
+//   });
+
+//   if (referralCode) {
+//     try {
+//       const { attachReferralToLead } = await import(
+//         '../../agency-crm/agency-referral.service.js'
+//       );
+//       await attachReferralToLead(lead.id, String(referralCode));
+//     } catch (err) {
+//       console.warn('[Agency CRM] referral attach skipped:', (err as Error)?.message);
+//     }
+//   }
+
+//   return lead;
+// };
+export const createLead = async (data: any) => {
+  const email = normalizeEmail(data.email);
+  const phone = normalizePhone(data.phone);
+
+  await validateDuplicateLead(email, phone);
+
+  const referralCode =
+    data.referralCode ||
+    data.agencyRef ||
+    data.ref;
+
+  const {
+    referralCode: _r,
+    agencyRef: _a,
+    ref: _ref,
+    ...leadData
+  } = data;
 
   const lead = await prisma.lead.create({
     data: {
       ...leadData,
-      email: normalizeValue(data.email),
-      phone: normalizeValue(data.phone),
+      email,
+      phone,
     },
     include: {
       source: true,
@@ -271,9 +317,16 @@ export const createLead = async (data: any) => {
       const { attachReferralToLead } = await import(
         '../../agency-crm/agency-referral.service.js'
       );
-      await attachReferralToLead(lead.id, String(referralCode));
+
+      await attachReferralToLead(
+        lead.id,
+        String(referralCode)
+      );
     } catch (err) {
-      console.warn('[Agency CRM] referral attach skipped:', (err as Error)?.message);
+      console.warn(
+        '[Agency CRM] referral attach skipped:',
+        (err as Error)?.message
+      );
     }
   }
 
@@ -650,25 +703,90 @@ export const getCampaigns = async (filters: {
     }
   });
 
+
   let totalBudget = 0;
   let totalSpent = 0;
   let totalLeads = 0;
 
-  const allItemsMapped = allCampaigns.map(c => {
+  // const allItemsMapped = allCampaigns.map(c => {
+  await Promise.all(
+    allCampaigns.map(async (campaign) => {
+      if (
+        campaign.type === CampaignType.SOCIAL_MEDIA &&
+        campaign.metaCampaignId
+      ) {
+        await syncMetaCampaignInsights(campaign.id);
+      }
+    })
+  );
+
+  // Fetch fresh campaigns after syncing
+  const refreshedCampaigns = await prisma.campaign.findMany({
+    where: whereClause,
+    include: {
+      leads: {
+        include: {
+          lead: true,
+        },
+      },
+      _count: {
+        select: {
+          leads: true,
+        },
+      },
+    },
+  });
+
+  const allItemsMapped = refreshedCampaigns.map((c) => {
     const dbLeadsCount = c._count.leads;
     const dbConversionsCount = c.leads.filter(l => l.lead.status === 'CONVERTED').length;
     const metrics = getCampaignMetrics(c.name, dbLeadsCount, dbConversionsCount);
 
     totalBudget += c.budget || 0;
-    totalSpent += c.spent || 0;
+    // totalSpent += c.spent || 0;
+    totalSpent += c.type === CampaignType.SOCIAL_MEDIA
+      ? c.metaSpend || 0
+      : c.spent || 0;
     totalLeads += metrics.leads;
 
+    // return {
+    //   id: c.id,
+    //   name: c.name,
+    //   type: c.type,
+    //   budget: c.budget,
+    //   spent: c.spent,
+    //   startDate: c.startDate,
+    //   endDate: c.endDate,
+    //   status: c.status,
+    //   targetAudience: c.targetAudience,
+    //   description: c.description,
+    //   createdAt: c.createdAt,
+    //   updatedAt: c.updatedAt,
+    //   leadsCount: metrics.leads,
+    //   conversionsCount: metrics.conversions,
+    //   conversionRate: metrics.rate
+    // };
     return {
       id: c.id,
       name: c.name,
       type: c.type,
       budget: c.budget,
       spent: c.spent,
+
+      // Meta reporting fields
+      metaCampaignId: c.metaCampaignId,
+      metaAdSetId: c.metaAdSetId,
+      metaCreativeId: c.metaCreativeId,
+      metaAdId: c.metaAdId,
+      metaSpend: c.metaSpend,
+      metaImpressions: c.metaImpressions,
+      metaReach: c.metaReach,
+      metaClicks: c.metaClicks,
+      metaCpc: c.metaCpc,
+      metaCpm: c.metaCpm,
+      metaCtr: c.metaCtr,
+      lastMetaSyncAt: c.lastMetaSyncAt,
+
       startDate: c.startDate,
       endDate: c.endDate,
       status: c.status,
@@ -678,7 +796,7 @@ export const getCampaigns = async (filters: {
       updatedAt: c.updatedAt,
       leadsCount: metrics.leads,
       conversionsCount: metrics.conversions,
-      conversionRate: metrics.rate
+      conversionRate: metrics.rate,
     };
   });
 
@@ -1769,7 +1887,7 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
   const passwordHash = await hashPassword(tempPassword);
 
   // 4️⃣ Create STUDENT user
-  const tenantId = await getDefaultTenantId(lead.assignedCounsellorId ?? null);
+  // const tenantId = await getDefaultTenantId(lead.assignedCounsellorId ?? null);
   const user = await prisma.user.create({
     data: {
       fullName: lead.fullName,
@@ -1777,7 +1895,7 @@ export const createStudentLogin = async (leadId: number, suppliedPassword?: stri
       phone: lead.phone,
       passwordHash,
       role: UserRole.STUDENT,
-      tenantId,
+      // tenantId,
       isActive: true,
       isApproved: true,
       mustChangePassword: true,
