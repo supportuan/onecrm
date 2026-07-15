@@ -30,8 +30,27 @@ export function safeUploadFilename(original: string): string {
   return `${Date.now()}-${safe}`;
 }
 
-export function localUploadBaseUrl(): string {
-  return process.env.UPLOAD_BASE_URL || `http://localhost:${process.env.PORT || 4000}`;
+/** Optional absolute public base (CDN / custom domain). Prefer unset — use same-origin `/uploads/...`. */
+export function localUploadBaseUrl(): string | null {
+  const base = (process.env.UPLOAD_BASE_URL || '').trim().replace(/\/+$/, '');
+  return base || null;
+}
+
+/** Browser-facing path for a local upload (same-origin so Next can proxy `/uploads`). */
+export function localUploadPublicRef(relativePath: string): string {
+  const pathPart = `/${relativePath.replace(/^\/+/, '')}`;
+  const base = localUploadBaseUrl();
+  return base ? `${base}${pathPart}` : pathPart;
+}
+
+/**
+ * Rewrite legacy absolute local URLs (e.g. http://localhost:4000/uploads/...) to a
+ * browser-safe same-origin path, or UPLOAD_BASE_URL if configured.
+ */
+export function toPublicUploadUrl(refOrUrl: string): string {
+  const relative = uploadsRelativeFromLocalUrl(refOrUrl);
+  if (!relative) return refOrUrl;
+  return localUploadPublicRef(relative);
 }
 
 export function localPathFromUploadsRelative(relativePath: string): string {
@@ -72,11 +91,11 @@ function writeLocalUpload(
   const dir = path.dirname(absPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(absPath, buffer);
-  const ref = `${localUploadBaseUrl()}/${relativePath.replace(/^\/+/, '')}`;
+  const ref = localUploadPublicRef(relativePath);
   return { ref, url: ref };
 }
 
-/** Persist a buffer and return the stored ref (s3:… or legacy http URL). */
+/** Persist a buffer and return the stored ref (s3:… or same-origin /uploads path). */
 export async function storeUploadedFile(params: {
   relativePath: string;
   buffer: Buffer;
@@ -154,7 +173,7 @@ export async function deleteStoredFile(refOrUrl: string): Promise<void> {
   }
 }
 
-/** Resolve a stored ref to a browser-accessible URL (presigned for S3). */
+/** Resolve a stored ref to a browser-accessible URL (presigned for S3; rewrite local hostnames). */
 export async function resolveFileRef(
   ref: string | null | undefined,
 ): Promise<string | null | undefined> {
@@ -166,7 +185,8 @@ export async function resolveFileRef(
     return getPresignedGetUrl(s3Key);
   }
 
-  return ref;
+  // Legacy DB rows often stored http://localhost:4000/uploads/... — fix at read time.
+  return toPublicUploadUrl(ref);
 }
 
 /** Walk API payloads and presign any s3: refs in known file fields. */

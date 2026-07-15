@@ -414,7 +414,11 @@ export const updateEmployeeSchema = z.object({
 export const createEmployeeDocumentSchema = z.object({
   type: z.enum(['OFFER_LETTER', 'ID_PROOF', 'CONTRACT', 'OTHER']),
   fileName: z.string().min(1),
-  fileUrl: z.string().url(),
+  // Absolute URL, same-origin /uploads/..., or s3: ref
+  fileUrl: z.string().min(1).refine(
+    (v) => v.startsWith('/uploads/') || v.startsWith('s3:') || /^https?:\/\//i.test(v),
+    { message: 'fileUrl must be /uploads/..., s3:..., or an http(s) URL' },
+  ),
   mimeType: z.string().optional().nullable(),
   fileSize: z.number().int().optional().nullable(),
   expiresAt: z.string().optional().nullable(),
