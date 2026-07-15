@@ -77,13 +77,9 @@ const Layout = ({ children }) => {
           sidebarOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-
         />
       </div>
 
-      <div className="fixed inset-x-0 top-0 z-40 bg-slate-50 shadow-sm">
-        <TopNavbar />
-      </div>
       <div
         className="fixed inset-y-0 right-0 flex flex-col transition-[left] duration-200 ease-out"
         style={{ left: sidebarWidth }}
