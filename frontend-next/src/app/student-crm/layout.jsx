@@ -11,7 +11,7 @@ export default function StudentCrmLayout({ children }) {
 
   useEffect(() => {
     if (!loading && user?.role === 'STUDENT') {
-      router.replace('/applicant/profile/view');
+      router.replace('/applicant/applications');
     }
   }, [loading, user, router]);
 

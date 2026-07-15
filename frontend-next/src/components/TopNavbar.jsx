@@ -4,6 +4,7 @@
 import Image from 'next/image';
 import { Bell, LogOut, Menu, Plus } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import { getStaffPageMeta } from '@/lib/staff-page-meta';
 import { useAuth } from '@/lib/auth/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
 import AddLeadModal from '@/components/AddLeadModal';
