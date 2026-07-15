@@ -1,4 +1,5 @@
-import { prisma } from "../prisma.js";
+
+import { prisma } from '../prisma.js';
 
 export const normalizeValue = (
   value?: string | null
@@ -7,51 +8,89 @@ export const normalizeValue = (
   return trimmed && trimmed.length > 0 ? trimmed : null;
 };
 
+export const normalizeEmail = (
+  value?: string | null
+): string | null => {
+  const email = value?.trim().toLowerCase();
+  return email && email.length > 0 ? email : null;
+};
+
+export const normalizePhone = (
+  value?: string | null
+): string | null => {
+  const phone = value?.replace(/\D/g, '');
+  return phone && phone.length > 0 ? phone : null;
+};
+
 export const validateDuplicateLead = async (
   email?: string | null,
   phone?: string | null,
   excludeLeadId?: number
 ) => {
-  const cleanEmail = normalizeValue(email);
-  const cleanPhone = normalizeValue(phone);
+  const cleanEmail = normalizeEmail(email);
+  const cleanPhone = normalizePhone(phone);
 
-  const conditions: any[] = [];
-
-  if (cleanEmail) {
-    conditions.push({ email: cleanEmail });
+  if (!cleanEmail && !cleanPhone) {
+    return;
   }
 
-  if (cleanPhone) {
-    conditions.push({ phone: cleanPhone });
-  }
+  const baseWhere = {
+    deletedAt: null,
+    ...(excludeLeadId
+      ? {
+        id: {
+          not: excludeLeadId,
+        },
+      }
+      : {}),
+  };
 
-  if (!conditions.length) return;
+  const [emailDuplicate, phoneDuplicate] = await Promise.all([
+    cleanEmail
+      ? prisma.lead.findFirst({
+        where: {
+          ...baseWhere,
+          email: {
+            equals: cleanEmail,
+            mode: 'insensitive',
+          },
+        },
+        select: {
+          id: true,
+        },
+      })
+      : null,
 
-  const duplicate = await prisma.lead.findFirst({
-    where: {
-      deletedAt: null,
-      OR: conditions,
-      ...(excludeLeadId
-        ? { id: { not: excludeLeadId } }
-        : {}),
-    },
-  });
+    cleanPhone
+      ? prisma.lead.findFirst({
+        where: {
+          ...baseWhere,
+          phone: cleanPhone,
+        },
+        select: {
+          id: true,
+        },
+      })
+      : null,
+  ]);
 
-  if (!duplicate) return;
-
-  if (cleanEmail && duplicate.email === cleanEmail) {
+  if (emailDuplicate && phoneDuplicate) {
     throw new Error(
-      "Lead with this email already exists"
+      'Lead with this email and phone number already exists'
     );
   }
 
-  if (cleanPhone && duplicate.phone === cleanPhone) {
+  if (emailDuplicate) {
     throw new Error(
-      "Lead with this phone number already exists"
+      'Lead with this email already exists'
     );
   }
 
-  throw new Error("Duplicate lead found");
+  if (phoneDuplicate) {
+    throw new Error(
+      'Lead with this phone number already exists'
+    );
+  }
 };
 
 export const validateDuplicateUser = async (
@@ -59,43 +98,65 @@ export const validateDuplicateUser = async (
   phone?: string | null,
   excludeUserId?: number
 ) => {
-  const cleanEmail = normalizeValue(email);
-  const cleanPhone = normalizeValue(phone);
+  const cleanEmail = normalizeEmail(email);
+  const cleanPhone = normalizePhone(phone);
 
-  const conditions: any[] = [];
-
-  if (cleanEmail) {
-    conditions.push({ email: cleanEmail });
+  if (!cleanEmail && !cleanPhone) {
+    return;
   }
 
-  if (cleanPhone) {
-    conditions.push({ phone: cleanPhone });
-  }
+  const baseWhere = excludeUserId
+    ? {
+      id: {
+        not: excludeUserId,
+      },
+    }
+    : {};
 
-  if (!conditions.length) return;
+  const [emailDuplicate, phoneDuplicate] = await Promise.all([
+    cleanEmail
+      ? prisma.user.findFirst({
+        where: {
+          ...baseWhere,
+          email: {
+            equals: cleanEmail,
+            mode: 'insensitive',
+          },
+        },
+        select: {
+          id: true,
+        },
+      })
+      : null,
 
-  const duplicate = await prisma.user.findFirst({
-    where: {
-      OR: conditions,
-      ...(excludeUserId
-        ? { id: { not: excludeUserId } }
-        : {}),
-    },
-  });
+    cleanPhone
+      ? prisma.user.findFirst({
+        where: {
+          ...baseWhere,
+          phone: cleanPhone,
+        },
+        select: {
+          id: true,
+        },
+      })
+      : null,
+  ]);
 
-  if (!duplicate) return;
-
-  if (cleanEmail && duplicate.email === cleanEmail) {
+  if (emailDuplicate && phoneDuplicate) {
     throw new Error(
-      "User with this email already exists"
+      'User with this email and phone number already exists'
     );
   }
 
-  if (cleanPhone && duplicate.phone === cleanPhone) {
+  if (emailDuplicate) {
     throw new Error(
-      "User with this phone number already exists"
+      'User with this email already exists'
     );
   }
 
-  throw new Error("Duplicate user found");
+  if (phoneDuplicate) {
+    throw new Error(
+      'User with this phone number already exists'
+    );
+  }
 };

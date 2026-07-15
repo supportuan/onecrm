@@ -23,6 +23,7 @@ export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
   const pathname = usePathname();
   const width = sidebarOpen ? SIDEBAR_OPEN : SIDEBAR_COLLAPSED;
 
+
   return (
     <aside
       className="fixed inset-y-0 left-0 z-30 flex h-screen flex-col overflow-hidden border-r border-neutral-200/70 bg-white transition-[width] duration-200 ease-out"

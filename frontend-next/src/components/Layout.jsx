@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -64,11 +65,13 @@ const Layout = ({ children }) => {
     );
   }
 
-  const sidebarWidth = mounted
-    ? sidebarOpen
-      ? SIDEBAR_OPEN
-      : SIDEBAR_COLLAPSED
-    : SIDEBAR_OPEN;
+  return (
+    <div className="h-screen overflow-hidden bg-slate-50 text-slate-900">
+      <div className="fixed inset-y-0 left-0 z-30">
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
 
   return (
     <div className="h-screen overflow-hidden text-brand antialiased">
