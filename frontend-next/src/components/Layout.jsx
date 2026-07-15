@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
-import { StaffLayoutProvider } from './StaffLayoutContext';
+import { StaffAutoPageHeader, StaffLayoutProvider } from './StaffLayoutContext';
 import { useAuth } from '@/lib/auth/AuthContext';
 import {
   SIDEBAR_OPEN,
@@ -59,11 +58,17 @@ const Layout = ({ children }) => {
 
   if (isPublicPage || isStudentPortal) {
     return (
-      <div className="min-h-screen text-brand">
+      <div className="min-h-screen bg-[#f4f4f5] text-neutral-900">
         {children}
       </div>
     );
   }
+
+  const sidebarWidth = mounted
+    ? sidebarOpen
+      ? SIDEBAR_OPEN
+      : SIDEBAR_COLLAPSED
+    : SIDEBAR_OPEN;
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 text-slate-900">
@@ -73,14 +78,12 @@ const Layout = ({ children }) => {
           onClose={() => setSidebarOpen(false)}
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
 
-  return (
-    <div className="h-screen overflow-hidden text-brand antialiased">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onToggleSidebar={toggleSidebar}
-      />
+        />
+      </div>
 
+      <div className="fixed inset-x-0 top-0 z-40 bg-slate-50 shadow-sm">
+        <TopNavbar />
+      </div>
       <div
         className="fixed inset-y-0 right-0 flex flex-col transition-[left] duration-200 ease-out"
         style={{ left: sidebarWidth }}
@@ -89,6 +92,7 @@ const Layout = ({ children }) => {
 
         <main className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden px-4 pb-10 pt-6 sm:px-6 lg:px-8">
           <StaffLayoutProvider sidebarOpen={sidebarOpen}>
+            <StaffAutoPageHeader />
             {children}
           </StaffLayoutProvider>
         </main>
