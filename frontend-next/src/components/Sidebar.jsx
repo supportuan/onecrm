@@ -1,19 +1,17 @@
 
+
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, Command, LogOut, Menu, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import MenuItem from "./MenuItem";
-import { AppBrand, AppLogo } from "./AppBrand";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useWorkspace } from "../lib/workspaceContext";
 import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
-import {
-  SIDEBAR_OPEN,
-  SIDEBAR_COLLAPSED,
-} from "@/lib/layout-shell";
 
 const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Users") return "User Management";
@@ -58,7 +56,9 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
   const location = usePathname() || "";
   const router = useRouter();
 
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { logout: workspaceLogout } = useWorkspace();
+  const { logout: authLogout } = useAuth();
   const { can, permissionMap } = usePermissions();
 
   const [openSections, setOpenSections] = useState({});
@@ -67,7 +67,6 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
 
   const filteredNavMenu = useMemo(() => {
     if (!user) return [];
-    if (user.role === "STUDENT") return [];
     if (user.role === "SUPER_ADMIN") return [];
 
     const enabledModules = Array.isArray(user.enabledModules)
@@ -198,12 +197,22 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
     }, 150);
   };
 
+  const handleLogout = () => {
+    logout?.();
+    router.push("/login");
+    localStorage.clear();
+  };
+
   return (
     <>
       <aside
-        className="fixed inset-y-0 left-0 z-30 flex h-screen flex-col overflow-hidden border-r border-neutral-200/70 bg-white text-neutral-800 transition-[width] duration-200 ease-out"
+        className="
+          fixed inset-y-0 left-0 z-30 flex h-screen flex-col
+          border-r border-neutral-200 bg-white text-neutral-800
+          transition-[width] duration-300 ease-in-out
+        "
         style={{
-          width: sidebarOpen ? SIDEBAR_OPEN : SIDEBAR_COLLAPSED,
+          width: sidebarOpen ? "288px" : "80px",
         }}
       >
 
@@ -284,7 +293,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
         <div
           className={`
             flex-1 overflow-y-auto sidebar-scrollbar py-3 space-y-1
-            ${sidebarOpen ? "px-3" : "px-2"}
+            ${sidebarOpen ? "px-5" : "px-3"}
           `}
         >
           {filteredNavMenu.map((item) => {
@@ -299,14 +308,14 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                       type="button"
                       title={!sidebarOpen ? (item.displayLabel || item.label) : ""}
                       className={`
-                        flex w-full items-center rounded-xl text-[13px] font-medium transition
+                        flex w-full items-center rounded-lg py-2.5 text-xs font-medium transition
                         ${sidebarOpen
-                          ? "justify-between gap-3 px-3 py-2.5"
-                          : "justify-center p-2.5"
+                          ? "justify-between gap-3 px-3"
+                          : "justify-center px-2"
                         }
                         ${isSectionActive(item)
-                          ? "bg-brand-soft text-brand"
-                          : "text-slate-600 hover:bg-brand-soft/60"
+                          ? "bg-neutral-100 text-neutral-900"
+                          : "text-neutral-600 hover:bg-neutral-50"
                         }
                       `}
                       onMouseEnter={(e) => {
@@ -382,14 +391,14 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                     type="button"
                     title={!sidebarOpen ? (item.displayLabel || item.label) : ""}
                     className={`
-                      flex w-full items-center rounded-xl text-[13px] font-medium transition
+                      flex w-full items-center rounded-lg py-2.5 text-xs font-medium transition
                       ${sidebarOpen
-                        ? "gap-3 px-3 py-2.5"
-                        : "justify-center p-2.5"
+                        ? "gap-3 px-3"
+                        : "justify-center px-2"
                       }
                       ${location === item.path
-                        ? "bg-brand-soft text-brand"
-                        : "text-slate-600 hover:bg-brand-soft/60"
+                        ? "bg-neutral-100 text-neutral-900"
+                        : "text-neutral-600 hover:bg-neutral-50"
                       }
                     `}
                     onClick={() => {
@@ -467,7 +476,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
         <div
           className="fixed z-50 min-w-[240px] rounded-xl border border-neutral-200 bg-white p-2 shadow-xl "
           style={{
-            left: `${SIDEBAR_COLLAPSED + 8}px`,
+            left: "88px",
             top: `${flyoutMenu.top}px`,
           }}
           onMouseEnter={() => {
@@ -495,8 +504,8 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                 className={` cursor-pointer
                   flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition
                   ${location.startsWith(sub.path)
-                    ? "bg-brand-soft text-brand"
-                    : "text-slate-600 hover:bg-brand-soft/60"
+                    ? "bg-neutral-100 text-neutral-900"
+                    : "text-neutral-600 hover:bg-neutral-50"
                   }
                 `}
               >

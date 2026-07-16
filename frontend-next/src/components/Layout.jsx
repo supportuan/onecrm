@@ -1,44 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
-import { StaffAutoPageHeader, StaffLayoutProvider } from './StaffLayoutContext';
-import { useAuth } from '@/lib/auth/AuthContext';
-import {
-  SIDEBAR_OPEN,
-  SIDEBAR_COLLAPSED,
-  STAFF_SIDEBAR_STORAGE_KEY,
-} from '@/lib/layout-shell';
 
 const Layout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STAFF_SIDEBAR_STORAGE_KEY);
-      if (stored !== null) setSidebarOpen(stored === 'true');
-    } catch {
-      /* ignore */
-    }
-    setMounted(true);
-  }, []);
-
-  const toggleSidebar = () => {
-    setSidebarOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(STAFF_SIDEBAR_STORAGE_KEY, String(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  };
 
   const publicRoutes = [
     '/',
@@ -50,25 +19,15 @@ const Layout = ({ children }) => {
     '/change-password',
   ];
 
-  const isPublicPage =
-    publicRoutes.includes(pathname) ||
-    pathname?.startsWith('/applicant') ||
-    pathname?.startsWith('/super-admin');
-  const isStudentPortal = user?.role === 'STUDENT';
+  const isPublicPage = publicRoutes.includes(pathname);
 
-  if (isPublicPage || isStudentPortal) {
+  if (isPublicPage) {
     return (
-      <div className="min-h-screen bg-[#f4f4f5] text-neutral-900">
+      <div className="min-h-screen bg-slate-50 text-slate-900">
         {children}
       </div>
     );
   }
-
-  const sidebarWidth = mounted
-    ? sidebarOpen
-      ? SIDEBAR_OPEN
-      : SIDEBAR_COLLAPSED
-    : SIDEBAR_OPEN;
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 text-slate-900">
@@ -76,21 +35,23 @@ const Layout = ({ children }) => {
         <Sidebar
           sidebarOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          // onToggleSidebar={() => setSidebarOpen(true)}
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+
         />
       </div>
 
+      <div className="fixed inset-x-0 top-0 z-40 bg-slate-50 shadow-sm">
+        <TopNavbar />
+      </div>
       <div
-        className="fixed inset-y-0 right-0 flex flex-col transition-[left] duration-200 ease-out"
-        style={{ left: sidebarWidth }}
+        className="fixed top-0 right-0 bottom-0 transition-all duration-300"
+        style={{
+          left: sidebarOpen ? '288px' : '80px',
+        }}
       >
-        <TopNavbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
-
-        <main className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-          <StaffLayoutProvider sidebarOpen={sidebarOpen}>
-            <StaffAutoPageHeader />
-            {children}
-          </StaffLayoutProvider>
+        <main className="h-full w-full overflow-y-auto overflow-x-hidden pt-[108px] px-4 pb-4 sm:px-6 lg:px-8">
+          {children}
         </main>
       </div>
     </div>
