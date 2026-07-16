@@ -409,3 +409,111 @@ describe("user.service - getCounsellors", () => {
         expect(result).toHaveLength(1);
     });
 });
+
+// ═══════════════════════════════════════════════════════════
+// Additional edge-case tests
+// ═══════════════════════════════════════════════════════════
+
+describe("user.service - getUsers (additional)", () => {
+    it("scopes by tenantId when provided", async () => {
+        mockPrisma.user.findMany.mockResolvedValue([]);
+
+        await userService.getUsers(undefined, 5);
+
+        expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+            where: { tenantId: 5 },
+            orderBy: { createdAt: "desc" },
+        });
+    });
+
+    it("filters by both role and tenantId", async () => {
+        mockPrisma.user.findMany.mockResolvedValue([]);
+
+        await userService.getUsers("COUNSELLOR" as any, 3);
+
+        expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+            where: { role: "COUNSELLOR", tenantId: 3 },
+            orderBy: { createdAt: "desc" },
+        });
+    });
+
+    it("returns empty list when no users match", async () => {
+        mockPrisma.user.findMany.mockResolvedValue([]);
+
+        const result = await userService.getUsers("HR" as any);
+        expect(result).toEqual([]);
+    });
+});
+
+describe("user.service - getUserById (additional)", () => {
+    it("returns null when user is not found", async () => {
+        mockPrisma.user.findFirst.mockResolvedValue(null);
+
+        const result = await userService.getUserById(9999);
+        expect(result).toBeNull();
+    });
+
+    it("scopes by tenantId when provided", async () => {
+        mockPrisma.user.findFirst.mockResolvedValue({ id: 1, email: "user@test.com" });
+
+        await userService.getUserById(1, 7);
+
+        expect(mockPrisma.user.findFirst).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id: 1, tenantId: 7 } })
+        );
+    });
+});
+
+describe("user.service - getDefaultModuleAccessByRole (additional)", () => {
+    it("returns full access for SUPER_ADMIN including HR", () => {
+        const access = userService.getDefaultModuleAccessByRole("SUPER_ADMIN");
+        expect(access.HR).toBeDefined();
+        expect(access.HR["Employee Directory"]).toContain("VIEW");
+        expect(access["Admin & Settings"]).toBeDefined();
+    });
+
+    it("returns Agency CRM access for AGENT", () => {
+        const access = userService.getDefaultModuleAccessByRole("AGENT");
+        expect(access["Agency CRM"]).toBeDefined();
+        expect(access["Agency CRM"]["Agency Management"]).toContain("VIEW");
+    });
+
+    it("returns empty object for STUDENT (no CRM sidebar access)", () => {
+        const access = userService.getDefaultModuleAccessByRole("STUDENT");
+        // STUDENT has no staff CRM modules
+        expect(Object.keys(access).length).toBe(0);
+    });
+
+    it("returns HR-only access for HR role", () => {
+        const access = userService.getDefaultModuleAccessByRole("HR");
+        expect(access.HR).toBeDefined();
+        expect(access.Marketing).toBeUndefined();
+        expect(access["Student CRM"]).toBeUndefined();
+    });
+});
+
+describe("user.service - createUser (email normalisation)", () => {
+    it("normalises email to lowercase and trims whitespace", async () => {
+        mockPrisma.user.findUnique.mockResolvedValue(null);
+        mockPrisma.user.findFirst.mockResolvedValue(null);
+        mockPrisma.user.create.mockResolvedValue({
+            id: 99,
+            fullName: "Test",
+            email: "admin@test.com",
+            role: "COUNSELLOR",
+            isApproved: true,
+        });
+
+        await userService.createUser({
+            fullName: "Test",
+            email: "  ADMIN@TEST.COM  ",
+            role: "COUNSELLOR" as any,
+        });
+
+        expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+            where: { email: "admin@test.com" },
+        });
+        const [[call]] = (mockPrisma.user.create as jest.Mock).mock.calls as any;
+        expect(call.data.email).toBe("admin@test.com");
+    });
+});
