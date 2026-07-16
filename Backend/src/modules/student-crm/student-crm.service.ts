@@ -7,7 +7,7 @@ import { getDefaultChecklist, type ChecklistItem } from './checklists.js';
 import { safeNotify } from '../notifications/recipients.js';
 import { getDefaultTenantId } from '../../utils/tenant-default.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
-import { applicationScopeWhere, studentScopeWhere } from './scoping.js';
+import { resolveApplicationScopeWhere, resolveStudentScopeWhere } from './scoping.js';
 import { computeProcessProgress, getStagesForCountry } from './stage-engine.js';
 import {
   appendVisaDocument,
@@ -19,6 +19,25 @@ import { seedDefaultApplicationFee } from './payments.service.js';
 
 type Actor = { id?: number; role?: string };
 
+const STUDY_PLAN_INCLUDE = {
+  countryRef: { select: { id: true, name: true } },
+  universityRef: { include: { country: { select: { id: true, name: true } } } },
+  courseRef: { select: { id: true, name: true } },
+  applications: {
+    orderBy: { createdAt: 'desc' as const },
+    select: {
+      id: true,
+      applicationCode: true,
+      stage: true,
+      intake: true,
+      country: true,
+      university: true,
+      course: true,
+      createdAt: true,
+    },
+  },
+};
+
 const STUDENT_INCLUDE = {
   country: true,
   industry: true,
@@ -29,6 +48,10 @@ const STUDENT_INCLUDE = {
   contact: { select: { id: true, fullName: true, email: true, role: true } },
   applications: { orderBy: { createdAt: 'desc' as const } },
   universities: { include: { university: { include: { country: true } } } },
+  studyPlans: {
+    orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
+    include: STUDY_PLAN_INCLUDE,
+  },
   checklists: { include: { checkList: true }, orderBy: { id: 'asc' as const } },
 };
 
@@ -48,7 +71,7 @@ const generateApplicationCode = async (): Promise<string> => {
 export const listStudents = async (
   opts: { search?: string; limit?: number; actor?: Actor } = {}
 ) => {
-  const where: any = { ...studentScopeWhere(opts.actor) };
+  const where: any = { ...(await resolveStudentScopeWhere(opts.actor)) };
   if (opts.search) {
     where.AND = [
       ...(where.AND || []),
@@ -74,10 +97,15 @@ export const listStudents = async (
 
 export const getStudent = async (id: number, actor?: Actor) => {
   const student = await prisma.student.findFirst({
-    where: { id, ...studentScopeWhere(actor) },
+    where: { id, ...(await resolveStudentScopeWhere(actor)) },
     include: STUDENT_INCLUDE,
   });
-  return student;
+  if (!student) return null;
+  await ensureStudentStudyPlans(student);
+  return prisma.student.findFirst({
+    where: { id, ...(await resolveStudentScopeWhere(actor)) },
+    include: STUDENT_INCLUDE,
+  });
 };
 
 export const getStudentByUserId = async (userId: number) => {
@@ -348,8 +376,8 @@ export const patchStudentStatus = async (id: number, status: string, notes?: str
 };
 
 export const getStatistics = async (actor?: Actor) => {
-  const studentWhere = studentScopeWhere(actor);
-  const appWhere = applicationScopeWhere(actor);
+  const studentWhere = await resolveStudentScopeWhere(actor);
+  const appWhere = await resolveApplicationScopeWhere(actor);
 
   const [totalStudents, enrolled, byStage, byProcessStage] = await Promise.all([
     prisma.student.count({ where: studentWhere }),
@@ -472,6 +500,173 @@ export const removeStudentUniversity = async (studentId: number, universityId: n
   });
 };
 
+// -------------------- Study plans --------------------
+
+const studyPlanPayload = (data: Record<string, any>) => ({
+  countryId: data.countryId ?? null,
+  country: data.country ?? null,
+  universityId: data.universityId ?? null,
+  university: data.university ?? null,
+  courseId: data.courseId ?? null,
+  course: data.course ?? null,
+  intake: data.intake ?? null,
+  notes: data.notes ?? null,
+  sortOrder: data.sortOrder ?? undefined,
+});
+
+const syncStudentPreferredFromStudyPlans = async (studentId: number) => {
+  const first = await prisma.studentStudyPlan.findFirst({
+    where: { studentId },
+    orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+  });
+  if (!first) return;
+  await prisma.student.update({
+    where: { id: studentId },
+    data: {
+      countryId: first.countryId,
+      preferredCountry: first.country,
+      preferredUniversityId: first.universityId,
+      preferredCourseId: first.courseId,
+      preferredCourse: first.course,
+    },
+  });
+};
+
+export const ensureStudentStudyPlans = async (student: {
+  id: number;
+  countryId: number | null;
+  preferredCountry: string | null;
+  preferredUniversityId: number | null;
+  preferredCourseId: number | null;
+  preferredCourse: string | null;
+  intakeMonth: string | null;
+  intakeYear: string | null;
+  studyPlans?: unknown[];
+  preferredUniversity?: { name?: string | null } | null;
+  preferredCourseRef?: { name?: string | null } | null;
+  country?: { name?: string | null } | null;
+}) => {
+  const existing = await prisma.studentStudyPlan.count({ where: { studentId: student.id } });
+  if (existing > 0) return;
+
+  const hasLegacy =
+    student.countryId ||
+    student.preferredUniversityId ||
+    student.preferredCourse ||
+    student.preferredCourseId;
+
+  if (!hasLegacy) return;
+
+  const intake = [student.intakeMonth, student.intakeYear].filter(Boolean).join(' ').trim() || null;
+
+  await prisma.studentStudyPlan.create({
+    data: {
+      studentId: student.id,
+      countryId: student.countryId,
+      country: student.preferredCountry || student.country?.name || null,
+      universityId: student.preferredUniversityId,
+      university: student.preferredUniversity?.name || null,
+      courseId: student.preferredCourseId,
+      course: student.preferredCourse || student.preferredCourseRef?.name || null,
+      intake,
+      sortOrder: 0,
+    },
+  });
+};
+
+export const listStudentStudyPlans = async (studentId: number, actor?: Actor) => {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, ...(await resolveStudentScopeWhere(actor)) },
+    include: {
+      preferredUniversity: true,
+      preferredCourseRef: true,
+      country: true,
+      studyPlans: true,
+    },
+  });
+  if (!student) throw new Error('student not found');
+  await ensureStudentStudyPlans(student);
+  return prisma.studentStudyPlan.findMany({
+    where: { studentId },
+    orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+    include: STUDY_PLAN_INCLUDE,
+  });
+};
+
+export const createStudentStudyPlan = async (
+  studentId: number,
+  data: Record<string, any>,
+  actor?: Actor
+) => {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, ...(await resolveStudentScopeWhere(actor)) },
+  });
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  const maxSort = await prisma.studentStudyPlan.aggregate({
+    where: { studentId },
+    _max: { sortOrder: true },
+  });
+
+  const plan = await prisma.studentStudyPlan.create({
+    data: {
+      studentId,
+      ...studyPlanPayload(data),
+      sortOrder: data.sortOrder ?? (maxSort._max.sortOrder ?? -1) + 1,
+    },
+    include: STUDY_PLAN_INCLUDE,
+  });
+  await syncStudentPreferredFromStudyPlans(studentId);
+  return plan;
+};
+
+export const updateStudentStudyPlan = async (
+  studentId: number,
+  planId: number,
+  data: Record<string, any>,
+  actor?: Actor
+) => {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, ...(await resolveStudentScopeWhere(actor)) },
+  });
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  const existing = await prisma.studentStudyPlan.findFirst({
+    where: { id: planId, studentId },
+  });
+  if (!existing) throw new Error('study plan not found');
+
+  const plan = await prisma.studentStudyPlan.update({
+    where: { id: planId },
+    data: studyPlanPayload(data),
+    include: STUDY_PLAN_INCLUDE,
+  });
+  await syncStudentPreferredFromStudyPlans(studentId);
+  return plan;
+};
+
+export const removeStudentStudyPlan = async (
+  studentId: number,
+  planId: number,
+  actor?: Actor
+) => {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, ...(await resolveStudentScopeWhere(actor)) },
+  });
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  const existing = await prisma.studentStudyPlan.findFirst({
+    where: { id: planId, studentId },
+  });
+  if (!existing) throw new Error('study plan not found');
+
+  await prisma.studentStudyPlan.delete({ where: { id: planId } });
+  await syncStudentPreferredFromStudyPlans(studentId);
+};
+
 // -------------------- Applications --------------------
 
 const APPLICATION_INCLUDE = {
@@ -497,7 +692,7 @@ export const listApplications = async (opts: {
   limit?: number;
   actor?: Actor;
 } = {}) => {
-  const where: any = { ...applicationScopeWhere(opts.actor) };
+  const where: any = { ...(await resolveApplicationScopeWhere(opts.actor)) };
   if (opts.studentId) where.studentId = opts.studentId;
   if (opts.stage) where.stage = opts.stage;
   if (opts.assignedToId) where.assignedToId = opts.assignedToId;
@@ -521,7 +716,7 @@ export const listApplications = async (opts: {
 };
 
 export const getApplication = async (id: number, actor?: Actor) => {
-  const scope = applicationScopeWhere(actor);
+  const scope = await resolveApplicationScopeWhere(actor);
   return prisma.application.findFirst({ where: { id, ...scope }, include: APPLICATION_INCLUDE });
 };
 
@@ -556,6 +751,7 @@ const seedChecklistFor = async (applicationId: number, country: string, universi
 
 export const createApplication = async (data: {
   studentId: number;
+  studyPlanId?: number;
   country: string;
   university: string;
   course: string;
@@ -569,6 +765,7 @@ export const createApplication = async (data: {
     data: {
       applicationCode: code,
       studentId: data.studentId,
+      studyPlanId: data.studyPlanId ?? null,
       country: data.country,
       university: data.university,
       course: data.course,
@@ -661,7 +858,7 @@ export const bulkAssignApplications = async (
     if (!counsellor) throw new Error('counsellor not found');
   }
 
-  const scope = applicationScopeWhere(actor);
+  const scope = await resolveApplicationScopeWhere(actor);
   const apps = await prisma.application.findMany({
     where: { id: { in: ids }, ...scope },
     include: { student: { select: { id: true, fullName: true } } },
@@ -1527,7 +1724,7 @@ export const resolveChecklistForCountry = async (country: string, university?: s
 // -------------------- Visa management (aggregate) --------------------
 
 export const listVisaTracking = async (actor?: Actor) => {
-  const scope = applicationScopeWhere(actor);
+  const scope = await resolveApplicationScopeWhere(actor);
   return prisma.visaTracking.findMany({
     where: { application: scope },
     orderBy: { updatedAt: 'desc' },

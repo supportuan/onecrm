@@ -65,6 +65,17 @@ describe("user.service - getDefaultModuleAccessByRole", () => {
         expect(access.Marketing).toBeDefined();
         expect(access["Admin & Settings"]).toBeDefined();
     });
+
+    it("should give portal VIEW only (no Agency Management) for AGENT and AGENCY_FREELANCER", () => {
+        for (const role of ["AGENT", "AGENCY_FREELANCER"]) {
+            const access = userService.getDefaultModuleAccessByRole(role);
+            expect(access["Agency CRM"]["Dashboard"]).toEqual(["VIEW"]);
+            expect(access["Agency CRM"]["Agency Leads"]).toEqual(["VIEW"]);
+            expect(access["Agency CRM"]["University Directory"]).toEqual(["VIEW"]);
+            expect(access["Agency CRM"]["Onboarding"]).toEqual(["VIEW"]);
+            expect(access["Agency CRM"]["Agency Management"]).toBeUndefined();
+        }
+    });
 });
 
 describe("user.service - getUsers", () => {
@@ -516,4 +527,4 @@ describe("user.service - createUser (email normalisation)", () => {
         const [[call]] = (mockPrisma.user.create as jest.Mock).mock.calls as any;
         expect(call.data.email).toBe("admin@test.com");
     });
-});
+});

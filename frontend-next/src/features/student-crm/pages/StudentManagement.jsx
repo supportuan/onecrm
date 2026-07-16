@@ -33,6 +33,7 @@ import {
   toSelectId,
 } from '../studyFormOptions';
 import CatalogCourseFields from '../components/CatalogCourseFields';
+import StudyPlanEntries from '../components/StudyPlanEntries';
 import { resolveCatalogCountryId, pickCatalogCountry } from '../catalogCountry';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { getStageLabel, stageBadgeClass } from '../constants';
@@ -92,6 +93,8 @@ export default function StudentManagement() {
   const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
   const [showNew, setShowNew] = useState(false);
   const [showNewApp, setShowNewApp] = useState(false);
+  const [appModalContext, setAppModalContext] = useState(null);
+  const [selectedStudyPlanId, setSelectedStudyPlanId] = useState(null);
   const [toast, setToast] = useState({ kind: '', msg: '' });
 
   const flash = (msg, ok = true) => {
@@ -163,6 +166,7 @@ export default function StudentManagement() {
   useEffect(() => {
     if (!profile) {
       setForm(null);
+      setSelectedStudyPlanId(null);
       return;
     }
     const history = Array.isArray(profile.academicHistory)
@@ -225,6 +229,38 @@ export default function StudentManagement() {
     });
   }, [profile, formOptions.countries]);
 
+  useEffect(() => {
+    const plans = profile?.studyPlans || [];
+    if (!plans.length) {
+      setSelectedStudyPlanId(null);
+      return;
+    }
+    if (!plans.some((plan) => plan.id === selectedStudyPlanId)) {
+      setSelectedStudyPlanId(plans[0].id);
+    }
+  }, [profile?.studyPlans, selectedStudyPlanId]);
+
+  const selectedStudyPlan = (profile?.studyPlans || []).find((plan) => plan.id === selectedStudyPlanId) || null;
+
+  const prefillFromStudyPlan = useCallback(
+    (plan) => {
+      if (!plan) return null;
+      const countryId =
+        resolveCatalogCountryId(plan.countryId ?? plan.countryRef?.id) || plan.countryId || plan.countryRef?.id || '';
+      return {
+        studyPlanId: plan.id,
+        country: plan.country || plan.countryRef?.name || '',
+        countryId: countryId ? String(countryId) : '',
+        university: plan.university || plan.universityRef?.name || '',
+        universityId: plan.universityId ? String(plan.universityId) : plan.universityRef?.id ? String(plan.universityRef.id) : '',
+        course: plan.course || plan.courseRef?.name || '',
+        courseId: plan.courseId ? String(plan.courseId) : plan.courseRef?.id ? String(plan.courseRef.id) : '',
+        intake: plan.intake || '',
+      };
+    },
+    []
+  );
+
   const saveProfile = async () => {
     if (!form || !selectedId) return;
     setSaving(true);
@@ -242,9 +278,6 @@ export default function StudentManagement() {
         industryId: toNumOrNull(form.industryId),
         subIndustryId: toNumOrNull(form.subIndustryId),
         studyAreaId: toNumOrNull(form.studyAreaId),
-        preferredUniversityId: toNumOrNull(form.universityId),
-        preferredCourseId: toNumOrNull(form.courseId),
-        preferredCourse: form.course || null,
         intakeMonth: form.intakeMonth || null,
         intakeYear: form.intakeYear || null,
         studyMode: form.studyMode || null,
@@ -428,7 +461,10 @@ export default function StudentManagement() {
                     {canManage && (
                       <button
                         type="button"
-                        onClick={() => setShowNewApp(true)}
+                        onClick={() => {
+                          setAppModalContext(prefillFromStudyPlan(selectedStudyPlan));
+                          setShowNewApp(true);
+                        }}
                         className="ui-btn-secondary inline-flex items-center gap-2"
                       >
                         <Plus size={14} /> New application
@@ -556,34 +592,6 @@ export default function StudentManagement() {
                         ))}
                       </select>
                     </Field>
-                    <Field label="Destination country">
-                      <select
-                        className={SELECT}
-                        style={SELECT_BG}
-                        value={form.countryId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => {
-                          const country = formOptions.countries?.find((c) => String(c.id) === e.target.value);
-                          const catalogId = resolveCatalogCountryId(e.target.value) || e.target.value;
-                          setForm({
-                            ...form,
-                            countryId: catalogId,
-                            preferredCountry: country?.name || '',
-                            university: '',
-                            universityId: '',
-                            courseId: '',
-                            course: '',
-                          });
-                        }}
-                      >
-                        <option value="">Select country</option>
-                        {formOptions.countries?.map((c) => (
-                          <option key={c.id} value={String(c.catalogCountryId ?? c.id)}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
                     <Field label="Field of study">
                       <select
                         className={SELECT}
@@ -631,17 +639,18 @@ export default function StudentManagement() {
                         ))}
                       </select>
                     </Field>
-                    <div className="md:col-span-2">
-                      <CatalogCourseFields
-                        hideCountry
-                        countryId={resolveCatalogCountryId(form.countryId) || form.countryId}
-                        countries={formOptions.countries}
-                        value={form}
-                        onChange={(catalog) => setForm((prev) => ({ ...prev, ...catalog }))}
-                        inputClass={INPUT}
-                        disabled={!canManage || profile.isEnrolled}
-                      />
-                    </div>
+                    <StudyPlanEntries
+                      studentId={selectedId}
+                      plans={profile.studyPlans || []}
+                      countries={formOptions.countries}
+                      allApplications={profile.applications || []}
+                      disabled={profile.isEnrolled}
+                      canManage={canManage}
+                      selectedPlanId={selectedStudyPlanId}
+                      onSelectPlan={(plan) => setSelectedStudyPlanId(plan?.id || null)}
+                      onRefresh={loadProfile}
+                      onError={(msg) => flash(msg, false)}
+                    />
                     <Field label="Intake month">
                       <input
                         className={INPUT}
@@ -1043,9 +1052,14 @@ export default function StudentManagement() {
           student={profile}
           countries={formOptions.countries}
           counsellors={counsellors}
-          onClose={() => setShowNewApp(false)}
+          prefill={appModalContext}
+          onClose={() => {
+            setShowNewApp(false);
+            setAppModalContext(null);
+          }}
           onCreated={async () => {
             setShowNewApp(false);
+            setAppModalContext(null);
             await loadProfile();
             await loadStudents();
             flash('Application created');
@@ -1156,22 +1170,24 @@ function NewStudentModal({ countries = [], onClose, onCreated }) {
   );
 }
 
-function NewAppModal({ student, countries = [], counsellors, onClose, onCreated }) {
+function NewAppModal({ student, countries = [], counsellors, prefill, onClose, onCreated }) {
   const initialCountryId =
-    student.countryId != null
-      ? String(student.countryId)
-      : countries.find((c) => c.name === student.preferredCountry)?.id != null
-        ? String(countries.find((c) => c.name === student.preferredCountry).id)
-        : '';
+    prefill?.countryId != null && prefill.countryId !== ''
+      ? String(prefill.countryId)
+      : student.countryId != null
+        ? String(student.countryId)
+        : countries.find((c) => c.name === student.preferredCountry)?.id != null
+          ? String(countries.find((c) => c.name === student.preferredCountry).id)
+          : '';
 
   const [form, setForm] = useState({
-    country: student.preferredCountry || '',
+    country: prefill?.country || student.preferredCountry || '',
     countryId: initialCountryId,
-    university: '',
-    universityId: '',
-    course: '',
-    courseId: '',
-    intake: '',
+    university: prefill?.university || '',
+    universityId: prefill?.universityId ? String(prefill.universityId) : '',
+    course: prefill?.course || '',
+    courseId: prefill?.courseId ? String(prefill.courseId) : '',
+    intake: prefill?.intake || '',
     deadline: '',
     assignedToId: '',
     notes: '',
@@ -1185,6 +1201,7 @@ function NewAppModal({ student, countries = [], counsellors, onClose, onCreated 
     try {
       await createApplication({
         studentId: student.id,
+        studyPlanId: prefill?.studyPlanId || undefined,
         country: form.country,
         university: form.university,
         course: form.course,

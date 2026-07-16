@@ -17,6 +17,16 @@ export const ONBOARDING_STAGE_LABELS = {
   ACTIVE: 'Active',
 };
 
+/** Forward-only order — mirrors Backend agency-partner.lifecycle. */
+export const ONBOARDING_STAGE_ORDER = [
+  'REGISTERED',
+  'DOCS_SUBMITTED',
+  'AGREEMENT_SIGNED',
+  'VERIFIED',
+  'APPROVED',
+  'ACTIVE',
+];
+
 export const COMMISSION_STATUS_LABELS = {
   PENDING: 'Pending',
   APPROVED: 'Approved',

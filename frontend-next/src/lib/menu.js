@@ -100,38 +100,65 @@ export const navMenu = [
   },
   {
     label: "Agency CRM",
-    path: "/agency-crm/agency-management",
+    /** Shown to agent/freelancer roles instead of "Agency CRM". */
+    agentDisplayLabel: "Agent Portal",
+    path: "/agency-crm/dashboard",
     icon: Folder,
     subItems: [
+      {
+        label: "Dashboard",
+        path: "/agency-crm/dashboard",
+        icon: LayoutDashboard,
+        audience: "all",
+      },
       {
         label: "Agency Management",
         path: "/agency-crm/agency-management",
         icon: Users,
+        /** admin = staff partner ops; agent = portal; all = both */
+        audience: "admin",
       },
       {
-        label: "Agency Leads",
+        label: "Students & Referrals",
+        agentLabel: "My Students",
         path: "/agency-crm/agency-leads",
         icon: ClipboardList,
+        audience: "all",
+      },
+      {
+        label: "University Directory",
+        agentLabel: "Universities",
+        path: "/agency-crm/universities",
+        icon: GraduationCap,
+        audience: "all",
       },
       {
         label: "Onboarding",
+        agentLabel: "My Profile & Onboarding",
         path: "/agency-crm/onboarding",
         icon: FileText,
+        audience: "all",
       },
       {
         label: "Communications",
+        agentLabel: "Notifications",
         path: "/agency-crm/communications",
         icon: MessageSquare,
+        audience: "all",
       },
       {
         label: "Co-branding Tools",
+        agentLabel: "Referral & Branding",
         path: "/agency-crm/co-branding-tools",
         icon: Layers,
+        audience: "all",
       },
       {
         label: "Commission Management",
+        agentLabel: "My Commissions",
         path: "/agency-crm/commission-management",
         icon: Percent,
+        audience: "all",
       },
     ],
   },

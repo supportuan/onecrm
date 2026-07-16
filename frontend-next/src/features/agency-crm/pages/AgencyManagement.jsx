@@ -11,8 +11,11 @@ import {
   getStatistics,
   updatePartnerStatus,
   advanceOnboarding,
+  listPartnerDocuments,
+  verifyPartnerDocument,
 } from '@/services/agencyCrmApi';
-import { PARTNER_STATUS_LABELS, partnerStatusClass } from '../constants';
+import { PARTNER_STATUS_LABELS, ONBOARDING_STAGE_LABELS, partnerStatusClass } from '../constants';
+import { isAgencyPartnerRole, ONBOARDING_STAGE_ORDER } from '../agentPortal';
 
 const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
@@ -33,11 +36,12 @@ const emptyForm = () => ({
   notes: '',
 });
 
+/** Admin partner-ops screen. Agents use the portal shell (onboarding / my students). */
 export default function AgencyManagement() {
   const { user } = useAuth();
   const { can } = usePermissions();
   const canManage = can('MANAGE_AGENCY_CRM');
-  const isFreelancer = user?.role === 'AGENCY_FREELANCER' || user?.role === 'AGENT';
+  const isFreelancer = isAgencyPartnerRole(user?.role);
 
   const [partners, setPartners] = useState([]);
   const [stats, setStats] = useState(null);
@@ -47,6 +51,13 @@ export default function AgencyManagement() {
   const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
+  const [docs, setDocs] = useState([]);
+  const [caps, setCaps] = useState({
+    canPayFees: false,
+    canMessageUniversity: false,
+    canManageApplications: true,
+    canViewCommission: true,
+  });
 
   const flash = (text) => {
     setMsg(text);
@@ -54,6 +65,7 @@ export default function AgencyManagement() {
   };
 
   const load = useCallback(async () => {
+    if (isFreelancer) return;
     setLoading(true);
     try {
       const [pRes, sRes] = await Promise.all([
@@ -64,7 +76,6 @@ export default function AgencyManagement() {
       setPartners(list);
       setStats(sRes?.data || null);
       if (!selectedId && list.length) setSelectedId(list[0].id);
-      if (isFreelancer && list.length === 1) setSelectedId(list[0].id);
     } catch (e) {
       flash(e?.message || 'Failed to load agencies');
     } finally {
@@ -95,7 +106,38 @@ export default function AgencyManagement() {
       status: selected.status || 'ACTIVE',
       notes: selected.notes || '',
     });
-  }, [selected]);
+    const c = selected.capabilities || {};
+    setCaps({
+      canPayFees: Boolean(c.canPayFees),
+      canMessageUniversity: Boolean(c.canMessageUniversity),
+      canManageApplications: c.canManageApplications !== false,
+      canViewCommission: c.canViewCommission !== false,
+    });
+    if (canManage && selected.id) {
+      listPartnerDocuments(selected.id)
+        .then((r) => setDocs(r?.data || []))
+        .catch(() => setDocs([]));
+    } else {
+      setDocs([]);
+    }
+  }, [selected, canManage]);
+
+  if (isFreelancer) {
+    return (
+      <div className="ui-container py-12 max-w-lg">
+        <div className="ui-panel p-6 space-y-3">
+          <h1 className="ui-text-h2">Partner operations</h1>
+          <p className="ui-text-body">
+            Agency Management is an administrator screen. Use the Agent Portal for your profile,
+            students, and commissions.
+          </p>
+          <a href="/agency-crm/onboarding" className="ui-btn-primary inline-flex">
+            Go to onboarding
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const savePartner = async (e) => {
     e.preventDefault();
@@ -158,7 +200,7 @@ export default function AgencyManagement() {
             <h1 className="text-2xl font-semibold text-brand">Agency management</h1>
             <p className="text-sm text-neutral-500 mt-1">
               {isFreelancer
-                ? 'Your agency partner profile and referral settings.'
+                ? 'View your agency profile, referral code, and commission terms.'
                 : 'Manage agency partners, contracts, and commission rates.'}
             </p>
           </div>
@@ -187,17 +229,17 @@ export default function AgencyManagement() {
               { label: 'Enrolled', value: stats.enrolledStudents },
               { label: 'Commission paid', value: `£${stats.totalCommissionAmount?.toFixed?.(0) ?? stats.totalCommissionAmount}` },
             ].map((c) => (
-              <div key={c.label} className="rounded-lg border border-neutral-200 bg-white p-4">
-                <p className="text-xs text-neutral-500">{c.label}</p>
+              <div key={c.label} className="ui-panel p-4">
+                <p className="ui-text-meta">{c.label}</p>
                 <p className="text-xl font-semibold text-brand mt-1">{c.value}</p>
               </div>
             ))}
           </div>
         )}
 
-        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
+        <div className={`grid gap-6 ${isFreelancer ? '' : 'lg:grid-cols-[280px_1fr]'}`}>
           {!isFreelancer && (
-            <div className="rounded-lg border border-neutral-200 bg-white p-4 space-y-3">
+            <div className="ui-panel p-4 space-y-3">
               <div className="relative">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400" />
                 <input
@@ -229,12 +271,19 @@ export default function AgencyManagement() {
             </div>
           )}
 
-          <div className="rounded-lg border border-neutral-200 bg-white p-6">
+          <div className="ui-panel p-6">
             {!selected && !showNew && (
               <div className="text-center py-12 text-neutral-500">
                 <Building2 className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p>Select an agency or create a new partner.</p>
               </div>
+            )}
+
+            {isFreelancer && selected && !showNew && (
+              <p className="mb-4 text-xs text-neutral-500 rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
+                Your agency profile is contract-managed. Contact your ApplyUniNow admin to update details.
+                Use your referral code below when sharing leads.
+              </p>
             )}
 
             {(selected || showNew) && (
@@ -254,11 +303,11 @@ export default function AgencyManagement() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <label className="block space-y-1">
                     <span className="text-xs text-neutral-500">Agency name</span>
-                    <input className={INPUT} required value={form.agencyName} onChange={(e) => setForm({ ...form, agencyName: e.target.value })} disabled={!canManage} />
+                    <input className={INPUT} required value={form.agencyName} onChange={(e) => setForm({ ...form, agencyName: e.target.value })} disabled={!canManage || isFreelancer} />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-xs text-neutral-500">Agency code</span>
-                    <input className={INPUT} value={form.agencyCode} onChange={(e) => setForm({ ...form, agencyCode: e.target.value })} disabled={!canManage} placeholder="Auto-generated if empty" />
+                    <span className="text-xs text-neutral-500">Referral / agency code</span>
+                    <input className={INPUT} value={form.agencyCode} onChange={(e) => setForm({ ...form, agencyCode: e.target.value })} disabled={!canManage || isFreelancer} placeholder="Auto-generated if empty" />
                   </label>
                   {showNew && (
                     <>
@@ -278,19 +327,19 @@ export default function AgencyManagement() {
                   )}
                   <label className="block space-y-1">
                     <span className="text-xs text-neutral-500">Contact person</span>
-                    <input className={INPUT} value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} disabled={!canManage} />
+                    <input className={INPUT} value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} disabled={!canManage || isFreelancer} />
                   </label>
                   <label className="block space-y-1">
                     <span className="text-xs text-neutral-500">Phone</span>
-                    <input className={INPUT} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} disabled={!canManage} />
+                    <input className={INPUT} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} disabled={!canManage || isFreelancer} />
                   </label>
                   <label className="block space-y-1">
                     <span className="text-xs text-neutral-500">City</span>
-                    <input className={INPUT} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} disabled={!canManage} />
+                    <input className={INPUT} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} disabled={!canManage || isFreelancer} />
                   </label>
                   <label className="block space-y-1">
                     <span className="text-xs text-neutral-500">Country</span>
-                    <input className={INPUT} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} disabled={!canManage} />
+                    <input className={INPUT} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} disabled={!canManage || isFreelancer} />
                   </label>
                   <label className="block space-y-1">
                     <span className="text-xs text-neutral-500">Commission rate (%)</span>
@@ -314,7 +363,7 @@ export default function AgencyManagement() {
                     className={INPUT}
                     value={form.services}
                     onChange={(e) => setForm({ ...form, services: e.target.value })}
-                    disabled={isFreelancer && !canManage}
+                    disabled={!canManage || isFreelancer}
                     placeholder="e.g. Study abroad, visa support"
                   />
                 </label>
@@ -344,17 +393,149 @@ export default function AgencyManagement() {
                         await load();
                       }}
                     >
-                      Verify docs
+                      Verify onboarding
                     </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                      onClick={async () => {
+                        await advanceOnboarding(selectedId, 'APPROVED');
+                        flash('Partner approved');
+                        await load();
+                      }}
+                    >
+                      Approve partner
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                      onClick={async () => {
+                        await advanceOnboarding(selectedId, 'ACTIVE');
+                        flash('Partner activated');
+                        await load();
+                      }}
+                    >
+                      Activate
+                    </button>
+                  </div>
+                )}
+
+                {canManage && !isFreelancer && !showNew && selected && (
+                  <div className="space-y-4 rounded-lg border border-neutral-200 p-4 bg-neutral-50/50">
+                    <div>
+                      <p className="text-xs font-semibold text-neutral-700 mb-1">Onboarding stage</p>
+                      <p className="text-sm text-neutral-800">
+                        {ONBOARDING_STAGE_LABELS[selected.onboardingStage] || selected.onboardingStage}
+                      </p>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {ONBOARDING_STAGE_ORDER.map((s) => (
+                          <span
+                            key={s}
+                            className={`text-[10px] px-2 py-0.5 rounded-full ${
+                              s === selected.onboardingStage
+                                ? 'bg-brand text-white'
+                                : 'bg-white border border-neutral-200 text-neutral-500'
+                            }`}
+                          >
+                            {ONBOARDING_STAGE_LABELS[s]}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold text-neutral-700 mb-2">Capabilities</p>
+                      <div className="grid sm:grid-cols-2 gap-2 text-sm">
+                        {[
+                          ['canPayFees', 'Can pay student fees'],
+                          ['canMessageUniversity', 'Can message university'],
+                          ['canManageApplications', 'Can manage applications'],
+                          ['canViewCommission', 'Can view commissions'],
+                        ].map(([key, label]) => (
+                          <label key={key} className="inline-flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(caps[key])}
+                              onChange={(e) => setCaps({ ...caps, [key]: e.target.checked })}
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className="mt-2 text-xs px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
+                        onClick={async () => {
+                          await updatePartner(selectedId, { capabilities: caps });
+                          flash('Capabilities saved');
+                          await load();
+                        }}
+                      >
+                        Save capabilities
+                      </button>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold text-neutral-700 mb-2">Partner documents</p>
+                      {!docs.length ? (
+                        <p className="text-xs text-neutral-500">No documents uploaded.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {docs.map((d) => (
+                            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 text-sm bg-white border border-neutral-200 rounded-lg px-3 py-2">
+                              <div>
+                                <p className="font-medium">{d.fileName}</p>
+                                <p className="text-xs text-neutral-500">
+                                  {d.type} · v{d.version} · {d.verificationStatus || 'PENDING'}
+                                </p>
+                              </div>
+                              <div className="flex gap-1">
+                                {d.fileUrl && (
+                                  <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-brand underline">
+                                    View
+                                  </a>
+                                )}
+                                {d.verificationStatus !== 'VERIFIED' && (
+                                  <button
+                                    type="button"
+                                    className="text-xs px-2 py-1 border rounded"
+                                    onClick={async () => {
+                                      await verifyPartnerDocument(selectedId, d.id, { verificationStatus: 'VERIFIED' });
+                                      setDocs((await listPartnerDocuments(selectedId))?.data || []);
+                                      flash('Document verified');
+                                    }}
+                                  >
+                                    Verify
+                                  </button>
+                                )}
+                                {d.verificationStatus !== 'REJECTED' && (
+                                  <button
+                                    type="button"
+                                    className="text-xs px-2 py-1 border rounded text-red-600"
+                                    onClick={async () => {
+                                      await verifyPartnerDocument(selectedId, d.id, { verificationStatus: 'REJECTED' });
+                                      setDocs((await listPartnerDocuments(selectedId))?.data || []);
+                                      flash('Document rejected');
+                                    }}
+                                  >
+                                    Reject
+                                  </button>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 )}
 
                 <label className="block space-y-1">
                   <span className="text-xs text-neutral-500">Notes</span>
-                  <textarea className={`${INPUT} min-h-[80px]`} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} disabled={!canManage} />
+                  <textarea className={`${INPUT} min-h-[80px]`} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} disabled={!canManage || isFreelancer} />
                 </label>
 
-                {(canManage || isFreelancer) && (
+                {canManage && !isFreelancer && (
                   <div className="flex gap-2">
                     <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm rounded-lg">
                       <Save className="w-4 h-4" />

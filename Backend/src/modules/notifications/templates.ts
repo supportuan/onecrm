@@ -273,6 +273,17 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
     },
   },
 
+  'agent.announcement': {
+    key: 'agent.announcement',
+    defaultChannels: ['IN_APP', 'EMAIL'],
+    build: (v) => {
+      const title = `${fallbackVar(v.title, 'Announcement')}`;
+      const body = `${fallbackVar(v.message, '')}`;
+      const link = v.link || '/agency-crm/communications';
+      return { title, body, html: wrapEmailHtml(title, body, link, 'Open announcement'), link };
+    },
+  },
+
   // -------------------- HR --------------------
   'hr.leave_request': {
     key: 'hr.leave_request',

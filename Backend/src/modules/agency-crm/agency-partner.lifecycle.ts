@@ -4,6 +4,22 @@ import {
   UserRole,
 } from '@prisma/client';
 import { prisma } from '../../prisma.js';
+import { DEFAULT_AGENT_CAPABILITIES } from './agency-capabilities.js';
+import {
+  assertOnboardingTransition,
+  OnboardingTransitionError,
+  stageIndex,
+} from './agency-onboarding.machine.js';
+import { isAgencyPartnerUser } from './scoping.js';
+
+export {
+  ONBOARDING_STAGE_ORDER,
+  AGENT_SELF_SERVICE_STAGES,
+  ADMIN_ONBOARDING_STAGES,
+  OnboardingTransitionError,
+  stageIndex,
+  assertOnboardingTransition,
+} from './agency-onboarding.machine.js';
 
 const slugCode = (name: string) =>
   name
@@ -76,6 +92,7 @@ export const provisionPartnerFromAgentUser = async (userId: number) => {
       services: details.services || null,
       status: AgencyPartnerStatus.PENDING,
       onboardingStage: AgencyOnboardingStage.REGISTERED,
+      capabilities: DEFAULT_AGENT_CAPABILITIES,
     },
   });
 
@@ -94,10 +111,25 @@ export const provisionPartnerFromAgentUser = async (userId: number) => {
 export const advancePartnerOnboarding = async (
   partnerId: number,
   stage: AgencyOnboardingStage,
-  actorId?: number
+  actorId?: number,
+  opts?: { actorRole?: string }
 ) => {
   const partner = await prisma.agencyPartner.findUnique({ where: { id: partnerId } });
   if (!partner) throw new Error('partner not found');
+
+  assertOnboardingTransition({
+    from: partner.onboardingStage,
+    to: stage,
+    actorRole: opts?.actorRole,
+  });
+
+  if (
+    isAgencyPartnerUser(opts?.actorRole) &&
+    actorId != null &&
+    partner.userId !== actorId
+  ) {
+    throw new OnboardingTransitionError('forbidden');
+  }
 
   const now = new Date();
   const data: Record<string, unknown> = { onboardingStage: stage };
@@ -150,6 +182,15 @@ export const setPartnerStatus = async (
   const partner = await prisma.agencyPartner.findUnique({ where: { id: partnerId } });
   if (!partner) throw new Error('partner not found');
 
+  if (status === AgencyPartnerStatus.ACTIVE) {
+    const minIdx = stageIndex(AgencyOnboardingStage.AGREEMENT_SIGNED);
+    if (stageIndex(partner.onboardingStage) < minIdx) {
+      throw new OnboardingTransitionError(
+        'Partner must complete documents and agreement before activation'
+      );
+    }
+  }
+
   const updated = await prisma.agencyPartner.update({
     where: { id: partnerId },
     data: {
@@ -188,14 +229,40 @@ export const setPartnerStatus = async (
   return updated;
 };
 
-export const signPartnerAgreement = async (partnerId: number, userId: number) => {
+export const signPartnerAgreement = async (
+  partnerId: number,
+  userId: number,
+  actorRole?: string,
+  meta?: { ipAddress?: string | null; userAgent?: string | null; agreementVersion?: string }
+) => {
   const partner = await prisma.agencyPartner.findUnique({ where: { id: partnerId } });
   if (!partner || partner.userId !== userId) throw new Error('forbidden');
 
-  return advancePartnerOnboarding(partnerId, AgencyOnboardingStage.AGREEMENT_SIGNED, userId);
+  const updated = await advancePartnerOnboarding(
+    partnerId,
+    AgencyOnboardingStage.AGREEMENT_SIGNED,
+    userId,
+    { actorRole: actorRole || UserRole.AGENT }
+  );
+
+  await prisma.agencyAgreementAcceptance.create({
+    data: {
+      agencyPartnerId: partnerId,
+      agreementVersion: meta?.agreementVersion || 'v1',
+      actorId: userId,
+      ipAddress: meta?.ipAddress ?? null,
+      userAgent: meta?.userAgent ?? null,
+    },
+  });
+
+  return updated;
 };
 
-export const submitPartnerOnboardingDocs = async (partnerId: number, userId: number) => {
+export const submitPartnerOnboardingDocs = async (
+  partnerId: number,
+  userId: number,
+  actorRole?: string
+) => {
   const partner = await prisma.agencyPartner.findUnique({ where: { id: partnerId } });
   if (!partner || partner.userId !== userId) throw new Error('forbidden');
 
@@ -206,7 +273,12 @@ export const submitPartnerOnboardingDocs = async (partnerId: number, userId: num
     throw new Error('Upload at least one onboarding document before submitting');
   }
 
-  return advancePartnerOnboarding(partnerId, AgencyOnboardingStage.DOCS_SUBMITTED, userId);
+  return advancePartnerOnboarding(
+    partnerId,
+    AgencyOnboardingStage.DOCS_SUBMITTED,
+    userId,
+    { actorRole: actorRole || UserRole.AGENT }
+  );
 };
 
 export { syncUserAgencyDetails, uniqueAgencyCode, slugCode };

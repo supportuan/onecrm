@@ -277,6 +277,59 @@ export const removeUniversity = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const listStudyPlans = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    if (!studentId) return sendError(res, 'invalid student id', null, 400);
+    const items = await service.listStudentStudyPlans(studentId, actor(req));
+    return sendSuccess(res, 'study plans', items);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const createStudyPlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    if (!studentId) return sendError(res, 'invalid student id', null, 400);
+    const item = await service.createStudentStudyPlan(studentId, req.body || {}, actor(req));
+    return sendSuccess(res, 'study plan created', item, 201);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const updateStudyPlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    const planId = numId(req.params.planId);
+    if (!studentId || !planId) return sendError(res, 'invalid ids', null, 400);
+    const item = await service.updateStudentStudyPlan(studentId, planId, req.body || {}, actor(req));
+    return sendSuccess(res, 'study plan updated', item);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const removeStudyPlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    const planId = numId(req.params.planId);
+    if (!studentId || !planId) return sendError(res, 'invalid ids', null, 400);
+    await service.removeStudentStudyPlan(studentId, planId, actor(req));
+    return sendSuccess(res, 'study plan removed', { studentId, planId });
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
 export const createApplication = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { studentId, country, university, course } = req.body || {};

@@ -27,7 +27,7 @@ export default function Home() {
     } else if (role === "COUNSELLOR" || role === "TELECALLER" || role === "MARKETING_MANAGER") {
       router.push("/marketing");
     } else if (role === "AGENT" || role === "AGENCY_FREELANCER") {
-      router.push("/agency-crm/agency-management");
+      router.push("/agency-crm/dashboard");
     } else if (role === "STUDENT") {
       router.push("/applicant/applications");
     } else {

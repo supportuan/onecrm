@@ -259,6 +259,26 @@ enum CommissionStatus {
   CANCELLED
 }
 
+enum AgencyDocumentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AgencyAnnouncementType {
+  GENERAL
+  POLICY
+  SCHOLARSHIP
+  UNIVERSITY_UPDATE
+}
+
+enum CommissionPayoutStatus {
+  DRAFT
+  PROCESSING
+  PAID
+  CANCELLED
+}
+
 enum HrAccessRole {
   EMPLOYEE
   COUNSELLOR
@@ -691,8 +711,14 @@ model User {
   applicationsAssigned    Application[]           @relation("ApplicationAssignee")
   applicationStageChanges ApplicationStageEvent[] @relation("StageChangedBy")
   applicationPayments     ApplicationPayment[]    @relation("StudentPayments")
+  applicationPaymentsActed ApplicationPayment[]   @relation("PaymentActor")
   agencyPartner           AgencyPartner?
   agencyActivities        AgencyActivity[]        @relation("AgencyActivityActor")
+  agencyCommissionsVerified AgencyCommission[]    @relation("CommissionVerifiedBy")
+  agencyAgreementAcceptances AgencyAgreementAcceptance[] @relation("AgreementAcceptedBy")
+  agencyAnnouncementsPublished AgencyAnnouncement[] @relation("AnnouncementPublisher")
+  agencyAnnouncementReads AgencyAnnouncementRead[]
+  commissionPayoutsCreated CommissionPayout[]     @relation("PayoutCreatedBy")
   hrCandidateStageChanges HrCandidateStageEvent[] @relation("HrCandidateStageChangedBy")
 }
 
@@ -734,6 +760,7 @@ model Country {
   universities      University[]
   faqs              Faq[]
   countryChecklists CountryChecklist[]
+  studyPlans        StudentStudyPlan[]
 }
 
 model StudyIndustry {
@@ -787,6 +814,9 @@ model University {
   city       String?
   location   String?
   logo       String?
+  pocName    String?
+  pocEmail   String?
+  pocPhone   String?
   deletedAt  DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -795,6 +825,7 @@ model University {
   studentUniversities StudentUniversity[]
   courses             Course[]
   preferredByStudents Student[]           @relation("StudentPreferredUniversity")
+  studyPlans          StudentStudyPlan[]
 
   @@unique([countryId, name])
 }
@@ -817,6 +848,7 @@ model Course {
 
   university          University @relation(fields: [universityId], references: [id], onDelete: Cascade)
   preferredByStudents Student[]  @relation("StudentPreferredCourse")
+  studyPlans          StudentStudyPlan[]
 
   @@index([universityId])
   @@index([name])
@@ -903,6 +935,7 @@ model Student {
   preferredCourseRef  Course?           @relation("StudentPreferredCourse", fields: [preferredCourseId], references: [id])
   applications      Application[]
   universities      StudentUniversity[]
+  studyPlans        StudentStudyPlan[]
   checklists        StudentChecklist[]
   feedbacks         Feedback[]
   chats             Chat[]
@@ -933,6 +966,30 @@ model StudentUniversity {
   university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, universityId])
+}
+
+model StudentStudyPlan {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  countryId    Int?
+  country      String?
+  universityId Int?
+  university   String?
+  courseId     Int?
+  course       String?
+  intake       String?
+  sortOrder    Int      @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  countryRef    Country?    @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  universityRef University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
+  courseRef     Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  applications  Application[]
+
+  @@index([studentId])
 }
 
 model CheckList {
@@ -1056,6 +1113,7 @@ model Application {
   id              Int              @id @default(autoincrement())
   applicationCode String           @unique
   studentId       Int
+  studyPlanId     Int?
   country         String
   university      String
   course          String
@@ -1068,6 +1126,7 @@ model Application {
   updatedAt       DateTime         @updatedAt
 
   student           Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studyPlan         StudentStudyPlan?         @relation(fields: [studyPlanId], references: [id], onDelete: SetNull)
   assignedTo        User?                   @relation("ApplicationAssignee", fields: [assignedToId], references: [id])
   stageEvents       ApplicationStageEvent[]
   documents         ApplicationDocument[]
@@ -1081,6 +1140,7 @@ model Application {
   @@index([studentId])
   @@index([stage])
   @@index([assignedToId])
+  @@index([studyPlanId])
 }
 
 // -----------------------------------------------------------------------------
@@ -1107,6 +1167,8 @@ model AgencyPartner {
   approvedAt       DateTime?
   activatedAt      DateTime?
   branding         Json?
+  /// Fine-grained partner capabilities; coarse gate remains VIEW_AGENCY_CRM.
+  capabilities     Json?
   notes            String?
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
@@ -1117,33 +1179,43 @@ model AgencyPartner {
   documents   AgencyPartnerDocument[]
   activities  AgencyActivity[]
   rules       AgencyCommissionRule[]
+  agreementAcceptances AgencyAgreementAcceptance[]
+  payoutLines CommissionPayoutLine[]
 
   @@index([status])
   @@index([agencyCode])
 }
 
 model AgencyPartnerDocument {
-  id              Int                @id @default(autoincrement())
-  agencyPartnerId Int
-  type            AgencyDocumentType
-  fileName        String
-  fileUrl         String
-  mimeType        String?
-  fileSize        Int?
-  notes           String?
-  uploadedAt      DateTime           @default(now())
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id                 Int                              @id @default(autoincrement())
+  agencyPartnerId    Int
+  type               AgencyDocumentType
+  fileName           String
+  fileUrl            String
+  mimeType           String?
+  fileSize           Int?
+  notes              String?
+  verificationStatus AgencyDocumentVerificationStatus @default(PENDING)
+  version            Int                              @default(1)
+  replacedById       Int?
+  uploadedAt         DateTime                         @default(now())
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
 
-  agencyPartner AgencyPartner @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
+  agencyPartner AgencyPartner          @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
+  replacedBy    AgencyPartnerDocument? @relation("DocumentVersions", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces      AgencyPartnerDocument[] @relation("DocumentVersions")
 
   @@index([agencyPartnerId, type])
+  @@index([verificationStatus])
 }
 
 model AgencyActivity {
   id              Int                @id @default(autoincrement())
   agencyPartnerId Int
   actorId         Int?
+  studentId       Int?
+  applicationId   Int?
   activityType    AgencyActivityType
   subject         String?
   comment         String?
@@ -1154,6 +1226,8 @@ model AgencyActivity {
   actor         User?         @relation("AgencyActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([agencyPartnerId, createdAt])
+  @@index([studentId])
+  @@index([applicationId])
 }
 
 model AgencyCommissionRule {
@@ -1192,9 +1266,9 @@ model AgencyReferral {
   student       Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
   application   Application?  @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 
+  @@unique([leadId])
+  @@unique([studentId])
   @@index([agencyPartnerId])
-  @@index([leadId])
-  @@index([studentId])
   @@index([applicationId])
 }
 
@@ -1204,20 +1278,107 @@ model AgencyCommission {
   studentId       Int?
   applicationId   Int?
   amount          Float
-  currency        String           @default("GBP")
+  currency        String           @default("INR")
   status          CommissionStatus @default(PENDING)
   period          String?
   description     String?
+  verifiedById    Int?
+  verifiedAt      DateTime?
   paidAt          DateTime?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  agencyPartner AgencyPartner @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
-  student       Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  application   Application?  @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  agencyPartner AgencyPartner         @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
+  student       Student?              @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  application   Application?          @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  verifiedBy    User?                 @relation("CommissionVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  payoutLine    CommissionPayoutLine?
 
-  @@index([agencyPartnerId])
+  @@index([agencyPartnerId, status])
   @@index([status])
+  @@index([verifiedById])
+}
+
+model AgencyAgreementAcceptance {
+  id               Int      @id @default(autoincrement())
+  agencyPartnerId  Int
+  agreementVersion String   @default("v1")
+  acceptedAt       DateTime @default(now())
+  ipAddress        String?
+  userAgent        String?
+  actorId          Int?
+  createdAt        DateTime @default(now())
+
+  agencyPartner AgencyPartner @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
+  actor         User?         @relation("AgreementAcceptedBy", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([agencyPartnerId, acceptedAt])
+}
+
+model AgencyAnnouncement {
+  id            Int                    @id @default(autoincrement())
+  type          AgencyAnnouncementType @default(GENERAL)
+  title         String
+  body          String
+  link          String?
+  publishedAt   DateTime?
+  publishedById Int?
+  isActive      Boolean                @default(true)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  publishedBy User?                    @relation("AnnouncementPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  reads       AgencyAnnouncementRead[]
+
+  @@index([publishedAt])
+  @@index([isActive, publishedAt])
+}
+
+model AgencyAnnouncementRead {
+  id             Int      @id @default(autoincrement())
+  announcementId Int
+  userId         Int
+  readAt         DateTime @default(now())
+
+  announcement AgencyAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+}
+
+model CommissionPayout {
+  id          Int                    @id @default(autoincrement())
+  period      String?
+  currency    String                 @default("INR")
+  totalAmount Float                  @default(0)
+  status      CommissionPayoutStatus @default(DRAFT)
+  notes       String?
+  paidAt      DateTime?
+  createdById Int?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  createdBy User?                 @relation("PayoutCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  lines     CommissionPayoutLine[]
+
+  @@index([status])
+  @@index([period])
+}
+
+model CommissionPayoutLine {
+  id              Int   @id @default(autoincrement())
+  payoutId        Int
+  commissionId    Int   @unique
+  agencyPartnerId Int
+  amount          Float
+
+  payout        CommissionPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  commission    AgencyCommission @relation(fields: [commissionId], references: [id], onDelete: Restrict)
+  agencyPartner AgencyPartner    @relation(fields: [agencyPartnerId], references: [id], onDelete: Cascade)
+
+  @@index([payoutId])
+  @@index([agencyPartnerId])
 }
 
 model ApplicationStageEvent {
@@ -1276,6 +1437,9 @@ model ApplicationPayment {
   applicationId     Int
   feeId             Int?
   studentUserId     Int
+  /// Staff/agent who initiated the payment on behalf of the student (optional).
+  actedByUserId     Int?
+  actorRole         String?
   amountPaise       Int
   currency          String        @default("INR")
   status            PaymentStatus @default(PENDING)
@@ -1292,9 +1456,11 @@ model ApplicationPayment {
   application Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   fee         ApplicationFee? @relation(fields: [feeId], references: [id], onDelete: SetNull)
   studentUser User            @relation("StudentPayments", fields: [studentUserId], references: [id], onDelete: Cascade)
+  actedBy     User?           @relation("PaymentActor", fields: [actedByUserId], references: [id], onDelete: SetNull)
 
   @@index([applicationId, status])
   @@index([studentUserId])
+  @@index([actedByUserId])
 }
 
 model OfferLetter {

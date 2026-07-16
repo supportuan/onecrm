@@ -5,6 +5,7 @@ import { Copy, Layers, Save } from 'lucide-react';
 import { getMyPartner, listPartners, updatePartner } from '@/services/agencyCrmApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
+import { isAgencyPartnerRole } from '../agentPortal';
 
 const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
@@ -13,7 +14,9 @@ export default function CoBrandingTools() {
   const { user } = useAuth();
   const { can } = usePermissions();
   const canManage = can('MANAGE_AGENCY_CRM');
-  const isFreelancer = user?.role === 'AGENCY_FREELANCER';
+  const isAgent = isAgencyPartnerRole(user?.role);
+  /** Agents edit own branding via VIEW; admins use MANAGE across partners. */
+  const canEditBranding = isAgent || canManage;
 
   const [partners, setPartners] = useState([]);
   const [selectedId, setSelectedId] = useState('');
@@ -42,7 +45,7 @@ export default function CoBrandingTools() {
   useEffect(() => {
     (async () => {
       try {
-        if (isFreelancer) {
+        if (isAgent) {
           const res = await getMyPartner();
           applyPartner(res?.data);
           return;
@@ -58,13 +61,13 @@ export default function CoBrandingTools() {
         setPartner(null);
       }
     })().catch(() => {});
-  }, [isFreelancer]);
+  }, [isAgent]);
 
   useEffect(() => {
-    if (isFreelancer || !selectedId || !partners.length) return;
+    if (isAgent || !selectedId || !partners.length) return;
     const p = partners.find((x) => String(x.id) === String(selectedId));
     if (p) applyPartner(p);
-  }, [selectedId, partners, isFreelancer]);
+  }, [selectedId, partners, isAgent]);
 
   const referralLink =
     typeof window !== 'undefined' && partner?.agencyCode
@@ -75,7 +78,7 @@ export default function CoBrandingTools() {
 
   const save = async (e) => {
     e.preventDefault();
-    if (!canManage || !partner?.id) return;
+    if (!canEditBranding || !partner?.id) return;
     try {
       const res = await updatePartner(partner.id, { branding });
       setPartner(res?.data || partner);
@@ -113,7 +116,9 @@ export default function CoBrandingTools() {
     <div className="ui-page">
       <div className="ui-container space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-brand">Co-branding tools</h1>
+          <h1 className="text-2xl font-semibold text-brand">
+            {isAgent ? 'Referral & branding' : 'Co-branding tools'}
+          </h1>
           <p className="text-sm text-neutral-500 mt-1">
             Referral links and branded assets for {partner.agencyName}.
           </p>
@@ -121,7 +126,7 @@ export default function CoBrandingTools() {
 
         {msg && <p className="text-sm text-neutral-700">{msg}</p>}
 
-        {!isFreelancer && partners.length > 1 && (
+        {!isAgent && partners.length > 1 && (
           <select
             className={INPUT + ' max-w-md'}
             value={selectedId}
@@ -170,22 +175,22 @@ export default function CoBrandingTools() {
           <div className="grid md:grid-cols-2 gap-4">
             <label className="block space-y-1">
               <span className="text-xs text-neutral-500">Tagline</span>
-              <input className={INPUT} value={branding.tagline} onChange={(e) => setBranding({ ...branding, tagline: e.target.value })} disabled={!canManage} />
+              <input className={INPUT} value={branding.tagline} onChange={(e) => setBranding({ ...branding, tagline: e.target.value })} disabled={!canEditBranding} />
             </label>
             <label className="block space-y-1">
               <span className="text-xs text-neutral-500">Primary colour</span>
-              <input type="color" className="h-10 w-full rounded border border-neutral-200" value={branding.primaryColor} onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })} disabled={!canManage} />
+              <input type="color" className="h-10 w-full rounded border border-neutral-200" value={branding.primaryColor} onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })} disabled={!canEditBranding} />
             </label>
             <label className="block space-y-1">
               <span className="text-xs text-neutral-500">Logo URL</span>
-              <input className={INPUT} value={branding.logoUrl} onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })} disabled={!canManage} placeholder="https://…" />
+              <input className={INPUT} value={branding.logoUrl} onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })} disabled={!canEditBranding} placeholder="https://…" />
             </label>
             <label className="block space-y-1">
               <span className="text-xs text-neutral-500">Website URL</span>
-              <input className={INPUT} value={branding.websiteUrl} onChange={(e) => setBranding({ ...branding, websiteUrl: e.target.value })} disabled={!canManage} />
+              <input className={INPUT} value={branding.websiteUrl} onChange={(e) => setBranding({ ...branding, websiteUrl: e.target.value })} disabled={!canEditBranding} />
             </label>
           </div>
-          {canManage && (
+          {canEditBranding && (
             <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm rounded-lg">
               <Save className="w-4 h-4" />
               Save branding

@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from "../lib/workspaceContext";
 import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
+import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
 
 const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Users") return "User Management";
@@ -25,6 +26,8 @@ const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Payroll") return "Payroll Inputs";
   if (subLabel === "Overview") return "Employee Directory";
   if (subLabel === "Student Management") return "Student Management";
+  if (subLabel === "Students & Referrals") return "Agency Leads";
+  if (subLabel === "My Students") return "Agency Leads";
 
   return subLabel;
 };
@@ -69,6 +72,8 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
     if (!user) return [];
     if (user.role === "SUPER_ADMIN") return [];
 
+    const isAgent = isAgencyPartnerRole(user.role);
+
     const enabledModules = Array.isArray(user.enabledModules)
       ? new Set(user.enabledModules)
       : new Set();
@@ -88,9 +93,31 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
       return can(required);
     };
 
+    const audienceAllows = (sub) => {
+      const audience = sub.audience || "all";
+      if (audience === "all") return true;
+      if (audience === "admin") return !isAgent;
+      if (audience === "agent") return isAgent;
+      return true;
+    };
+
     const subVisible = (sub) => {
+      if (!audienceAllows(sub)) return false;
       if (sub.permission) return can(sub.permission);
       return true;
+    };
+
+    const withAgentLabels = (item) => {
+      if (!isAgent) return item;
+      return {
+        ...item,
+        displayLabel: item.agentDisplayLabel || item.displayLabel || item.label,
+        path: item.label === "Agency CRM" ? "/agency-crm/dashboard" : item.path,
+        subItems: item.subItems?.map((sub) => ({
+          ...sub,
+          label: sub.agentLabel || sub.label,
+        })),
+      };
     };
 
     if (!hasConfiguredModuleAccess(user.moduleAccess)) {
@@ -102,7 +129,8 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
             ? item.subItems.filter(subVisible)
             : undefined,
         }))
-        .filter((item) => !item.subItems || item.subItems.length > 0);
+        .filter((item) => !item.subItems || item.subItems.length > 0)
+        .map(withAgentLabels);
     }
 
     const access = user.moduleAccess;
@@ -110,16 +138,17 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
     return navMenu
       .filter(moduleVisible)
       .map((item) => {
-        if (!item.subItems) return item;
+        if (!item.subItems) return withAgentLabels(item);
 
-        const moduleAccessSubItems = filterSubItemsByModuleAccess(item, access);
+        const moduleAccessSubItems = filterSubItemsByModuleAccess(item, access)
+          .filter(audienceAllows);
 
         if (moduleAccessSubItems.length === 0) return null;
 
-        return {
+        return withAgentLabels({
           ...item,
           subItems: moduleAccessSubItems,
-        };
+        });
       })
       .filter(Boolean);
   }, [user, can, permissionMap]);

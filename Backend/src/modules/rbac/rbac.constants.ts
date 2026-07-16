@@ -64,8 +64,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
+  // Both agent roles are portal-scoped VIEW. Partner ops (MANAGE) stay admin-only;
+  // fine-grained actions use AgencyPartner.capabilities.
   AGENCY_FREELANCER: [
-    'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM',
+    'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
   ],
   AGENT: [
