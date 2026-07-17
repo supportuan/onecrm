@@ -80,7 +80,8 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
   const [feedback, setFeedback] = useState(null);
   const [uploadType, setUploadType] = useState('ID_PROOF');
   const [uploadNotes, setUploadNotes] = useState('');
-  const [uploadFile, setUploadFile] = useState(null);
+  /** @type {[{ id: string, file: File, fileName: string }]} */
+  const [uploadItems, setUploadItems] = useState([]);
   const [docBusy, setDocBusy] = useState(false);
 
   useEffect(() => {
@@ -149,20 +150,69 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
     }
   };
 
+  const handlePickFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    setUploadItems((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        fileName: file.name.replace(/\.[^.]+$/, '') || file.name,
+      })),
+    ]);
+  };
+
+  const updateUploadItemName = (id, fileName) => {
+    setUploadItems((prev) => prev.map((item) => (item.id === id ? { ...item, fileName } : item)));
+  };
+
+  const removeUploadItem = (id) => {
+    setUploadItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const handleUpload = async () => {
-    if (!uploadFile) return;
+    if (!uploadItems.length) return;
     setDocBusy(true);
     setFeedback(null);
     try {
-      const res = await uploadEmployeeDocument(employee.id, uploadFile, {
-        type: uploadType,
-        notes: uploadNotes || undefined,
-      });
-      if (res.success) {
-        setDocuments((prev) => [res.data, ...prev]);
-        setUploadFile(null);
+      const uploaded = [];
+      const failures = [];
+      for (const item of uploadItems) {
+        const name = (item.fileName || '').trim() || item.file.name;
+        try {
+          const res = await uploadEmployeeDocument(employee.id, item.file, {
+            type: uploadType,
+            fileName: name,
+            notes: uploadNotes || undefined,
+          });
+          if (res.success && res.data) {
+            uploaded.push(res.data);
+          } else {
+            failures.push(item.file.name);
+          }
+        } catch {
+          failures.push(item.file.name);
+        }
+      }
+      if (uploaded.length) {
+        setDocuments((prev) => [...uploaded, ...prev]);
+        setUploadItems([]);
         setUploadNotes('');
-        setFeedback({ type: 'success', text: 'Document uploaded' });
+      }
+      if (failures.length && uploaded.length) {
+        setFeedback({
+          type: 'error',
+          text: `Uploaded ${uploaded.length}; failed: ${failures.join(', ')}`,
+        });
+      } else if (failures.length) {
+        setFeedback({ type: 'error', text: `Upload failed: ${failures.join(', ')}` });
+      } else {
+        setFeedback({
+          type: 'success',
+          text: uploaded.length === 1 ? 'Document uploaded' : `${uploaded.length} documents uploaded`,
+        });
       }
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || 'Upload failed' });
@@ -431,12 +481,17 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
           ) : (
             <div className="space-y-6">
               <div className="ui-panel p-5 space-y-4">
-                <h3 className="text-xs font-semibold text-neutral-700">Upload document</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-neutral-800">Upload documents</h3>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Select one or more files, then set a custom name for each before uploading.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <select
                     value={uploadType}
                     onChange={(e) => setUploadType(e.target.value)}
-                    className="px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium"
+                    className="px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium"
                   >
                     {DOC_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>
@@ -445,27 +500,70 @@ export default function EmployeeDetailModal({ employee, allEmployees, onClose, o
                     ))}
                   </select>
                   <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.html"
-                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                    className="px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs col-span-1 md:col-span-1"
-                  />
-                  <input
                     type="text"
-                    placeholder="Notes (optional)"
+                    placeholder="Notes (optional, applied to all)"
                     value={uploadNotes}
                     onChange={(e) => setUploadNotes(e.target.value)}
-                    className="px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium"
+                    className="px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium"
                   />
                 </div>
+                <label className="flex flex-col items-center justify-center gap-2 px-4 py-6 border border-dashed border-neutral-300 rounded-lg bg-neutral-50 cursor-pointer hover:border-brand/40 hover:bg-brand/5 transition-colors">
+                  <Upload size={18} className="text-neutral-500" />
+                  <span className="text-sm font-medium text-neutral-700">Choose files</span>
+                  <span className="text-xs text-neutral-500">JPG, PNG, PDF, DOC, DOCX, HTML — multiple allowed</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.html"
+                    onChange={handlePickFiles}
+                    className="hidden"
+                  />
+                </label>
+                {uploadItems.length > 0 && (
+                  <div className="space-y-2">
+                    {uploadItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-white border border-neutral-200 rounded-lg"
+                      >
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <label className="block text-[11px] font-medium text-neutral-500 uppercase tracking-wide">
+                            Document name
+                          </label>
+                          <input
+                            type="text"
+                            value={item.fileName}
+                            onChange={(e) => updateUploadItemName(item.id, e.target.value)}
+                            placeholder="Custom name"
+                            className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium"
+                          />
+                          <p className="text-xs text-neutral-400 truncate" title={item.file.name}>
+                            File: {item.file.name}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeUploadItem(item.id)}
+                          disabled={docBusy}
+                          className="self-start sm:self-center p-2 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg disabled:opacity-40"
+                          title="Remove"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={handleUpload}
-                  disabled={!uploadFile || docBusy}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-brand text-white rounded-lg text-xs font-semibold disabled:opacity-40"
+                  disabled={!uploadItems.length || docBusy}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-brand text-white rounded-lg text-sm font-semibold disabled:opacity-40"
                 >
                   {docBusy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                  Upload
+                  {uploadItems.length > 1
+                    ? `Upload ${uploadItems.length} documents`
+                    : 'Upload document'}
                 </button>
               </div>
 
