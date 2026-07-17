@@ -14,6 +14,10 @@ import {
 } from "../../../utils/validation.js";
 import { buildCampaignEmailTemplate } from './emailTemplate.service.js';
 import { syncMetaCampaignInsights } from './metaInsights.service.js';
+import { getDefaultTenantId } from '../../../utils/tenant-default.js';
+import type {
+  WebsiteLeadInput,
+} from '../schemas/website-lead.schema.js';
 
 // Helper to calculate Month-over-Month growth
 const calculateGrowth = (current: number, previous: number): string => {
@@ -22,7 +26,7 @@ const calculateGrowth = (current: number, previous: number): string => {
   return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
 };
 
-// ==========================================`  
+// ==========================================
 // 1. Dashboard & High-Level Services
 // ==========================================
 
@@ -2080,6 +2084,113 @@ export const convertStudentToLead = async (userId: number, overrides: any = {}) 
 
   // 4️⃣ Create lead
   const lead = await prisma.lead.create({ data: leadData });
+
+  return lead;
+};
+
+
+export const createWebsiteLead = async (
+  data: WebsiteLeadInput
+) => {
+  const email = normalizeEmail(data.email);
+  const phone = normalizePhone(data.phone);
+
+  if (!email) {
+    throw new Error('Email is required');
+  }
+
+  if (phone && phone.length !== 10) {
+    throw new Error(
+      'Phone number must contain exactly 10 digits'
+    );
+  }
+
+  await validateDuplicateLead(email, phone);
+
+  const websiteSource =
+    await prisma.leadSource.findFirst({
+      where: {
+        name: {
+          equals: 'Website Form',
+          mode: 'insensitive',
+        },
+      },
+
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+  if (!websiteSource) {
+    throw new Error(
+      'Website Form source is not configured'
+    );
+  }
+
+  const lead = await prisma.lead.create({
+    data: {
+      fullName: data.fullName.trim(),
+
+      email,
+
+      phone,
+
+      country: normalizeValue(
+        data.country
+      ),
+
+      preferredCountry: normalizeValue(
+        data.preferredCountry
+      ),
+
+      preferredCourse: normalizeValue(
+        data.preferredCourse
+      ),
+
+      sourceId: websiteSource.id,
+
+      status: 'NEW',
+
+      rating: 'WARM',
+
+      remark: normalizeValue(
+        data.message
+      ),
+
+      utmSource: normalizeValue(
+        data.utmSource
+      ),
+
+      utmMedium: normalizeValue(
+        data.utmMedium
+      ),
+
+      utmCampaign: normalizeValue(
+        data.utmCampaign
+      ),
+
+      utmTerm: normalizeValue(
+        data.utmTerm
+      ),
+
+      utmContent: normalizeValue(
+        data.utmContent
+      ),
+
+      platform: 'WEBSITE',
+
+      assignedCounsellorId: null,
+
+      assignedById: null,
+    },
+
+    include: {
+      source: true,
+      assignedCounsellor: true,
+      assignedBy: true,
+    },
+  });
 
   return lead;
 };
