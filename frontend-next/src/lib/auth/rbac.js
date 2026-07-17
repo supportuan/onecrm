@@ -100,7 +100,8 @@ export const ROLE_DESCRIPTIONS = {
   MARKETING_MANAGER: 'marketing manager. owns leads, campaigns, automations and landing pages.',
   COUNSELLOR: 'counsellor / advisor. marketing + student crm management, self-service hr.',
   TELECALLER: 'telecaller. view-only on marketing and student crm; self-service hr.',
-  AGENCY_FREELANCER: 'agency partner / freelancer. agency crm + student crm visibility.',
+  AGENCY_FREELANCER: 'agency partner / freelancer. portal-scoped agency access + referred students (same as AGENT).',
+  AGENT: 'agent partner. portal-scoped agency access + referred students after admin approval.',
   STUDENT: 'student. applicant portal only (profile and own applications).',
 };
 
@@ -153,8 +154,14 @@ export const ROLE_PERMISSIONS = {
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
+  // Both agent roles are portal-scoped VIEW. Partner ops stay admin-only;
+  // fine-grained actions use partner capabilities.
   AGENCY_FREELANCER: [
-    'VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM',
+    'VIEW_AGENCY_CRM',
+    'VIEW_STUDENT_CRM',
+  ],
+  AGENT: [
+    'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
   ],
   STUDENT: [],

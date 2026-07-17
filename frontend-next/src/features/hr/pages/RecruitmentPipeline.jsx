@@ -12,7 +12,7 @@ const TABS = [
     key: 'pipeline',
     label: 'Jobs & pipeline',
     short: 'Pipeline',
-    description: 'Postings, applicants, and pipeline stages.',
+    description: 'Postings, applicants, and stage progression.',
     icon: Briefcase,
     component: JobPostings,
   },
@@ -55,12 +55,19 @@ export default function RecruitmentPipeline() {
   };
 
   return (
-    <div className="min-h-full">
-      <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 bg-white/85 backdrop-blur-md border-b border-neutral-200/80">
+    <div className="ui-page max-w-full min-h-full">
+      <div className="mb-6">
+        <h1 className="ui-text-h1 text-brand">Recruitment tracker</h1>
+        <p className="ui-text-body mt-1">
+          Hire end-to-end — postings, pipeline, interviews, offers, and onboarding.
+        </p>
+      </div>
+
+      <div className="sticky top-0 z-20 -mx-1 mb-6 rounded-2xl border border-[var(--ui-border)] bg-white/90 p-1.5 shadow-sm backdrop-blur-md">
         <nav
           role="tablist"
           aria-label="Recruitment sections"
-          className="flex gap-1 overflow-x-auto pt-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {TABS.map((t) => {
             const Icon = t.icon;
@@ -72,28 +79,23 @@ export default function RecruitmentPipeline() {
                 aria-selected={isActive}
                 type="button"
                 onClick={() => setTab(t.key)}
-                className={`relative flex items-center gap-2 px-4 py-3 ui-text-strong whitespace-nowrap transition-all ${
-                  isActive ? 'text-brand' : '!text-neutral-500 hover:!text-neutral-800'
+                className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                  isActive
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
                 }`}
               >
-                <Icon size={14} className={isActive ? 'text-brand' : 'text-neutral-400'} />
-                <span className="hidden sm:inline">{t.label}</span>
+                <Icon size={15} className="shrink-0 opacity-90" />
+                <span className="hidden sm:inline truncate">{t.label}</span>
                 <span className="sm:hidden">{t.short}</span>
-                <span
-                  className={`absolute left-3 right-3 -bottom-px h-[2px] rounded-full transition-all ${
-                    isActive ? 'bg-brand' : 'bg-transparent'
-                  }`}
-                />
               </button>
             );
           })}
         </nav>
-        <p className="ui-text-meta pb-3 pt-2">{activeTab.description}</p>
+        <p className="ui-text-meta px-3 pb-2 pt-2.5">{activeTab.description}</p>
       </div>
 
-      <div className="pt-6">
-        <Active />
-      </div>
+      <Active />
     </div>
   );
 }

@@ -51,7 +51,7 @@ export default function LoginPage() {
       else if (role === 'HR') targetRoute = getDefaultHrRoute(role) || '/hr';
       else if (role === 'COUNSELLOR') targetRoute = '/marketing';
       else if (role === 'AGENT' || role === 'AGENCY_FREELANCER') {
-        targetRoute = '/student-crm/applications';
+        targetRoute = '/agency-crm/dashboard';
       } else if (role === 'STUDENT') {
         targetRoute = '/applicant/applications';
       }
@@ -223,6 +223,13 @@ export default function LoginPage() {
               Student?{' '}
               <Link href="/student-login" className="ui-link">
                 Use student login
+              </Link>
+            </p>
+
+            <p className="text-center text-xs text-brand-muted">
+              Agency agent?{' '}
+              <Link href="/agent-login" className="ui-link">
+                Agent login
               </Link>
             </p>
           </form>

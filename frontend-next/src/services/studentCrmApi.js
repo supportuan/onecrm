@@ -103,6 +103,41 @@ export const uploadVisaDocument = async (applicationId, file, label) => {
   });
   return handleResponse(res);
 };
+export const addVisaDocument = async (applicationId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/visa/documents`, json(payload)));
+export const updateVisaDocument = async (applicationId, docId, payload) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/visa/documents/${docId}`, putJson(payload)),
+  );
+export const uploadVisaChecklistDocument = async (applicationId, docId, file) => {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await tenantFetch(
+    `${API_URL}/applications/${applicationId}/visa/documents/${docId}/upload`,
+    { method: 'POST', body: form },
+  );
+  return handleResponse(res);
+};
+export const deleteVisaDocument = async (applicationId, docId) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/visa/documents/${docId}`, {
+      method: 'DELETE',
+    }),
+  );
+
+// -------------------- Application tasks --------------------
+export const listApplicationTasks = async (applicationId) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/tasks`));
+export const createApplicationTask = async (applicationId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/tasks`, json(payload)));
+export const updateApplicationTask = async (applicationId, taskId, payload) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/tasks/${taskId}`, putJson(payload)),
+  );
+export const deleteApplicationTask = async (applicationId, taskId) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/tasks/${taskId}`, { method: 'DELETE' }),
+  );
 
 export const getChecklist = async (country, university) => {
   const params = new URLSearchParams({ country });
@@ -213,6 +248,18 @@ export const upsertStudentUniversity = async (studentId, payload) =>
 
 export const removeStudentUniversity = async (studentId, universityId) =>
   handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/universities/${universityId}`, { method: 'DELETE' }));
+
+export const listStudentStudyPlans = async (studentId) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/study-plans`));
+
+export const createStudentStudyPlan = async (studentId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/study-plans`, json(payload)));
+
+export const updateStudentStudyPlan = async (studentId, planId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/study-plans/${planId}`, putJson(payload)));
+
+export const removeStudentStudyPlan = async (studentId, planId) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/study-plans/${planId}`, { method: 'DELETE' }));
 
 export const uploadFile = async (file) => {
   const form = new FormData();

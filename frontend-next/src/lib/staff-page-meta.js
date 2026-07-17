@@ -72,21 +72,36 @@ export function getStaffPageMeta(pathname = '') {
   } else if (pathname.startsWith('/student-crm')) {
     title = 'Student CRM';
     description = 'Manage your student CRM activities';
+  } else if (pathname.startsWith('/agency-crm/dashboard')) {
+    title = 'Dashboard';
+    description = 'Agent portal overview';
   } else if (pathname.startsWith('/agency-crm/agency-management')) {
     title = 'Agency Management';
-    description = 'Manage your agency CRM activities';
+    description = 'Manage agency partners, status, and onboarding approvals';
   } else if (pathname.startsWith('/agency-crm/agency-leads')) {
-    title = 'Agency Leads';
-    description = 'Manage your agency CRM activities';
+    title = 'Students & Referrals';
+    description = 'Assign students to agencies and track referrals';
+  } else if (pathname.startsWith('/agency-crm/universities')) {
+    title = 'University Directory';
+    description = 'Browse partner universities and programs';
+  } else if (pathname.startsWith('/agency-crm/onboarding')) {
+    title = 'Onboarding';
+    description = 'Agent registration, documents, and agreement';
+  } else if (pathname.startsWith('/agency-crm/communications')) {
+    title = 'Communications';
+    description = 'Agency activity and announcements';
   } else if (pathname.startsWith('/agency-crm/co-branding-tools')) {
     title = 'Co-branding Tools';
-    description = 'Manage your co-branding tools';
+    description = 'Referral links and branded assets';
   } else if (pathname.startsWith('/agency-crm/commission-management')) {
     title = 'Commission Management';
-    description = 'Manage your commission management';
+    description = 'Commission rules, accrual, and statements';
+  } else if (pathname.startsWith('/agency-crm/students')) {
+    title = 'Student';
+    description = 'Assigned student workspace';
   } else if (pathname.startsWith('/agency-crm')) {
-    title = 'Dashboard';
-    description = 'Manage your agency CRM activities';
+    title = 'Agency CRM';
+    description = 'Agency partner operations';
   } else if (pathname.startsWith('/allied-services')) {
     title = 'Allied Services';
     description = 'Manage your Allied Services';

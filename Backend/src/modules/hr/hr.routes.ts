@@ -58,7 +58,7 @@ router.get('/me', requirePermission('VIEW_HR'), controller.getHrMeProfile);
 // Leave
 router.get('/leave/requests', requirePermission('VIEW_LEAVE'), controller.getLeaveRequests);
 router.post('/leave/requests', requirePermission('VIEW_LEAVE'), controller.createLeaveRequest);
-router.put('/leave/requests/:id/process', requirePermission('MANAGE_LEAVE'), controller.processLeaveRequest);
+router.put('/leave/requests/:id/process', requirePermission('VIEW_LEAVE'), controller.processLeaveRequest);
 router.put('/leave/requests/:id/cancel', requirePermission('VIEW_LEAVE'), controller.cancelLeaveRequest);
 router.get('/leave/plans', requirePermission('VIEW_LEAVE'), controller.getLeavePlans);
 router.post('/leave/plans', requirePermission('MANAGE_LEAVE'), controller.createLeavePlan);

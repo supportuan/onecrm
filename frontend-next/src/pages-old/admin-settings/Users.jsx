@@ -43,8 +43,12 @@ const MODULE_ACCESS_OPTIONS = [
   {
     module: "Agency CRM",
     options: [
+      "Dashboard",
       "Agency Management",
       "Agency Leads",
+      "University Directory",
+      "Onboarding",
+      "Communications",
       "Co-branding Tools",
       "Commission Management",
     ],

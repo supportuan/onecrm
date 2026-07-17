@@ -6,7 +6,8 @@ import leadActivityRoutes from './lead-activity.routes.js';
 import leadReplyRoutes from './lead-reply.routes.js';
 import { authenticateToken } from '../../../middleware/authenticate.js';
 import { authorizeRole, authorizePermission } from '../../../middleware/authorize.js';
-import {updateLeadStatusController } from "../controllers/marketing.controller.js";   
+import { updateLeadStatusController } from "../controllers/marketing.controller.js";
+import * as marketingController from "../controllers/marketing.controller.js";
 
 
 const router = Router();
@@ -17,6 +18,79 @@ router.post(
   controller.bulkUploadLeads
 );
 
+// router.post(
+//   '/public/website-leads',
+//   marketingController.createWebsiteLead
+// );
+
+/**
+ * @swagger
+ * /api/marketing/public/website-leads:
+ *   post:
+ *     summary: Create a website lead
+ *     description: Public API used by the ApplyUniNow website to create leads in OneCRM.
+ *     tags: [Marketing]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fullName
+ *               - email
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 example: Rahul Sharma
+ *               email:
+ *                 type: string
+ *                 example: rahul@gmail.com
+ *               phone:
+ *                 type: string
+ *                 example: "9876543210"
+ *               country:
+ *                 type: string
+ *                 example: India
+ *               preferredCountry:
+ *                 type: string
+ *                 example: Canada
+ *               preferredCourse:
+ *                 type: string
+ *                 example: MBA
+ *               message:
+ *                 type: string
+ *                 example: Interested in September Intake
+ *               utmSource:
+ *                 type: string
+ *                 example: google
+ *               utmMedium:
+ *                 type: string
+ *                 example: cpc
+ *               utmCampaign:
+ *                 type: string
+ *                 example: canada-mba
+ *               utmTerm:
+ *                 type: string
+ *                 example: mba
+ *               utmContent:
+ *                 type: string
+ *                 example: homepage-banner
+ *     responses:
+ *       201:
+ *         description: Website lead created successfully
+ *       400:
+ *         description: Invalid request
+ *       409:
+ *         description: Duplicate email or phone number
+ */
+router.post(
+  '/public/website-leads',
+  marketingController.createWebsiteLead
+);
+
+
 router.post(
   '/social-media/upload-media',
   authenticateToken,
@@ -25,10 +99,10 @@ router.post(
 );
 
 router.post(
-    '/social-media/upload-media',
-    authenticateToken,
-    uploadMedia.single('media'),
-    controller.uploadSocialMediaMedia
+  '/social-media/upload-media',
+  authenticateToken,
+  uploadMedia.single('media'),
+  controller.uploadSocialMediaMedia
 );
 
 router.use('/', leadReplyRoutes);
@@ -1514,5 +1588,7 @@ router.post(
   authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
   controller.convertStudentToLead
 );
+
+
 
 export default router;

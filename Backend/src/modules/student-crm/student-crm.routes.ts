@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { UserRole } from '@prisma/client';
 import { authenticateToken } from '../../middleware/authenticate.js';
 import { requirePermission } from '../rbac/rbac.middleware.js';
 import * as controller from './student-crm.controller.js';
@@ -18,6 +19,24 @@ const studentSelfOr =
     if (req.user?.role === 'STUDENT') return next();
     return requirePermission(...perms)(req, res, next);
   };
+
+/** Agents may attach documents for their referred students. */
+const agentOrManageStudentWrite = (req: Request, res: Response, next: NextFunction) => {
+  const role = req.user?.role;
+  if (role === UserRole.AGENT || role === UserRole.AGENCY_FREELANCER) {
+    return requirePermission('VIEW_AGENCY_CRM')(req, res, next);
+  }
+  return requirePermission('MANAGE_STUDENT_CRM')(req, res, next);
+};
+
+/** Students, agents (referred students), or counsellors may upload application documents. */
+const studentAgentOrManageDocumentUpload = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role === 'STUDENT') return next();
+  if (req.user?.role === UserRole.AGENT || req.user?.role === UserRole.AGENCY_FREELANCER) {
+    return requirePermission('VIEW_AGENCY_CRM')(req, res, next);
+  }
+  return requirePermission('MANAGE_STUDENT_CRM')(req, res, next);
+};
 
 // Statistics
 router.get('/statistics', view, controller.getStatistics);
@@ -47,6 +66,12 @@ router.get('/students/:id/universities', view, controller.listUniversities);
 router.put('/students/:id/universities', manage, controller.upsertUniversity);
 router.delete('/students/:id/universities/:universityId', manage, controller.removeUniversity);
 
+// Student study plans (destination + university + course groupings)
+router.get('/students/:id/study-plans', view, controller.listStudyPlans);
+router.post('/students/:id/study-plans', manage, controller.createStudyPlan);
+router.put('/students/:id/study-plans/:planId', manage, controller.updateStudyPlan);
+router.delete('/students/:id/study-plans/:planId', manage, controller.removeStudyPlan);
+
 // Applications — list/get
 router.get('/applications', view, controller.listApplications);
 router.get('/applications/:id', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getApplication);
@@ -58,11 +83,11 @@ router.put('/applications/:id', manage, controller.updateApplication);
 router.post('/applications/:id/advance', manage, controller.advanceStage);
 
 // Application documents
-router.post('/applications/:id/documents', manage, controller.upsertDocument);
-router.put('/applications/:id/documents/:docId', manage, controller.upsertDocument);
+router.post('/applications/:id/documents', agentOrManageStudentWrite, controller.upsertDocument);
+router.put('/applications/:id/documents/:docId', agentOrManageStudentWrite, controller.upsertDocument);
 router.post(
   '/applications/:id/documents/:docId/upload',
-  studentSelfOr('MANAGE_STUDENT_CRM'),
+  studentAgentOrManageDocumentUpload,
   applicationDocUpload.single('file'),
   controller.uploadApplicationDocument,
 );
@@ -84,6 +109,21 @@ router.post(
   applicationDocUpload.single('file'),
   controller.uploadVisaDocument,
 );
+router.post('/applications/:id/visa/documents', manage, controller.upsertVisaChecklistDocument);
+router.put('/applications/:id/visa/documents/:docId', manage, controller.upsertVisaChecklistDocument);
+router.post(
+  '/applications/:id/visa/documents/:docId/upload',
+  studentAgentOrManageDocumentUpload,
+  applicationDocUpload.single('file'),
+  controller.uploadVisaChecklistDocument,
+);
+router.delete('/applications/:id/visa/documents/:docId', manage, controller.deleteVisaChecklistDocument);
+
+// Application tasks
+router.get('/applications/:id/tasks', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.listApplicationTasks);
+router.post('/applications/:id/tasks', manage, controller.createApplicationTask);
+router.put('/applications/:id/tasks/:taskId', manage, controller.updateApplicationTask);
+router.delete('/applications/:id/tasks/:taskId', manage, controller.deleteApplicationTask);
 
 // Checklist defaults (used by UI before docs exist)
 router.get('/checklist', view, controller.getChecklist);

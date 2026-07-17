@@ -75,6 +75,13 @@ export const listAgencyApplications = async ({ page, limit, search, agencyPartne
 export const createReferral = async (payload) =>
   handleResponse(await tenantFetch(`${API_URL}/referrals`, json(payload)));
 
+export const getUniversityContact = async ({ university, country } = {}) => {
+  const params = new URLSearchParams();
+  if (university) params.set('university', university);
+  if (country) params.set('country', country);
+  return handleResponse(await tenantFetch(`${API_URL}/university-contact?${params.toString()}`));
+};
+
 export const listCommissions = async ({ page, limit, status, agencyPartnerId } = {}) => {
   const params = new URLSearchParams();
   if (page) params.set('page', String(page));
@@ -133,3 +140,56 @@ export const sendAgentBroadcast = async (payload) =>
 
 export const resolvePublicReferralCode = async (code) =>
   handleResponse(await fetch(`${PUBLIC_URL}/referral/${encodeURIComponent(code)}`));
+
+export const listUniversityDirectory = async ({ search, country, page, limit } = {}) => {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (country) params.set('country', country);
+  if (page) params.set('page', String(page));
+  if (limit) params.set('limit', String(limit));
+  return handleResponse(await tenantFetch(`${API_URL}/universities?${params.toString()}`));
+};
+
+export const verifyPartnerDocument = async (partnerId, docId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/partners/${partnerId}/documents/${docId}/verify`, putJson(payload)));
+
+export const verifyCommission = async (id, payload = {}) =>
+  handleResponse(await tenantFetch(`${API_URL}/commissions/${id}/verify`, json(payload)));
+
+export const listPayouts = async ({ status } = {}) => {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  return handleResponse(await tenantFetch(`${API_URL}/payouts?${params.toString()}`));
+};
+
+export const getPayout = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/payouts/${id}`));
+
+export const createPayout = async (payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/payouts`, json(payload)));
+
+export const updatePayoutStatus = async (id, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/payouts/${id}/status`, putJson(payload)));
+
+export const listAnnouncements = async ({ activeOnly } = {}) => {
+  const params = new URLSearchParams();
+  if (activeOnly === false) params.set('activeOnly', 'false');
+  const qs = params.toString();
+  return handleResponse(await tenantFetch(`${API_URL}/announcements${qs ? `?${qs}` : ''}`));
+};
+
+export const createAnnouncement = async (payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/announcements`, json(payload)));
+
+export const markAnnouncementRead = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/announcements/${id}/read`, { method: 'POST' }));
+
+export const createAgentPaymentOrder = async (applicationId, feeId) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/payments/create-order`, json({ feeId }))
+  );
+
+export const verifyAgentPayment = async (applicationId, payload) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/payments/verify`, json(payload))
+  );

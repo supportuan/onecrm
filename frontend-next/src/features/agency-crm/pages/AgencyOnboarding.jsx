@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileUp, CheckCircle2, Loader2 } from 'lucide-react';
+import { FileUp, CheckCircle2, Circle, Loader2, Lock } from 'lucide-react';
 import {
   getMyPartner,
   provisionMyPartner,
@@ -11,6 +11,19 @@ import {
   submitOnboardingDocs,
 } from '@/services/agencyCrmApi';
 import { ONBOARDING_STAGE_LABELS, partnerStatusClass } from '../constants';
+import {
+  canSignAgreement,
+  canSubmitOnboardingDocs,
+  isAwaitingAdminReview,
+  ONBOARDING_STAGE_ORDER,
+  stageIndex,
+} from '../agentPortal';
+
+const StepIcon = ({ done, current }) => {
+  if (done) return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />;
+  if (current) return <Circle className="h-4 w-4 shrink-0 text-blue-600" />;
+  return <Lock className="h-4 w-4 shrink-0 text-neutral-300" />;
+};
 
 export default function AgencyOnboarding() {
   const [partner, setPartner] = useState(null);
@@ -43,9 +56,19 @@ export default function AgencyOnboarding() {
     load().catch(() => {});
   }, []);
 
+  const stage = partner?.onboardingStage || 'REGISTERED';
+  const idx = stageIndex(stage);
+  const allowSubmitDocs = canSubmitOnboardingDocs(stage);
+  const allowSign = canSignAgreement(stage);
+  const awaitingAdmin = isAwaitingAdminReview(stage) || stage === 'ACTIVE';
+
   const onUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !partner?.id) return;
+    if (idx > stageIndex('DOCS_SUBMITTED')) {
+      setMsg('Documents already submitted — contact support to replace files');
+      return;
+    }
     setBusy(true);
     try {
       await uploadPartnerDocument(partner.id, file, { type: 'KYC_ID' });
@@ -55,16 +78,17 @@ export default function AgencyOnboarding() {
       setMsg(err?.message || 'Upload failed');
     } finally {
       setBusy(false);
+      e.target.value = '';
     }
   };
 
-  const onSign = async () => {
-    if (!partner?.id) return;
+  const onSubmit = async () => {
+    if (!partner?.id || !allowSubmitDocs) return;
     setBusy(true);
     try {
-      await signAgreement(partner.id);
+      await submitOnboardingDocs(partner.id);
       await load();
-      setMsg('Agreement signed');
+      setMsg('Documents submitted — next: sign the agency agreement');
     } catch (err) {
       setMsg(err?.message || 'Failed');
     } finally {
@@ -72,13 +96,13 @@ export default function AgencyOnboarding() {
     }
   };
 
-  const onSubmit = async () => {
-    if (!partner?.id) return;
+  const onSign = async () => {
+    if (!partner?.id || !allowSign) return;
     setBusy(true);
     try {
-      await submitOnboardingDocs(partner.id);
+      await signAgreement(partner.id);
       await load();
-      setMsg('Documents submitted for review');
+      setMsg('Agreement signed — awaiting admin verification');
     } catch (err) {
       setMsg(err?.message || 'Failed');
     } finally {
@@ -98,14 +122,16 @@ export default function AgencyOnboarding() {
     <div className="ui-container space-y-6 max-w-2xl">
       <div>
         <h1 className="ui-text-h2">Agent onboarding</h1>
-        <p className="ui-text-body mt-1">Complete registration → documents → agreement → admin approval.</p>
+        <p className="ui-text-body mt-1">
+          Complete steps in order: registration → documents → agreement → admin verification → activation.
+        </p>
       </div>
 
       {msg && <div className="ui-panel p-3 text-sm">{msg}</div>}
 
       {partner ? (
-        <div className="ui-panel p-6 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="ui-panel p-6 space-y-5">
+          <div className="flex items-center justify-between gap-3">
             <div>
               <p className="ui-text-strong">{partner.agencyName}</p>
               <p className="ui-text-meta">Code: {partner.agencyCode}</p>
@@ -114,31 +140,91 @@ export default function AgencyOnboarding() {
               {partner.status}
             </span>
           </div>
-          <p className="ui-text-body">
-            Stage: {ONBOARDING_STAGE_LABELS[partner.onboardingStage] || partner.onboardingStage}
-          </p>
 
-          <ol className="space-y-3 text-sm">
-            <li className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Registration complete
+          <div className="flex flex-wrap gap-2">
+            {ONBOARDING_STAGE_ORDER.map((s, i) => (
+              <span
+                key={s}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                  i <= idx
+                    ? 'bg-emerald-50 text-emerald-800'
+                    : 'bg-neutral-100 text-neutral-500'
+                }`}
+              >
+                {ONBOARDING_STAGE_LABELS[s] || s}
+              </span>
+            ))}
+          </div>
+
+          <ol className="space-y-4 text-sm">
+            <li className="flex items-start gap-2">
+              <StepIcon done current={false} />
+              <div>
+                <p className="font-medium text-neutral-800">1. Registration</p>
+                <p className="ui-text-meta">Agency profile created</p>
+              </div>
             </li>
-            <li>
-              <label className="ui-btn-secondary inline-flex items-center gap-2 cursor-pointer">
-                <FileUp className="h-4 w-4" />
-                Upload ID / business docs
-                <input type="file" className="hidden" onChange={onUpload} disabled={busy} />
-              </label>
-              <p className="ui-text-meta mt-1">{docs.length} document(s) uploaded</p>
+
+            <li className="flex items-start gap-2">
+              <StepIcon done={idx >= stageIndex('DOCS_SUBMITTED')} current={allowSubmitDocs} />
+              <div className="space-y-2 flex-1">
+                <p className="font-medium text-neutral-800">2. Upload &amp; submit documents</p>
+                <label
+                  className={`ui-btn-secondary inline-flex items-center gap-2 ${
+                    idx > stageIndex('DOCS_SUBMITTED') ? 'opacity-50 pointer-events-none' : 'cursor-pointer'
+                  }`}
+                >
+                  <FileUp className="h-4 w-4" />
+                  Upload ID / business docs
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={onUpload}
+                    disabled={busy || idx > stageIndex('DOCS_SUBMITTED')}
+                  />
+                </label>
+                <p className="ui-text-meta">{docs.length} document(s) uploaded</p>
+                <button
+                  type="button"
+                  className="ui-btn-primary"
+                  onClick={onSubmit}
+                  disabled={busy || !allowSubmitDocs || docs.length < 1}
+                >
+                  Submit documents
+                </button>
+              </div>
             </li>
-            <li>
-              <button type="button" className="ui-btn-secondary" onClick={onSign} disabled={busy}>
-                Sign agency agreement
-              </button>
+
+            <li className="flex items-start gap-2">
+              <StepIcon done={idx >= stageIndex('AGREEMENT_SIGNED')} current={allowSign} />
+              <div className="space-y-2">
+                <p className="font-medium text-neutral-800">3. Sign agency agreement</p>
+                <button
+                  type="button"
+                  className="ui-btn-secondary"
+                  onClick={onSign}
+                  disabled={busy || !allowSign}
+                >
+                  Sign agreement
+                </button>
+                {!allowSign && idx < stageIndex('DOCS_SUBMITTED') && (
+                  <p className="ui-text-meta">Submit documents before signing.</p>
+                )}
+              </div>
             </li>
-            <li>
-              <button type="button" className="ui-btn-primary" onClick={onSubmit} disabled={busy}>
-                Submit for admin review
-              </button>
+
+            <li className="flex items-start gap-2">
+              <StepIcon done={stage === 'ACTIVE'} current={awaitingAdmin && stage !== 'ACTIVE'} />
+              <div>
+                <p className="font-medium text-neutral-800">4. Admin verification &amp; activation</p>
+                <p className="ui-text-meta">
+                  {stage === 'ACTIVE'
+                    ? 'Your partner account is active.'
+                    : awaitingAdmin
+                      ? 'Waiting for administrator verification and approval.'
+                      : 'Available after you sign the agreement.'}
+                </p>
+              </div>
             </li>
           </ol>
         </div>

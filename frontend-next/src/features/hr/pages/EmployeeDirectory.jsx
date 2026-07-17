@@ -229,8 +229,8 @@ export default function EmployeeDirectory() {
     <div className="ui-page text-neutral-800 font-sans">
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-brand">Employee directory</h1>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h1 className="ui-text-h1 text-brand">Employee directory</h1>
+          <p className="ui-text-body mt-1">
             Maintain employee profiles, update access roles, and bulk-import personnel from a spreadsheet.
           </p>
         </div>
@@ -242,9 +242,9 @@ export default function EmployeeDirectory() {
                 setCreateFeedback(null);
                 setShowCreateModal(true);
               }}
-              className="flex items-center gap-2 px-5 py-3 rounded-lg text-xs font-semibold bg-brand text-white shadow-md  hover:bg-brand-hover transition-all"
+              className="flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-medium bg-brand text-white shadow-md  hover:bg-brand-hover transition-all"
             >
-              <Plus size={14} /> add employee
+              <Plus size={14} /> Add employee
             </button>
           )}
           <button
@@ -254,10 +254,10 @@ export default function EmployeeDirectory() {
               setParsedRows([]);
               setImportSummary(null);
             }}
-            className="flex items-center gap-2 px-5 py-3 rounded-lg text-xs font-semibold transition-all bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-brand"
+            className="flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-medium transition-all bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-brand"
           >
             {showBulkPanel ? <Users size={14} /> : <Upload size={14} />}
-            {showBulkPanel ? 'view directory' : 'bulk import'}
+            {showBulkPanel ? 'View directory' : 'Bulk import'}
           </button>
         </div>
       </div>
@@ -272,7 +272,7 @@ export default function EmployeeDirectory() {
                 <input
                   type="text"
                   placeholder="filter by name, email, department, or id..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-800 placeholder:text-neutral-400 focus:border-brand outline-none transition-all text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -280,7 +280,7 @@ export default function EmployeeDirectory() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-700 shrink-0"
+                className="px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 shrink-0"
               >
                 <option value="ALL">All statuses</option>
                 <option value="ACTIVE">Active</option>
@@ -288,7 +288,7 @@ export default function EmployeeDirectory() {
                 <option value="RESIGNED">Resigned</option>
                 <option value="TERMINATED">Terminated</option>
               </select>
-              <div className="px-5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[10px] font-semibold text-neutral-600 shrink-0">
+              <div className="px-5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-600 shrink-0">
                 {employees.length} personnel
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function EmployeeDirectory() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-semibold text-neutral-500">
+                    <tr className="bg-neutral-50 border-b border-neutral-200 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                       <th className="px-6 py-4">Employee ID</th>
                       <th className="px-6 py-4">Personnel</th>
                       <th className="px-6 py-4">Contact</th>
@@ -314,25 +314,25 @@ export default function EmployeeDirectory() {
                       <tr>
                         <td colSpan={8} className="px-6 py-12 text-center">
                           <Loader2 className="animate-spin text-neutral-700 mx-auto" size={24} />
-                          <p className="text-[10px] font-semibold text-neutral-500 mt-2">loading directory...</p>
+                          <p className="text-sm font-semibold text-neutral-500 mt-2">Loading directory…</p>
                         </td>
                       </tr>
                     ) : filteredEmployees.length > 0 ? (
                       filteredEmployees.map((emp) => (
                         <tr key={emp.id} className="hover:bg-neutral-50/50 transition-all duration-200">
-                          <td className="px-6 py-5 text-xs font-mono font-semibold text-neutral-700">
+                          <td className="px-6 py-5 text-sm font-mono font-medium text-neutral-700">
                             {emp.employeeId || `EMP-${(emp.id || '').toString().substring(0, 4)}`}
                           </td>
                           <td className="px-6 py-5">
                             <div>
-                              <p className="text-xs font-semibold text-neutral-800">{emp.name}</p>
-                              <p className="text-[9px] text-neutral-500 font-semibold mt-1 flex items-center gap-1">
+                              <p className="text-sm font-semibold text-neutral-900">{emp.name}</p>
+                              <p className="text-xs text-neutral-500 font-semibold mt-1 flex items-center gap-1">
                                 <MapPin size={10} className="text-neutral-500" /> {emp.location || 'HQ office'}
                               </p>
                             </div>
                           </td>
                           <td className="px-6 py-5">
-                            <div className="space-y-1 text-xs">
+                            <div className="space-y-1 text-sm">
                               <p className="text-neutral-600 flex items-center gap-1.5 font-medium">
                                 <Mail size={11} className="text-neutral-500" /> {emp.email}
                               </p>
@@ -344,24 +344,24 @@ export default function EmployeeDirectory() {
                             </div>
                           </td>
                           <td className="px-6 py-5">
-                            <div className="space-y-1 text-xs">
+                            <div className="space-y-1 text-sm">
                               <p className="text-neutral-800 flex items-center gap-1.5 font-semibold">
                                 <Briefcase size={11} className="text-neutral-500" /> {emp.designation || 'staff member'}
                               </p>
-                              <p className="text-[10px] text-neutral-500 flex items-center gap-1.5 font-semibold">
+                              <p className="text-sm text-neutral-500 flex items-center gap-1.5 font-semibold">
                                 <Building2 size={11} className="text-neutral-500" /> {emp.department || 'operations'}
                               </p>
                             </div>
                           </td>
                           <td className="px-6 py-5 text-xs font-mono font-semibold text-neutral-500">
-                            <span className="flex items-center gap-1 text-[10px]">
+                            <span className="flex items-center gap-1 text-sm">
                               <Fingerprint size={12} className="text-neutral-500" />
                               {emp.biometricId || emp.employeeId || '—'}
                             </span>
                           </td>
                           <td className="px-6 py-5">
                             <span
-                              className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border inline-flex items-center w-fit ${statusBadgeClass(
+                              className={`px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded-lg border inline-flex items-center w-fit ${statusBadgeClass(
                                 emp.employmentStatus || 'ACTIVE',
                               )}`}
                             >
@@ -370,7 +370,7 @@ export default function EmployeeDirectory() {
                           </td>
                           <td className="px-6 py-5">
                             <span
-                              className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest rounded-lg border inline-flex items-center gap-1 w-fit ${
+                              className={`px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded-lg border inline-flex items-center gap-1 w-fit ${
                                 emp.access_role?.includes('ADMIN')
                                   ? 'bg-neutral-100 text-brand border-neutral-200'
                                   : emp.access_role === 'COUNSELLOR'
@@ -391,9 +391,9 @@ export default function EmployeeDirectory() {
                                   setDetailEmployee(emp);
                                   setShowDetailModal(true);
                                 }}
-                                className="px-3.5 py-1.5 bg-white border border-neutral-200 hover:border-brand text-neutral-600 hover:text-neutral-700 rounded-xl text-[10px] font-semibold transition-all"
+                                className="px-3.5 py-1.5 bg-white border border-neutral-200 hover:border-brand text-neutral-600 hover:text-neutral-700 rounded-lg text-sm font-medium transition-all"
                               >
-                                view
+                                View
                               </button>
                               <button
                                 onClick={() => {
@@ -401,9 +401,9 @@ export default function EmployeeDirectory() {
                                   setNewRole(emp.access_role || 'EMPLOYEE');
                                   setShowRoleModal(true);
                                 }}
-                                className="px-3.5 py-1.5 bg-white border border-neutral-200 hover:border-brand text-neutral-600 hover:text-neutral-700 rounded-xl text-[10px] font-semibold transition-all"
+                                className="px-3.5 py-1.5 bg-white border border-neutral-200 hover:border-brand text-neutral-600 hover:text-neutral-700 rounded-lg text-sm font-medium transition-all"
                               >
-                                edit role
+                                Edit role
                               </button>
                             </div>
                           </td>
@@ -412,7 +412,7 @@ export default function EmployeeDirectory() {
                     ) : (
                       <tr>
                         <td colSpan={8} className="px-6 py-12 text-center text-xs text-neutral-500">
-                          no personnel registered.
+                          No personnel registered.
                         </td>
                       </tr>
                     )}
@@ -429,15 +429,15 @@ export default function EmployeeDirectory() {
               <div className="ui-card space-y-6 lg:col-span-1 h-fit">
                 <div className="border-b border-neutral-200 pb-4">
                   <h3 className="text-xs font-semibold text-neutral-800">Spreadsheet paste</h3>
-                  <p className="text-[10px] text-neutral-500 mt-1">copy and paste rows directly from excel or google sheets.</p>
+                  <p className="text-sm text-neutral-500 mt-1">Copy and paste rows directly from excel or google sheets.</p>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-neutral-500 ml-1">Tabular raw data</label>
+                    <label className="ui-label">Tabular raw data</label>
                     <textarea
                       rows={10}
-                      className="w-full p-4 bg-neutral-50 border border-neutral-200 rounded-lg text-[11px] font-mono text-neutral-700 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                      className="w-full p-4 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-mono text-neutral-700 placeholder-slate-400 focus:border-brand outline-none transition-all"
                       placeholder={`employeeId\tfirstName\tlastName\temail\tdepartment\tdesignation\tlocation\tphone\nE005\tJohn\tDoe\tjohn.doe@onecrm.com\tEngineering\tSoftware Engineer\tHQ Office\t9876543210`}
                       value={pasteData}
                       onChange={(e) => setPasteData(e.target.value)}
@@ -447,15 +447,15 @@ export default function EmployeeDirectory() {
                   <button
                     type="button"
                     onClick={handleParsePaste}
-                    className="w-full py-3.5 bg-brand text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-brand-hover transition-all flex items-center justify-center gap-1.5"
+                    className="w-full py-3.5 bg-brand text-white rounded-lg font-semibold text-sm shadow-sm hover:bg-brand-hover transition-all flex items-center justify-center gap-1.5"
                   >
                     <ClipboardCheck size={14} />
                     validate rows
                   </button>
                 </div>
 
-                <div className="bg-neutral-50 p-4 border border-neutral-200 rounded-lg space-y-2 text-[10px] text-neutral-600 leading-normal">
-                  <p className="font-semibold text-neutral-700">expected header keys:</p>
+                <div className="bg-neutral-50 p-4 border border-neutral-200 rounded-lg space-y-2 text-sm text-neutral-600 leading-normal">
+                  <p className="font-semibold text-neutral-700">Expected header keys:</p>
                   <ul className="list-disc list-inside space-y-1 text-neutral-500">
                     <li>employeeId <span className="text-neutral-500">(required)</span></li>
                     <li>firstName, lastName <span className="text-neutral-500">(or name)</span></li>
@@ -479,7 +479,7 @@ export default function EmployeeDirectory() {
                     <button
                       onClick={handleCommitImport}
                       disabled={submitting || importSummary.valid === 0}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-lg font-semibold text-[10px] shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-lg font-semibold text-sm shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                     >
                       {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
                       import verified accounts
@@ -511,7 +511,7 @@ export default function EmployeeDirectory() {
                   <div className="overflow-x-auto max-h-[500px]">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-semibold text-neutral-500">
+                        <tr className="bg-neutral-50 border-b border-neutral-200 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                           <th className="px-6 py-4">Row</th>
                           <th className="px-6 py-4">ID</th>
                           <th className="px-6 py-4">Personnel</th>
@@ -531,19 +531,19 @@ export default function EmployeeDirectory() {
                               }`}
                             >
                               <td className="px-6 py-4 text-xs font-mono font-semibold text-neutral-500">{row.rowNum}</td>
-                              <td className="px-6 py-4 text-xs font-mono font-semibold text-neutral-700">
+                              <td className="px-6 py-4 text-sm font-mono font-medium text-neutral-700">
                                 {row.data.employeeId || '—'}
                               </td>
                               <td className="px-6 py-4 text-xs font-semibold text-neutral-800">{row.data.name}</td>
                               <td className="px-6 py-4 text-xs text-neutral-600 font-medium">{row.data.email || '—'}</td>
                               <td className="px-6 py-4 text-xs font-semibold text-neutral-500">
                                 {row.data.designation} ·{' '}
-                                <span className="text-[10px] font-semibold text-neutral-500">{row.data.department}</span>
+                                <span className="text-sm font-semibold text-neutral-500">{row.data.department}</span>
                               </td>
                               <td className="px-6 py-4 text-xs font-semibold text-neutral-600">{row.data.access_role}</td>
                               <td className="px-6 py-4">
                                 {row.isValid ? (
-                                  <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[8px] font-semibold rounded-lg">
+                                  <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-lg">
                                     verified
                                   </span>
                                 ) : (
@@ -551,7 +551,7 @@ export default function EmployeeDirectory() {
                                     {row.errors.map((err, eidx) => (
                                       <span
                                         key={eidx}
-                                        className="block text-[8px] font-semibold text-rose-500 tracking-tight flex items-center gap-0.5"
+                                        className="block text-xs font-semibold text-rose-500 tracking-tight flex items-center gap-0.5"
                                       >
                                         <AlertCircle size={8} /> {err}
                                       </span>
@@ -596,97 +596,97 @@ export default function EmployeeDirectory() {
             <form onSubmit={handleCreateEmployee} className="p-8 space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">full name *</label>
+                  <label className="ui-label">Full name *</label>
                   <input
                     required
                     type="text"
-                    placeholder="e.g. john doe"
+                    placeholder="e.g. John Doe"
                     value={createForm.name}
                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                    className="ui-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">email *</label>
+                  <label className="ui-label">Email *</label>
                   <input
                     required
                     type="email"
                     placeholder="e.g. john.doe@onecrm.com"
                     value={createForm.email}
                     onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                    className="ui-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">Employee ID *</label>
+                  <label className="ui-label">Employee ID *</label>
                   <input
                     required
                     type="text"
                     placeholder="e.g. E005"
                     value={createForm.employeeId}
                     onChange={(e) => setCreateForm({ ...createForm, employeeId: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                    className="ui-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">Phone</label>
+                  <label className="ui-label">Phone</label>
                   <input
                     type="text"
                     placeholder="e.g. +91 99999 88888"
                     value={createForm.phone}
                     onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                    className="ui-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">Department</label>
+                  <label className="ui-label">Department</label>
                   <input
                     type="text"
                     placeholder="e.g. engineering"
                     value={createForm.department}
                     onChange={(e) => setCreateForm({ ...createForm, department: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                    className="ui-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">Designation</label>
+                  <label className="ui-label">Designation</label>
                   <input
                     type="text"
                     placeholder="e.g. software engineer"
                     value={createForm.designation}
                     onChange={(e) => setCreateForm({ ...createForm, designation: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                    className="ui-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">Location</label>
+                  <label className="ui-label">Location</label>
                   <input
                     type="text"
                     placeholder="e.g. hq office"
                     value={createForm.location}
                     onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                    className="ui-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">Joining date</label>
+                  <label className="ui-label">Joining date</label>
                   <input
                     type="date"
                     value={createForm.joiningDate}
                     onChange={(e) => setCreateForm({ ...createForm, joiningDate: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
+                    className="ui-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-neutral-500 ml-1">Access role</label>
+                  <label className="ui-label">Access role</label>
                   <select
                     value={createForm.access_role}
                     onChange={(e) => setCreateForm({ ...createForm, access_role: e.target.value })}
@@ -719,17 +719,17 @@ export default function EmployeeDirectory() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-3.5 border border-neutral-200 rounded-lg text-[10px] font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
+                  className="flex-1 py-3.5 border border-neutral-200 rounded-lg text-sm font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
                 >
                   discard
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-3.5 bg-brand text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-brand-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3.5 bg-brand text-white rounded-lg font-semibold text-sm shadow-sm hover:bg-brand-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {submitting && <Loader2 size={12} className="animate-spin" />}
-                  add employee
+                  Add employee
                 </button>
               </div>
             </form>
@@ -772,15 +772,15 @@ export default function EmployeeDirectory() {
 
             <form onSubmit={handleUpdateRoleSubmit} className="p-8 space-y-6">
               <div className="border-b border-neutral-200 pb-2.5 mb-4 leading-none">
-                <span className="block text-[9px] font-semibold text-neutral-500">Selected profile</span>
+                <span className="block text-xs font-semibold text-neutral-500">Selected profile</span>
                 <span className="text-xs font-semibold text-neutral-800 mt-1.5 block">{selectedEmp.name}</span>
-                <span className="text-[10px] text-neutral-500 font-mono mt-0.5 block">
+                <span className="text-sm text-neutral-500 font-mono mt-0.5 block">
                   {selectedEmp.employeeId} · {selectedEmp.email}
                 </span>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-neutral-500 ml-1">Access role</label>
+                <label className="ui-label">Access role</label>
                 <select
                   className="w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-800 focus:border-brand outline-none transition-all"
                   value={newRole}
@@ -802,14 +802,14 @@ export default function EmployeeDirectory() {
                     setShowRoleModal(false);
                     setSelectedEmp(null);
                   }}
-                  className="flex-1 py-3.5 border border-neutral-200 rounded-lg text-[10px] font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
+                  className="flex-1 py-3.5 border border-neutral-200 rounded-lg text-sm font-semibold hover:bg-neutral-50 text-neutral-600 transition-all"
                 >
                   discard
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-3.5 bg-brand text-white rounded-lg font-semibold text-[10px] shadow-sm hover:bg-brand-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3.5 bg-brand text-white rounded-lg font-semibold text-sm shadow-sm hover:bg-brand-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {submitting && <Loader2 size={12} className="animate-spin" />}
                   save changes

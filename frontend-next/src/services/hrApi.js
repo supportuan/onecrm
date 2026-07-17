@@ -57,6 +57,7 @@ export const uploadEmployeeDocument = async (employeeId, file, meta = {}) => {
   const form = new FormData();
   form.append('file', file);
   if (meta.type) form.append('type', meta.type);
+  if (meta.fileName) form.append('fileName', meta.fileName);
   if (meta.notes) form.append('notes', meta.notes);
   if (meta.expiresAt) form.append('expiresAt', meta.expiresAt);
   const res = await tenantFetch(`${API_URL}/employees/${employeeId}/documents/upload`, {
@@ -266,6 +267,11 @@ export const getMyLeaveRequests = async () => {
 
 export const getPendingLeaveRequests = async () => {
   const res = await tenantFetch(`${API_URL}/leave/requests?status=PENDING`);
+  return handleResponse(res);
+};
+
+export const getLeaveApprovalQueue = async () => {
+  const res = await tenantFetch(`${API_URL}/leave/requests?queue=true`);
   return handleResponse(res);
 };
 

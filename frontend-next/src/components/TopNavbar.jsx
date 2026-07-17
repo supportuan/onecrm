@@ -78,21 +78,36 @@ const TopNavbar = ({ onToggleSidebar }) => {
     } else if (pathname && pathname.startsWith('/student-crm/student-applications')) {
         title = 'Student Applications';
         description = 'Manage your Applications';
+    } else if (pathname && pathname.startsWith('/agency-crm/dashboard')) {
+        title = 'Dashboard';
+        description = 'Agent portal overview';
     } else if (pathname && pathname.startsWith('/agency-crm/agency-management')) {
         title = 'Agency Management';
-        description = 'Manage your agency CRM activities';
+        description = 'Manage agency partners and approvals';
     } else if (pathname && pathname.startsWith('/agency-crm/agency-leads')) {
-        title = 'Agency Leads';
-        description = 'Manage your agency CRM activities';
+        title = 'Students & Referrals';
+        description = 'Assign students and track referrals';
+    } else if (pathname && pathname.startsWith('/agency-crm/universities')) {
+        title = 'University Directory';
+        description = 'Browse universities and programs';
+    } else if (pathname && pathname.startsWith('/agency-crm/onboarding')) {
+        title = 'Onboarding';
+        description = 'Agent profile and agreement';
+    } else if (pathname && pathname.startsWith('/agency-crm/communications')) {
+        title = 'Communications';
+        description = 'Announcements and activity';
     } else if (pathname && pathname.startsWith('/agency-crm/co-branding-tools')) {
         title = 'Co-branding Tools';
-        description = 'Manage your co-branding tools';
+        description = 'Referral links and branding';
     } else if (pathname && pathname.startsWith('/agency-crm/commission-management')) {
         title = 'Commission Management';
-        description = 'Manage your commission management';
+        description = 'Commissions and statements';
+    } else if (pathname && pathname.startsWith('/agency-crm/students')) {
+        title = 'Student';
+        description = 'Assigned student workspace';
     } else if (pathname && pathname.startsWith('/agency-crm')) {
-        title = 'Dashboard';
-        description = 'Manage your agency CRM activities';
+        title = 'Agency CRM';
+        description = 'Agency partner operations';
     } else if (pathname && pathname.startsWith('/allied-services')) {
         title = 'Allied Services';
         description = 'Manage your Allied Services';

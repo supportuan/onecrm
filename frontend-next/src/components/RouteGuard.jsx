@@ -4,6 +4,10 @@ import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { ShieldX } from 'lucide-react';
+import {
+  isAgencyPartnerRole,
+  isAgentBlockedPath,
+} from '@/features/agency-crm/agentPortal';
 
 /**
  * Maps URL path prefixes to their module and option names in the permission system.
@@ -26,10 +30,15 @@ const ROUTE_PERMISSION_MAP = [
   { path: '/student-crm', module: 'Student CRM', option: null },
 
   // Agency CRM
-  { path: '/agency-crm/agency-management', module: 'Agency CRM', option: 'Agency Management' },
+  { path: '/agency-crm/dashboard', module: 'Agency CRM', option: 'Dashboard' },
+  { path: '/agency-crm/agency-management', module: 'Agency CRM', option: 'Agency Management', adminOnly: true },
   { path: '/agency-crm/agency-leads', module: 'Agency CRM', option: 'Agency Leads' },
+  { path: '/agency-crm/universities', module: 'Agency CRM', option: 'University Directory' },
+  { path: '/agency-crm/onboarding', module: 'Agency CRM', option: 'Onboarding' },
+  { path: '/agency-crm/communications', module: 'Agency CRM', option: 'Communications' },
   { path: '/agency-crm/co-branding-tools', module: 'Agency CRM', option: 'Co-branding Tools' },
   { path: '/agency-crm/commission-management', module: 'Agency CRM', option: 'Commission Management' },
+  { path: '/agency-crm/students', module: 'Agency CRM', option: 'Agency Leads' },
   { path: '/agency-crm', module: 'Agency CRM', option: null },
 
   // HR
@@ -60,12 +69,21 @@ function hasRouteAccess(pathname, user) {
   if (!user) return false;
   if (user.role === 'SUPER_ADMIN') return true;
 
+  // Partner users never enter admin partner-ops screens.
+  if (isAgencyPartnerRole(user.role) && isAgentBlockedPath(pathname)) {
+    return false;
+  }
+
   const access = user.moduleAccess;
   if (!access || Object.keys(access).length === 0) return true; // fallback: don't block if no permissions stored yet
 
   // Find the matching route rule (most specific first since array is ordered specific→general)
   const rule = ROUTE_PERMISSION_MAP.find((r) => pathname.startsWith(r.path));
   if (!rule) return true; // no rule means route is not permission-protected
+
+  if (rule.adminOnly && isAgencyPartnerRole(user.role)) {
+    return false;
+  }
 
   const moduleData = access[rule.module];
   if (!moduleData) return false; // module not in user's access → blocked

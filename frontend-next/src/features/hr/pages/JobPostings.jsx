@@ -14,17 +14,17 @@ import {
 } from '@/services/hrApi';
 
 const JOB_STATUS = {
-  DRAFT: 'bg-gray-100 text-gray-600',
-  OPEN: 'bg-green-100 text-green-700',
-  PAUSED: 'bg-yellow-100 text-yellow-700',
-  CLOSED: 'bg-red-100 text-red-700',
+  DRAFT: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+  OPEN: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  PAUSED: 'bg-amber-50 text-amber-700 border-amber-200',
+  CLOSED: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 const CANDIDATE_STATUS = {
-  ACTIVE: 'bg-blue-100 text-blue-700',
-  REJECTED: 'bg-red-100 text-red-700',
-  HIRED: 'bg-green-100 text-green-700',
-  WITHDRAWN: 'bg-gray-100 text-gray-500',
+  ACTIVE: 'bg-sky-50 text-sky-700 border-sky-200',
+  REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
+  HIRED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  WITHDRAWN: 'bg-neutral-100 text-neutral-500 border-neutral-200',
 };
 
 const STAGES = ['application', 'screening', 'hr_round', 'tech_round', 'manager_round', 'offer_generation', 'onboarding', 'hired'];
@@ -287,138 +287,148 @@ export default function JobPostings() {
   const hiddenPopulatedCount = showAllStages ? 0 : populatedStages.length;
 
   return (
-    <div className="ui-page max-w-full overflow-x-hidden">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-full overflow-x-hidden space-y-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Briefcase className="w-7 h-7 text-emerald-600" />
-            Job Postings & Candidate Tracking
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Manage open positions and track candidate progression</p>
+          <h2 className="ui-text-h2 flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-brand" />
+            Jobs & candidate pipeline
+          </h2>
+          <p className="ui-text-meta mt-1">Select a posting, move candidates through stages, hire or reject.</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={refreshAll}
-            disabled={loading}
-            className="flex items-center gap-2 border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-          >
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={refreshAll} disabled={loading} className="ui-btn-secondary text-sm disabled:opacity-50">
             Refresh
           </button>
           <button
-            onClick={() => { setShowCandidateModal(true); setCandidateForm(f => ({ ...f, jobId: selectedJob?.id || '' })); }}
-            className="flex items-center gap-2 border border-emerald-600 text-emerald-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-50"
+            type="button"
+            onClick={() => { setShowCandidateModal(true); setCandidateForm((f) => ({ ...f, jobId: selectedJob?.id || '' })); }}
+            className="ui-btn-secondary text-sm inline-flex items-center gap-2"
           >
-            <Users className="w-4 h-4" /> Add Candidate
+            <Users className="h-4 w-4" /> Add candidate
           </button>
           <button
-            onClick={() => setShowJobModal(true)}
-            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700"
+            type="button"
+            onClick={() => { setEditingJobId(null); setJobForm(emptyJobForm); setShowJobModal(true); }}
+            className="ui-btn-primary text-sm inline-flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" /> Post Job
+            <Plus className="h-4 w-4" /> Post job
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-center justify-between gap-2">
+        <div className="ui-error flex items-center justify-between gap-2">
           <span>{error}</span>
-          <button onClick={fetchJobs} className="text-xs underline shrink-0">Retry</button>
+          <button type="button" onClick={fetchJobs} className="text-sm underline shrink-0">Retry</button>
         </div>
       )}
-
       {successMsg && (
-        <div className="mb-4 px-4 py-3 bg-green-50 text-green-700 rounded-lg text-sm flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" /> {successMsg}
+        <div className="ui-success inline-flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4" /> {successMsg}
         </div>
       )}
 
-      <div className="flex gap-6 min-w-0 max-w-full items-start">
-        {/* Jobs List */}
-        <div className="basis-1/4 min-w-[16rem] max-w-xs shrink-0 flex flex-col max-h-[calc(100vh-10rem)]">
-          <div className="mb-3 relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search jobs..."
-              className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start min-w-0">
+        {/* Jobs list */}
+        <aside className="ui-panel w-full xl:w-80 xl:shrink-0 flex flex-col max-h-[min(70vh,720px)] overflow-hidden">
+          <div className="border-b border-neutral-100 p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search jobs…"
+                className="ui-input pl-9"
+              />
+            </div>
           </div>
-          <div className="space-y-2 overflow-y-auto flex-1 min-h-0 pr-1">
+          <div className="flex-1 space-y-2 overflow-y-auto p-3">
             {loading ? (
-              <div className="text-center py-8 text-gray-400 text-sm">Loading...</div>
+              <p className="ui-text-meta py-8 text-center">Loading jobs…</p>
             ) : filteredJobs.length === 0 ? (
-              <div className="text-center py-8 text-gray-400 text-sm">
-                No job postings yet.
-                <button onClick={() => setShowJobModal(true)} className="block mx-auto mt-2 text-emerald-600 hover:underline text-xs">
+              <div className="py-10 text-center">
+                <p className="ui-text-strong">No job postings yet</p>
+                <button type="button" onClick={() => setShowJobModal(true)} className="ui-link mt-2 text-sm">
                   Post your first job
                 </button>
               </div>
-            ) : filteredJobs.map(job => {
-              const count = job.applicantsCount ?? 0;
-              return (
-                <button
-                  key={job.id}
-                  onClick={() => setSelectedJob(job)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all ${selectedJob?.id === job.id ? 'border-emerald-400 bg-emerald-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300'}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-gray-800 truncate">{job.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{job.department}</p>
+            ) : (
+              filteredJobs.map((job) => {
+                const count = job.applicantsCount ?? 0;
+                const active = selectedJob?.id === job.id;
+                return (
+                  <button
+                    key={job.id}
+                    type="button"
+                    onClick={() => setSelectedJob(job)}
+                    className={`w-full rounded-xl border p-3.5 text-left transition ${
+                      active
+                        ? 'border-brand bg-brand-soft/50 shadow-sm'
+                        : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/80'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-neutral-900">{job.title}</p>
+                        <p className="mt-0.5 text-xs text-neutral-500">{job.department}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${JOB_STATUS[job.status]}`}>
+                        {job.status}
+                      </span>
                     </div>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ml-2 ${JOB_STATUS[job.status]}`}>
-                      {job.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                    <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {job.location}</span>
-                    <span className="flex items-center gap-0.5"><Users className="w-3 h-3" /> {count} candidates</span>
-                  </div>
-                </button>
-              );
-            })}
+                    <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+                      <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{job.location}</span>
+                      <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{count} candidates</span>
+                    </div>
+                  </button>
+                );
+              })
+            )}
           </div>
-        </div>
+        </aside>
 
-        {/* Candidate Pipeline */}
-        <div className="flex-1 min-w-0 overflow-hidden">
+        {/* Pipeline */}
+        <section className="min-w-0 flex-1 space-y-4">
           {selectedJob ? (
             <>
-              <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="font-semibold text-gray-900 text-lg">{selectedJob.title}</h2>
-                    <p className="text-sm text-gray-500">{selectedJob.department} · {selectedJob.location} · {selectedJob.type.replace('_', ' ')}</p>
-                    <p className="text-sm text-gray-600 mt-1">Salary: {selectedJob.salaryRange}</p>
+              <div className="ui-panel p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-semibold text-neutral-900">{selectedJob.title}</h3>
+                    <p className="ui-text-meta mt-1">
+                      {selectedJob.department} · {selectedJob.location} · {selectedJob.type.replace(/_/g, ' ')}
+                    </p>
+                    <p className="mt-1.5 text-sm font-medium text-neutral-700">
+                      Salary: {selectedJob.salaryRange || 'Not listed'}
+                    </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => openEditJob(selectedJob)}
-                      className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1"
-                    >
-                      <Edit2 className="w-3 h-3" /> Edit
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => openEditJob(selectedJob)} className="ui-btn-secondary text-sm inline-flex items-center gap-1.5">
+                      <Edit2 className="h-3.5 w-3.5" /> Edit
                     </button>
                     {selectedJob.status === 'DRAFT' && (
-                      <button onClick={() => handleJobStatusChange(selectedJob.id, 'OPEN')}
-                        className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700">Publish</button>
+                      <button type="button" onClick={() => handleJobStatusChange(selectedJob.id, 'OPEN')} className="ui-btn-primary text-sm">
+                        Publish
+                      </button>
                     )}
                     {selectedJob.status === 'OPEN' && (
-                      <button onClick={() => handleJobStatusChange(selectedJob.id, 'PAUSED')}
-                        className="text-xs px-3 py-1.5 border border-yellow-400 text-yellow-700 rounded-lg hover:bg-yellow-50">Pause</button>
-                    )}
-                    {selectedJob.status === 'OPEN' && (
-                      <button onClick={() => handleJobStatusChange(selectedJob.id, 'CLOSED')}
-                        className="text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">Close</button>
+                      <>
+                        <button type="button" onClick={() => handleJobStatusChange(selectedJob.id, 'PAUSED')} className="ui-btn-secondary text-sm text-amber-700">
+                          Pause
+                        </button>
+                        <button type="button" onClick={() => handleJobStatusChange(selectedJob.id, 'CLOSED')} className="ui-btn-secondary text-sm text-rose-600">
+                          Close
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Stage overview — click to jump */}
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <div className="overflow-x-auto flex-1 min-w-0 pb-1 [scrollbar-width:thin]">
-                  <div className="flex gap-2 flex-nowrap min-w-min">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="min-w-0 flex-1 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                  <div className="flex min-w-min flex-nowrap gap-2">
                     {STAGES.map((stage) => (
                       <button
                         key={stage}
@@ -431,12 +441,12 @@ export default function JobPostings() {
                             scrollToStage(stage);
                           }
                         }}
-                        className={`text-[10px] px-2 py-1 rounded-full border whitespace-nowrap transition-colors ${
+                        className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium transition ${
                           activeStage === stage
-                            ? 'bg-emerald-600 border-emerald-600 text-white'
+                            ? 'border-brand bg-brand text-white'
                             : stageCounts[stage] > 0
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
-                              : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                              ? 'border-brand/25 bg-brand-soft text-brand hover:bg-brand-soft/80'
+                              : 'border-neutral-200 bg-white text-neutral-400 hover:bg-neutral-50'
                         }`}
                       >
                         {stage.replace(/_/g, ' ')} ({stageCounts[stage]})
@@ -448,7 +458,7 @@ export default function JobPostings() {
                   <button
                     type="button"
                     onClick={() => setShowAllStages((v) => !v)}
-                    className="text-[10px] px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 whitespace-nowrap shrink-0"
+                    className="ui-btn-ghost shrink-0 text-xs"
                   >
                     {showAllStages ? 'Active stages only' : `All stages (${STAGES.length})`}
                   </button>
@@ -456,98 +466,108 @@ export default function JobPostings() {
               </div>
 
               {!showAllStages && hiddenPopulatedCount > 0 && (
-                <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3">
+                <p className="rounded-xl border border-brand/15 bg-brand-soft/60 px-3 py-2 text-sm text-brand">
                   Showing {hiddenPopulatedCount} stage{hiddenPopulatedCount !== 1 ? 's' : ''} with candidates.
-                  {' '}Use <strong>All stages</strong> to move candidates into empty steps.
+                  Use <strong>All stages</strong> to move people into empty steps.
                 </p>
               )}
 
               {candidatesLoading ? (
-                <div className="text-center py-12 text-gray-400 text-sm">Loading candidates…</div>
+                <p className="ui-text-meta py-12 text-center">Loading candidates…</p>
               ) : (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => scrollPipeline(-1)}
-                  className="absolute left-1 top-10 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white shadow-md text-gray-600 hover:bg-gray-50"
-                  aria-label="Scroll pipeline left"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollPipeline(1)}
-                  className="absolute right-1 top-10 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white shadow-md text-gray-600 hover:bg-gray-50"
-                  aria-label="Scroll pipeline right"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-                <div
-                  ref={pipelineScrollRef}
-                  className="overflow-x-auto overflow-y-visible max-w-full rounded-xl border border-gray-200 bg-neutral-50/80 px-10 py-3 scroll-smooth snap-x snap-mandatory [scrollbar-width:thin] overscroll-x-contain"
-                >
-                <div className="flex gap-3 pb-1 w-max">
-                  {pipelineStages.map(stage => {
-                    const stageCandidates = jobCandidates.filter(c => c.currentStage === stage);
-                    const hasCandidates = stageCandidates.length > 0;
-                    return (
-                      <div
-                        key={stage}
-                        ref={(el) => { stageRefs.current[stage] = el; }}
-                        className={`w-52 shrink-0 snap-start rounded-lg p-1 transition-colors ${
-                          hasCandidates ? 'bg-emerald-50/80 ring-1 ring-emerald-200' : 'bg-transparent'
-                        } ${activeStage === stage ? 'ring-2 ring-emerald-400' : ''}`}
-                      >
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1 mb-2 flex items-center justify-between">
-                          <span>{stage.replace('_', ' ')}</span>
-                          <span className="bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">{stageCandidates.length}</span>
-                        </div>
-                        <div className="space-y-2 min-h-16">
-                          {stageCandidates.map(candidate => (
-                            <div
-                              key={candidate.id}
-                              onClick={() => selectCandidate(candidate)}
-                              className={`bg-white border rounded-lg p-2.5 shadow-sm cursor-pointer transition-all ${
-                                selectedCandidate?.id === candidate.id ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-gray-200'
-                              }`}
-                            >
-                              <p className="text-xs font-semibold text-gray-800 truncate">{candidate.name}</p>
-                              <p className="text-xs text-gray-400 truncate">{candidate.email}</p>
-                              <span className={`mt-1 inline-block text-xs px-1.5 py-0.5 rounded font-medium ${CANDIDATE_STATUS[candidate.status]}`}>
-                                {candidate.status}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => scrollPipeline(-1)}
+                    className="absolute left-1 top-12 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 shadow-md hover:bg-neutral-50"
+                    aria-label="Scroll pipeline left"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollPipeline(1)}
+                    className="absolute right-1 top-12 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 shadow-md hover:bg-neutral-50"
+                    aria-label="Scroll pipeline right"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                  <div
+                    ref={pipelineScrollRef}
+                    className="max-w-full overflow-x-auto overflow-y-visible scroll-smooth rounded-2xl border border-neutral-200 bg-neutral-50/90 px-10 py-4 snap-x snap-mandatory [scrollbar-width:thin] overscroll-x-contain"
+                  >
+                    <div className="flex w-max gap-3 pb-1">
+                      {pipelineStages.map((stage) => {
+                        const stageCandidates = jobCandidates.filter((c) => c.currentStage === stage);
+                        const hasCandidates = stageCandidates.length > 0;
+                        return (
+                          <div
+                            key={stage}
+                            ref={(el) => { stageRefs.current[stage] = el; }}
+                            className={`w-56 shrink-0 snap-start rounded-xl p-2 transition ${
+                              hasCandidates ? 'bg-white ring-1 ring-brand/20 shadow-sm' : 'bg-transparent'
+                            } ${activeStage === stage ? 'ring-2 ring-brand' : ''}`}
+                          >
+                            <div className="mb-2 flex items-center justify-between px-1">
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                                {stage.replace(/_/g, ' ')}
                               </span>
-                              {candidate.status === 'ACTIVE' && (
-                                <select
-                                  className="mt-1.5 w-full text-[10px] border border-gray-200 rounded py-0.5"
-                                  value={candidate.currentStage}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) => handleStageChange(candidate.id, e.target.value)}
+                              <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-600">
+                                {stageCandidates.length}
+                              </span>
+                            </div>
+                            <div className="min-h-16 space-y-2">
+                              {stageCandidates.map((candidate) => (
+                                <div
+                                  key={candidate.id}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => selectCandidate(candidate)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') selectCandidate(candidate); }}
+                                  className={`cursor-pointer rounded-xl border bg-white p-3 shadow-sm transition ${
+                                    selectedCandidate?.id === candidate.id
+                                      ? 'border-brand ring-1 ring-brand/30'
+                                      : 'border-neutral-200 hover:border-neutral-300'
+                                  }`}
                                 >
-                                  {STAGES.map((s) => (
-                                    <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                                  ))}
-                                </select>
+                                  <p className="truncate text-sm font-semibold text-neutral-900">{candidate.name}</p>
+                                  <p className="truncate text-xs text-neutral-500">{candidate.email}</p>
+                                  <span className={`mt-2 inline-block rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${CANDIDATE_STATUS[candidate.status]}`}>
+                                    {candidate.status}
+                                  </span>
+                                  {candidate.status === 'ACTIVE' && (
+                                    <select
+                                      className="ui-input mt-2 py-1.5 text-xs"
+                                      value={candidate.currentStage}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={(e) => handleStageChange(candidate.id, e.target.value)}
+                                    >
+                                      {STAGES.map((s) => (
+                                        <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                                      ))}
+                                    </select>
+                                  )}
+                                </div>
+                              ))}
+                              {!hasCandidates && (
+                                <p className="px-1 py-6 text-center text-xs text-neutral-400">Empty</p>
                               )}
                             </div>
-                          ))}
-                          {!hasCandidates && !showAllStages && (
-                            <p className="text-[10px] text-gray-400 text-center py-4 px-1">No candidates</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-                </div>
-              </div>
               )}
 
               {!candidatesLoading && jobCandidates.length === 0 && (
-                <div className="text-center py-8 text-gray-400 text-sm border border-dashed border-gray-200 rounded-xl">
-                  No candidates for this role yet.
+                <div className="rounded-2xl border border-dashed border-neutral-200 bg-white py-10 text-center">
+                  <p className="ui-text-strong">No candidates for this role yet</p>
                   <button
+                    type="button"
                     onClick={() => { setShowCandidateModal(true); setCandidateForm((f) => ({ ...f, jobId: selectedJob.id })); }}
-                    className="block mx-auto mt-2 text-emerald-600 hover:underline text-xs"
+                    className="ui-link mt-2 text-sm"
                   >
                     Add first candidate
                   </button>
@@ -555,52 +575,55 @@ export default function JobPostings() {
               )}
 
               {selectedCandidate && (
-                <div className="mt-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
+                <div className="ui-panel p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{selectedCandidate.name}</h3>
-                      <p className="text-sm text-gray-500">{selectedCandidate.email} · {selectedCandidate.phone}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Stage: {selectedCandidate.currentStage.replace(/_/g, ' ')} · Status: {selectedCandidate.status}
+                      <h3 className="text-base font-semibold text-neutral-900">{selectedCandidate.name}</h3>
+                      <p className="ui-text-meta mt-1">
+                        {selectedCandidate.email} · {selectedCandidate.phone || 'No phone'}
+                      </p>
+                      <p className="mt-1 text-sm text-neutral-600">
+                        Stage: <span className="font-medium">{selectedCandidate.currentStage.replace(/_/g, ' ')}</span>
+                        {' · '}Status: <span className="font-medium">{selectedCandidate.status}</span>
                       </p>
                       {selectedCandidate.resumeUrl && (
                         <a
                           href={selectedCandidate.resumeUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-emerald-600 hover:underline mt-1 inline-flex items-center gap-1"
+                          className="ui-link mt-2 inline-flex items-center gap-1 text-sm"
                         >
-                          <ExternalLink className="w-3 h-3" /> View resume
+                          <ExternalLink className="h-3.5 w-3.5" /> View resume
                         </a>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2 justify-end">
-                      <button onClick={() => goToTab('interviews', selectedCandidate)} className="text-xs px-2 py-1 border rounded-lg hover:bg-gray-50 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> Schedule interview
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => goToTab('interviews', selectedCandidate)} className="ui-btn-secondary text-sm inline-flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5" /> Schedule interview
                       </button>
-                      <button onClick={() => goToTab('offers', selectedCandidate)} className="text-xs px-2 py-1 border rounded-lg hover:bg-gray-50 flex items-center gap-1">
-                        <FileText className="w-3 h-3" /> Create offer
+                      <button type="button" onClick={() => goToTab('offers', selectedCandidate)} className="ui-btn-secondary text-sm inline-flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5" /> Create offer
                       </button>
                       {selectedCandidate.status === 'ACTIVE' && (
                         <>
-                          <button onClick={() => handleCandidateStatus(selectedCandidate.id, 'REJECTED')} className="text-xs px-2 py-1 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-1">
-                            <XCircle className="w-3 h-3" /> Reject
+                          <button type="button" onClick={() => handleCandidateStatus(selectedCandidate.id, 'REJECTED')} className="ui-btn-secondary text-sm text-rose-600 inline-flex items-center gap-1.5">
+                            <XCircle className="h-3.5 w-3.5" /> Reject
                           </button>
-                          <button onClick={() => handleStageChange(selectedCandidate.id, 'hired', 'HIRED')} className="text-xs px-2 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-1">
-                            <UserCheck className="w-3 h-3" /> Hire
+                          <button type="button" onClick={() => handleStageChange(selectedCandidate.id, 'hired', 'HIRED')} className="ui-btn-primary text-sm inline-flex items-center gap-1.5">
+                            <UserCheck className="h-3.5 w-3.5" /> Hire
                           </button>
                         </>
                       )}
                     </div>
                   </div>
                   {stageEvents.length > 0 && (
-                    <div className="mt-4 border-t border-gray-100 pt-3">
-                      <p className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-2">
-                        <History className="w-3 h-3" /> Stage history
+                    <div className="mt-4 border-t border-neutral-100 pt-4">
+                      <p className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
+                        <History className="h-3.5 w-3.5" /> Stage history
                       </p>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                      <div className="max-h-36 space-y-1.5 overflow-y-auto">
                         {stageEvents.map((ev) => (
-                          <p key={ev.id} className="text-[10px] text-gray-500">
+                          <p key={ev.id} className="text-xs text-neutral-500">
                             {new Date(ev.createdAt).toLocaleString()} — {(ev.fromStage || 'start').replace(/_/g, ' ')} → {ev.toStage.replace(/_/g, ' ')}
                             {ev.changedByName ? ` · ${ev.changedByName}` : ''}
                             {ev.notes ? ` · ${ev.notes}` : ''}
@@ -613,123 +636,132 @@ export default function JobPostings() {
               )}
             </>
           ) : (
-            <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
-              Select a job posting to view the candidate pipeline
+            <div className="ui-panel flex h-64 flex-col items-center justify-center text-center">
+              <Briefcase className="mb-3 h-8 w-8 text-neutral-300" />
+              <p className="ui-text-strong">Select a job posting</p>
+              <p className="ui-text-meta mt-1">Choose a role on the left to open its candidate pipeline.</p>
             </div>
           )}
-        </div>
+        </section>
       </div>
 
-      {/* Job Modal */}
       {showJobModal && (
-        <div className="fixed inset-0 bg-brand/30 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-auto p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">{editingJobId ? 'Edit Job Posting' : 'New Job Posting'}</h2>
-              <button onClick={() => { setShowJobModal(false); setEditingJobId(null); setJobForm(emptyJobForm); }}><X className="w-5 h-5 text-gray-400" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/30 p-4 backdrop-blur-sm">
+          <div className="ui-modal w-full max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+              <h2 className="text-base font-semibold text-neutral-900">{editingJobId ? 'Edit job posting' : 'New job posting'}</h2>
+              <button type="button" onClick={() => { setShowJobModal(false); setEditingJobId(null); setJobForm(emptyJobForm); }} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700">
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
               {[
-                { key: 'title', label: 'Job Title', placeholder: 'e.g. Senior Developer', span: true },
+                { key: 'title', label: 'Job title', placeholder: 'e.g. Senior Developer', span: true },
                 { key: 'department', label: 'Department', placeholder: 'e.g. Engineering' },
                 { key: 'location', label: 'Location', placeholder: 'e.g. Remote' },
-                { key: 'salaryRange', label: 'Salary Range', placeholder: 'e.g. 18L - 24L' },
-                { key: 'hiringManager', label: 'Hiring Manager', placeholder: 'Manager name' },
-                { key: 'closingDate', label: 'Closing Date', type: 'date' },
+                { key: 'salaryRange', label: 'Salary range', placeholder: 'e.g. 18L - 24L' },
+                { key: 'hiringManager', label: 'Hiring manager', placeholder: 'Manager name' },
+                { key: 'closingDate', label: 'Closing date', type: 'date' },
                 { key: 'requirements', label: 'Requirements', placeholder: '5+ years, React, Node', span: true },
-                { key: 'description', label: 'Job Description', placeholder: 'Role overview...', span: true, textarea: true },
-              ].map(f => (
-                <div key={f.key} className={f.span ? 'col-span-2' : ''}>
-                  <label className="text-xs font-medium text-gray-600 block mb-1">{f.label}</label>
+                { key: 'description', label: 'Job description', placeholder: 'Role overview…', span: true, textarea: true },
+              ].map((f) => (
+                <div key={f.key} className={f.span ? 'sm:col-span-2' : ''}>
+                  <label className="ui-label">{f.label}</label>
                   {f.textarea ? (
                     <textarea
                       value={jobForm[f.key]}
-                      onChange={e => setJobForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      rows={3} placeholder={f.placeholder}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                      onChange={(e) => setJobForm((p) => ({ ...p, [f.key]: e.target.value }))}
+                      rows={3}
+                      placeholder={f.placeholder}
+                      className="ui-input resize-none"
                     />
                   ) : (
                     <input
                       type={f.type || 'text'}
                       value={jobForm[f.key]}
-                      onChange={e => setJobForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      onChange={(e) => setJobForm((p) => ({ ...p, [f.key]: e.target.value }))}
                       placeholder={f.placeholder}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="ui-input"
                     />
                   )}
                 </div>
               ))}
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Employment Type</label>
-                <select value={jobForm.type} onChange={e => setJobForm(p => ({ ...p, type: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  {['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                <label className="ui-label">Employment type</label>
+                <select value={jobForm.type} onChange={(e) => setJobForm((p) => ({ ...p, type: e.target.value }))} className="ui-input">
+                  {['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'].map((t) => (
+                    <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Publish Status</label>
-                <select value={jobForm.status} onChange={e => setJobForm(p => ({ ...p, status: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  {['DRAFT', 'OPEN'].map(s => <option key={s} value={s}>{s}</option>)}
+                <label className="ui-label">Publish status</label>
+                <select value={jobForm.status} onChange={(e) => setJobForm((p) => ({ ...p, status: e.target.value }))} className="ui-input">
+                  {['DRAFT', 'OPEN'].map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </select>
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowJobModal(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600">Cancel</button>
-              <button onClick={handleCreateJob} disabled={submitting}
-                className="flex-1 bg-emerald-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                <Save className="w-4 h-4" /> {editingJobId ? 'Save changes' : 'Create posting'}
+            <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
+              <button type="button" onClick={() => setShowJobModal(false)} className="ui-btn-secondary flex-1">Cancel</button>
+              <button type="button" onClick={handleCreateJob} disabled={submitting} className="ui-btn-primary flex-1 inline-flex items-center justify-center gap-2 disabled:opacity-50">
+                <Save className="h-4 w-4" /> {editingJobId ? 'Save changes' : 'Create posting'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add Candidate Modal */}
       {showCandidateModal && (
-        <div className="fixed inset-0 bg-brand/30 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-auto p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">Add Candidate</h2>
-              <button onClick={() => setShowCandidateModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/30 p-4 backdrop-blur-sm">
+          <div className="ui-modal w-full max-w-md p-0">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+              <h2 className="text-base font-semibold text-neutral-900">Add candidate</h2>
+              <button type="button" onClick={() => setShowCandidateModal(false)} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-50">
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 p-6">
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Job</label>
-                <select value={candidateForm.jobId} onChange={e => setCandidateForm(f => ({ ...f, jobId: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  <option value="">Select job...</option>
-                  {jobs.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
+                <label className="ui-label">Job</label>
+                <select value={candidateForm.jobId} onChange={(e) => setCandidateForm((f) => ({ ...f, jobId: e.target.value }))} className="ui-input">
+                  <option value="">Select job…</option>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>{j.title}</option>
+                  ))}
                 </select>
               </div>
               {[
-                { key: 'name', label: 'Full Name', placeholder: 'Candidate full name' },
+                { key: 'name', label: 'Full name', placeholder: 'Candidate full name' },
                 { key: 'email', label: 'Email', placeholder: 'email@example.com', type: 'email' },
                 { key: 'phone', label: 'Phone', placeholder: '+1-555-0100' },
-              ].map(f => (
+              ].map((f) => (
                 <div key={f.key}>
-                  <label className="text-xs font-medium text-gray-600 block mb-1">{f.label}</label>
-                  <input type={f.type || 'text'} value={candidateForm[f.key]}
-                    onChange={e => setCandidateForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  <label className="ui-label">{f.label}</label>
+                  <input
+                    type={f.type || 'text'}
+                    value={candidateForm[f.key]}
+                    onChange={(e) => setCandidateForm((p) => ({ ...p, [f.key]: e.target.value }))}
                     placeholder={f.placeholder}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    className="ui-input"
+                  />
                 </div>
               ))}
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Resume (optional)</label>
+                <label className="ui-label">Resume (optional)</label>
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx"
                   onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs"
+                  className="block w-full text-sm text-neutral-600"
                 />
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowCandidateModal(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600">Cancel</button>
-              <button onClick={handleAddCandidate} disabled={submitting}
-                className="flex-1 bg-emerald-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-emerald-700 disabled:opacity-50">
-                Add Candidate
+            <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
+              <button type="button" onClick={() => setShowCandidateModal(false)} className="ui-btn-secondary flex-1">Cancel</button>
+              <button type="button" onClick={handleAddCandidate} disabled={submitting} className="ui-btn-primary flex-1 disabled:opacity-50">
+                Add candidate
               </button>
             </div>
           </div>

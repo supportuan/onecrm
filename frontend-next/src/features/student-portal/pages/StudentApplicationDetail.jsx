@@ -16,6 +16,7 @@ import {
   getApplication,
   listMyApplications,
   uploadApplicationDocument,
+  uploadVisaChecklistDocument,
   respondToOffer,
   getProcessStages,
   getApplicationReadiness,
@@ -44,6 +45,7 @@ export default function StudentApplicationDetail({ applicationId }) {
   const [workflow, setWorkflow] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingDocId, setUploadingDocId] = useState(null);
+  const [uploadingVisaDocId, setUploadingVisaDocId] = useState(null);
   const [offerBusy, setOfferBusy] = useState(false);
   const [toast, setToast] = useState({ kind: '', msg: '' });
 
@@ -95,6 +97,20 @@ export default function StudentApplicationDetail({ applicationId }) {
       flash('err', e?.message || 'Upload failed');
     } finally {
       setUploadingDocId(null);
+    }
+  };
+
+  const handleVisaDocUpload = async (docId, file) => {
+    if (!app || !file) return;
+    setUploadingVisaDocId(docId);
+    try {
+      await uploadVisaChecklistDocument(app.id, docId, file);
+      flash('ok', 'Visa document uploaded — your counsellor will review it');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Upload failed');
+    } finally {
+      setUploadingVisaDocId(null);
     }
   };
 
@@ -272,7 +288,13 @@ export default function StudentApplicationDetail({ applicationId }) {
       )}
 
       {showVisa && (
-        <StudentVisaPanel app={app} workflow={workflow} />
+        <StudentVisaPanel
+          app={app}
+          workflow={workflow}
+          canUpload
+          onUpload={handleVisaDocUpload}
+          uploadingDocId={uploadingVisaDocId}
+        />
       )}
 
       {currentStepId === 'review' && !showOffer && (

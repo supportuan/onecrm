@@ -30,6 +30,9 @@ import {
   createAgencyFunnelAnalyticsSchema,
   updateAgencyFunnelAnalyticsSchema,
 } from '../validations/marketing.validation.js';
+import {
+  websiteLeadSchema,
+} from '../schemas/website-lead.schema.js';
 import { LeadStatus, CampaignType, CampaignStatus, UserRole } from '@prisma/client';
 import { bulkUploadLeadsFromExcel } from '../services/lead-upload.service.js';
 
@@ -943,5 +946,82 @@ export const uploadSocialMediaMedia = async (
   } catch (error: any) {
     console.error('[Marketing Controller] Media upload error:', error);
     return sendError(res, error.message || 'Failed to upload media to Meta', error, 500);
+  }
+};
+
+
+export const createWebsiteLead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const parsed =
+      websiteLeadSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+
+        message:
+          parsed.error.issues[0]?.message ||
+          'Invalid lead details',
+
+        errors:
+          parsed.error.flatten(),
+      });
+    }
+
+    const lead =
+      await marketingService.createWebsiteLead(
+        parsed.data
+      );
+
+    return res.status(201).json({
+      success: true,
+
+      message:
+        'Thank you. Our counsellor will contact you shortly.',
+
+      data: {
+        id: lead.id,
+        fullName: lead.fullName,
+        source: lead.source?.name,
+        status: lead.status,
+      },
+    });
+  } catch (error: any) {
+    const message =
+      error?.message ||
+      'Failed to create website lead';
+
+    if (
+      message.includes('already exists') ||
+      message.includes('Duplicate lead')
+    ) {
+      return res.status(409).json({
+        success: false,
+        message,
+      });
+    }
+
+    if (
+      message.includes(
+        'Phone number must contain'
+      ) ||
+      message.includes(
+        'Email is required'
+      ) ||
+      message.includes(
+        'Website Form source is not configured'
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message,
+      });
+    }
+
+    next(error);
   }
 };

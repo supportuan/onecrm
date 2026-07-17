@@ -50,6 +50,8 @@ import {
   createEmployeeDocumentSchema,
 } from './hr.validation.js';
 import { notifyRoles } from '../notifications/recipients.js';
+import { notify } from '../notifications/notifications.service.js';
+import { hasPermission } from '../rbac/rbac.service.js';
 import { employeeDocUpload, recruitmentFileUpload } from './hr.upload.js';
 import { UserRole } from '@prisma/client';
 
@@ -102,6 +104,18 @@ export const getEmployeeDocuments = async (req: Request, res: Response, next: Ne
   }
 };
 
+const sanitizeDisplayFileName = (raw: string, originalName: string): string => {
+  const cleaned = String(raw || '')
+    .trim()
+    .replace(/[/\\?%*:|"<>]/g, '-')
+    .replace(/\s+/g, ' ')
+    .slice(0, 200);
+  if (!cleaned) return originalName;
+  const origExt = originalName.includes('.') ? `.${originalName.split('.').pop()}` : '';
+  const hasExt = /\.[a-z0-9]{1,8}$/i.test(cleaned);
+  return hasExt || !origExt ? cleaned : `${cleaned}${origExt}`;
+};
+
 export const uploadEmployeeDocument = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
@@ -114,6 +128,10 @@ export const uploadEmployeeDocument = async (req: Request, res: Response, next: 
     if (!validTypes.includes(type)) {
       return sendError(res, 'Invalid document type', null, 400);
     }
+    const displayName = sanitizeDisplayFileName(
+      (req.body.fileName as string) || (req.body.customFileName as string) || '',
+      file.originalname,
+    );
     const storedName = safeUploadFilename(file.originalname);
     const relativePath = `uploads/hr/employees/${id}/${storedName}`;
     const { ref: fileUrl } = await storeUploadedFile({
@@ -124,7 +142,7 @@ export const uploadEmployeeDocument = async (req: Request, res: Response, next: 
     const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
     const data = await resolveFileRefsDeep(await hrService.createEmployeeDocument(id, {
       type: type as any,
-      fileName: file.originalname,
+      fileName: displayName,
       fileUrl,
       mimeType: file.mimetype,
       fileSize: file.size,
@@ -1348,10 +1366,21 @@ export const updatePerformanceReview = async (req: Request, res: Response, next:
 export const getLeaveRequests = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const mine = req.query.mine === 'true';
+    const queue = req.query.queue === 'true';
     const status = req.query.status as string | undefined;
+    const canManageLeave = req.user
+      ? await hasPermission(req.user.role, ['MANAGE_LEAVE'], req.tenantId ?? req.user.tenantId ?? null)
+      : false;
     const data = await hrService.getLeaveRequests({
       ...(mine && req.user?.email ? { mineEmail: req.user.email } : {}),
-      ...(status ? { status } : {}),
+      ...(queue && req.user
+        ? {
+            queueForUserId: req.user.id,
+            queueForEmail: req.user.email,
+            canManageLeave,
+          }
+        : {}),
+      ...(status && !queue ? { status } : {}),
     });
     return sendSuccess(res, 'Leave requests retrieved', data);
   } catch (error) {
@@ -1364,6 +1393,22 @@ export const createLeaveRequest = async (req: Request, res: Response, next: Next
     if (!req.user?.email) return sendError(res, 'Unauthorized', null, 401);
     const validated = createLeaveRequestSchema.parse(req.body);
     const data = await hrService.createLeaveRequest(req.user.email, validated);
+    if (data.managerUserId) {
+      try {
+        await notify({
+          recipientId: data.managerUserId,
+          templateKey: 'hr.leave_request',
+          vars: {
+            employeeName: data.employeeName,
+            leaveType: data.leaveTypeName,
+            from: data.fromDate,
+            to: data.toDate,
+          },
+        });
+      } catch (_) {
+        /* swallow */
+      }
+    }
     await notifyRoles([UserRole.GLOBAL_ADMIN, UserRole.SUPER_ADMIN, UserRole.HR], 'hr.leave_request', {
       employeeName: data.employeeName,
       leaveType: data.leaveTypeName,
@@ -1378,9 +1423,19 @@ export const createLeaveRequest = async (req: Request, res: Response, next: Next
 
 export const processLeaveRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user?.id || !req.user?.email) return sendError(res, 'Unauthorized', null, 401);
     const id = req.params.id as string;
     const validated = processLeaveRequestSchema.parse(req.body);
-    const data = await hrService.processLeaveRequest(id, validated);
+    const canManageLeave = await hasPermission(
+      req.user.role,
+      ['MANAGE_LEAVE'],
+      req.tenantId ?? req.user.tenantId ?? null,
+    );
+    const data = await hrService.processLeaveRequest(id, validated, {
+      userId: req.user.id,
+      userEmail: req.user.email,
+      canManageLeave,
+    });
     return sendSuccess(res, 'Leave request updated', data);
   } catch (error) {
     next(error);

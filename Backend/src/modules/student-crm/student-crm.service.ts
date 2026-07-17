@@ -4,10 +4,11 @@ import { prisma } from '../../prisma.js';
 import { hashPassword } from '../../utils/password.js';
 import { deleteStoredFile } from '../../lib/file-storage.js';
 import { getDefaultChecklist, type ChecklistItem } from './checklists.js';
+import { getDefaultVisaChecklist } from './visa-checklists.js';
 import { safeNotify } from '../notifications/recipients.js';
 import { getDefaultTenantId } from '../../utils/tenant-default.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
-import { applicationScopeWhere, studentScopeWhere } from './scoping.js';
+import { resolveApplicationScopeWhere, resolveStudentScopeWhere } from './scoping.js';
 import { computeProcessProgress, getStagesForCountry } from './stage-engine.js';
 import {
   appendVisaDocument,
@@ -19,6 +20,25 @@ import { seedDefaultApplicationFee } from './payments.service.js';
 
 type Actor = { id?: number; role?: string };
 
+const STUDY_PLAN_INCLUDE = {
+  countryRef: { select: { id: true, name: true } },
+  universityRef: { include: { country: { select: { id: true, name: true } } } },
+  courseRef: { select: { id: true, name: true } },
+  applications: {
+    orderBy: { createdAt: 'desc' as const },
+    select: {
+      id: true,
+      applicationCode: true,
+      stage: true,
+      intake: true,
+      country: true,
+      university: true,
+      course: true,
+      createdAt: true,
+    },
+  },
+};
+
 const STUDENT_INCLUDE = {
   country: true,
   industry: true,
@@ -29,6 +49,10 @@ const STUDENT_INCLUDE = {
   contact: { select: { id: true, fullName: true, email: true, role: true } },
   applications: { orderBy: { createdAt: 'desc' as const } },
   universities: { include: { university: { include: { country: true } } } },
+  studyPlans: {
+    orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
+    include: STUDY_PLAN_INCLUDE,
+  },
   checklists: { include: { checkList: true }, orderBy: { id: 'asc' as const } },
 };
 
@@ -48,7 +72,7 @@ const generateApplicationCode = async (): Promise<string> => {
 export const listStudents = async (
   opts: { search?: string; limit?: number; actor?: Actor } = {}
 ) => {
-  const where: any = { ...studentScopeWhere(opts.actor) };
+  const where: any = { ...(await resolveStudentScopeWhere(opts.actor)) };
   if (opts.search) {
     where.AND = [
       ...(where.AND || []),
@@ -74,10 +98,15 @@ export const listStudents = async (
 
 export const getStudent = async (id: number, actor?: Actor) => {
   const student = await prisma.student.findFirst({
-    where: { id, ...studentScopeWhere(actor) },
+    where: { id, ...(await resolveStudentScopeWhere(actor)) },
     include: STUDENT_INCLUDE,
   });
-  return student;
+  if (!student) return null;
+  await ensureStudentStudyPlans(student);
+  return prisma.student.findFirst({
+    where: { id, ...(await resolveStudentScopeWhere(actor)) },
+    include: STUDENT_INCLUDE,
+  });
 };
 
 export const getStudentByUserId = async (userId: number) => {
@@ -348,8 +377,8 @@ export const patchStudentStatus = async (id: number, status: string, notes?: str
 };
 
 export const getStatistics = async (actor?: Actor) => {
-  const studentWhere = studentScopeWhere(actor);
-  const appWhere = applicationScopeWhere(actor);
+  const studentWhere = await resolveStudentScopeWhere(actor);
+  const appWhere = await resolveApplicationScopeWhere(actor);
 
   const [totalStudents, enrolled, byStage, byProcessStage] = await Promise.all([
     prisma.student.count({ where: studentWhere }),
@@ -472,6 +501,173 @@ export const removeStudentUniversity = async (studentId: number, universityId: n
   });
 };
 
+// -------------------- Study plans --------------------
+
+const studyPlanPayload = (data: Record<string, any>) => ({
+  countryId: data.countryId ?? null,
+  country: data.country ?? null,
+  universityId: data.universityId ?? null,
+  university: data.university ?? null,
+  courseId: data.courseId ?? null,
+  course: data.course ?? null,
+  intake: data.intake ?? null,
+  notes: data.notes ?? null,
+  sortOrder: data.sortOrder ?? undefined,
+});
+
+const syncStudentPreferredFromStudyPlans = async (studentId: number) => {
+  const first = await prisma.studentStudyPlan.findFirst({
+    where: { studentId },
+    orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+  });
+  if (!first) return;
+  await prisma.student.update({
+    where: { id: studentId },
+    data: {
+      countryId: first.countryId,
+      preferredCountry: first.country,
+      preferredUniversityId: first.universityId,
+      preferredCourseId: first.courseId,
+      preferredCourse: first.course,
+    },
+  });
+};
+
+export const ensureStudentStudyPlans = async (student: {
+  id: number;
+  countryId: number | null;
+  preferredCountry: string | null;
+  preferredUniversityId: number | null;
+  preferredCourseId: number | null;
+  preferredCourse: string | null;
+  intakeMonth: string | null;
+  intakeYear: string | null;
+  studyPlans?: unknown[];
+  preferredUniversity?: { name?: string | null } | null;
+  preferredCourseRef?: { name?: string | null } | null;
+  country?: { name?: string | null } | null;
+}) => {
+  const existing = await prisma.studentStudyPlan.count({ where: { studentId: student.id } });
+  if (existing > 0) return;
+
+  const hasLegacy =
+    student.countryId ||
+    student.preferredUniversityId ||
+    student.preferredCourse ||
+    student.preferredCourseId;
+
+  if (!hasLegacy) return;
+
+  const intake = [student.intakeMonth, student.intakeYear].filter(Boolean).join(' ').trim() || null;
+
+  await prisma.studentStudyPlan.create({
+    data: {
+      studentId: student.id,
+      countryId: student.countryId,
+      country: student.preferredCountry || student.country?.name || null,
+      universityId: student.preferredUniversityId,
+      university: student.preferredUniversity?.name || null,
+      courseId: student.preferredCourseId,
+      course: student.preferredCourse || student.preferredCourseRef?.name || null,
+      intake,
+      sortOrder: 0,
+    },
+  });
+};
+
+export const listStudentStudyPlans = async (studentId: number, actor?: Actor) => {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, ...(await resolveStudentScopeWhere(actor)) },
+    include: {
+      preferredUniversity: true,
+      preferredCourseRef: true,
+      country: true,
+      studyPlans: true,
+    },
+  });
+  if (!student) throw new Error('student not found');
+  await ensureStudentStudyPlans(student);
+  return prisma.studentStudyPlan.findMany({
+    where: { studentId },
+    orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+    include: STUDY_PLAN_INCLUDE,
+  });
+};
+
+export const createStudentStudyPlan = async (
+  studentId: number,
+  data: Record<string, any>,
+  actor?: Actor
+) => {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, ...(await resolveStudentScopeWhere(actor)) },
+  });
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  const maxSort = await prisma.studentStudyPlan.aggregate({
+    where: { studentId },
+    _max: { sortOrder: true },
+  });
+
+  const plan = await prisma.studentStudyPlan.create({
+    data: {
+      studentId,
+      ...studyPlanPayload(data),
+      sortOrder: data.sortOrder ?? (maxSort._max.sortOrder ?? -1) + 1,
+    },
+    include: STUDY_PLAN_INCLUDE,
+  });
+  await syncStudentPreferredFromStudyPlans(studentId);
+  return plan;
+};
+
+export const updateStudentStudyPlan = async (
+  studentId: number,
+  planId: number,
+  data: Record<string, any>,
+  actor?: Actor
+) => {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, ...(await resolveStudentScopeWhere(actor)) },
+  });
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  const existing = await prisma.studentStudyPlan.findFirst({
+    where: { id: planId, studentId },
+  });
+  if (!existing) throw new Error('study plan not found');
+
+  const plan = await prisma.studentStudyPlan.update({
+    where: { id: planId },
+    data: studyPlanPayload(data),
+    include: STUDY_PLAN_INCLUDE,
+  });
+  await syncStudentPreferredFromStudyPlans(studentId);
+  return plan;
+};
+
+export const removeStudentStudyPlan = async (
+  studentId: number,
+  planId: number,
+  actor?: Actor
+) => {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, ...(await resolveStudentScopeWhere(actor)) },
+  });
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  const existing = await prisma.studentStudyPlan.findFirst({
+    where: { id: planId, studentId },
+  });
+  if (!existing) throw new Error('study plan not found');
+
+  await prisma.studentStudyPlan.delete({ where: { id: planId } });
+  await syncStudentPreferredFromStudyPlans(studentId);
+};
+
 // -------------------- Applications --------------------
 
 const APPLICATION_INCLUDE = {
@@ -481,7 +677,16 @@ const APPLICATION_INCLUDE = {
   fees: { orderBy: { id: 'asc' as const } },
   payments: { orderBy: { createdAt: 'desc' as const } },
   offerLetter: true,
-  visaTracking: true,
+  visaTracking: {
+    include: { visaDocuments: { orderBy: { id: 'asc' as const } } },
+  },
+  tasks: {
+    orderBy: [{ dueDate: 'asc' as const }, { id: 'asc' as const }],
+    include: {
+      assignedTo: { select: { id: true, fullName: true, email: true } },
+      createdBy: { select: { id: true, fullName: true } },
+    },
+  },
   stageEvents: {
     orderBy: { createdAt: 'desc' as const },
     take: 50,
@@ -497,7 +702,7 @@ export const listApplications = async (opts: {
   limit?: number;
   actor?: Actor;
 } = {}) => {
-  const where: any = { ...applicationScopeWhere(opts.actor) };
+  const where: any = { ...(await resolveApplicationScopeWhere(opts.actor)) };
   if (opts.studentId) where.studentId = opts.studentId;
   if (opts.stage) where.stage = opts.stage;
   if (opts.assignedToId) where.assignedToId = opts.assignedToId;
@@ -521,7 +726,7 @@ export const listApplications = async (opts: {
 };
 
 export const getApplication = async (id: number, actor?: Actor) => {
-  const scope = applicationScopeWhere(actor);
+  const scope = await resolveApplicationScopeWhere(actor);
   return prisma.application.findFirst({ where: { id, ...scope }, include: APPLICATION_INCLUDE });
 };
 
@@ -556,6 +761,7 @@ const seedChecklistFor = async (applicationId: number, country: string, universi
 
 export const createApplication = async (data: {
   studentId: number;
+  studyPlanId?: number;
   country: string;
   university: string;
   course: string;
@@ -569,6 +775,7 @@ export const createApplication = async (data: {
     data: {
       applicationCode: code,
       studentId: data.studentId,
+      studyPlanId: data.studyPlanId ?? null,
       country: data.country,
       university: data.university,
       course: data.course,
@@ -661,7 +868,7 @@ export const bulkAssignApplications = async (
     if (!counsellor) throw new Error('counsellor not found');
   }
 
-  const scope = applicationScopeWhere(actor);
+  const scope = await resolveApplicationScopeWhere(actor);
   const apps = await prisma.application.findMany({
     where: { id: { in: ids }, ...scope },
     include: { student: { select: { id: true, fullName: true } } },
@@ -890,6 +1097,25 @@ export const notifyDocumentUploaded = async (applicationId: number, docId: numbe
   });
 };
 
+/** Notify counsellor when a student uploads a visa checklist document. */
+export const notifyVisaDocumentUploaded = async (applicationId: number, documentName: string) => {
+  const app = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: { student: true },
+  });
+  if (!app?.assignedToId) return;
+  await safeNotify({
+    recipientId: app.assignedToId,
+    templateKey: 'application.document_uploaded',
+    vars: {
+      applicationCode: app.applicationCode,
+      applicationId,
+      documentName: `Visa: ${documentName}`,
+      studentName: app.student?.fullName,
+    },
+  });
+};
+
 /** Notify student when counsellor rejects a document. */
 export const notifyDocumentRejected = async (applicationId: number, docId: number, notes?: string) => {
   const app = await prisma.application.findUnique({
@@ -1038,7 +1264,10 @@ export const upsertVisaTracking = async (
     notes: string;
   }>
 ) => {
-  const existing = await prisma.visaTracking.findUnique({ where: { applicationId } });
+  const existing = await prisma.visaTracking.findUnique({
+    where: { applicationId },
+    include: { visaDocuments: true },
+  });
   const payload: any = {
     ...(data.country && { country: data.country }),
     ...(data.status && { status: data.status as any }),
@@ -1054,17 +1283,21 @@ export const upsertVisaTracking = async (
   if (!app) throw new Error('application not found');
 
   const prevStatus = existing?.status;
+  const country = data.country || existing?.country || app.country || 'UNKNOWN';
   const result = existing
     ? await prisma.visaTracking.update({ where: { applicationId }, data: payload })
     : await prisma.visaTracking.create({
-        data: { applicationId, country: data.country || app.country || 'UNKNOWN', ...payload },
+        data: { applicationId, country, ...payload },
       });
 
-  if (
-    app.assignedToId &&
-    data.status &&
-    data.status !== prevStatus
-  ) {
+  // Seed / migrate checklist rows
+  const currentDocs = await prisma.visaDocument.count({ where: { visaTrackingId: result.id } });
+  if (currentDocs === 0 && existing?.documents) {
+    await migrateLegacyVisaDocuments(result.id, existing.documents);
+  }
+  await seedVisaChecklistFor(result.id, country);
+
+  if (app.assignedToId && data.status && data.status !== prevStatus) {
     await safeNotify({
       recipientId: app.assignedToId,
       templateKey: 'application.visa_update',
@@ -1097,7 +1330,258 @@ export const upsertVisaTracking = async (
     }
   }
 
-  return result;
+  return prisma.visaTracking.findUnique({
+    where: { applicationId },
+    include: { visaDocuments: { orderBy: { id: 'asc' } } },
+  });
+};
+
+const seedVisaChecklistFor = async (visaTrackingId: number, country: string) => {
+  const existing = await prisma.visaDocument.count({ where: { visaTrackingId } });
+  if (existing > 0) return;
+
+  let items: ChecklistItem[] | null = null;
+  const tpl = await prisma.visaDocumentChecklistTemplate.findUnique({
+    where: { country },
+  });
+  if (tpl?.documents && Array.isArray(tpl.documents)) {
+    items = tpl.documents as ChecklistItem[];
+  }
+  if (!items) items = getDefaultVisaChecklist(country);
+  if (!items.length) return;
+
+  await prisma.visaDocument.createMany({
+    data: items.map((it) => ({
+      visaTrackingId,
+      name: it.name,
+      required: it.required !== false,
+      notes: it.description || null,
+    })),
+  });
+};
+
+/** Convert legacy JSON visa uploads into checklist rows (OTHER / labeled). */
+const migrateLegacyVisaDocuments = async (visaTrackingId: number, raw: unknown) => {
+  const legacy = normalizeVisaDocuments(raw);
+  if (!legacy.length) return;
+  const count = await prisma.visaDocument.count({ where: { visaTrackingId } });
+  if (count > 0) return;
+  await prisma.visaDocument.createMany({
+    data: legacy.map((d) => ({
+      visaTrackingId,
+      name: d.label || d.filename || 'Visa document',
+      required: false,
+      filename: d.filename,
+      fileUrl: d.fileUrl,
+      status: 'UPLOADED' as const,
+      uploadedAt: d.uploadedAt ? new Date(d.uploadedAt) : new Date(),
+    })),
+  });
+};
+
+export const upsertVisaDocument = async (
+  applicationId: number,
+  docId: number | null,
+  data: Partial<{ name: string; required: boolean; filename: string; fileUrl: string; status: string; notes: string }>
+) => {
+  let visa = await prisma.visaTracking.findUnique({ where: { applicationId } });
+  if (!visa) {
+    const app = await prisma.application.findUnique({ where: { id: applicationId } });
+    if (!app) throw new Error('application not found');
+    visa = await prisma.visaTracking.create({
+      data: { applicationId, country: app.country || 'UNKNOWN' },
+    });
+    await seedVisaChecklistFor(visa.id, visa.country);
+  }
+
+  if (docId) {
+    const existing = await prisma.visaDocument.findFirst({
+      where: { id: docId, visaTrackingId: visa.id },
+    });
+    if (!existing) throw new Error('visa document not found');
+    return prisma.visaDocument.update({
+      where: { id: docId },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(typeof data.required === 'boolean' && { required: data.required }),
+        ...(data.filename && { filename: data.filename }),
+        ...(data.fileUrl && { fileUrl: data.fileUrl }),
+        ...(data.status && { status: data.status as any }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+        ...((data.status === 'UPLOADED' || data.fileUrl) && { uploadedAt: new Date() }),
+      },
+    });
+  }
+
+  return prisma.visaDocument.create({
+    data: {
+      visaTrackingId: visa.id,
+      name: data.name || 'Visa document',
+      required: data.required ?? true,
+      filename: data.filename || null,
+      fileUrl: data.fileUrl || null,
+      status: (data.status as any) || 'PENDING',
+      notes: data.notes || null,
+      ...(data.fileUrl && { uploadedAt: new Date() }),
+    },
+  });
+};
+
+export const deleteVisaDocument = async (applicationId: number, docId: number) => {
+  const visa = await prisma.visaTracking.findUnique({ where: { applicationId } });
+  if (!visa) throw new Error('visa tracking not found');
+  const doc = await prisma.visaDocument.findFirst({
+    where: { id: docId, visaTrackingId: visa.id },
+  });
+  if (!doc) throw new Error('visa document not found');
+  if (doc.fileUrl) {
+    try {
+      await deleteStoredFile(doc.fileUrl);
+    } catch {
+      /* ignore */
+    }
+  }
+  return prisma.visaDocument.delete({ where: { id: docId } });
+};
+
+// -------------------- Application tasks --------------------
+
+export const listApplicationTasks = async (applicationId: number) => {
+  return prisma.applicationTask.findMany({
+    where: { applicationId },
+    orderBy: [{ dueDate: 'asc' }, { id: 'asc' }],
+    include: {
+      assignedTo: { select: { id: true, fullName: true, email: true } },
+      createdBy: { select: { id: true, fullName: true } },
+    },
+  });
+};
+
+export const createApplicationTask = async (
+  applicationId: number,
+  data: {
+    title: string;
+    description?: string;
+    assignedToId?: number | null;
+    dueDate?: string | null;
+    status?: string;
+  },
+  createdById?: number
+) => {
+  const app = await prisma.application.findUnique({
+    where: { id: applicationId },
+    include: { student: true },
+  });
+  if (!app) throw new Error('application not found');
+
+  const task = await prisma.applicationTask.create({
+    data: {
+      applicationId,
+      title: data.title,
+      description: data.description || null,
+      assignedToId: data.assignedToId ?? app.assignedToId ?? null,
+      createdById: createdById || null,
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      status: (data.status as any) || 'PENDING',
+    },
+    include: {
+      assignedTo: { select: { id: true, fullName: true, email: true } },
+      createdBy: { select: { id: true, fullName: true } },
+    },
+  });
+
+  if (task.assignedToId) {
+    await safeNotify({
+      recipientId: task.assignedToId,
+      templateKey: 'application.task_assigned',
+      vars: {
+        taskTitle: task.title,
+        studentName: app.student.fullName,
+        dueDate: task.dueDate ? task.dueDate.toISOString().slice(0, 10) : undefined,
+        applicationId,
+        taskId: task.id,
+      },
+    });
+  }
+
+  return task;
+};
+
+export const updateApplicationTask = async (
+  applicationId: number,
+  taskId: number,
+  data: Partial<{
+    title: string;
+    description: string | null;
+    assignedToId: number | null;
+    dueDate: string | null;
+    status: string;
+  }>
+) => {
+  const existing = await prisma.applicationTask.findFirst({
+    where: { id: taskId, applicationId },
+  });
+  if (!existing) throw new Error('task not found');
+
+  const prevAssignee = existing.assignedToId;
+  const nextStatus = data.status as any;
+  const task = await prisma.applicationTask.update({
+    where: { id: taskId },
+    data: {
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId }),
+      ...(data.dueDate !== undefined && {
+        dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      }),
+      ...(data.status !== undefined && {
+        status: nextStatus,
+        completedAt:
+          data.status === undefined
+            ? undefined
+            : nextStatus === 'COMPLETED'
+              ? new Date()
+              : null,
+      }),
+    },
+    include: {
+      assignedTo: { select: { id: true, fullName: true, email: true } },
+      createdBy: { select: { id: true, fullName: true } },
+    },
+  });
+
+  if (
+    task.assignedToId &&
+    task.assignedToId !== prevAssignee &&
+    !['COMPLETED', 'CANCELLED'].includes(task.status)
+  ) {
+    const app = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: { student: true },
+    });
+    await safeNotify({
+      recipientId: task.assignedToId,
+      templateKey: 'application.task_assigned',
+      vars: {
+        taskTitle: task.title,
+        studentName: app?.student.fullName,
+        dueDate: task.dueDate ? task.dueDate.toISOString().slice(0, 10) : undefined,
+        applicationId,
+        taskId: task.id,
+      },
+    });
+  }
+
+  return task;
+};
+
+export const deleteApplicationTask = async (applicationId: number, taskId: number) => {
+  const existing = await prisma.applicationTask.findFirst({
+    where: { id: taskId, applicationId },
+  });
+  if (!existing) throw new Error('task not found');
+  await prisma.applicationTask.delete({ where: { id: taskId } });
+  return { id: taskId };
 };
 
 export const createApplicationFromLead = async (
@@ -1527,11 +2011,12 @@ export const resolveChecklistForCountry = async (country: string, university?: s
 // -------------------- Visa management (aggregate) --------------------
 
 export const listVisaTracking = async (actor?: Actor) => {
-  const scope = applicationScopeWhere(actor);
+  const scope = await resolveApplicationScopeWhere(actor);
   return prisma.visaTracking.findMany({
     where: { application: scope },
     orderBy: { updatedAt: 'desc' },
     include: {
+      visaDocuments: { orderBy: { id: 'asc' as const } },
       application: {
         select: {
           id: true,
@@ -1552,22 +2037,32 @@ export const appendVisaDocumentFile = async (
   applicationId: number,
   entry: { fileUrl: string; filename: string; label?: string }
 ) => {
+  // Prefer checklist row; create an optional custom item if no docId targeting
+  const doc = await upsertVisaDocument(applicationId, null, {
+    name: entry.label || entry.filename || 'Visa document',
+    required: false,
+    filename: entry.filename,
+    fileUrl: entry.fileUrl,
+    status: 'UPLOADED',
+  });
+
+  // Keep legacy JSON in sync for older clients
   const existing = await prisma.visaTracking.findUnique({ where: { applicationId } });
   const app = await prisma.application.findUnique({ where: { id: applicationId } });
-  if (!app) throw new Error('application not found');
+  if (app && existing) {
+    const docEntry = {
+      fileUrl: entry.fileUrl,
+      filename: entry.filename,
+      uploadedAt: new Date().toISOString(),
+      ...(entry.label ? { label: entry.label } : {}),
+    };
+    await prisma.visaTracking.update({
+      where: { applicationId },
+      data: { documents: appendVisaDocument(existing.documents, docEntry) },
+    });
+  }
 
-  const docEntry = {
-    fileUrl: entry.fileUrl,
-    filename: entry.filename,
-    uploadedAt: new Date().toISOString(),
-    ...(entry.label ? { label: entry.label } : {}),
-  };
-  const documents = appendVisaDocument(existing?.documents, docEntry);
-
-  return upsertVisaTracking(applicationId, {
-    country: existing?.country || app.country,
-    documents,
-  });
+  return doc;
 };
 
 export const getProcessStages = (country?: string | null) => ({

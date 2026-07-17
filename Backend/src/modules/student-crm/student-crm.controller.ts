@@ -277,6 +277,59 @@ export const removeUniversity = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const listStudyPlans = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    if (!studentId) return sendError(res, 'invalid student id', null, 400);
+    const items = await service.listStudentStudyPlans(studentId, actor(req));
+    return sendSuccess(res, 'study plans', items);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const createStudyPlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    if (!studentId) return sendError(res, 'invalid student id', null, 400);
+    const item = await service.createStudentStudyPlan(studentId, req.body || {}, actor(req));
+    return sendSuccess(res, 'study plan created', item, 201);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const updateStudyPlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    const planId = numId(req.params.planId);
+    if (!studentId || !planId) return sendError(res, 'invalid ids', null, 400);
+    const item = await service.updateStudentStudyPlan(studentId, planId, req.body || {}, actor(req));
+    return sendSuccess(res, 'study plan updated', item);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const removeStudyPlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    const planId = numId(req.params.planId);
+    if (!studentId || !planId) return sendError(res, 'invalid ids', null, 400);
+    await service.removeStudentStudyPlan(studentId, planId, actor(req));
+    return sendSuccess(res, 'study plan removed', { studentId, planId });
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
 export const createApplication = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { studentId, country, university, course } = req.body || {};
@@ -514,6 +567,162 @@ export const uploadVisaDocument = async (req: Request, res: Response, next: Next
       }),
     );
     return sendSuccess(res, 'visa document uploaded', item, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const upsertVisaChecklistDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId) return sendError(res, 'invalid application id', null, 400);
+    const docId = req.params.docId ? numId(req.params.docId) : null;
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    if (isStudentRole(req.user?.role)) return sendError(res, 'forbidden', null, 403);
+    const item = await resolveFileRefsDeep(
+      await service.upsertVisaDocument(applicationId, docId, req.body || {}),
+    );
+    return sendSuccess(res, 'visa document saved', item);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const uploadVisaChecklistDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    const docId = numId(req.params.docId);
+    if (!applicationId || !docId) return sendError(res, 'invalid application or document id', null, 400);
+
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+
+    const docs = app.visaTracking?.visaDocuments || [];
+    const doc = docs.find((d: { id: number }) => d.id === docId);
+    if (!doc) return sendError(res, 'visa document not found on this application', null, 404);
+
+    if (isStudentRole(req.user?.role)) {
+      if (!['PENDING', 'REJECTED'].includes(doc.status)) {
+        return sendError(res, 'this document cannot be uploaded right now', null, 403);
+      }
+    }
+
+    const file = req.file;
+    if (!file) {
+      return sendError(res, 'file is required (jpg, png, pdf, doc, docx, max 20MB)', null, 400);
+    }
+
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/student-crm/applications/${applicationId}/visa/${docId}/${storedName}`;
+    const { ref: fileUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    const item = await resolveFileRefsDeep(
+      await service.upsertVisaDocument(applicationId, docId, {
+        filename: file.originalname,
+        fileUrl,
+        status: 'UPLOADED',
+        ...(isStudentRole(req.user?.role) ? { notes: '' } : {}),
+      }),
+    );
+
+    if (isStudentRole(req.user?.role) && app.assignedToId) {
+      await service.notifyVisaDocumentUploaded(applicationId, item?.name || 'Visa document');
+    }
+
+    return sendSuccess(res, 'visa document uploaded', item, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteVisaChecklistDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    const docId = numId(req.params.docId);
+    if (!applicationId || !docId) return sendError(res, 'invalid id', null, 400);
+    await service.deleteVisaDocument(applicationId, docId);
+    return sendSuccess(res, 'visa document deleted', { id: docId });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// -------------------- Application tasks --------------------
+
+export const listApplicationTasks = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId) return sendError(res, 'invalid application id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const items = await service.listApplicationTasks(applicationId);
+    return sendSuccess(res, 'tasks', items);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createApplicationTask = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId) return sendError(res, 'invalid application id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const title = String(req.body?.title || '').trim();
+    if (!title) return sendError(res, 'title is required', null, 400);
+    const item = await service.createApplicationTask(
+      applicationId,
+      {
+        title,
+        description: req.body?.description,
+        assignedToId: req.body?.assignedToId != null ? Number(req.body.assignedToId) : undefined,
+        dueDate: req.body?.dueDate,
+        status: req.body?.status,
+      },
+      req.user?.id,
+    );
+    return sendSuccess(res, 'task created', item, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateApplicationTask = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    const taskId = numId(req.params.taskId);
+    if (!applicationId || !taskId) return sendError(res, 'invalid id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const item = await service.updateApplicationTask(applicationId, taskId, {
+      ...(req.body?.title !== undefined && { title: String(req.body.title) }),
+      ...(req.body?.description !== undefined && { description: req.body.description }),
+      ...(req.body?.assignedToId !== undefined && {
+        assignedToId: req.body.assignedToId == null ? null : Number(req.body.assignedToId),
+      }),
+      ...(req.body?.dueDate !== undefined && { dueDate: req.body.dueDate }),
+      ...(req.body?.status !== undefined && { status: req.body.status }),
+    });
+    return sendSuccess(res, 'task updated', item);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteApplicationTask = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    const taskId = numId(req.params.taskId);
+    if (!applicationId || !taskId) return sendError(res, 'invalid id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const item = await service.deleteApplicationTask(applicationId, taskId);
+    return sendSuccess(res, 'task deleted', item);
   } catch (err) {
     next(err);
   }

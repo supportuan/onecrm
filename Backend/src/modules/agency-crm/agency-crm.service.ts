@@ -4,6 +4,7 @@ import { hashPassword } from '../../utils/password.js';
 import { hasFullAgencyAccess, isAgencyPartnerUser } from './scoping.js';
 import { uniqueAgencyCode, syncUserAgencyDetails } from './agency-partner.lifecycle.js';
 import { createReferralWithDedup } from './agency-referral.service.js';
+import { DEFAULT_AGENT_CAPABILITIES, mergeCapabilities } from './agency-capabilities.js';
 
 type Actor = { id?: number; role?: string };
 
@@ -153,15 +154,17 @@ export const createPartner = async (data: {
     }
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) throw new Error('user with this email already exists');
+    const { getDefaultModuleAccessByRole } = await import('../users/user.service.js');
     const user = await prisma.user.create({
       data: {
         fullName: data.fullName,
         email: data.email,
         phone: data.phone ?? null,
         passwordHash: await hashPassword(data.password),
-        role: UserRole.AGENCY_FREELANCER,
+        role: UserRole.AGENT,
         isActive: true,
         isApproved: true,
+        moduleAccess: getDefaultModuleAccessByRole('AGENT'),
       },
     });
     userId = user.id;
@@ -185,6 +188,7 @@ export const createPartner = async (data: {
       commissionRate: data.commissionRate ?? 10,
       status: data.status ?? AgencyPartnerStatus.PENDING,
       notes: data.notes ?? null,
+      capabilities: DEFAULT_AGENT_CAPABILITIES,
     },
     include: PARTNER_INCLUDE,
   });
@@ -216,6 +220,7 @@ export const updatePartner = async (
     commissionRate: number;
     status: AgencyPartnerStatus;
     branding: Record<string, unknown>;
+    capabilities: Record<string, unknown>;
     notes: string;
   }>,
   actor?: Actor
@@ -229,6 +234,7 @@ export const updatePartner = async (
     delete payload.commissionRate;
     delete payload.status;
     delete payload.email;
+    delete payload.capabilities;
   } else if (!hasFullAgencyAccess(actor?.role)) {
     throw new Error('forbidden');
   }
@@ -239,6 +245,9 @@ export const updatePartner = async (
       ...payload,
       agencyCode: payload.agencyCode?.toUpperCase(),
       branding: payload.branding as any,
+      ...(payload.capabilities != null
+        ? { capabilities: mergeCapabilities(payload.capabilities) as any }
+        : {}),
     },
     include: PARTNER_INCLUDE,
   });
@@ -249,6 +258,7 @@ export const updatePartner = async (
     address: updated.address,
     city: updated.city,
     country: updated.country,
+    services: updated.services,
   });
 
   return updated;
@@ -570,4 +580,110 @@ export const updateCommission = async (
   }
 
   return updated;
+};
+
+export const getUniversityContact = async (university: string, country?: string) => {
+  const name = university?.trim();
+  if (!name) return null;
+  const where: Record<string, unknown> = {
+    deletedAt: null,
+    name: { equals: name, mode: 'insensitive' },
+  };
+  if (country?.trim()) {
+    where.country = { name: { equals: country.trim(), mode: 'insensitive' } };
+  }
+  return prisma.university.findFirst({
+    where,
+    select: {
+      id: true,
+      name: true,
+      city: true,
+      pocName: true,
+      pocEmail: true,
+      pocPhone: true,
+      country: { select: { id: true, name: true } },
+    },
+  });
+};
+
+export const listUniversityDirectory = async (opts: {
+  search?: string;
+  country?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const page = Math.max(1, opts.page ?? 1);
+  const limit = Math.min(100, Math.max(1, opts.limit ?? 25));
+  const skip = (page - 1) * limit;
+
+  const where: Record<string, unknown> = { deletedAt: null };
+  if (opts.search?.trim()) {
+    where.name = { contains: opts.search.trim(), mode: 'insensitive' };
+  }
+  if (opts.country?.trim()) {
+    where.country = { name: { equals: opts.country.trim(), mode: 'insensitive' } };
+  }
+
+  const [total, items] = await Promise.all([
+    prisma.university.count({ where }),
+    prisma.university.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        location: true,
+        logo: true,
+        pocName: true,
+        pocEmail: true,
+        pocPhone: true,
+        country: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
+
+  return {
+    items,
+    total,
+    page,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  };
+};
+
+/** Ensure the actor's partner owns a referral for this application (or its student). */
+export const assertAgentOwnsApplication = async (
+  actor: Actor,
+  applicationId: number
+) => {
+  if (!isAgencyPartnerUser(actor?.role) || !actor?.id) {
+    throw new Error('forbidden');
+  }
+  const partner = await getPartnerByUserId(actor.id);
+  if (!partner) throw new Error('agency profile not found');
+
+  const app = await prisma.application.findUnique({
+    where: { id: applicationId },
+    select: {
+      id: true,
+      studentId: true,
+      student: { select: { userId: true } },
+    },
+  });
+  if (!app) throw new Error('application not found');
+
+  const referral = await prisma.agencyReferral.findFirst({
+    where: {
+      agencyPartnerId: partner.id,
+      OR: [
+        { applicationId },
+        { studentId: app.studentId },
+      ],
+    },
+  });
+  if (!referral) throw new Error('forbidden');
+
+  return { partner, application: app };
 };

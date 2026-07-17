@@ -30,6 +30,11 @@ export default function CatalogCourseFields({
   disabled = false,
   hideCountry = false,
   countryId: countryIdProp,
+  layout = 'stack',
+  compact = false,
+  countryLabel = 'Country *',
+  universityLabel = 'University *',
+  courseLabel = 'Course *',
 }) {
   const safeValue = value ?? {};
   const [universities, setUniversities] = useState([]);
@@ -277,9 +282,9 @@ export default function CatalogCourseFields({
   };
 
   return (
-    <div className="space-y-4">
+    <div className={layout === 'columns' ? 'grid grid-cols-1 md:grid-cols-3 gap-4' : 'space-y-4'}>
       {!hideCountry && (
-        <Field label="Country *">
+        <Field label={countryLabel}>
           {countries.length ? (
             <select
               required
@@ -308,7 +313,7 @@ export default function CatalogCourseFields({
         </Field>
       )}
 
-      <Field label="University *">
+      <Field label={universityLabel}>
         {loadingUnis ? (
           <input disabled value="" className={inputClass} placeholder="Loading universities…" />
         ) : (
@@ -381,20 +386,22 @@ export default function CatalogCourseFields({
               </ul>
             )}
 
-            <p className="text-xs text-brand-muted">
-              {savingUniversity
-                ? 'Saving university…'
-                : universityId
-                  ? `Linked to catalog (#${universityId})`
-                  : universityQuery.trim()
-                    ? 'New university names are saved for this country'
-                    : 'Pick a suggestion or type a new university name'}
-            </p>
+            {!compact && (
+              <p className="text-xs text-brand-muted">
+                {savingUniversity
+                  ? 'Saving university…'
+                  : universityId
+                    ? `Linked to catalog (#${universityId})`
+                    : universityQuery.trim()
+                      ? 'New university names are saved for this country'
+                      : 'Pick a suggestion or type a new university name'}
+              </p>
+            )}
           </div>
         )}
       </Field>
 
-      <Field label="Course *">
+      <Field label={courseLabel}>
         {loadingCourses ? (
           <input disabled value="" className={inputClass} placeholder="Loading courses…" />
         ) : (
@@ -468,15 +475,17 @@ export default function CatalogCourseFields({
               </ul>
             )}
 
-            <p className="text-xs text-brand-muted">
-              {savingCourse
-                ? 'Saving course to catalog…'
-                : courseId
-                  ? `Linked to catalog (#${courseId})`
-                  : courseQuery.trim()
-                    ? 'New course names are saved for this university'
-                    : 'Pick a suggestion or type a new course name'}
-            </p>
+            {!compact && (
+              <p className="text-xs text-brand-muted">
+                {savingCourse
+                  ? 'Saving course to catalog…'
+                  : courseId
+                    ? `Linked to catalog (#${courseId})`
+                    : courseQuery.trim()
+                      ? 'New course names are saved for this university'
+                      : 'Pick a suggestion or type a new course name'}
+              </p>
+            )}
           </div>
         )}
       </Field>

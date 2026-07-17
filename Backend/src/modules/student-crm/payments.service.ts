@@ -159,8 +159,14 @@ export const createPaymentOrder = async (
   applicationId: number,
   feeId: number,
   studentUserId: number,
+  opts?: {
+    actor?: { id: number; role?: string };
+    actedByUserId?: number;
+    actorRole?: string;
+  },
 ) => {
-  const app = await getApplication(applicationId, { id: studentUserId, role: 'STUDENT' });
+  const actor = opts?.actor || { id: studentUserId, role: 'STUDENT' };
+  const app = await getApplication(applicationId, actor);
   if (!app) throw new Error('application not found');
 
   const fee = await prisma.applicationFee.findFirst({
@@ -189,6 +195,8 @@ export const createPaymentOrder = async (
       applicationId: String(applicationId),
       feeId: String(feeId),
       studentUserId: String(studentUserId),
+      actedByUserId: opts?.actedByUserId ? String(opts.actedByUserId) : '',
+      actorRole: opts?.actorRole || actor.role || 'STUDENT',
     },
   });
 
@@ -197,6 +205,8 @@ export const createPaymentOrder = async (
       applicationId,
       feeId,
       studentUserId,
+      actedByUserId: opts?.actedByUserId ?? null,
+      actorRole: opts?.actorRole || actor.role || 'STUDENT',
       amountPaise: fee.amountPaise,
       currency: fee.currency || 'INR',
       status: 'CREATED',
@@ -217,7 +227,7 @@ export const createPaymentOrder = async (
 
 export const verifyPayment = async (
   applicationId: number,
-  studentUserId: number,
+  actorUserId: number,
   data: {
     razorpay_order_id: string;
     razorpay_payment_id: string;
@@ -239,8 +249,11 @@ export const verifyPayment = async (
   const payment = await prisma.applicationPayment.findFirst({
     where: {
       applicationId,
-      studentUserId,
       razorpayOrderId: data.razorpay_order_id,
+      OR: [
+        { studentUserId: actorUserId },
+        { actedByUserId: actorUserId },
+      ],
     },
     include: {
       application: { include: { student: true, assignedTo: true } },
@@ -268,7 +281,7 @@ export const verifyPayment = async (
   });
 
   await safeNotify({
-    recipientId: studentUserId,
+    recipientId: payment.studentUserId,
     templateKey: 'application.payment_received_student',
     vars: {
       applicationCode: payment.application.applicationCode,

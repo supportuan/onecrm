@@ -45,8 +45,12 @@ const MODULE_ACCESS_OPTIONS = [
   {
     module: "Agency CRM",
     options: [
+      "Dashboard",
       "Agency Management",
       "Agency Leads",
+      "University Directory",
+      "Onboarding",
+      "Communications",
       "Co-branding Tools",
       "Commission Management",
     ],
@@ -97,8 +101,22 @@ export const getDefaultModuleAccessByRole = (role: string) => {
     giveModuleActions("HR", ["VIEW", "EDIT"]);
   } else if (role === "STUDENT") {
     // Students use the applicant portal only — no staff CRM sidebar access.
-  } else if (role === "AGENT") {
-    giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
+  } else if (role === "AGENT" || role === "AGENCY_FREELANCER") {
+    // Portal-scoped VIEW only — no Agency Management / MANAGE_AGENCY_CRM.
+    // Fine-grained partner actions use AgencyPartner.capabilities.
+    const portalOptions = [
+      "Dashboard",
+      "Agency Leads",
+      "University Directory",
+      "Onboarding",
+      "Communications",
+      "Co-branding Tools",
+      "Commission Management",
+    ];
+    portalOptions.forEach((optionName) => {
+      access["Agency CRM"] = access["Agency CRM"] || {};
+      access["Agency CRM"][optionName] = ["VIEW"];
+    });
   } else if (role === "COUNSELLOR") {
     giveModuleActions("Marketing", ["VIEW"]);
     giveModuleActions("Student CRM", ["VIEW"]);
