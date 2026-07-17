@@ -7,6 +7,7 @@ import LeaveBalanceSummary from '../components/LeaveBalanceSummary';
 
 const STATUS_STYLE = {
   PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+  MANAGER_APPROVED: 'bg-violet-50 text-violet-700 border-violet-200',
   APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
   CANCELLED: 'bg-neutral-50 text-neutral-600 border-neutral-200',
@@ -191,9 +192,13 @@ export default function LeaveMyRequests() {
                       STATUS_STYLE[r.status] || STATUS_STYLE.PENDING
                     }`}
                   >
-                    {r.status}
+                    {r.status === 'MANAGER_APPROVED'
+                      ? 'Awaiting HR'
+                      : r.status === 'PENDING'
+                        ? 'Awaiting manager'
+                        : r.status}
                   </span>
-                  {r.status === 'PENDING' && (
+                  {['PENDING', 'MANAGER_APPROVED'].includes(r.status) && (
                     <button
                       type="button"
                       onClick={() => handleCancel(r.id)}

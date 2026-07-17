@@ -12,6 +12,7 @@ import {
   Plane,
   History,
   ListChecks,
+  CheckSquare,
 } from 'lucide-react';
 import {
   getApplication,
@@ -23,11 +24,18 @@ import {
   uploadApplicationDocument,
   uploadOfferLetter,
   uploadVisaDocument,
+  uploadVisaChecklistDocument,
+  addVisaDocument,
+  updateVisaDocument,
+  deleteVisaDocument,
   notifyMissingDocs,
   upsertOffer,
   upsertVisa,
   listCounsellors,
   getProcessStages,
+  createApplicationTask,
+  updateApplicationTask,
+  deleteApplicationTask,
 } from '@/services/studentCrmApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { APPLICATION_STAGES, getNextStage, getStageLabel } from '@/features/student-crm/constants';
@@ -38,6 +46,7 @@ import {
   DocumentChecklist,
   OfferLetterPanel,
   VisaPanel,
+  ApplicationTasksPanel,
   AuditTimeline,
 } from '@/features/student-crm/components/ApplicationParts';
 import StaffApplicationFees from '@/features/student-crm/components/StaffApplicationFees';
@@ -45,6 +54,7 @@ import StaffApplicationFees from '@/features/student-crm/components/StaffApplica
 const TABS = [
   { key: 'overview', label: 'Overview', icon: ListChecks },
   { key: 'documents', label: 'Documents', icon: FileText },
+  { key: 'tasks', label: 'Tasks', icon: CheckSquare },
   { key: 'offer', label: 'Offer', icon: Briefcase },
   { key: 'visa', label: 'Visa', icon: Plane },
   { key: 'history', label: 'History', icon: History },
@@ -62,6 +72,8 @@ export default function ApplicationDetail({ applicationId }) {
   const [uploadingDocId, setUploadingDocId] = useState(null);
   const [offerUploading, setOfferUploading] = useState(false);
   const [visaUploading, setVisaUploading] = useState(false);
+  const [visaUploadingDocId, setVisaUploadingDocId] = useState(null);
+  const [taskBusy, setTaskBusy] = useState(false);
   const [visaWorkflow, setVisaWorkflow] = useState([]);
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const flash = (kind, msg) => {
@@ -271,6 +283,88 @@ export default function ApplicationDetail({ applicationId }) {
     }
   };
 
+  const handleVisaChecklistUpload = async (docId, file) => {
+    if (!app || !file) return;
+    setVisaUploadingDocId(docId);
+    try {
+      await uploadVisaChecklistDocument(app.id, docId, file);
+      flash('ok', 'Visa document uploaded');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Upload failed');
+    } finally {
+      setVisaUploadingDocId(null);
+    }
+  };
+
+  const handleAddVisaDoc = async (name) => {
+    if (!app) return;
+    try {
+      await addVisaDocument(app.id, { name, required: true });
+      flash('ok', 'Checklist item added');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Failed to add item');
+    }
+  };
+
+  const handleVisaDocStatus = async (docId, status) => {
+    if (!app) return;
+    try {
+      await updateVisaDocument(app.id, docId, { status });
+      flash('ok', `Document ${status.toLowerCase()}`);
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Update failed');
+    }
+  };
+
+  const handleDeleteVisaDoc = async (docId) => {
+    if (!app || !confirm('Remove this visa document item?')) return;
+    try {
+      await deleteVisaDocument(app.id, docId);
+      flash('ok', 'Removed');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Delete failed');
+    }
+  };
+
+  const handleCreateTask = async (payload) => {
+    if (!app) return;
+    setTaskBusy(true);
+    try {
+      await createApplicationTask(app.id, payload);
+      flash('ok', 'Task created');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Failed to create task');
+    } finally {
+      setTaskBusy(false);
+    }
+  };
+
+  const handleUpdateTask = async (taskId, payload) => {
+    if (!app) return;
+    try {
+      await updateApplicationTask(app.id, taskId, payload);
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Failed to update task');
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!app || !confirm('Delete this task?')) return;
+    try {
+      await deleteApplicationTask(app.id, taskId);
+      flash('ok', 'Task deleted');
+      fetchDetail();
+    } catch (e) {
+      flash('err', e?.message || 'Failed to delete task');
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-brand">
@@ -389,6 +483,17 @@ export default function ApplicationDetail({ applicationId }) {
                 onNotifyMissing={handleNotifyMissing}
               />
             )}
+            {activeTab === 'tasks' && (
+              <ApplicationTasksPanel
+                app={app}
+                canManage={canManage}
+                counsellors={counsellors}
+                onCreate={handleCreateTask}
+                onUpdate={handleUpdateTask}
+                onDelete={handleDeleteTask}
+                busy={taskBusy}
+              />
+            )}
             {activeTab === 'offer' && (
               <OfferLetterPanel
                 app={app}
@@ -404,7 +509,12 @@ export default function ApplicationDetail({ applicationId }) {
                 canManage={canManage}
                 onSave={handleSaveVisa}
                 onUpload={handleVisaUpload}
+                onChecklistUpload={handleVisaChecklistUpload}
+                onAddDoc={handleAddVisaDoc}
+                onDocStatus={handleVisaDocStatus}
+                onDeleteDoc={handleDeleteVisaDoc}
                 uploading={visaUploading}
+                uploadingDocId={visaUploadingDocId}
                 workflow={visaWorkflow}
               />
             )}

@@ -95,9 +95,11 @@ export default function LeaveManagement() {
   const searchParams = useSearchParams();
   const { can } = usePermissions();
   const canManageLeave = can('MANAGE_LEAVE');
+  const canViewLeave = can('VIEW_LEAVE');
+  const canApproveLeave = canManageLeave || canViewLeave;
   const initialTab = searchParams.get('tab');
   const [workspaceTab, setWorkspaceTab] = useState(
-    initialTab === 'approvals' && canManageLeave
+    initialTab === 'approvals' && canApproveLeave
       ? 'approvals'
       : (initialTab === 'policies' || initialTab === 'holidays') && canManageLeave
         ? 'policies'
@@ -447,16 +449,26 @@ export default function LeaveManagement() {
   if (workspaceTab === 'my') {
     return (
       <div className="ui-page text-neutral-800 font-sans">
-        <LeaveWorkspaceHeader workspaceTab={workspaceTab} setWorkspaceTab={setWorkspaceTab} canManageLeave={canManageLeave} />
+        <LeaveWorkspaceHeader
+          workspaceTab={workspaceTab}
+          setWorkspaceTab={setWorkspaceTab}
+          canManageLeave={canManageLeave}
+          canApproveLeave={canApproveLeave}
+        />
         <LeaveMyRequests />
       </div>
     );
   }
 
-  if (workspaceTab === 'approvals' && canManageLeave) {
+  if (workspaceTab === 'approvals' && canApproveLeave) {
     return (
       <div className="ui-page text-neutral-800 font-sans">
-        <LeaveWorkspaceHeader workspaceTab={workspaceTab} setWorkspaceTab={setWorkspaceTab} canManageLeave={canManageLeave} />
+        <LeaveWorkspaceHeader
+          workspaceTab={workspaceTab}
+          setWorkspaceTab={setWorkspaceTab}
+          canManageLeave={canManageLeave}
+          canApproveLeave={canApproveLeave}
+        />
         <LeaveApprovals />
       </div>
     );
@@ -464,7 +476,12 @@ export default function LeaveManagement() {
 
   return (
     <div className="ui-page text-neutral-800 font-sans">
-      <LeaveWorkspaceHeader workspaceTab={workspaceTab} setWorkspaceTab={setWorkspaceTab} canManageLeave={canManageLeave} />
+      <LeaveWorkspaceHeader
+        workspaceTab={workspaceTab}
+        setWorkspaceTab={setWorkspaceTab}
+        canManageLeave={canManageLeave}
+        canApproveLeave={canApproveLeave}
+      />
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-[17px] font-semibold tracking-tight text-brand">Policies & holidays</h2>
@@ -1503,7 +1520,7 @@ export default function LeaveManagement() {
   );
 }
 
-function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave }) {
+function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave, canApproveLeave }) {
   return (
     <div className="mb-6 flex border-b border-neutral-200 pb-4">
       <div className="flex flex-wrap bg-neutral-50 border border-neutral-200 rounded-lg p-1 gap-0.5">
@@ -1516,7 +1533,7 @@ function LeaveWorkspaceHeader({ workspaceTab, setWorkspaceTab, canManageLeave })
           >
             My leave
           </button>
-          {canManageLeave && (
+          {canApproveLeave && (
             <button
               type="button"
               onClick={() => setWorkspaceTab('approvals')}

@@ -270,6 +270,11 @@ export const getPendingLeaveRequests = async () => {
   return handleResponse(res);
 };
 
+export const getLeaveApprovalQueue = async () => {
+  const res = await tenantFetch(`${API_URL}/leave/requests?queue=true`);
+  return handleResponse(res);
+};
+
 export const createLeaveRequest = async (data) => {
   const res = await tenantFetch(`${API_URL}/leave/requests`, {
     method: "POST",

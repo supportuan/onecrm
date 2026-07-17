@@ -863,9 +863,23 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
 
 /* -------------------- Visa application -------------------- */
 
-export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading, workflow = [] }) => {
-  const visaDocs = normalizeVisaDocs(app.visaTracking?.documents);
+export const VisaPanel = ({
+  app,
+  canManage,
+  onSave,
+  onUpload,
+  onChecklistUpload,
+  onAddDoc,
+  onDocStatus,
+  onDeleteDoc,
+  uploading,
+  uploadingDocId,
+  workflow = [],
+}) => {
+  const checklistDocs = app.visaTracking?.visaDocuments || [];
+  const legacyDocs = normalizeVisaDocs(app.visaTracking?.documents);
   const [uploadLabel, setUploadLabel] = useState('');
+  const [addName, setAddName] = useState('');
   const [form, setForm] = useState(() => ({
     country: app.visaTracking?.country || app.country || '',
     status: app.visaTracking?.status || 'NOT_STARTED',
@@ -885,13 +899,16 @@ export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading, workflo
   }, [app.id, app.visaTracking]);
 
   const statusIdx = workflow.findIndex((s) => s.suggestedStatus === form.status);
+  const required = checklistDocs.filter((d) => d.required);
+  const done = required.filter((d) => ['UPLOADED', 'VERIFIED'].includes(d.status)).length;
+  const pct = required.length ? Math.round((done / required.length) * 100) : 0;
 
   return (
     <div className="ui-surface px-6 py-5 space-y-5">
       <div>
         <h4 className="ui-text-h3">Visa application</h4>
         <p className="ui-text-meta mt-0.5">
-          Country-specific workflow, multi-document upload, and status tracking.
+          Country workflow, document checklist, and status tracking.
         </p>
       </div>
 
@@ -906,67 +923,185 @@ export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading, workflo
                   : 'border-neutral-200 bg-neutral-50 text-neutral-600'
               }`}
             >
-              <span className="font-medium">{idx + 1}. {step.label}</span>
+              <span className="font-medium">
+                {idx + 1}. {step.label}
+              </span>
             </li>
           ))}
         </ol>
       )}
 
       <div className="rounded-xl border border-neutral-200 bg-neutral-50/40 p-4 space-y-3">
-        {visaDocs.length > 0 ? (
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="ui-text-strong">Visa documents</p>
+            <p className="ui-text-meta">
+              {checklistDocs.length} checklist items
+              {required.length > 0 ? ` · ${done}/${required.length} required uploaded` : ''}
+            </p>
+          </div>
+          {required.length > 0 && (
+            <span className="text-xs font-semibold text-neutral-600">{pct}%</span>
+          )}
+        </div>
+
+        {checklistDocs.length > 0 ? (
           <ul className="space-y-2">
-            {visaDocs.map((doc, i) => (
-              <li key={i} className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-neutral-100">
+            {checklistDocs.map((doc) => (
+              <li
+                key={doc.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white rounded-lg border border-neutral-100"
+              >
                 <div className="min-w-0">
-                  <p className="ui-text-strong truncate">{doc.label || doc.filename || `Document ${i + 1}`}</p>
-                  {doc.uploadedAt && (
-                    <p className="text-[11px] text-neutral-500">Uploaded {formatDate(doc.uploadedAt)}</p>
-                  )}
+                  <p className="ui-text-strong truncate">
+                    {doc.name}
+                    {doc.required ? (
+                      <span className="text-rose-500 ml-1">*</span>
+                    ) : null}
+                  </p>
+                  <p className="text-[11px] text-neutral-500 mt-0.5">
+                    {doc.status}
+                    {doc.filename ? ` · ${doc.filename}` : ''}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-xs border rounded-lg">
-                    View
-                  </a>
-                  <a href={doc.fileUrl} download={doc.filename} className="px-2 py-1 text-xs border rounded-lg">
-                    Download
-                  </a>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {doc.fileUrl && (
+                    <a
+                      href={doc.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 text-xs border rounded-lg"
+                    >
+                      View
+                    </a>
+                  )}
+                  {canManage && onChecklistUpload && ['PENDING', 'REJECTED', 'UPLOADED'].includes(doc.status) && (
+                    <label
+                      className={`px-2 py-1 text-xs border rounded-lg cursor-pointer bg-brand text-white ${
+                        uploadingDocId === doc.id ? 'opacity-60 pointer-events-none' : ''
+                      }`}
+                    >
+                      {uploadingDocId === doc.id ? 'Uploading…' : 'Upload'}
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) onChecklistUpload(doc.id, file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                  {canManage && onDocStatus && doc.status === 'UPLOADED' && (
+                    <button
+                      type="button"
+                      onClick={() => onDocStatus(doc.id, 'VERIFIED')}
+                      className="px-2 py-1 text-xs border border-emerald-200 text-emerald-700 rounded-lg"
+                    >
+                      Verify
+                    </button>
+                  )}
+                  {canManage && onDocStatus && ['UPLOADED', 'VERIFIED'].includes(doc.status) && (
+                    <button
+                      type="button"
+                      onClick={() => onDocStatus(doc.id, 'REJECTED')}
+                      className="px-2 py-1 text-xs border border-rose-200 text-rose-700 rounded-lg"
+                    >
+                      Reject
+                    </button>
+                  )}
+                  {canManage && onDeleteDoc && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteDoc(doc.id)}
+                      className="p-1 text-rose-600"
+                      title="Remove"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
+        ) : legacyDocs.length > 0 ? (
+          <ul className="space-y-2">
+            {legacyDocs.map((doc, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-neutral-100"
+              >
+                <p className="ui-text-strong truncate">
+                  {doc.label || doc.filename || `Document ${i + 1}`}
+                </p>
+                <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-xs border rounded-lg">
+                  View
+                </a>
+              </li>
+            ))}
+          </ul>
         ) : (
-          <p className="ui-text-meta text-center py-2">No visa documents uploaded yet.</p>
+          <p className="ui-text-meta text-center py-2">
+            Save visa details to seed the country checklist, or add a custom document.
+          </p>
         )}
 
-        {canManage && onUpload && (
+        {canManage && (
           <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end pt-2 border-t border-neutral-200">
-            <Field label="Document label (optional)" className="flex-1">
-              <input
-                value={uploadLabel}
-                onChange={(e) => setUploadLabel(e.target.value)}
-                className="ui-field"
-                placeholder="e.g. CAS letter, I-20"
-              />
-            </Field>
-            <label
-              className={`px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white ui-text-strong !text-white flex items-center justify-center gap-1.5 cursor-pointer transition ${
-                uploading ? 'opacity-60 pointer-events-none' : ''
-              }`}
-            >
-              {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-              Add document
-              <input
-                type="file"
-                className="hidden"
-                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                disabled={uploading}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) onUpload(file, uploadLabel || undefined);
-                  e.target.value = '';
-                }}
-              />
-            </label>
+            {onAddDoc && (
+              <div className="flex flex-1 gap-2">
+                <input
+                  value={addName}
+                  onChange={(e) => setAddName(e.target.value)}
+                  className="ui-field flex-1"
+                  placeholder="Add checklist item name"
+                />
+                <button
+                  type="button"
+                  className="px-3 py-2 text-xs border rounded-lg"
+                  onClick={() => {
+                    if (!addName.trim()) return;
+                    onAddDoc(addName.trim());
+                    setAddName('');
+                  }}
+                >
+                  Add item
+                </button>
+              </div>
+            )}
+            {onUpload && (
+              <>
+                <Field label="Custom upload label" className="flex-1">
+                  <input
+                    value={uploadLabel}
+                    onChange={(e) => setUploadLabel(e.target.value)}
+                    className="ui-field"
+                    placeholder="e.g. Extra affidavit"
+                  />
+                </Field>
+                <label
+                  className={`px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white ui-text-strong !text-white flex items-center justify-center gap-1.5 cursor-pointer transition ${
+                    uploading ? 'opacity-60 pointer-events-none' : ''
+                  }`}
+                >
+                  {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                  Extra file
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) onUpload(file, uploadLabel || undefined);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -1047,6 +1182,178 @@ export const VisaPanel = ({ app, canManage, onSave, onUpload, uploading, workflo
   );
 };
 
+/* -------------------- Application tasks -------------------- */
+
+const TASK_STATUSES = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'IN_PROGRESS', label: 'In progress' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+];
+
+export const ApplicationTasksPanel = ({
+  app,
+  canManage,
+  counsellors = [],
+  onCreate,
+  onUpdate,
+  onDelete,
+  busy,
+}) => {
+  const tasks = app.tasks || [];
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    assignedToId: app.assignedToId || '',
+    dueDate: '',
+  });
+
+  const openTasks = tasks.filter((t) => !['COMPLETED', 'CANCELLED'].includes(t.status));
+  const overdue = openTasks.filter((t) => t.dueDate && new Date(t.dueDate) < new Date());
+
+  return (
+    <div className="space-y-4">
+      <div className="ui-surface px-6 py-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h4 className="ui-text-h3">Tasks & reminders</h4>
+            <p className="ui-text-meta mt-0.5">
+              {openTasks.length} open · {overdue.length} overdue · {tasks.length} total
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {canManage && (
+        <div className="ui-surface px-6 py-5 space-y-3">
+          <p className="ui-text-strong">Create task</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="Title">
+              <input
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className="ui-field"
+                placeholder="e.g. Follow up on SOP"
+              />
+            </Field>
+            <Field label="Due date">
+              <input
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                className="ui-field"
+              />
+            </Field>
+            <Field label="Assignee">
+              <select
+                value={form.assignedToId}
+                onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}
+                className="ui-field ui-select"
+              >
+                <option value="">Unassigned</option>
+                {counsellors.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.fullName || c.email}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Notes">
+              <input
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="ui-field"
+                placeholder="Optional details"
+              />
+            </Field>
+          </div>
+          <button
+            type="button"
+            disabled={!form.title.trim() || busy}
+            onClick={() => {
+              onCreate?.({
+                title: form.title.trim(),
+                description: form.description || undefined,
+                assignedToId: form.assignedToId ? Number(form.assignedToId) : null,
+                dueDate: form.dueDate || null,
+              });
+              setForm({
+                title: '',
+                description: '',
+                assignedToId: app.assignedToId || '',
+                dueDate: '',
+              });
+            }}
+            className="ui-btn-primary px-4 disabled:opacity-40"
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+            Add task
+          </button>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {tasks.length === 0 ? (
+          <div className="ui-surface p-10 text-center ui-text-meta">No tasks yet.</div>
+        ) : (
+          tasks.map((task) => {
+            const isOverdue =
+              task.dueDate &&
+              !['COMPLETED', 'CANCELLED'].includes(task.status) &&
+              new Date(task.dueDate) < new Date();
+            return (
+              <div
+                key={task.id}
+                className={`ui-surface px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-3 ${
+                  isOverdue ? 'border-rose-200' : ''
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="ui-text-strong truncate">{task.title}</p>
+                  <p className="ui-text-meta mt-0.5">
+                    {task.assignedTo?.fullName || 'Unassigned'}
+                    {task.dueDate ? ` · due ${formatDate(task.dueDate)}` : ''}
+                    {isOverdue ? ' · overdue' : ''}
+                  </p>
+                  {task.description && (
+                    <p className="text-xs text-neutral-500 mt-1">{task.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {canManage ? (
+                    <select
+                      value={task.status}
+                      onChange={(e) => onUpdate?.(task.id, { status: e.target.value })}
+                      className="ui-field ui-select text-xs py-1.5"
+                    >
+                      {TASK_STATUSES.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs font-medium text-neutral-600">{task.status}</span>
+                  )}
+                  {canManage && (
+                    <button
+                      type="button"
+                      onClick={() => onDelete?.(task.id)}
+                      className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
 /* -------------------- Student portal: offer decision -------------------- */
 
 export const StudentOfferPanel = ({ app, onAccept, onReject, busy }) => {
@@ -1112,11 +1419,23 @@ export const StudentOfferPanel = ({ app, onAccept, onReject, busy }) => {
 
 /* -------------------- Student portal: visa status -------------------- */
 
-export const StudentVisaPanel = ({ app, workflow = [] }) => {
+export const StudentVisaPanel = ({ app, workflow = [], canUpload = false, onUpload, uploadingDocId }) => {
   const visa = app.visaTracking;
   if (!visa && !['VISA_PROCESS', 'OFFER_ACCEPTED', 'ENROLLED'].includes(app.stage)) return null;
 
-  const docs = normalizeVisaDocs(visa?.documents);
+  const checklistDocs = visa?.visaDocuments || [];
+  const legacyDocs = normalizeVisaDocs(visa?.documents);
+  const docs =
+    checklistDocs.length > 0
+      ? checklistDocs.map((d) => ({
+          id: d.id,
+          label: d.name,
+          filename: d.filename,
+          fileUrl: d.fileUrl,
+          status: d.status,
+          required: d.required,
+        }))
+      : legacyDocs;
   const statusIdx = workflow.findIndex((s) => s.suggestedStatus === visa?.status);
   const progressPct =
     workflow.length > 0
@@ -1143,6 +1462,10 @@ export const StudentVisaPanel = ({ app, workflow = [] }) => {
       overdue: false,
     });
   }
+
+  const missing = checklistDocs.filter(
+    (d) => d.required && ['PENDING', 'REJECTED'].includes(d.status),
+  );
 
   return (
     <div className="ui-panel p-5 space-y-5">
@@ -1218,6 +1541,13 @@ export const StudentVisaPanel = ({ app, workflow = [] }) => {
         </p>
       )}
 
+      {canUpload && missing.length > 0 && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-900">
+          <AlertCircle size={14} className="mt-0.5 shrink-0" />
+          <p>{missing.length} required visa document{missing.length === 1 ? '' : 's'} still needed.</p>
+        </div>
+      )}
+
       {docs.length > 0 && (
         <div className="space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
@@ -1225,16 +1555,53 @@ export const StudentVisaPanel = ({ app, workflow = [] }) => {
           </p>
           <ul className="space-y-2">
             {docs.map((doc, i) => (
-              <li key={i}>
-                <a
-                  href={doc.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-neutral-700 hover:text-brand underline"
-                >
-                  <FileText size={14} />
-                  {doc.label || doc.filename || `Visa document ${i + 1}`}
-                </a>
+              <li
+                key={doc.id || i}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-neutral-800 truncate">
+                    {doc.label || doc.filename || `Document ${i + 1}`}
+                    {doc.required ? <span className="text-rose-500 ml-1">*</span> : null}
+                  </p>
+                  {doc.status && (
+                    <p className="text-[11px] text-neutral-500 mt-0.5">{doc.status}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {doc.fileUrl && (
+                    <a
+                      href={doc.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-neutral-700 hover:text-brand underline"
+                    >
+                      View
+                    </a>
+                  )}
+                  {canUpload &&
+                    doc.id &&
+                    onUpload &&
+                    ['PENDING', 'REJECTED'].includes(doc.status) && (
+                      <label
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg bg-brand text-white cursor-pointer ${
+                          uploadingDocId === doc.id ? 'opacity-60 pointer-events-none' : ''
+                        }`}
+                      >
+                        {uploadingDocId === doc.id ? 'Uploading…' : 'Upload'}
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) onUpload(doc.id, file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                </div>
               </li>
             ))}
           </ul>

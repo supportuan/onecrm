@@ -3121,10 +3121,13 @@ const mapLeaveRequest = (r: {
   days: number;
   reason: string | null;
   status: string;
+  managerReviewerNote?: string | null;
+  managerReviewedAt?: Date | null;
   reviewerNote: string | null;
   reviewedAt: Date | null;
   createdAt: Date;
-  employee?: HrEmployee;
+  employee?: HrEmployee & { manager?: HrEmployee | null };
+  approvalStage?: 'manager' | 'hr' | null;
 }) => ({
   id: sid(r.id),
   employeeId: sid(r.employeeId),
@@ -3136,47 +3139,92 @@ const mapLeaveRequest = (r: {
   days: r.days,
   reason: r.reason,
   status: r.status,
+  managerReviewerNote: r.managerReviewerNote || null,
+  managerReviewedAt: r.managerReviewedAt?.toISOString() || null,
   reviewerNote: r.reviewerNote,
   reviewedAt: r.reviewedAt?.toISOString() || null,
   createdAt: r.createdAt.toISOString(),
+  approvalStage: r.approvalStage ?? null,
+  hasManager: Boolean(r.employee?.managerId),
 });
 
 export const getLeaveRequests = async (opts: {
   employeeId?: string;
   status?: string;
   mineEmail?: string;
+  /** Requests the caller can approve (manager queue + HR queue). */
+  queueForUserId?: number;
+  queueForEmail?: string;
+  canManageLeave?: boolean;
 }) => {
   const where: Record<string, unknown> = {};
-  if (opts.status) where.status = opts.status;
-  if (opts.mineEmail) {
-    const emp = await prisma.hrEmployee.findFirst({ where: { email: opts.mineEmail } });
-    if (!emp) return [];
-    where.employeeId = emp.id;
-  } else if (opts.employeeId) {
-    const emp = await resolveEmployeeId(opts.employeeId);
-    if (emp) where.employeeId = emp.id;
+  if (opts.queueForUserId || opts.queueForEmail) {
+    const or: Record<string, unknown>[] = [];
+    // Manager queue: PENDING reports
+    const managerEmp = await prisma.hrEmployee.findFirst({
+      where: {
+        OR: [
+          ...(opts.queueForUserId ? [{ userId: opts.queueForUserId }] : []),
+          ...(opts.queueForEmail ? [{ email: opts.queueForEmail }] : []),
+        ],
+      },
+    });
+    if (managerEmp) {
+      or.push({
+        status: 'PENDING',
+        employee: { managerId: managerEmp.id },
+      });
+    }
+    if (opts.canManageLeave) {
+      or.push({ status: 'MANAGER_APPROVED' });
+      // No manager assigned → HR can act on PENDING directly
+      or.push({ status: 'PENDING', employee: { managerId: null } });
+    }
+    if (or.length === 0) return [];
+    where.OR = or;
+  } else {
+    if (opts.status) where.status = opts.status;
+    if (opts.mineEmail) {
+      const emp = await prisma.hrEmployee.findFirst({ where: { email: opts.mineEmail } });
+      if (!emp) return [];
+      where.employeeId = emp.id;
+    } else if (opts.employeeId) {
+      const emp = await resolveEmployeeId(opts.employeeId);
+      if (emp) where.employeeId = emp.id;
+    }
   }
+
   const rows = await prisma.hrLeaveRequest.findMany({
     where,
-    include: { employee: true },
+    include: { employee: { include: { manager: true } } },
     orderBy: { createdAt: 'desc' },
   });
-  return rows.map(mapLeaveRequest);
+
+  return rows.map((r) => {
+    let approvalStage: 'manager' | 'hr' | null = null;
+    if (r.status === 'PENDING') {
+      approvalStage = r.employee.managerId ? 'manager' : 'hr';
+    } else if (r.status === 'MANAGER_APPROVED') {
+      approvalStage = 'hr';
+    }
+    return mapLeaveRequest({ ...r, approvalStage });
+  });
 };
 
 export const createLeaveRequest = async (
   userEmail: string,
   data: { leaveTypeName: string; fromDate: string; toDate: string; days: number; reason?: string }
 ) => {
-  // Strict match: the leave request must be filed against the caller's own
-  // employee record. The Prisma extension scopes by the active tenant so we
-  // can never match an employee in another tenant. No fallback — if no record
-  // matches, the caller gets a clear error instead of a phantom request
-  // attached to whichever employee happened to sort first.
-  const emp = await prisma.hrEmployee.findFirst({ where: { email: userEmail } });
+  const emp = await prisma.hrEmployee.findFirst({
+    where: { email: userEmail },
+    include: { manager: true },
+  });
   if (!emp) {
     throw new Error('No HR employee record matches your login email');
   }
+
+  // No manager → skip manager step so HR can approve immediately
+  const initialStatus = emp.managerId ? 'PENDING' : 'MANAGER_APPROVED';
 
   const row = await prisma.hrLeaveRequest.create({
     data: {
@@ -3186,34 +3234,78 @@ export const createLeaveRequest = async (
       toDate: data.toDate,
       days: data.days,
       reason: data.reason || null,
-      status: 'PENDING',
+      status: initialStatus,
+      ...(initialStatus === 'MANAGER_APPROVED'
+        ? {
+            managerReviewerNote: 'Auto-approved: no manager assigned',
+            managerReviewedAt: new Date(),
+          }
+        : {}),
     },
-    include: { employee: true },
+    include: { employee: { include: { manager: true } } },
   });
-  return mapLeaveRequest(row);
+  return {
+    ...mapLeaveRequest(row),
+    managerUserId: emp.manager?.userId ?? null,
+  };
 };
 
 export const processLeaveRequest = async (
   id: string,
-  data: { status: 'APPROVED' | 'REJECTED'; reviewerNote?: string }
+  data: { status: 'APPROVED' | 'REJECTED'; reviewerNote?: string },
+  actor: { userId: number; userEmail: string; canManageLeave: boolean }
 ) => {
   const numericId = parseInt(id, 10);
   if (Number.isNaN(numericId)) throw new Error('Leave request not found');
 
-  // findUnique is no longer auto-scoped, so verify the row belongs to the
-  // active tenant before mutating. findFirst IS auto-scoped → returns null
-  // if the id belongs to another tenant.
-  const existing = await prisma.hrLeaveRequest.findFirst({ where: { id: numericId } });
+  const existing = await prisma.hrLeaveRequest.findFirst({
+    where: { id: numericId },
+    include: { employee: { include: { manager: true } } },
+  });
   if (!existing) throw new Error('Leave request not found');
 
-  const row = await prisma.hrLeaveRequest.update({
-    where: { id: numericId },
-    data: {
+  const isManager =
+    Boolean(existing.employee.manager) &&
+    (existing.employee.manager!.userId === actor.userId ||
+      existing.employee.manager!.email === actor.userEmail);
+
+  let updateData: Record<string, unknown>;
+
+  if (existing.status === 'PENDING') {
+    if (isManager) {
+      updateData = {
+        status: data.status === 'APPROVED' ? 'MANAGER_APPROVED' : 'REJECTED',
+        managerReviewerNote: data.reviewerNote || null,
+        managerReviewedAt: new Date(),
+      };
+    } else if (actor.canManageLeave && !existing.employee.managerId) {
+      updateData = {
+        status: data.status,
+        reviewerNote: data.reviewerNote || null,
+        reviewedAt: new Date(),
+      };
+    } else if (actor.canManageLeave) {
+      throw new Error('Waiting for the employee\'s manager to approve first');
+    } else {
+      throw new Error('Not authorized to process this leave request');
+    }
+  } else if (existing.status === 'MANAGER_APPROVED') {
+    if (!actor.canManageLeave) {
+      throw new Error('Only HR can finalize manager-approved leave requests');
+    }
+    updateData = {
       status: data.status,
       reviewerNote: data.reviewerNote || null,
       reviewedAt: new Date(),
-    },
-    include: { employee: true },
+    };
+  } else {
+    throw new Error('Only pending or manager-approved requests can be processed');
+  }
+
+  const row = await prisma.hrLeaveRequest.update({
+    where: { id: numericId },
+    data: updateData,
+    include: { employee: { include: { manager: true } } },
   });
   await syncEmployeeLeaveStatus(row.employeeId);
   return mapLeaveRequest(row);
@@ -3223,14 +3315,15 @@ export const cancelLeaveRequest = async (id: string, userEmail: string) => {
   const numericId = parseInt(id, 10);
   if (Number.isNaN(numericId)) throw new Error('Leave request not found');
 
-  // findFirst is auto-scoped to the active tenant.
   const existing = await prisma.hrLeaveRequest.findFirst({
     where: { id: numericId },
     include: { employee: true },
   });
   if (!existing) throw new Error('Leave request not found');
   if (existing.employee.email !== userEmail) throw new Error('Not authorized to cancel this request');
-  if (existing.status !== 'PENDING') throw new Error('Only pending requests can be cancelled');
+  if (!['PENDING', 'MANAGER_APPROVED'].includes(existing.status)) {
+    throw new Error('Only pending or manager-approved requests can be cancelled');
+  }
 
   const row = await prisma.hrLeaveRequest.update({
     where: { id: numericId },
@@ -3296,7 +3389,7 @@ export const getHrMe = async (userId: number, userEmail: string | null | undefin
         where: { employeeId: employee.id, date: todayStr },
       }),
       prisma.hrLeaveRequest.findMany({
-        where: { employeeId: employee.id, status: 'PENDING' },
+        where: { employeeId: employee.id, status: { in: ['PENDING', 'MANAGER_APPROVED'] } },
       }),
       prisma.hrAttendanceRecord.findMany({
         where: { employeeId: employee.id, date: { startsWith: monthPrefix } },
@@ -3401,7 +3494,7 @@ export const getHrDashboardSummary = async () => {
   ] = await Promise.all([
     prisma.hrJobPosting.count({ where: { status: 'OPEN' } }),
     prisma.hrCandidate.count({ where: { status: 'ACTIVE' } }),
-    prisma.hrLeaveRequest.count({ where: { status: 'PENDING' } }),
+    prisma.hrLeaveRequest.count({ where: { status: { in: ['PENDING', 'MANAGER_APPROVED'] } } }),
     prisma.hrRegularization.count({ where: { status: 'PENDING' } }),
     prisma.hrEmployee.count(),
     prisma.hrInterview.count({ where: { status: 'SCHEDULED' } }),

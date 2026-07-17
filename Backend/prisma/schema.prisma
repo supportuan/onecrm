@@ -321,8 +321,16 @@ enum HrRegularizationStatus {
 
 enum HrLeaveRequestStatus {
   PENDING
+  MANAGER_APPROVED
   APPROVED
   REJECTED
+  CANCELLED
+}
+
+enum ApplicationTaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
   CANCELLED
 }
 
@@ -712,6 +720,8 @@ model User {
   applicationStageChanges ApplicationStageEvent[] @relation("StageChangedBy")
   applicationPayments     ApplicationPayment[]    @relation("StudentPayments")
   applicationPaymentsActed ApplicationPayment[]   @relation("PaymentActor")
+  applicationTasksAssigned ApplicationTask[]      @relation("ApplicationTaskAssignee")
+  applicationTasksCreated  ApplicationTask[]      @relation("ApplicationTaskCreator")
   agencyPartner           AgencyPartner?
   agencyActivities        AgencyActivity[]        @relation("AgencyActivityActor")
   agencyCommissionsVerified AgencyCommission[]    @relation("CommissionVerifiedBy")
@@ -1134,6 +1144,7 @@ model Application {
   payments          ApplicationPayment[]
   offerLetter       OfferLetter?
   visaTracking      VisaTracking?
+  tasks             ApplicationTask[]
   agencyReferrals   AgencyReferral[]
   agencyCommissions AgencyCommission[]
 
@@ -1141,6 +1152,27 @@ model Application {
   @@index([stage])
   @@index([assignedToId])
   @@index([studyPlanId])
+}
+
+model ApplicationTask {
+  id            Int                   @id @default(autoincrement())
+  applicationId Int
+  title         String
+  description   String?
+  assignedToId  Int?
+  createdById   Int?
+  dueDate       DateTime?
+  status        ApplicationTaskStatus @default(PENDING)
+  completedAt   DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  assignedTo  User?       @relation("ApplicationTaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy   User?       @relation("ApplicationTaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, status])
+  @@index([assignedToId, status, dueDate])
 }
 
 // -----------------------------------------------------------------------------
@@ -1487,12 +1519,32 @@ model VisaTracking {
   status          VisaStatus @default(NOT_STARTED)
   appointmentDate DateTime?
   decisionDate    DateTime?
+  /// Legacy free-form uploads; prefer visaDocuments checklist rows.
   documents       Json?
   notes           String?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  visaDocuments VisaDocument[]
+}
+
+model VisaDocument {
+  id             Int            @id @default(autoincrement())
+  visaTrackingId Int
+  name           String
+  required       Boolean        @default(true)
+  filename       String?
+  fileUrl        String?
+  status         DocumentStatus @default(PENDING)
+  uploadedAt     DateTime?
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  visaTracking VisaTracking @relation(fields: [visaTrackingId], references: [id], onDelete: Cascade)
+
+  @@index([visaTrackingId, status])
 }
 
 model DocumentChecklistTemplate {
@@ -1504,6 +1556,14 @@ model DocumentChecklistTemplate {
   updatedAt  DateTime @updatedAt
 
   @@unique([country, university])
+}
+
+model VisaDocumentChecklistTemplate {
+  id        Int      @id @default(autoincrement())
+  country   String   @unique
+  documents Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model RefreshToken {
@@ -1761,19 +1821,21 @@ model HrHoliday {
 }
 
 model HrLeaveRequest {
-  id            Int                  @id @default(autoincrement())
-  tenantId      Int?
-  employeeId    Int
-  leaveTypeName String
-  fromDate      String
-  toDate        String
-  days          Float
-  reason        String?
-  status        HrLeaveRequestStatus @default(PENDING)
-  reviewerNote  String?
-  reviewedAt    DateTime?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  id                   Int                  @id @default(autoincrement())
+  tenantId             Int?
+  employeeId           Int
+  leaveTypeName        String
+  fromDate             String
+  toDate               String
+  days                 Float
+  reason               String?
+  status               HrLeaveRequestStatus @default(PENDING)
+  managerReviewerNote  String?
+  managerReviewedAt    DateTime?
+  reviewerNote         String?
+  reviewedAt           DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   tenant   Tenant?    @relation(fields: [tenantId], references: [id])
   employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)

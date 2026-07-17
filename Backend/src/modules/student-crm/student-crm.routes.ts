@@ -109,6 +109,21 @@ router.post(
   applicationDocUpload.single('file'),
   controller.uploadVisaDocument,
 );
+router.post('/applications/:id/visa/documents', manage, controller.upsertVisaChecklistDocument);
+router.put('/applications/:id/visa/documents/:docId', manage, controller.upsertVisaChecklistDocument);
+router.post(
+  '/applications/:id/visa/documents/:docId/upload',
+  studentAgentOrManageDocumentUpload,
+  applicationDocUpload.single('file'),
+  controller.uploadVisaChecklistDocument,
+);
+router.delete('/applications/:id/visa/documents/:docId', manage, controller.deleteVisaChecklistDocument);
+
+// Application tasks
+router.get('/applications/:id/tasks', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.listApplicationTasks);
+router.post('/applications/:id/tasks', manage, controller.createApplicationTask);
+router.put('/applications/:id/tasks/:taskId', manage, controller.updateApplicationTask);
+router.delete('/applications/:id/tasks/:taskId', manage, controller.deleteApplicationTask);
 
 // Checklist defaults (used by UI before docs exist)
 router.get('/checklist', view, controller.getChecklist);

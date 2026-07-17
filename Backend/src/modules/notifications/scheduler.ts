@@ -2,7 +2,6 @@ import { prisma } from '../../prisma.js';
 import { notify } from './notifications.service.js';
 
 const TERMINAL_STAGES = new Set(['ENROLLED', 'OFFER_REJECTED']);
-
 const OVERDUE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -52,12 +51,65 @@ export const checkOverdueApplications = async (): Promise<void> => {
   }
 };
 
+/**
+ * Notify assignees about incomplete application tasks past due date.
+ * Dedupes per taskId (not just applicationId).
+ */
+export const checkOverdueApplicationTasks = async (): Promise<void> => {
+  const now = new Date();
+  const tasks = await prisma.applicationTask.findMany({
+    where: {
+      dueDate: { lt: now },
+      assignedToId: { not: null },
+      status: { in: ['PENDING', 'IN_PROGRESS'] },
+      application: { stage: { notIn: ['ENROLLED', 'OFFER_REJECTED'] } },
+    },
+    include: {
+      application: { include: { student: true } },
+    },
+  });
+
+  for (const task of tasks) {
+    if (!task.assignedToId || !task.dueDate) continue;
+
+    const recent = await prisma.notification.findFirst({
+      where: {
+        recipientId: task.assignedToId,
+        templateKey: 'application.task_overdue',
+        channel: 'IN_APP',
+        createdAt: { gte: new Date(Date.now() - OVERDUE_COOLDOWN_MS) },
+        vars: { path: ['taskId'], equals: task.id },
+      },
+    });
+    if (recent) continue;
+
+    try {
+      await notify({
+        recipientId: task.assignedToId,
+        templateKey: 'application.task_overdue',
+        vars: {
+          taskTitle: task.title,
+          studentName: task.application.student.fullName,
+          dueDate: task.dueDate.toISOString().slice(0, 10),
+          applicationId: task.applicationId,
+          taskId: task.id,
+        },
+      });
+    } catch (_) {
+      /* swallow */
+    }
+  }
+};
+
 const SCHEDULER_MS = 60 * 60 * 1000;
 
 export const startNotificationScheduler = (): void => {
   const run = () => {
     checkOverdueApplications().catch((err) =>
       console.error('[NOTIFY/SCHEDULER] overdue check failed', err)
+    );
+    checkOverdueApplicationTasks().catch((err) =>
+      console.error('[NOTIFY/SCHEDULER] task overdue check failed', err)
     );
   };
   run();
