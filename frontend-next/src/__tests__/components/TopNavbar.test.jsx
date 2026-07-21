@@ -14,6 +14,12 @@ jest.mock('@/lib/auth/AuthContext', () => ({
   useAuth: jest.fn(),
 }));
 
+jest.mock('@/lib/auth/PermissionsContext', () => ({
+  usePermissions: jest.fn(() => ({
+    can: (perm) => perm === 'VIEW_MARKETING' || perm === 'MANAGE_MARKETING',
+  })),
+}));
+
 jest.mock('@/components/NotificationBell', () => {
   return function MockNotificationBell() {
     return <div data-testid="notification-bell" />;
@@ -69,6 +75,13 @@ describe('TopNavbar Component', () => {
     expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the profile avatar in the top navigation', () => {
+    usePathname.mockReturnValue('/');
+    render(<TopNavbar onToggleSidebar={jest.fn()} />);
+
+    expect(screen.getByTitle('View profile')).toBeInTheDocument();
+  });
+
   it('opens and closes Add Lead modal', () => {
     usePathname.mockReturnValue('/');
     render(<TopNavbar onToggleSidebar={jest.fn()} />);
@@ -77,7 +90,7 @@ describe('TopNavbar Component', () => {
     expect(screen.queryByTestId('add-lead-modal')).not.toBeInTheDocument();
     
     // Click Add Lead button
-    const addLeadBtn = screen.getByTitle('Add new lead');
+    const addLeadBtn = screen.getByTitle('Add lead');
     fireEvent.click(addLeadBtn);
     
     // Modal should now be open

@@ -56,7 +56,7 @@ export default function StudentAvatarLink({ className = '', size = 'md' }) {
       href="/applicant/profile/view"
       title="View profile"
       aria-label="View profile"
-      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e8eef7] font-semibold tracking-wide text-[#0b2a5b] transition hover:ring-2 hover:ring-brand/20 ${sizeClass} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-soft font-semibold tracking-wide text-brand transition hover:ring-2 hover:ring-brand/20 ${sizeClass} ${className}`}
     >
       {showPhoto ? (
         // eslint-disable-next-line @next/next/no-img-element

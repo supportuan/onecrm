@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ONECRM Product Manual</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 18mm 16mm;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #1f2937;
+      margin: 0;
+    }
+    h1, h2, h3, h4 {
+      font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+      color: #0f2744;
+      page-break-after: avoid;
+    }
+    h1 { font-size: 22pt; margin: 0 0 8pt; }
+    h2 {
+      font-size: 16pt;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 4pt;
+      margin-top: 22pt;
+    }
+    h3 { font-size: 13pt; color: #1e3a5f; margin-top: 16pt; }
+    h4 { font-size: 11.5pt; margin-top: 12pt; color: #334155; }
+    p { margin: 6pt 0; }
+    ul, ol { margin: 6pt 0 10pt 18pt; padding: 0; }
+    li { margin: 3pt 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10pt 0 14pt;
+      font-size: 10pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6pt 8pt;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #0f2744;
+      color: #fff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .cover {
+      page-break-after: always;
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28mm 10mm 18mm;
+      text-align: center;
+    }
+    .cover-brand img {
+      height: 72px;
+      margin-bottom: 28pt;
+    }
+    .cover-title {
+      font-size: 32pt;
+      font-weight: 700;
+      color: #0f2744;
+      letter-spacing: 0.5px;
+      margin: 0;
+    }
+    .cover-subtitle {
+      font-size: 16pt;
+      color: #2563eb;
+      margin: 8pt 0 0;
+      font-weight: 600;
+    }
+    .cover-meta {
+      margin-top: 36pt;
+      color: #475569;
+      font-size: 11pt;
+    }
+    .cover-footer {
+      border-top: 2px solid #e2e8f0;
+      padding-top: 14pt;
+      color: #64748b;
+      font-size: 10pt;
+    }
+    .doc-control {
+      page-break-after: always;
+    }
+    .toc { page-break-after: always; }
+    .toc ol { margin-left: 22pt; }
+    .toc li { margin: 5pt 0; }
+    .note {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      padding: 8pt 10pt;
+      margin: 10pt 0;
+    }
+    .tip {
+      background: #f0fdf4;
+      border-left: 4px solid #16a34a;
+      padding: 8pt 10pt;
+      margin: 10pt 0;
+    }
+    .section { page-break-inside: avoid; }
+    .muted { color: #64748b; }
+    .path {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 9.5pt;
+      background: #f1f5f9;
+      padding: 1pt 4pt;
+      border-radius: 2px;
+    }
+    .footer-note {
+      margin-top: 28pt;
+      font-size: 9pt;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8pt;
+    }
+    .steps li { margin: 5pt 0; }
+  </style>
+</head>
+<body>
+
+  <!-- COVER -->
+  <section class="cover">
+    <div>
+      <div class="cover-brand">
+        <img src="applyUniNow.png" alt="ApplyUniNow" />
+      </div>
+      <p class="cover-title">ONECRM</p>
+      <p class="cover-subtitle">Product Manual</p>
+      <p class="cover-meta">
+        Education &amp; Study-Abroad CRM Platform<br />
+        Version 3.3 · July 2026
+      </p>
+    </div>
+    <div class="cover-footer">
+      Created by <strong>AUN Tech Consulting</strong><br />
+      Part of the ApplyUniNow ecosystem<br />
+      Confidential — for authorised users only
+    </div>
+  </section>
+
+  <!-- DOCUMENT CONTROL -->
+  <section class="doc-control">
+    <h1>Document Control</h1>
+    <table>
+      <tr><th style="width:35%">Field</th><th>Detail</th></tr>
+      <tr><td>Document title</td><td>ONECRM Product Manual</td></tr>
+      <tr><td>Product</td><td>ONECRM (multi-tenant study-abroad CRM)</td></tr>
+      <tr><td>Publisher</td><td>AUN Tech Consulting</td></tr>
+      <tr><td>Audience</td><td>Tenant administrators, counsellors, marketers, HR staff, agency partners, and applicants</td></tr>
+      <tr><td>Version</td><td>3.3</td></tr>
+      <tr><td>Date</td><td>17 July 2026</td></tr>
+      <tr><td>Classification</td><td>Internal / Customer confidential</td></tr>
+    </table>
+
+    <h3>Revision history</h3>
+    <table>
+      <tr><th>Version</th><th>Date</th><th>Summary</th></tr>
+      <tr><td>3.3</td><td>Jul 2026</td><td>Full product manual covering Marketing, Student CRM, Agency CRM / Agent Portal, HR, Admin, and self-service portals</td></tr>
+    </table>
+
+    <div class="note">
+      <strong>Note:</strong> Module availability depends on your tenant configuration. Super Administrators enable modules per tenant. Screen labels may vary slightly by role (for example, Agency CRM appears as <em>Agent Portal</em> for agency users).
+    </div>
+  </section>
+
+  <!-- TOC -->
+  <section class="toc">
+    <h1>Table of Contents</h1>
+    <ol>
+      <li>Introduction</li>
+      <li>Getting Started</li>
+      <li>User Roles &amp; Access</li>
+      <li>Marketing Module</li>
+      <li>Student CRM</li>
+      <li>Agency CRM &amp; Agent Portal</li>
+      <li>Human Resources (HR)</li>
+      <li>Admin &amp; Settings</li>
+      <li>Applicant (Student) Portal</li>
+      <li>Allied Services</li>
+      <li>Super Admin (Platform)</li>
+      <li>Common Workflows</li>
+      <li>Support &amp; Glossary</li>
+    </ol>
+  </section>
+
+  <!-- 1 -->
+  <h2>1. Introduction</h2>
+  <p>
+    <strong>ONECRM</strong> is a multi-tenant customer relationship management platform built for education and study-abroad organisations.
+    It unifies lead generation, student application pipelines, visa tracking, agency partner management, HR operations, and self-service portals in one system.
+  </p>
+  <p>ONECRM sits in the <strong>ApplyUniNow</strong> ecosystem and is delivered by <strong>AUN Tech Consulting</strong>.</p>
+
+  <h3>1.1 What you can do with ONECRM</h3>
+  <ul>
+    <li>Capture, score, and convert marketing leads</li>
+    <li>Manage student profiles, university applications, documents, offers, fees, and visas</li>
+    <li>Onboard agency partners, track referrals, and calculate commissions</li>
+    <li>Run HR processes: employees, recruitment, attendance, leave, performance, and payroll</li>
+    <li>Control users, roles, and module access per tenant</li>
+    <li>Give students and agents dedicated self-service experiences</li>
+  </ul>
+
+  <h3>1.2 Product modules at a glance</h3>
+  <table>
+    <tr><th>Module</th><th>Purpose</th></tr>
+    <tr><td>Marketing</td><td>Leads, campaigns, and marketing analytics</td></tr>
+    <tr><td>Student CRM</td><td>Students, applications, visas, and CRM catalogue settings</td></tr>
+    <tr><td>Agency CRM / Agent Portal</td><td>Partner ops for staff; referral &amp; commission portal for agents</td></tr>
+    <tr><td>Human Resource</td><td>Employees, recruitment, attendance, leave, performance, payroll</td></tr>
+    <tr><td>Admin &amp; Settings</td><td>Users, roles &amp; permissions</td></tr>
+    <tr><td>Allied Services</td><td>Quick links to ApplyUniNow family products</td></tr>
+    <tr><td>Applicant Portal</td><td>Student self-service for applications, payments, and profile</td></tr>
+    <tr><td>Super Admin</td><td>Cross-tenant management (platform operators only)</td></tr>
+  </table>
+
+  <!-- 2 -->
+  <h2>2. Getting Started</h2>
+  <h3>2.1 Sign-in options</h3>
+  <table>
+    <tr><th>Portal</th><th>URL path</th><th>Who uses it</th></tr>
+    <tr><td>Staff login</td><td><span class="path">/login</span></td><td>Admins, counsellors, marketers, HR, and other staff</td></tr>
+    <tr><td>Agent login</td><td><span class="path">/agent-login</span></td><td>Agency partners and freelancers</td></tr>
+    <tr><td>Student login</td><td><span class="path">/student-login</span></td><td>Applicants / students</td></tr>
+    <tr><td>Registration</td><td><span class="path">/register</span></td><td>New agent self-registration (subject to admin approval)</td></tr>
+  </table>
+
+  <h3>2.2 First login checklist</h3>
+  <ol class="steps">
+    <li>Open the correct login page for your role.</li>
+    <li>Enter your email and password. Use <em>Forgot password</em> if needed.</li>
+    <li>Change your password when prompted (first-time or reset flows).</li>
+    <li>Confirm the modules visible in the left sidebar match your responsibilities.</li>
+    <li>Open <strong>Notifications</strong> (<span class="path">/notifications</span>) to review unread alerts.</li>
+  </ol>
+
+  <div class="tip">
+    <strong>Tip:</strong> If a menu item is missing, your role may lack permission or the module may be disabled for your tenant. Contact your Global Admin.
+  </div>
+
+  <!-- 3 -->
+  <h2>3. User Roles &amp; Access</h2>
+  <p>Access is controlled by <strong>role</strong>, <strong>permissions</strong>, and optional <strong>module access</strong> settings. Tenants can also create custom roles.</p>
+
+  <h3>3.1 Standard roles</h3>
+  <table>
+    <tr><th>Role</th><th>Typical landing</th><th>Primary access</th></tr>
+    <tr><td>SUPER_ADMIN</td><td>Super Admin</td><td>All tenants, audit, module toggles</td></tr>
+    <tr><td>GLOBAL_ADMIN</td><td>Marketing / home</td><td>Full access within a tenant</td></tr>
+    <tr><td>MARKETING_MANAGER</td><td>Marketing</td><td>Marketing manage; limited HR self-service</td></tr>
+    <tr><td>COUNSELLOR</td><td>Marketing / Student CRM</td><td>Marketing view + Student CRM manage</td></tr>
+    <tr><td>TELECALLER</td><td>Marketing</td><td>Marketing + Student CRM view</td></tr>
+    <tr><td>HR</td><td>Human Resource</td><td>HR module</td></tr>
+    <tr><td>AGENT / AGENCY_FREELANCER</td><td>Agent Portal</td><td>Agency portal; scoped student/referral data</td></tr>
+    <tr><td>STUDENT</td><td>Applicant portal</td><td>Own applications, payments, profile</td></tr>
+  </table>
+
+  <h3>3.2 Permission model (summary)</h3>
+  <ul>
+    <li>Module permissions such as <em>VIEW_MARKETING</em>, <em>MANAGE_STUDENT_CRM</em>, <em>MANAGE_AGENCY_CRM</em>.</li>
+    <li>Granular HR permissions (employees, attendance, leave, payroll, etc.).</li>
+    <li>Tenant module switches decide whether Marketing, Student CRM, Agency CRM, HR, and Admin appear at all.</li>
+  </ul>
+
+  <!-- 4 -->
+  <h2>4. Marketing Module</h2>
+  <p>Path: <span class="path">/marketing</span></p>
+  <p>Use Marketing to generate demand, nurture prospects, and hand qualified leads to Student CRM.</p>
+
+  <h3>4.1 Lead Management</h3>
+  <p>Path: <span class="path">/marketing/lead-management</span></p>
+  <ul>
+    <li>Create and update leads with contact details, source, and preferred programme information.</li>
+    <li>Track status through the pipeline (for example New → Working → Converted / Lost).</li>
+    <li>Rate interest (Hot / Warm / Cold) and assign counsellors.</li>
+    <li>Log activities: notes, calls, email, SMS, WhatsApp, and meetings.</li>
+    <li>Promote qualified leads into Student CRM when ready to start applications.</li>
+  </ul>
+
+  <h3>4.2 Campaigns</h3>
+  <p>Path: <span class="path">/marketing/campaigns</span></p>
+  <ul>
+    <li>Plan and launch campaigns across email, SMS, WhatsApp, social, and PPC channels.</li>
+    <li>Track campaign messaging and performance alongside lead intake.</li>
+  </ul>
+
+  <h3>4.3 Marketing Analytics</h3>
+  <p>Path: <span class="path">/marketing/marketing-analytics</span></p>
+  <ul>
+    <li>Review channel performance, funnel metrics, and intake trends.</li>
+    <li>Monitor student and agency funnels to spot conversion bottlenecks.</li>
+  </ul>
+
+  <!-- 5 -->
+  <h2>5. Student CRM</h2>
+  <p>Path: <span class="path">/student-crm</span></p>
+  <p>Student CRM is the operational core for counselling teams managing applicants from enquiry through enrolment.</p>
+
+  <h3>5.1 Student Management</h3>
+  <p>Path: <span class="path">/student-crm/student-management</span></p>
+  <ul>
+    <li>Maintain student profiles, academics, and contact data.</li>
+    <li>Capture study plans (country, university, course, intake).</li>
+    <li>Link preferred universities/courses from the CRM catalogue.</li>
+    <li>Manage checklists and supporting documents across process stages.</li>
+  </ul>
+
+  <h3>5.2 Applications</h3>
+  <p>Path: <span class="path">/student-crm/applications</span></p>
+  <p>Track each university application through stages such as:</p>
+  <ol>
+    <li>Draft</li>
+    <li>Documents pending</li>
+    <li>Submitted</li>
+    <li>Under review</li>
+    <li>Offer received</li>
+    <li>Accepted / Rejected</li>
+    <li>Visa process</li>
+    <li>Enrolled</li>
+  </ol>
+  <p>Staff can upload documents, record offers, assign tasks, advance stages, and manage fees/payments.</p>
+
+  <h3>5.3 Visa management</h3>
+  <p>Path: <span class="path">/student-crm/visa-management</span></p>
+  <ul>
+    <li>Track visa status and checklist documents per student/application.</li>
+    <li>Coordinate pre-CAS / I-20 and related milestones as applicable by destination.</li>
+  </ul>
+
+  <h3>5.4 CRM Settings</h3>
+  <p>Path: <span class="path">/student-crm/settings</span></p>
+  <ul>
+    <li>Maintain catalogue data: countries, universities, courses, and industries.</li>
+    <li>Keep form options aligned with ApplyUniNow university/course mappings.</li>
+  </ul>
+
+  <h3>5.5 Process checklist stages</h3>
+  <p>Applications may also follow operational process stages, for example:</p>
+  <ul>
+    <li>Gathering checklist → University application → Financial evidence</li>
+    <li>After I-20 / Pre-CAS → Visa → Pre-departure → On arrival → Pre-requisite</li>
+  </ul>
+
+  <!-- 6 -->
+  <h2>6. Agency CRM &amp; Agent Portal</h2>
+  <p>Path: <span class="path">/agency-crm</span></p>
+  <p>
+    Staff use <strong>Agency CRM</strong> to manage partners. Agency users see the same module branded as
+    <strong>Agent Portal</strong>, with navigation limited to their own data.
+  </p>
+
+  <h3>6.1 Screens</h3>
+  <table>
+    <tr><th>Staff label</th><th>Agent label</th><th>Path</th><th>Purpose</th></tr>
+    <tr><td>Dashboard</td><td>Dashboard</td><td><span class="path">/agency-crm/dashboard</span></td><td>KPIs and overview</td></tr>
+    <tr><td>Agency Management</td><td>— (admin only)</td><td><span class="path">/agency-crm/agency-management</span></td><td>Partner CRUD, status, onboarding control</td></tr>
+    <tr><td>Students &amp; Referrals</td><td>My Students</td><td><span class="path">/agency-crm/agency-leads</span></td><td>Referrals and linked applications</td></tr>
+    <tr><td>University Directory</td><td>Universities</td><td><span class="path">/agency-crm/universities</span></td><td>University directory / POC lookup</td></tr>
+    <tr><td>Onboarding</td><td>My Profile &amp; Onboarding</td><td><span class="path">/agency-crm/onboarding</span></td><td>KYC docs, agreement, stage progress</td></tr>
+    <tr><td>Communications</td><td>Notifications</td><td><span class="path">/agency-crm/communications</span></td><td>Activity log and admin broadcasts</td></tr>
+    <tr><td>Co-branding Tools</td><td>Referral &amp; Branding</td><td><span class="path">/agency-crm/co-branding-tools</span></td><td>Referral code and branding settings</td></tr>
+    <tr><td>Commission Management</td><td>My Commissions</td><td><span class="path">/agency-crm/commission-management</span></td><td>Rules, commissions, statements, payouts</td></tr>
+  </table>
+
+  <h3>6.2 Partner onboarding stages</h3>
+  <ol>
+    <li>Registered</li>
+    <li>Documents submitted</li>
+    <li>Agreement signed</li>
+    <li>Verified</li>
+    <li>Approved</li>
+    <li>Active</li>
+  </ol>
+
+  <h3>6.3 Agent workflow</h3>
+  <ol class="steps">
+    <li>Register via <span class="path">/agent-login</span> or <span class="path">/register</span> (approval may be required).</li>
+    <li>Complete onboarding: upload KYC/business documents and sign the agreement.</li>
+    <li>Share your referral code / co-branded links to capture leads.</li>
+    <li>Track referred students and application progress under <em>My Students</em>.</li>
+    <li>Review commissions and statements under <em>My Commissions</em>.</li>
+  </ol>
+
+  <div class="note">
+    Agents only see students and applications attributed to their partnership. Commission creation and status changes are admin-controlled unless explicitly granted.
+  </div>
+
+  <!-- 7 -->
+  <h2>7. Human Resources (HR)</h2>
+  <p>Path: <span class="path">/hr</span> (sidebar label: Human Resource)</p>
+
+  <table>
+    <tr><th>Screen</th><th>Path</th><th>Purpose</th></tr>
+    <tr><td>Overview</td><td><span class="path">/hr</span></td><td>HR dashboard / entry point</td></tr>
+    <tr><td>My HR</td><td><span class="path">/hr/me</span></td><td>Employee self-service</td></tr>
+    <tr><td>Employee Directory</td><td><span class="path">/hr/employee-directory</span></td><td>People records, roles, documents (offer, ID, contract)</td></tr>
+    <tr><td>Recruitment</td><td><span class="path">/hr/recruitment-tracker</span></td><td>Jobs, candidates, interviews, hiring pipeline</td></tr>
+    <tr><td>Attendance</td><td><span class="path">/hr/attendance</span></td><td>Clock-in / attendance tracking</td></tr>
+    <tr><td>Leave</td><td><span class="path">/hr/leave-management</span></td><td>Leave requests, plans, and approvals</td></tr>
+    <tr><td>Performance</td><td><span class="path">/hr/performance-reviews</span></td><td>Reviews and KPIs</td></tr>
+    <tr><td>Payroll</td><td><span class="path">/hr/payroll</span></td><td>Payroll processing and payslips</td></tr>
+  </table>
+
+  <h3>7.1 Typical hire-to-pay flow</h3>
+  <ol>
+    <li>Post a job and manage candidates in Recruitment.</li>
+    <li>Interview, select, and issue an offer letter.</li>
+    <li>Onboard the employee and store HR documents.</li>
+    <li>Track attendance and leave.</li>
+    <li>Run payroll and performance reviews.</li>
+  </ol>
+
+  <!-- 8 -->
+  <h2>8. Admin &amp; Settings</h2>
+  <p>Path: <span class="path">/admin-settings</span></p>
+
+  <h3>8.1 Users</h3>
+  <p>Path: <span class="path">/admin-settings/users</span></p>
+  <ul>
+    <li>Create and manage tenant users.</li>
+    <li>Approve pending agents.</li>
+    <li>Assign roles and activate/deactivate accounts.</li>
+  </ul>
+
+  <h3>8.2 Roles &amp; Permissions</h3>
+  <p>Path: <span class="path">/admin-settings/roles-permissions</span></p>
+  <ul>
+    <li>Review built-in roles and create custom roles where allowed.</li>
+    <li>Grant module and HR capabilities carefully — least privilege is recommended.</li>
+  </ul>
+
+  <!-- 9 -->
+  <h2>9. Applicant (Student) Portal</h2>
+  <p>Students sign in at <span class="path">/student-login</span> and work in a dedicated shell (not the staff sidebar).</p>
+  <ul>
+    <li><strong>Applications</strong> — view status and required documents</li>
+    <li><strong>Payments</strong> — pay fees (for example via integrated payment gateways)</li>
+    <li><strong>Profile</strong> — keep personal details current</li>
+    <li>Accept policies when prompted before continuing</li>
+  </ul>
+
+  <!-- 10 -->
+  <h2>10. Allied Services</h2>
+  <p>Path: <span class="path">/allied-services</span></p>
+  <p>Quick links to ApplyUniNow family and partner services, including:</p>
+  <ul>
+    <li>ApplyUniNow, ApplyUniLoans, ApplyUniHomes, ApplyUniJobs</li>
+    <li>AUN Tech Consulting, AdminConnects, UniFeatures</li>
+    <li>InternationalStudentVisas, AustraliaSkills, CanadaAdmits, and related services</li>
+  </ul>
+
+  <!-- 11 -->
+  <h2>11. Super Admin (Platform)</h2>
+  <p>Path: <span class="path">/super-admin</span></p>
+  <p>Reserved for platform operators managing multiple tenants.</p>
+  <ul>
+    <li>Create and edit tenants</li>
+    <li>Enable or disable modules per tenant (Marketing, Student CRM, Agency CRM, HR, Admin)</li>
+    <li>Review audit logs</li>
+  </ul>
+
+  <!-- 12 -->
+  <h2>12. Common Workflows</h2>
+
+  <h3>12.1 Lead → Student → Application</h3>
+  <ol class="steps">
+    <li>Create or capture a lead in Marketing → Lead Management.</li>
+    <li>Qualify the lead with activities and counsellor assignment.</li>
+    <li>Promote the lead to Student CRM.</li>
+    <li>Create study plans and university applications.</li>
+    <li>Collect documents, submit, track offers, then advance to visa and enrolment.</li>
+  </ol>
+
+  <h3>12.2 Agency referral → commission</h3>
+  <ol class="steps">
+    <li>Agent completes onboarding and receives an active partner profile.</li>
+    <li>Lead or student is attributed via referral code / agency reference.</li>
+    <li>Application progresses; commissions may auto-generate on configured triggers (for example enrolled or visa approved).</li>
+    <li>Admin verifies commissions and processes payouts; agent reviews statement.</li>
+  </ol>
+
+  <h3>12.3 Student self-service payment</h3>
+  <ol class="steps">
+    <li>Student signs in to the applicant portal.</li>
+    <li>Opens Payments for outstanding fees.</li>
+    <li>Completes checkout; staff can verify payment status in Student CRM.</li>
+  </ol>
+
+  <!-- 13 -->
+  <h2>13. Support &amp; Glossary</h2>
+
+  <h3>13.1 Getting help</h3>
+  <ul>
+    <li>Contact your tenant <strong>Global Admin</strong> for access, role, or data questions.</li>
+    <li>Platform / hosting issues: escalate to <strong>AUN Tech Consulting</strong>.</li>
+    <li>API consumers can use the backend Swagger documentation at <span class="path">/api-docs</span> (where enabled).</li>
+  </ul>
+
+  <h3>13.2 Glossary</h3>
+  <table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td>Tenant</td><td>An organisation instance of ONECRM with its own users and data</td></tr>
+    <tr><td>Lead</td><td>A prospective student captured in Marketing before conversion</td></tr>
+    <tr><td>Application</td><td>A university (or related) application record in Student CRM</td></tr>
+    <tr><td>Agency Partner</td><td>An agent/agency organisation linked 1:1 to a user account</td></tr>
+    <tr><td>Referral</td><td>Attribution linking a lead/student/application to an agency partner</td></tr>
+    <tr><td>Commission</td><td>Amount owed to a partner based on rules and triggers</td></tr>
+    <tr><td>Module access</td><td>Per-user VIEW/EDIT flags that control sidebar options</td></tr>
+    <tr><td>RBAC</td><td>Role-based access control — permissions granted via roles</td></tr>
+  </table>
+
+  <div class="footer-note">
+    © 2026 AUN Tech Consulting · ONECRM Product Manual v3.3 · ApplyUniNow ecosystem<br />
+    This document describes product behaviour as implemented in the ONECRM application. Screens and permissions may vary by tenant configuration and role.
+  </div>
+
+</body>
+</html>

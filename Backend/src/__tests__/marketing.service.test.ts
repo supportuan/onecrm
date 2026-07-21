@@ -19,6 +19,9 @@ const mockPrisma = {
   leadSource: {
     findMany: jest.fn(),
   },
+  student: {
+    findFirst: jest.fn(),
+  },
   campaign: {
     findMany: jest.fn(),
     findFirst: jest.fn(),
@@ -159,6 +162,16 @@ describe('getLeads', () => {
 
     const [[call]] = (mockPrisma.lead.findMany as jest.Mock).mock.calls as any;
     expect(call.where.sourceId).toBe(5);
+  });
+
+  it('filters by country', async () => {
+    mockPrisma.lead.findMany.mockResolvedValue([]);
+    mockPrisma.lead.count.mockResolvedValue(0);
+
+    await getLeads({ country: 'Canada' });
+
+    const [[call]] = (mockPrisma.lead.findMany as jest.Mock).mock.calls as any;
+    expect(call.where.country).toEqual({ equals: 'Canada', mode: 'insensitive' });
   });
 
   it('applies search across name, email, phone, country', async () => {
@@ -334,6 +347,7 @@ describe('updateLead', () => {
 // ═══════════════════════════════════════════════════════════
 describe('deleteLead', () => {
   it('soft-deletes by setting deletedAt', async () => {
+    mockPrisma.lead.findFirst.mockResolvedValue({ id: 1 });
     mockPrisma.lead.update.mockResolvedValue({ id: 1, deletedAt: new Date() });
 
     const result = await deleteLead(1);
@@ -351,11 +365,16 @@ describe('deleteLead', () => {
 describe('updateLeadStatus', () => {
   it.each([
     ['CONTACTED', 'contactedAt'],
+    ['NOT_CONTACTED', 'notContactedAt'],
+    ['CALLBACK', 'callbackAt'],
+    ['FOLLOW_UP', 'followUpAt'],
     ['QUALIFIED', 'qualifiedAt'],
     ['PROPOSED', 'proposedAt'],
     ['CONVERTED', 'convertedAt'],
     ['LOST', 'lostAt'],
   ] as const)('sets %s timestamp field when status is %s', async (status, field) => {
+    mockPrisma.lead.findFirst.mockResolvedValue(makeLead({ status }));
+    mockPrisma.student.findFirst.mockResolvedValue({ id: 1 });
     mockPrisma.lead.update.mockResolvedValue({ id: 1, status });
 
     await updateLeadStatus(1, status as any);
@@ -366,6 +385,7 @@ describe('updateLeadStatus', () => {
   });
 
   it('does not set extra timestamps for NEW status', async () => {
+    mockPrisma.lead.findFirst.mockResolvedValue(makeLead());
     mockPrisma.lead.update.mockResolvedValue({ id: 1, status: 'NEW' });
 
     await updateLeadStatus(1, 'NEW' as any);
@@ -381,7 +401,7 @@ describe('updateLeadStatus', () => {
 // ═══════════════════════════════════════════════════════════
 describe('updateLeadRating', () => {
   it('promotes NEW lead to QUALIFIED when rating is HOT', async () => {
-    mockPrisma.lead.findUnique.mockResolvedValue({ status: 'NEW', qualifiedAt: null });
+    mockPrisma.lead.findFirst.mockResolvedValue({ status: 'NEW', qualifiedAt: null });
     mockPrisma.lead.update.mockResolvedValue({ id: 1, rating: 'HOT', status: 'QUALIFIED' });
 
     const result = await updateLeadRating(1, 'HOT');
@@ -392,7 +412,7 @@ describe('updateLeadRating', () => {
   });
 
   it('promotes CONTACTED lead to QUALIFIED when rating is WARM', async () => {
-    mockPrisma.lead.findUnique.mockResolvedValue({ status: 'CONTACTED', qualifiedAt: null });
+    mockPrisma.lead.findFirst.mockResolvedValue({ status: 'CONTACTED', qualifiedAt: null });
     mockPrisma.lead.update.mockResolvedValue({ id: 1, rating: 'WARM', status: 'QUALIFIED' });
 
     await updateLeadRating(1, 'WARM');
@@ -402,7 +422,7 @@ describe('updateLeadRating', () => {
   });
 
   it('does NOT promote already-CONVERTED lead', async () => {
-    mockPrisma.lead.findUnique.mockResolvedValue({ status: 'CONVERTED', qualifiedAt: new Date() });
+    mockPrisma.lead.findFirst.mockResolvedValue({ status: 'CONVERTED', qualifiedAt: new Date() });
     mockPrisma.lead.update.mockResolvedValue({ id: 1, rating: 'HOT', status: 'CONVERTED' });
 
     await updateLeadRating(1, 'HOT');
@@ -412,7 +432,7 @@ describe('updateLeadRating', () => {
   });
 
   it('does NOT promote when rating is COLD', async () => {
-    mockPrisma.lead.findUnique.mockResolvedValue({ status: 'NEW', qualifiedAt: null });
+    mockPrisma.lead.findFirst.mockResolvedValue({ status: 'NEW', qualifiedAt: null });
     mockPrisma.lead.update.mockResolvedValue({ id: 1, rating: 'COLD', status: 'NEW' });
 
     await updateLeadRating(1, 'COLD');
@@ -507,6 +527,7 @@ describe('createCampaign', () => {
 // ═══════════════════════════════════════════════════════════
 describe('updateCampaign', () => {
   it('calls prisma.campaign.update with correct id and data', async () => {
+    mockPrisma.campaign.findFirst.mockResolvedValue({ id: 5 });
     mockPrisma.campaign.update.mockResolvedValue({ id: 5, name: 'Updated' });
 
     const result = await updateCampaign(5, { name: 'Updated', budget: 200 });
@@ -523,6 +544,7 @@ describe('updateCampaign', () => {
 // ═══════════════════════════════════════════════════════════
 describe('deleteCampaign', () => {
   it('soft-deletes campaign by setting deletedAt', async () => {
+    mockPrisma.campaign.findFirst.mockResolvedValue({ id: 5 });
     mockPrisma.campaign.update.mockResolvedValue({ id: 5, deletedAt: new Date() });
 
     await deleteCampaign(5);
@@ -538,6 +560,8 @@ describe('deleteCampaign', () => {
 // ═══════════════════════════════════════════════════════════
 describe('addCampaignLeads', () => {
   it('bulk-creates campaign leads with skipDuplicates', async () => {
+    mockPrisma.campaign.findFirst.mockResolvedValue({ id: 10 });
+    mockPrisma.lead.findMany.mockResolvedValue([{ id: 1 }, { id: 2 }]);
     mockPrisma.campaignLead.createMany.mockResolvedValue({ count: 2 });
 
     const result = await addCampaignLeads(10, [1, 2], 'SENT', 'medium');
@@ -550,6 +574,8 @@ describe('addCampaignLeads', () => {
   });
 
   it('creates no records for empty leadIds', async () => {
+    mockPrisma.campaign.findFirst.mockResolvedValue({ id: 10 });
+    mockPrisma.lead.findMany.mockResolvedValue([]);
     mockPrisma.campaignLead.createMany.mockResolvedValue({ count: 0 });
 
     await addCampaignLeads(10, []);

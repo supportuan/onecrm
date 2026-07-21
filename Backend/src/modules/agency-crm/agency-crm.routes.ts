@@ -23,6 +23,7 @@ router.post('/partners/:id/onboarding', manage, controller.advanceOnboarding);
 router.post('/partners/:id/sign-agreement', view, controller.signAgreement);
 router.post('/partners/:id/submit-docs', view, controller.submitOnboardingDocs);
 router.put('/partners/:id/status', manage, controller.updatePartnerStatus);
+router.post('/partners/:id/approve-login', manage, controller.approvePartnerLoginHandler);
 
 router.get('/partners/:id/documents', view, controller.getDocuments);
 router.post(

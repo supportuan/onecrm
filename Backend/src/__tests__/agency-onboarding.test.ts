@@ -50,6 +50,16 @@ describe('agency onboarding state machine', () => {
     ).not.toThrow();
   });
 
+  it('blocks admin from skipping verification and approval', () => {
+    expect(() =>
+      assertOnboardingTransition({
+        from: AgencyOnboardingStage.AGREEMENT_SIGNED,
+        to: AgencyOnboardingStage.ACTIVE,
+        actorRole: 'GLOBAL_ADMIN',
+      })
+    ).toThrow(OnboardingTransitionError);
+  });
+
   it('blocks moving backwards', () => {
     expect(() =>
       assertOnboardingTransition({

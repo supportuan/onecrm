@@ -194,7 +194,7 @@ export default function HrDashboard() {
         {/* Compact greeting strip — replaces duplicate page title */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <p className="text-[13px] text-neutral-500 tracking-tight">
-            {greeting}{firstName ? `, ${firstName}` : ''} · here's what needs your attention today.
+            {greeting}{firstName ? `, ${firstName}` : ''} · here&apos;s what needs your attention today.
           </p>
           <span className="px-2.5 py-1 bg-white border border-neutral-200 rounded-full text-[10.5px] font-medium text-neutral-500 tracking-wide capitalize">
             {(role || 'unknown').toLowerCase().replace(/_/g, ' ')}
@@ -204,7 +204,7 @@ export default function HrDashboard() {
         {/* Top row: clock card + KPI grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {can('VIEW_ATTENDANCE') && (
-            <div className="lg:col-span-1 bg-white border border-neutral-200/80 rounded-2xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col">
+            <div className="app-glass-card lg:col-span-1 rounded-2xl p-6 flex flex-col">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10.5px] font-medium text-neutral-400 tracking-wide uppercase">Today</p>
@@ -221,7 +221,7 @@ export default function HrDashboard() {
                       : 'No activity recorded yet.'}
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
+                <div className="app-gradient-icon">
                   <Fingerprint size={16} />
                 </div>
               </div>
@@ -285,7 +285,7 @@ export default function HrDashboard() {
         </div>
 
         {showApprovals && (kpi.pendingLeaveRequests > 0 || kpi.pendingRegularizations > 0) && (
-          <div className="bg-white border border-amber-200/70 rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="app-glass-card rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
                 <AlertCircle size={15} className="text-amber-600" />
@@ -317,8 +317,8 @@ export default function HrDashboard() {
         )}
 
         {showKpiRow && kpi.upcomingHolidays.length > 0 && (
-          <div className="bg-white border border-neutral-200/80 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-            <div className="px-6 pt-6 pb-4 flex items-end justify-between gap-4 border-b border-neutral-100">
+          <div className="app-glass-card relative rounded-2xl overflow-hidden">
+            <div className="relative z-10 px-6 pt-6 pb-4 flex items-end justify-between gap-4 border-b border-neutral-100">
               <div>
                 <h3 className="text-[15px] font-semibold tracking-tight text-brand">Upcoming holidays</h3>
                 <p className="text-[12px] text-neutral-500 mt-1">Public and restricted holidays in the next 90 days.</p>
@@ -332,13 +332,13 @@ export default function HrDashboard() {
                 </Link>
               )}
             </div>
-            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="relative z-10 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {kpi.upcomingHolidays.map((holiday) => (
                 <div
                   key={holiday.id}
                   className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-neutral-100 bg-neutral-50/50"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-white border border-neutral-200 flex items-center justify-center shrink-0">
+                  <div className="app-gradient-icon">
                     <CalendarDays size={15} className="text-neutral-600" />
                   </div>
                   <div className="min-w-0">
@@ -358,12 +358,16 @@ export default function HrDashboard() {
                 </div>
               ))}
             </div>
+            <div className="holiday-illustration" aria-hidden="true">
+              <CalendarDays className="holiday-illustration-calendar" strokeWidth={1.25} />
+              <span className="holiday-illustration-leaf" />
+            </div>
           </div>
         )}
 
         {/* Quick access */}
         {allowedLinks.length > 0 && (
-          <div className="bg-white border border-neutral-200/80 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div className="app-glass-card rounded-2xl overflow-hidden">
             <div className="px-6 pt-6 pb-4 flex items-end justify-between gap-4 border-b border-neutral-100">
               <div>
                 <h3 className="text-[15px] font-semibold tracking-tight text-brand">Quick access</h3>
@@ -380,8 +384,8 @@ export default function HrDashboard() {
                   href={path}
                   className="group flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-neutral-50 transition-all"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-neutral-100 group-hover:bg-brand flex items-center justify-center transition-all">
-                    <Icon size={15} className="text-neutral-600 group-hover:text-white transition-all" />
+                  <div className="app-gradient-icon transition-all group-hover:scale-105">
+                    <Icon size={15} />
                   </div>
                   <span className="text-[13px] font-medium text-neutral-800 tracking-tight">{label}</span>
                 </Link>
@@ -391,9 +395,9 @@ export default function HrDashboard() {
         )}
 
         {allowedLinks.length === 0 && (
-          <div className="bg-white border border-neutral-200/80 rounded-2xl p-12 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-neutral-200 mx-auto flex items-center justify-center">
-              <MapPin size={18} className="text-neutral-400" />
+          <div className="app-glass-card rounded-2xl p-12 text-center">
+            <div className="app-gradient-icon mx-auto">
+              <MapPin size={18} />
             </div>
             <p className="text-[13px] font-medium text-neutral-800 mt-4">No additional modules available</p>
             <p className="text-[12px] text-neutral-500 mt-1">You can clock in and out from the widget above.</p>
@@ -410,11 +414,7 @@ const KpiTile = ({ label, value, icon: Icon, visible, href, accent }) => {
     <>
       <div className="flex items-center justify-between">
         <span className="text-[10.5px] font-medium text-neutral-500 tracking-tight">{label}</span>
-        <div
-          className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-            accent ? 'bg-amber-500 text-white' : 'bg-neutral-100 text-neutral-600'
-          }`}
-        >
+        <div className={`app-gradient-icon transition-all ${accent ? 'ring-2 ring-amber-300/70' : ''}`}>
           <Icon size={12} />
         </div>
       </div>
@@ -423,8 +423,7 @@ const KpiTile = ({ label, value, icon: Icon, visible, href, accent }) => {
       </p>
     </>
   );
-  const base =
-    'bg-white border border-neutral-200/80 rounded-2xl px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all';
+  const base = 'app-glass-card rounded-2xl px-5 py-4 transition-all';
   if (href) {
     return (
       <Link href={href} className={`${base} hover:border-neutral-300 hover:-translate-y-0.5 block`}>

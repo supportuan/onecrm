@@ -41,6 +41,10 @@ const ROUTE_PERMISSION_MAP = [
   { path: '/agency-crm/students', module: 'Agency CRM', option: 'Agency Leads' },
   { path: '/agency-crm', module: 'Agency CRM', option: null },
 
+  // Resources
+  { path: '/resources/manage', module: 'Resources', option: 'Manage Resources' },
+  { path: '/resources', module: 'Resources', option: 'Resource Library' },
+
   // HR
   { path: '/hr/employee-directory', module: 'HR', option: 'Employee Directory' },
   { path: '/hr/attendance', module: 'HR', option: 'Attendance' },

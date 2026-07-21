@@ -322,7 +322,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
   //   key: 'welcome.user',
   //   defaultChannels: ['IN_APP', 'EMAIL'],
   //   build: (v) => {
-  //     const title = `Welcome to OneCRM`;
+  //     const title = `Welcome to ApplyUniNow`;
   //     const body = `Hi ${fallbackVar(v.name, 'there')}, your account is ready. You're signed in as ${fallbackVar(v.role, 'a team member')}.`;
   //     return { title, body, html: wrapEmailHtml(title, body, '/', 'Open dashboard'), link: '/' };
   //   },
@@ -334,9 +334,9 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
       const name = fallbackVar(v.name, 'there');
       const role = fallbackVar(v.role, 'team member');
 
-      const title = 'Welcome to OneCRM';
+      const title = 'Welcome to ApplyUniNow';
 
-      const body = `Hi ${name}, your OneCRM account has been created successfully. You are signed in as ${role}. You can now access your dashboard and start using your assigned modules.`;
+      const body = `Hi ${name}, your ApplyUniNow account has been created successfully. You are signed in as ${role}. You can now access your dashboard and start using your assigned modules.`;
 
       const html = `
       <!DOCTYPE html>
@@ -350,7 +350,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
                 <tr>
                   <td style="background:#0f172a;padding:30px;text-align:center;">
                     <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;">
-                      ONECRM
+                      ApplyUniNow
                     </h1>
                     <p style="margin:8px 0 0;color:#cbd5e1;font-size:14px;">
                       Account Ready
@@ -365,7 +365,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
                     </h2>
 
                     <p style="margin-top:18px;font-size:15px;line-height:1.8;color:#4b5563;">
-                      Your OneCRM account has been created successfully.
+                      Your ApplyUniNow account has been created successfully.
                       You are signed in as <strong>${role}</strong>.
                     </p>
 
@@ -383,7 +383,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
 
                     <p style="margin-top:30px;color:#111827;font-size:15px;">
                       Regards,<br/>
-                      <strong>OneCRM Team</strong>
+                      <strong>ApplyUniNow Team</strong>
                     </p>
                   </td>
                 </tr>
@@ -391,7 +391,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
                 <tr>
                   <td style="background:#f8fafc;padding:18px;text-align:center;border-top:1px solid #e5e7eb;">
                     <p style="margin:0;color:#64748b;font-size:12px;">
-                      This is an automated notification from OneCRM.
+                      This is an automated notification from ApplyUniNow.
                     </p>
                   </td>
                 </tr>

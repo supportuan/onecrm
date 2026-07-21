@@ -19,6 +19,29 @@ export const isAgentBlockedPath = (pathname) =>
 export const AGENT_HOME_PATH = '/agency-crm/dashboard';
 export const AGENT_ONBOARDING_PATH = '/agency-crm/onboarding';
 export const AGENT_STUDENTS_PATH = '/agency-crm/agency-leads';
+export const AGENT_REFERRAL_PATH = '/agency-crm/co-branding-tools';
+
+/** Referral link sharing is only allowed after partner activation. */
+export const canShareReferralLink = (partner) =>
+  Boolean(partner) &&
+  String(partner.onboardingStage || '').toUpperCase() === 'ACTIVE' &&
+  String(partner.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+
+/**
+ * Referral list entity: Student (CRM) vs Lead (marketing only).
+ * Prefer studentId/student over status string.
+ */
+export const getReferralEntityType = (referral) => {
+  if (referral?.student?.id || referral?.studentId) return 'Student';
+  if (referral?.lead?.id || referral?.leadId) return 'Lead';
+  return null;
+};
+
+export const referralEntityBadgeClass = (type) => {
+  if (type === 'Student') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  if (type === 'Lead') return 'bg-amber-50 text-amber-800 border-amber-200';
+  return 'bg-neutral-100 text-neutral-600 border-neutral-200';
+};
 
 /** Canonical onboarding order (mirrors backend state machine). */
 export const ONBOARDING_STAGE_ORDER = [

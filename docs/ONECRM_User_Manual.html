@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ONECRM User Manual</title>
+  <style>
+    @page { size: A4; margin: 16mm 14mm 16mm 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.4;
+      color: #1f2937;
+      margin: 0;
+    }
+    h1, h2, h3, h4 { color: #0f2744; page-break-after: avoid; }
+    h1 { font-size: 20pt; margin: 0 0 8pt; }
+    h2 {
+      font-size: 14.5pt;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 3pt;
+      margin: 18pt 0 8pt;
+      page-break-before: always;
+    }
+    h2.first { page-break-before: avoid; }
+    h3 { font-size: 12pt; color: #1e3a5f; margin: 12pt 0 4pt; }
+    h4 { font-size: 11pt; color: #334155; margin: 10pt 0 3pt; }
+    p { margin: 4pt 0; }
+    ul, ol { margin: 4pt 0 8pt 16pt; padding: 0; }
+    li { margin: 2pt 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8pt 0 10pt;
+      font-size: 9.5pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 5pt 6pt;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: #0f2744; color: #fff; font-weight: 600; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .cover {
+      page-break-after: always;
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26mm 8mm 16mm;
+      text-align: center;
+    }
+    .cover-brand img { height: 64px; margin-bottom: 22pt; }
+    .cover-title {
+      font-size: 30pt;
+      font-weight: 700;
+      color: #0f2744;
+      margin: 0;
+    }
+    .cover-subtitle {
+      font-size: 15pt;
+      color: #2563eb;
+      margin: 6pt 0 0;
+      font-weight: 600;
+    }
+    .cover-meta { margin-top: 28pt; color: #475569; font-size: 11pt; }
+    .cover-footer {
+      border-top: 2px solid #e2e8f0;
+      padding-top: 12pt;
+      color: #64748b;
+      font-size: 10pt;
+    }
+    .toc { page-break-after: always; }
+    .toc ol { margin-left: 18pt; }
+    .toc li { margin: 4pt 0; }
+    .note {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      padding: 6pt 8pt;
+      margin: 8pt 0;
+    }
+    .warn {
+      background: #fff7ed;
+      border-left: 4px solid #ea580c;
+      padding: 6pt 8pt;
+      margin: 8pt 0;
+    }
+    .tip {
+      background: #f0fdf4;
+      border-left: 4px solid #16a34a;
+      padding: 6pt 8pt;
+      margin: 8pt 0;
+    }
+    .path {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 9pt;
+      background: #f1f5f9;
+      padding: 1pt 3pt;
+      border-radius: 2px;
+    }
+    .ui {
+      font-weight: 600;
+      color: #0f2744;
+    }
+    .footer-note {
+      margin-top: 20pt;
+      font-size: 8.5pt;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6pt;
+    }
+    .small { font-size: 9.5pt; color: #64748b; }
+  </style>
+</head>
+<body>
+
+<section class="cover">
+  <div>
+    <div class="cover-brand">
+      <img src="applyUniNow.png" alt="ApplyUniNow" />
+    </div>
+    <p class="cover-title">ONECRM</p>
+    <p class="cover-subtitle">User Manual</p>
+    <p class="cover-meta">
+      Step-by-step guide for staff, agents, and students<br />
+      Version 3.3 · July 2026
+    </p>
+  </div>
+  <div class="cover-footer">
+    Created by <strong>AUN Tech Consulting</strong><br />
+    Part of the ApplyUniNow ecosystem<br />
+    Confidential — for authorised users only
+  </div>
+</section>
+
+<section class="toc">
+  <h1>How to use this manual</h1>
+  <p>
+    This is a <strong>user manual</strong>: it tells you <em>what to click</em> and <em>in what order</em>.
+    Bold labels like <span class="ui">Add Lead</span> match buttons and menu names in the app.
+  </p>
+  <div class="note">
+    What you see depends on your <strong>role</strong>, <strong>permissions</strong>, and which modules your organisation has enabled.
+    If a menu is missing, ask your Global Admin.
+  </div>
+
+  <h3>Contents</h3>
+  <ol>
+    <li>Sign in and get around</li>
+    <li>Passwords, profile, and notifications</li>
+    <li>Marketing — leads, campaigns, analytics</li>
+    <li>Student CRM — students, applications, visas</li>
+    <li>Agency CRM &amp; Agent Portal</li>
+    <li>Human Resources</li>
+    <li>Admin &amp; Settings</li>
+    <li>Applicant (student) portal</li>
+    <li>Super Admin (platform operators)</li>
+    <li>Quick task index</li>
+  </ol>
+</section>
+
+<!-- 1 -->
+<h2 class="first">1. Sign in and get around</h2>
+
+<h3>1.1 Choose the right portal</h3>
+<table>
+  <tr><th>I am…</th><th>Open this page</th><th>After login you go to</th></tr>
+  <tr><td>Staff (admin, counsellor, marketer, HR)</td><td><span class="path">/login</span></td><td>Depends on role (often Marketing or HR)</td></tr>
+  <tr><td>Agency agent / freelancer</td><td><span class="path">/agent-login</span></td><td><span class="path">/agency-crm/dashboard</span></td></tr>
+  <tr><td>Student / applicant</td><td><span class="path">/student-login</span></td><td>Applicant portal (after policy)</td></tr>
+  <tr><td>Super Admin</td><td><span class="path">/login</span></td><td><span class="path">/super-admin</span></td></tr>
+</table>
+
+<h3>1.2 Staff sign in</h3>
+<ol>
+  <li>Open the staff login page. Heading: <span class="ui">Sign in</span>.</li>
+  <li>Enter <span class="ui">Email</span> and <span class="ui">Password</span>.</li>
+  <li>Click <span class="ui">Sign in</span>.</li>
+  <li>Optional links: <span class="ui">Forgot password?</span>, <span class="ui">Register</span>, <span class="ui">Use student login</span>, <span class="ui">Agent login</span>.</li>
+</ol>
+
+<h3>1.3 Agent sign in or register</h3>
+<ol>
+  <li>Open <span class="path">/agent-login</span> → <span class="ui">Agent sign in</span>.</li>
+  <li>To register: click <span class="ui">Register here</span>.</li>
+  <li>Fill <span class="ui">Personal details</span> (Full name, Email, Phone, Password, Confirm password).</li>
+  <li>Fill <span class="ui">Agency details</span> (Agency name required; optional referral code, address, city, country).</li>
+  <li>Click <span class="ui">Register as agent</span>.</li>
+  <li>Wait for admin approval. Message: <em>Registration received. An admin will approve your account before you can sign in.</em></li>
+  <li>After approval, sign in with <span class="ui">Sign in as agent</span>.</li>
+</ol>
+<div class="warn">Only agent roles can use the agency portal. Other roles see: <em>This portal is for agency agents only…</em></div>
+
+<h3>1.4 Student sign in</h3>
+<ol>
+  <li>Open <span class="path">/student-login</span>.</li>
+  <li>Enter the email/password your counsellor created for you.</li>
+  <li>Click <span class="ui">Sign in</span>.</li>
+  <li>If asked, set a new password, then accept <span class="ui">Terms &amp; conditions</span> with <span class="ui">I accept</span>.</li>
+</ol>
+
+<h3>1.5 Navigation (staff / agent)</h3>
+<ul>
+  <li><strong>Left sidebar</strong> — modules (Marketing, Student CRM, Agency CRM / Agent Portal, Human Resource, Admin &amp; Settings, Allied Services).</li>
+  <li><strong>Top bar</strong> — page title, notification bell, <span class="ui">Add Lead</span>, <span class="ui">Log out</span>.</li>
+  <li>If access is blocked you see <span class="ui">Access Denied</span> with <span class="ui">Go Back</span>.</li>
+</ul>
+
+<p class="small">Agents see <span class="ui">Agent Portal</span> instead of Agency CRM, with labels such as <span class="ui">My Students</span>, <span class="ui">My Commissions</span>, and <span class="ui">Referral &amp; Branding</span>.</p>
+
+<!-- 2 -->
+<h2>2. Passwords, profile, and notifications</h2>
+
+<h3>2.1 Forgot / reset password</h3>
+<ol>
+  <li>On any login page click <span class="ui">Forgot password?</span>.</li>
+  <li>Enter <span class="ui">Email</span> → <span class="ui">Send reset link</span>.</li>
+  <li>Open the email link → enter <span class="ui">New password</span> and <span class="ui">Confirm password</span> → <span class="ui">Reset password</span>.</li>
+  <li>You are sent to staff <span class="path">/login</span>; students/agents should then open their own portal login.</li>
+</ol>
+
+<h3>2.2 Change password while signed in</h3>
+<ol>
+  <li>Open <span class="path">/change-password</span> (forced on first login, or from profile).</li>
+  <li>Enter <span class="ui">Current password</span>, <span class="ui">New password</span>, <span class="ui">Confirm password</span>.</li>
+  <li>Meet the rules shown on screen (8+ characters, number, special character).</li>
+  <li>Click <span class="ui">Continue</span>.</li>
+</ol>
+
+<h3>2.3 Notifications</h3>
+<ol>
+  <li>Click the bell in the top bar.</li>
+  <li>Use <span class="ui">Mark all read</span>, open a row to follow its link, or delete with the trash icon.</li>
+  <li><span class="ui">View all</span> opens the full inbox at <span class="path">/notifications</span> (filters: <span class="ui">all</span> / <span class="ui">Unread only</span>).</li>
+</ol>
+
+<h3>2.4 Staff profile</h3>
+<ol>
+  <li>Open <span class="path">/profile</span>.</li>
+  <li>Upload or replace photo (JPG/PNG/WebP, max 5MB).</li>
+  <li>Review Email, Phone, Role (read-only).</li>
+  <li>Click <span class="ui">Change password</span> if needed.</li>
+</ol>
+
+<!-- 3 -->
+<h2>3. Marketing — leads, campaigns, analytics</h2>
+<p>Sidebar: <span class="ui">Marketing</span>.</p>
+
+<div class="warn">
+  <strong>Lead Management access:</strong> the page currently allows only <span class="ui">SUPER_ADMIN</span>, <span class="ui">GLOBAL_ADMIN</span>, and <span class="ui">COUNSELLOR</span>.
+  Counsellors only see leads assigned to them. Rating and counsellor assignment dropdowns are editable for admins.
+</div>
+
+<h3>3.1 Create a lead</h3>
+<ol>
+  <li>Go to <span class="ui">Marketing → Lead Management</span>, or click top-bar <span class="ui">Add Lead</span>.</li>
+  <li>Click <span class="ui">Add Lead</span>.</li>
+  <li>Fill <span class="ui">Full Name *</span>, <span class="ui">Email Address *</span>, optional phone, country, preferred course/country, source, counsellor, rating (HOT/WARM/COLD/MAYBE), remarks.</li>
+  <li>Click <span class="ui">Create Lead</span>.</li>
+</ol>
+
+<h3>3.2 Find, filter, export, bulk upload</h3>
+<ul>
+  <li>Search: <span class="ui">Search leads...</span></li>
+  <li>Filters: date range, source, rating, stage, counsellor → <span class="ui">Reset Filters</span> to clear.</li>
+  <li><span class="ui">Upload</span> — choose <span class="path">.xlsx</span> / <span class="path">.xls</span> / <span class="path">.csv</span>.</li>
+  <li><span class="ui">Export</span> — downloads a CSV of the leads you can see.</li>
+</ul>
+
+<h3>3.3 Update rating, stage, or counsellor</h3>
+<ol>
+  <li>In the table, change <span class="ui">Lead Status</span> (rating) or <span class="ui">Stage</span> (New / Contacted / Qualified / Proposed / Converted / Lost).</li>
+  <li>In <span class="ui">Assigned To</span>, pick a counsellor or <span class="ui">Unassigned</span> (admins).</li>
+</ol>
+
+<h3>3.4 Log an activity</h3>
+<ol>
+  <li>Click the lead name to open the activity panel.</li>
+  <li>Review <span class="ui">Interaction History</span>.</li>
+  <li>Choose channel: <span class="ui">NOTE</span>, <span class="ui">CALL</span>, <span class="ui">EMAIL</span>, <span class="ui">SMS</span>, <span class="ui">WHATSAPP</span>, <span class="ui">MEETING</span>.</li>
+  <li>For NOTE/CALL, type details and send; other channels run a quick action then refresh history.</li>
+</ol>
+
+<h3>3.5 Create student login from a lead</h3>
+<ol>
+  <li>In the row <span class="ui">Action</span> column (or activity panel), click <span class="ui">Create Login</span>.</li>
+  <li>Student receives a welcome email; badge becomes <span class="ui">Login Active</span>.</li>
+</ol>
+<p class="small">This creates the portal login only. To create the full Student CRM record + application, use Applications → <span class="ui">Create login + application</span> (Section 4).</p>
+
+<h3>3.6 Campaigns</h3>
+<ol>
+  <li>Open <span class="ui">Marketing → Campaigns</span>.</li>
+  <li>Click <span class="ui">Create Campaign</span> (modal: <span class="ui">Launch Campaign</span>).</li>
+  <li>Enter name, broadcast type (Email / Social / Google Ads), status, dates, audience, and type-specific settings.</li>
+  <li>Click <span class="ui">Save &amp; Launch</span> (or <span class="ui">Save &amp; Launch Ad</span>).</li>
+  <li>Use row menu <span class="ui">⋯</span> for <span class="ui">Edit details</span>, <span class="ui">Launch Campaign</span>, or <span class="ui">Delete</span>.</li>
+  <li>To enroll more leads: open performance drawer → <span class="ui">Enroll … Leads</span> → select → confirm.</li>
+</ol>
+
+<h3>3.7 Marketing analytics</h3>
+<ol>
+  <li>Open <span class="ui">Marketing → Marketing Analytics</span>.</li>
+  <li>Review KPI cards and panels: Agency Funnel, Lead Source Performance, Monthly Lead Trend, Counsellor Performance.</li>
+</ol>
+
+<!-- 4 -->
+<h2>4. Student CRM — students, applications, visas</h2>
+<p>Sidebar: <span class="ui">Student CRM</span>. Creating/editing needs manage permission.</p>
+
+<h3>4.1 Create and edit a student</h3>
+<ol>
+  <li>Go to <span class="ui">Student Management</span>.</li>
+  <li>Click <span class="ui">New student</span> → enter Full name *, Email *, Phone, DOB, Preferred country → <span class="ui">Create</span>.</li>
+  <li>Select the student in the left list (search: <span class="ui">Search name or email...</span>).</li>
+  <li>Use tabs: <span class="ui">Personal</span> | <span class="ui">Study plan</span> | <span class="ui">Education</span> | <span class="ui">Exams</span> | <span class="ui">Checklist</span> | <span class="ui">Applications</span>.</li>
+  <li>Edit fields → click <span class="ui">Save profile</span> (not shown on Checklist/Applications, or when enrolled).</li>
+</ol>
+
+<h4>Study plan universities</h4>
+<ol>
+  <li>On <span class="ui">Study plan</span>, under <span class="ui">Universities</span>, click <span class="ui">Add university</span>.</li>
+  <li>Set Destination, University, Course, Intake (autosaves).</li>
+  <li>Select radio <span class="ui">Use for new application</span> when ready.</li>
+</ol>
+
+<h4>Enrolment lock</h4>
+<ul>
+  <li><span class="ui">Mark enrolled</span> → profile mostly read-only, badge <span class="ui">Enrolled</span>.</li>
+  <li><span class="ui">Unlock profile</span> to edit again.</li>
+</ul>
+
+<h3>4.2 Convert a marketing lead into an application</h3>
+<ol>
+  <li>Open <span class="ui">Applications</span>.</li>
+  <li>Expand <span class="ui">Leads ready for applications</span>.</li>
+  <li>Per lead click <span class="ui">Create login + application</span> (temp password often shown in toast, e.g. Welcome@123).</li>
+  <li>Or click <span class="ui">Import all leads</span> and confirm the batch.</li>
+</ol>
+
+<h3>4.3 Create an application</h3>
+<ol>
+  <li>From Applications list: <span class="ui">New application</span> (or from student profile <span class="ui">New application</span>).</li>
+  <li>Choose student if prompted; set country, university, course, intake, deadline, counsellor, notes.</li>
+  <li>Save — you open the application detail page.</li>
+</ol>
+
+<h3>4.4 Work an application (detail page)</h3>
+<p>Header shows code, stage, university/course, <span class="ui">Advance stage</span>, and link <span class="ui">Student profile</span>.</p>
+<p><strong>Stages:</strong> Draft → Documents pending → Submitted to university → Under review → Offer received → Offer accepted → Visa process → Enrolled.</p>
+<ul>
+  <li>At Offer received: <span class="ui">Mark accepted</span> / <span class="ui">Mark rejected</span>.</li>
+</ul>
+
+<table>
+  <tr><th>Tab</th><th>What to do</th></tr>
+  <tr><td><span class="ui">Overview</span></td><td>Set deadline &amp; counsellor → <span class="ui">Save</span>. Add fees: Fee label, Amount (INR) → <span class="ui">Add fee</span>.</td></tr>
+  <tr><td><span class="ui">Documents</span></td><td>Upload/drag-drop; <span class="ui">Approve</span> / <span class="ui">Reject</span>; <span class="ui">Notify missing (N)</span>; add checklist items.</td></tr>
+  <tr><td><span class="ui">Tasks</span></td><td><span class="ui">Create task</span> (Title, Due date, Assignee, Notes).</td></tr>
+  <tr><td><span class="ui">Offer</span></td><td>Upload offer letter; set dates/decision/notes → save.</td></tr>
+  <tr><td><span class="ui">Visa</span></td><td>Update status, appointment, decision, notes; upload visa docs.</td></tr>
+  <tr><td><span class="ui">History</span></td><td>Read the audit trail.</td></tr>
+</table>
+
+<h3>4.5 Filter and bulk-assign applications</h3>
+<ol>
+  <li>Use stage chips (All, Draft, Docs pending, … Enrolled) and search.</li>
+  <li>Select rows → choose counsellor → <span class="ui">Assign selected</span>.</li>
+</ol>
+
+<h3>4.6 Visa management list</h3>
+<ol>
+  <li>Open <span class="ui">Visa management</span>.</li>
+  <li>Search student or university.</li>
+  <li>Click <span class="ui">Open</span> to jump to that application’s <span class="ui">Visa</span> tab.</li>
+</ol>
+
+<h3>4.7 CRM Settings</h3>
+<ol>
+  <li>Open <span class="ui">CRM Settings</span>.</li>
+  <li><strong>Universities &amp; courses:</strong> filter by country → <span class="ui">Add university</span> → fill name/country/city.</li>
+  <li><strong>Document checklist templates:</strong> choose Country (optional University) → <span class="ui">Load built-in defaults</span> or <span class="ui">Add document</span> → <span class="ui">Save template</span>.</li>
+</ol>
+
+<!-- 5 -->
+<h2>5. Agency CRM &amp; Agent Portal</h2>
+
+<h3>5.1 Approve a new agent (admin)</h3>
+<ol>
+  <li>Open <span class="ui">Admin &amp; Settings → Users</span>.</li>
+  <li>Open the <span class="ui">Pending Agents</span> tab.</li>
+  <li>Review <span class="ui">Agency Details</span>.</li>
+  <li>Click <span class="ui">Approve</span> (or <span class="ui">Reject</span> → confirm deactivate).</li>
+</ol>
+
+<h3>5.2 Agent onboarding</h3>
+<ol>
+  <li>Agent opens <span class="ui">My Profile &amp; Onboarding</span>.</li>
+  <li>Under upload step: <span class="ui">Upload ID / business docs</span> (at least one file) → <span class="ui">Submit documents</span>.</li>
+  <li>Click <span class="ui">Sign agreement</span>.</li>
+  <li>Wait while admin verifies, approves, and activates.</li>
+</ol>
+<p class="small">Stages: Registered → Documents submitted → Agreement signed → Verified → Approved → Active.</p>
+
+<h4>Admin completes activation</h4>
+<ol>
+  <li>Open <span class="ui">Agency Management</span>.</li>
+  <li>Select the agency → under <span class="ui">Partner documents</span> use <span class="ui">View</span>, then <span class="ui">Verify</span> or <span class="ui">Reject</span>.</li>
+  <li>Use <span class="ui">Verify onboarding</span> → <span class="ui">Approve partner</span> → <span class="ui">Activate</span> (or status buttons Mark Verified / Approved / Active).</li>
+</ol>
+
+<h3>5.3 Create an agency (admin)</h3>
+<ol>
+  <li><span class="ui">Add agency</span> → fill Agency name, contact, login email, initial password, commission rate, status, services, notes.</li>
+  <li><span class="ui">Create agency</span>.</li>
+  <li>Edit later → <span class="ui">Save changes</span>.</li>
+  <li>Set <span class="ui">Capabilities</span> (Can pay student fees, Can message university, Can manage applications, Can view commissions) → <span class="ui">Save capabilities</span>.</li>
+</ol>
+
+<h3>5.4 Referrals and students</h3>
+<p><strong>Agent:</strong> open <span class="ui">My Students</span>.</p>
+<ol>
+  <li>Use <span class="ui">Get referral link</span> if needed.</li>
+  <li>Switch tabs <span class="ui">My students</span> / <span class="ui">Applications</span>; filter by name/email/code.</li>
+  <li>Click student name or <span class="ui">Open</span>.</li>
+  <li>On student detail: <span class="ui">Attach</span> to upload docs; <span class="ui">View file</span>; <span class="ui">Pay now</span> only if fee payment capability is enabled.</li>
+</ol>
+
+<p><strong>Staff assign a student to an agency:</strong></p>
+<ol>
+  <li>Open <span class="ui">Students &amp; Referrals</span> → <span class="ui">Assign student</span>.</li>
+  <li>Choose agency → search student by name/email → pick one → optional notes → <span class="ui">Confirm assignment</span>.</li>
+</ol>
+<div class="tip">Until referral-link capture is fully wired end-to-end, <span class="ui">Assign student</span> is the reliable way to attribute a student to an agency.</div>
+
+<h3>5.5 University directory, communications, branding</h3>
+<ul>
+  <li><span class="ui">Universities</span> — search name/country → <span class="ui">Search</span> → view POC email/phone.</li>
+  <li><span class="ui">Notifications</span> (agent) / Communications (staff) — read announcements; log Call/Email/Meeting/Note; admins can <span class="ui">Publish announcement</span> and <span class="ui">Send broadcast</span>.</li>
+  <li><span class="ui">Referral &amp; Branding</span> — copy referral link; edit tagline/colours/logo/website → <span class="ui">Save branding</span>.</li>
+</ul>
+
+<h3>5.6 Commissions and payouts</h3>
+<p><strong>Agent:</strong> <span class="ui">My Commissions</span> — filter statuses; review statement totals (Total / Paid / Pending).</p>
+<p><strong>Admin:</strong></p>
+<ol>
+  <li><span class="ui">Add commission</span> → agency, amount, period, description → <span class="ui">Save</span>.</li>
+  <li>Pending rows: <span class="ui">Verify &amp; approve</span> or <span class="ui">Reject</span>.</li>
+  <li>Select approved rows → <span class="ui">Create payout batch</span>.</li>
+  <li>On <span class="ui">Payouts</span> tab: <span class="ui">Start processing</span> → <span class="ui">Mark paid</span> (or Cancel).</li>
+  <li>With an agency filter, manage <span class="ui">Commission rules</span> (Country, University, %/Fixed, Amount → <span class="ui">Add rule</span>).</li>
+</ol>
+
+<!-- 6 -->
+<h2>6. Human Resources</h2>
+<p>Sidebar: <span class="ui">Human Resource</span>. Needs the HR module enabled and <span class="ui">VIEW_HR</span>.</p>
+<div class="note">
+  Users with only self-service access are redirected to <span class="ui">My HR</span>.
+  Operator screens (directory, recruitment, payroll run, leave policies) need extra permissions such as
+  <span class="ui">MANAGE_EMPLOYEES</span>, <span class="ui">MANAGE_LEAVE</span>, or <span class="ui">MANAGE_PAYROLL</span>.
+</div>
+
+<h3>6.1 Overview and My HR</h3>
+<ol>
+  <li><span class="ui">Overview</span> (<span class="path">/hr</span>) — use <span class="ui">Clock in</span> / <span class="ui">Clock out</span> on the Today card; open KPI tiles or <span class="ui">Review leave</span> / <span class="ui">Review attendance</span> when shown.</li>
+  <li><span class="ui">My HR</span> (<span class="path">/hr/me</span>) — personal attendance, leave balance, recent leave, and payslips. Shortcuts: <span class="ui">View full attendance →</span>, <span class="ui">Apply for leave →</span>, <span class="ui">View all →</span> (payslips).</li>
+</ol>
+
+<h3>6.2 Employee Directory</h3>
+<ol>
+  <li>Open <span class="ui">Employee Directory</span>. Search by name/email/department/id; filter status: All / Active / On leave / Resigned / Terminated.</li>
+  <li><span class="ui">Add employee</span> — Full name *, Email *, Employee ID *; optional phone, department, designation, location, joining date, access role → <span class="ui">Add employee</span>.</li>
+  <li><span class="ui">Bulk import</span> — paste spreadsheet rows → <span class="ui">validate rows</span> → <span class="ui">import verified accounts</span>.</li>
+  <li>Click <span class="ui">View</span> on a row. On <span class="ui">Profile</span>, edit fields (including employment status / exit reason) → <span class="ui">Save profile</span>.</li>
+  <li>On <span class="ui">Documents</span>: choose type (Offer letter / ID proof / Contract / Other) → <span class="ui">Choose files</span> → <span class="ui">Upload</span>.</li>
+  <li>Quick role change from the list: <span class="ui">Edit role</span> → <span class="ui">save changes</span>.</li>
+</ol>
+
+<h3>6.3 Recruitment tracker</h3>
+<p>Open <span class="ui">Recruitment</span>. Tabs: <span class="ui">Jobs &amp; pipeline</span>, <span class="ui">Interviews</span>, <span class="ui">Offer letters</span>, <span class="ui">Onboarding</span>.</p>
+
+<h4>Jobs &amp; pipeline</h4>
+<ol>
+  <li><span class="ui">Post job</span> → fill title, department, location, salary, hiring manager, dates, requirements, description, employment type, publish status → <span class="ui">Create posting</span>.</li>
+  <li>Draft jobs: <span class="ui">Publish</span>. Open jobs: <span class="ui">Pause</span> / <span class="ui">Close</span>. Edit with <span class="ui">Edit</span>.</li>
+  <li><span class="ui">Add candidate</span> → job, name, email, phone, optional resume → <span class="ui">Add candidate</span>.</li>
+  <li>Move candidates with the stage dropdown/chips (application → screening → hr_round → tech_round → manager_round → offer_generation → onboarding → hired).</li>
+  <li>Candidate actions: <span class="ui">Schedule interview</span>, <span class="ui">Create offer</span>, <span class="ui">Reject</span>, <span class="ui">Hire</span>.</li>
+</ol>
+
+<h4>Interviews, offers, onboarding</h4>
+<ol>
+  <li><span class="ui">Schedule Interview</span> — candidate, job, round, date/time, duration, interviewers, meeting link, type → <span class="ui">Schedule</span>. Later: <span class="ui">Reschedule</span>, <span class="ui">Feedback</span>, <span class="ui">Cancel</span>.</li>
+  <li><span class="ui">Generate</span> an offer — candidate, salary, joining date, expiry, template, optional conditional offer. Then <span class="ui">Preview</span> / <span class="ui">Print</span>; Draft → <span class="ui">Send</span>; Sent → <span class="ui">Accept</span> / <span class="ui">Reject</span> / <span class="ui">Mark expired</span>.</li>
+  <li><strong>Accepting an offer</strong> creates the employee record, starts onboarding, and marks the candidate Hired.</li>
+  <li><span class="ui">Onboarding</span>: <span class="ui">New Checklist</span> → employee + template + start date → <span class="ui">Create Checklist</span>; tick items and upload document files as needed.</li>
+</ol>
+
+<h3>6.4 Attendance</h3>
+<ol>
+  <li>Open <span class="ui">Attendance</span>.</li>
+  <li><span class="ui">Clock in / out</span> tab — big <span class="ui">Clock in</span> / <span class="ui">Clock out</span> buttons and today’s summary.</li>
+  <li><span class="ui">My history</span> — pick month/year.</li>
+  <li><span class="ui">Regularizations</span> — <span class="ui">Request regularization</span> (date, clock in/out type, time, reason) → <span class="ui">Submit request</span>.</li>
+  <li>Managers: <span class="ui">Team attendance</span> and <span class="ui">Admin setup</span> (process biometric logs; register devices; whitelist IP networks).</li>
+</ol>
+<div class="warn">Clock-in needs your login linked to an employee record. If not linked, the screen asks you to contact HR.</div>
+
+<h3>6.5 Leave</h3>
+<ol>
+  <li>Open <span class="ui">Leave</span>. Tabs: <span class="ui">My leave</span>, <span class="ui">Approvals</span>, <span class="ui">Policies</span> (managers).</li>
+  <li>Apply: leave type, From, To, Days, Reason → <span class="ui">Submit request</span>. Cancel with ✕ while still pending/manager-approved.</li>
+  <li>Approvals are two-stage: manager uses <span class="ui">Approve (to HR)</span>; HR uses <span class="ui">Final approve</span> or reject.</li>
+  <li>Policies: entitlement plans, leave-type rules, assigned employees; holiday calendar (<span class="ui">Add holiday</span>); leave categories.</li>
+</ol>
+
+<h3>6.6 Performance</h3>
+<ol>
+  <li>Open <span class="ui">Performance</span> — tabs <span class="ui">Reviews</span> / <span class="ui">KPIs</span>.</li>
+  <li>Reviews: choose Monthly/Weekly period → <span class="ui">Calculate reviews</span>; set status (Self-Review / Manager Review / Calibrated / Completed).</li>
+  <li>KPIs: add/edit definitions (role, name, target, unit, frequency) and record metrics.</li>
+</ol>
+
+<h3>6.7 Payroll</h3>
+<ol>
+  <li>Open <span class="ui">Payroll</span> — tabs <span class="ui">Payroll run</span> / <span class="ui">Deductions</span>.</li>
+  <li>Salary Structures: edit basic/allowances/incentive/revenue share/deductions → <span class="ui">Deploy Structure</span>.</li>
+  <li>Execute Batch: pick Month/Year → <span class="ui">Execute Ledger Cycle</span> (confirm).</li>
+  <li>Statements ledger: <span class="ui">View</span> a payslip → <span class="ui">Export / Print Statement</span>.</li>
+  <li>Deductions: <span class="ui">Add Deduction</span> (leave days, tax, other) → <span class="ui">Save</span>.</li>
+</ol>
+<p class="small">Users with only <span class="ui">VIEW_OWN_PAYSLIP</span> see their own payslips, not full payroll admin.</p>
+
+<!-- 7 -->
+<h2>7. Admin &amp; Settings</h2>
+<p><span class="ui">Users</span> is limited to <span class="ui">SUPER_ADMIN</span> / <span class="ui">GLOBAL_ADMIN</span>. Editing roles needs <span class="ui">MANAGE_ADMINS</span>.</p>
+
+<h3>7.1 Users</h3>
+<ol>
+  <li>Open <span class="ui">Admin &amp; Settings → Users</span>.</li>
+  <li>Tabs: <span class="ui">All Users</span>, <span class="ui">Pending Agents</span>, <span class="ui">Pending Students</span>. Search and filter by role/status.</li>
+  <li><span class="ui">Create User</span> — First/Last name, Email, Phone; Role &amp; Status; Module Access checkboxes per module → <span class="ui">Create User</span> (credentials emailed).</li>
+  <li>Edit with the pencil → update role/status/module access → <span class="ui">Update Access</span>.</li>
+  <li>Pending Agents: <span class="ui">Approve</span> or <span class="ui">Reject</span>.</li>
+  <li>Pending Students: pick counsellor → <span class="ui">Assign</span>.</li>
+</ol>
+
+<h3>7.2 Roles &amp; Permissions</h3>
+<ol>
+  <li>Open <span class="ui">Roles &amp; Permissions</span>.</li>
+  <li>Click a role to expand permission groups; toggle checkboxes.</li>
+  <li>Click <span class="ui">Save permissions</span> (or <span class="ui">Reset all</span> to defaults).</li>
+  <li>Assignment column: <span class="ui">+ Assign</span> a member, or move them with ✕ → Move to…</li>
+</ol>
+
+<h3>7.3 Allied Services</h3>
+<ol>
+  <li>Open <span class="ui">Allied Services</span>.</li>
+  <li>Click a service card to open the external site in a new tab.</li>
+</ol>
+
+<!-- 8 -->
+<h2>8. Applicant (student) portal</h2>
+<p>Sign in at <span class="path">/student-login</span>. Sidebar: <span class="ui">Applications</span>, <span class="ui">Payments</span>, <span class="ui">Profile</span>.</p>
+
+<h3>8.1 Accept policy (first time)</h3>
+<ol>
+  <li>On <span class="ui">Terms &amp; conditions</span>, click <span class="ui">I accept</span>.</li>
+</ol>
+
+<h3>8.2 Applications home</h3>
+<ol>
+  <li>Open <span class="ui">Applications</span>.</li>
+  <li>Review overall progress and quick actions: <span class="ui">Upload document</span>, <span class="ui">View applications</span>, <span class="ui">Payments</span>, <span class="ui">Contact counsellor</span>.</li>
+  <li>Use search and stage filters; click <span class="ui">Open application</span>.</li>
+</ol>
+
+<h3>8.3 Application detail</h3>
+<ol>
+  <li>Follow workflow steps (Upload documents → Pay fee → Counsellor review → Offer → Visa &amp; enrolment).</li>
+  <li>Upload/replace pending documents.</li>
+  <li>When offer is ready: <span class="ui">View offer letter</span>, <span class="ui">Accept offer</span>, or <span class="ui">Decline offer</span> (confirm).</li>
+  <li>When fees are due and documents are complete: <span class="ui">Pay now</span> (Razorpay).</li>
+  <li>Upload visa documents when requested.</li>
+</ol>
+
+<h3>8.4 Payments</h3>
+<ol>
+  <li>Open <span class="ui">Payments</span>.</li>
+  <li>Filter All / Paid / Pending / Failed.</li>
+  <li>Use <span class="ui">Pay on application</span> or open the application to pay.</li>
+  <li>Open <span class="ui">Receipt</span> for paid items.</li>
+</ol>
+
+<h3>8.5 Profile</h3>
+<ol>
+  <li>Open <span class="ui">Profile</span>.</li>
+  <li>Upload/replace photo; other fields are counsellor-managed.</li>
+  <li>Use <span class="ui">Contact counsellor</span> when shown.</li>
+</ol>
+
+<!-- 9 -->
+<h2>9. Super Admin (platform operators)</h2>
+<p>Only <span class="ui">SUPER_ADMIN</span> — <span class="path">/super-admin</span>. No normal tenant sidebar; this is cross-tenant.</p>
+
+<h3>9.1 Tenants list</h3>
+<ol>
+  <li>Review Name, Slug, Status, Primary admin, Users, Enabled modules.</li>
+  <li>Click <span class="ui">Manage →</span> for a tenant, or use top-right <span class="ui">Audit log</span> / <span class="ui">+ Onboard tenant</span>.</li>
+</ol>
+
+<h3>9.2 Onboard a tenant</h3>
+<ol>
+  <li>Click <span class="ui">+ Onboard tenant</span>.</li>
+  <li>Organization: Name (Slug auto-generates).</li>
+  <li>Modules: tick Human Resources, Marketing, Student CRM, Agency CRM, Admin Settings.</li>
+  <li>Primary admin: Full name, Email, Password (min 8), optional Phone.</li>
+  <li>Click <span class="ui">Create tenant</span>.</li>
+</ol>
+
+<h3>9.3 Manage a tenant</h3>
+<ol>
+  <li>Change status: ACTIVE / SUSPENDED / ARCHIVED.</li>
+  <li>Primary admin card: <span class="ui">Reset password</span> → confirm → copy the new password once (shown only once) → <span class="ui">Dismiss</span>.</li>
+  <li>Toggle modules Enabled/Disabled (takes effect immediately).</li>
+</ol>
+
+<h3>9.4 Audit log</h3>
+<ol>
+  <li>Open <span class="ui">Audit log</span> / <span class="path">/super-admin/audit</span>.</li>
+  <li>Review actions such as Created tenant, Updated tenant, Set modules, Reset admin password.</li>
+</ol>
+
+<!-- 10 -->
+<h2>10. Quick task index</h2>
+<table>
+  <tr><th>I want to…</th><th>Go to…</th><th>Main action</th></tr>
+  <tr><td>Add a lead</td><td>Lead Management or top bar</td><td><span class="ui">Add Lead</span></td></tr>
+  <tr><td>Give a lead a student login</td><td>Lead Management</td><td><span class="ui">Create Login</span></td></tr>
+  <tr><td>Start a CRM application from a lead</td><td>Applications</td><td><span class="ui">Create login + application</span></td></tr>
+  <tr><td>Advance an application</td><td>Application detail</td><td><span class="ui">Advance stage</span></td></tr>
+  <tr><td>Approve an agent</td><td>Users → Pending Agents</td><td><span class="ui">Approve</span></td></tr>
+  <tr><td>Finish agent setup</td><td>My Profile &amp; Onboarding</td><td>Upload docs → Submit → Sign agreement</td></tr>
+  <tr><td>Attribute a student to an agency</td><td>Students &amp; Referrals</td><td><span class="ui">Assign student</span></td></tr>
+  <tr><td>Pay an application fee (student)</td><td>Applicant application</td><td><span class="ui">Pay now</span></td></tr>
+  <tr><td>Pay out commissions</td><td>Commission Management → Payouts</td><td><span class="ui">Create payout batch</span> → <span class="ui">Mark paid</span></td></tr>
+  <tr><td>Hire someone</td><td>Recruitment tracker</td><td>Job → candidate → interview → offer → <span class="ui">Accept</span></td></tr>
+  <tr><td>Clock in / out</td><td>My HR or Attendance</td><td><span class="ui">Clock in</span> / <span class="ui">Clock out</span></td></tr>
+  <tr><td>Apply for leave</td><td>Leave → My leave</td><td><span class="ui">Submit request</span></td></tr>
+  <tr><td>Run payroll</td><td>Payroll → Payroll run</td><td><span class="ui">Execute Ledger Cycle</span></td></tr>
+  <tr><td>Create a tenant</td><td>Super Admin</td><td><span class="ui">+ Onboard tenant</span></td></tr>
+  <tr><td>Reset password</td><td>Any login</td><td><span class="ui">Forgot password?</span></td></tr>
+</table>
+
+<div class="footer-note">
+  © 2026 AUN Tech Consulting · ONECRM User Manual v3.3 · ApplyUniNow ecosystem<br />
+  Screens and permissions may vary by tenant configuration and role. This guide reflects the live ONECRM UI as of July 2026.
+</div>
+
+</body>
+</html>

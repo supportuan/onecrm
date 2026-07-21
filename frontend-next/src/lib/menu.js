@@ -41,17 +41,22 @@ import {
   Zap,
   Lightbulb,
   Clock,
+  Library,
 } from "lucide-react";
 
 
 
 export const navMenu = [
-  
   {
     label: "Marketing",
     path: "/marketing",
     icon: Sparkles,
     subItems: [
+      {
+        label: "Dashboard",
+        path: "/marketing",
+        icon: LayoutDashboard,
+      },
       {
         label: "Lead Management",
         path: "/marketing/lead-management",
@@ -65,19 +70,20 @@ export const navMenu = [
       //   icon: FileText,
       // },
       {
-        label: "Marketing Analytics",
+        label: "Revenue Intelligence",
         path: "/marketing/marketing-analytics",
         icon: BarChart2,
       },
     ],
   },
   {
-    label: "Student CRM",
+    label: "Student Hub",
+    accessKey: "Student CRM",
     path: "/student-crm/student-management",
     icon: Users,
     subItems: [
       {
-        label: "Student Management",
+        label: "Student Alliance",
         path: "/student-crm/student-management",
         icon: GraduationCap,
       },
@@ -99,9 +105,8 @@ export const navMenu = [
     ],
   },
   {
-    label: "Agency CRM",
-    /** Shown to agent/freelancer roles instead of "Agency CRM". */
-    agentDisplayLabel: "Agent Portal",
+    label: "Agent Hub",
+    accessKey: "Agency CRM",
     path: "/agency-crm/dashboard",
     icon: Folder,
     subItems: [
@@ -120,7 +125,7 @@ export const navMenu = [
       },
       {
         label: "Students & Referrals",
-        agentLabel: "My Students",
+        agentLabel: "My Referrals",
         path: "/agency-crm/agency-leads",
         icon: ClipboardList,
         audience: "all",
@@ -164,8 +169,8 @@ export const navMenu = [
   },
 
   {
-    label: "HR",
-    displayLabel: "Human Resource",
+    label: "Human Resource",
+    accessKey: "HR",
     path: "/hr",
     icon: ShieldCheck,
     subItems: [
@@ -177,6 +182,16 @@ export const navMenu = [
       { label: "Leave", path: "/hr/leave-management", icon: CalendarCheck, permission: ["VIEW_LEAVE", "MANAGE_LEAVE"] },
       { label: "Performance", path: "/hr/performance-reviews", icon: Star, permission: ["VIEW_REPORTS", "MANAGE_EMPLOYEES"] },
       { label: "Payroll", path: "/hr/payroll", icon: DollarSign, permission: ["MANAGE_PAYROLL", "VIEW_OWN_PAYSLIP"] },
+    ],
+  },
+  {
+    label: "Knowledge Hub",
+    accessKey: "Resources",
+    path: "/resources",
+    icon: Library,
+    subItems: [
+      { label: "Knowledge Library", path: "/resources", icon: FileText, permission: ["VIEW_RESOURCES", "MANAGE_RESOURCES"] },
+      { label: "Upload Knowledge", path: "/resources/manage", icon: Folder, permission: ["MANAGE_RESOURCES"] },
     ],
   },
   {

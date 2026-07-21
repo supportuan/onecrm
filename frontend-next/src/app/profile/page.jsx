@@ -59,7 +59,7 @@ export default function StaffProfilePage() {
       <section className="w-full rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div className="relative shrink-0">
-            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#e8eef7] text-xl font-semibold text-[#0b2a5b]">
+            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-xl font-semibold text-brand">
               {user.profilePhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

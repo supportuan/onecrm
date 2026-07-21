@@ -200,7 +200,7 @@ const LandingPagesForms = () => {
   };
 
   return (
-    <div className="w-full bg-[#f8fafc] min-h-screen px-8 py-6">
+    <div className="w-full space-y-6">
       {/* Action Bar */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="relative flex-1 w-auto">

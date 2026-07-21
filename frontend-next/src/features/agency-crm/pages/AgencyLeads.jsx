@@ -23,7 +23,14 @@ import { listStudents } from '@/services/studentCrmApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
-import { isAgencyPartnerRole } from '../agentPortal';
+import {
+  isAgencyPartnerRole,
+  canShareReferralLink,
+  getReferralEntityType,
+  referralEntityBadgeClass,
+  AGENT_REFERRAL_PATH,
+  AGENT_ONBOARDING_PATH,
+} from '../agentPortal';
 
 const INPUT =
   'w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-neutral-400 outline-none';
@@ -57,7 +64,9 @@ export default function AgencyLeads() {
   const [assignNotes, setAssignNotes] = useState('');
   const [assignMsg, setAssignMsg] = useState('');
   const [assignBusy, setAssignBusy] = useState(false);
-  const [myCode, setMyCode] = useState('');
+  const [myPartner, setMyPartner] = useState(null);
+  const canShare = canShareReferralLink(myPartner);
+  const myCode = myPartner?.agencyCode || '';
 
   useEffect(() => {
     getStatistics({ agencyPartnerId: agencyFilter || undefined })
@@ -68,8 +77,8 @@ export default function AgencyLeads() {
   useEffect(() => {
     if (isAgent) {
       getMyPartner()
-        .then((r) => setMyCode(r?.data?.agencyCode || ''))
-        .catch(() => setMyCode(''));
+        .then((r) => setMyPartner(r?.data || null))
+        .catch(() => setMyPartner(null));
       return;
     }
     listPartners()
@@ -180,10 +189,10 @@ export default function AgencyLeads() {
       <div className="ui-container space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="ui-text-h2">{isAgent ? 'My students' : 'Students & referrals'}</h1>
+            <h1 className="ui-text-h2">{isAgent ? 'My referrals' : 'Students & referrals'}</h1>
             <p className="ui-text-body mt-1 max-w-2xl">
               {isAgent
-                ? 'Everyone who joined through your referral link appears here. Open a student to track applications and fees.'
+                ? 'People who joined through your link appear here as Lead or Student. Open a student to track applications and fees.'
                 : 'See which students belong to each agency, or assign an existing student in a few clicks.'}
             </p>
           </div>
@@ -202,34 +211,49 @@ export default function AgencyLeads() {
           )}
           {isAgent && (
             <Link
-              href="/agency-crm/co-branding-tools"
+              href={canShare ? AGENT_REFERRAL_PATH : AGENT_ONBOARDING_PATH}
               className="ui-btn-secondary inline-flex items-center gap-2 text-sm"
             >
               <Link2 className="h-4 w-4" />
-              Get referral link
+              {canShare ? 'Get referral link' : 'Finish setup to share'}
             </Link>
           )}
         </div>
 
         {isAgent && (
           <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-            <p className="font-medium text-neutral-900">How students get added</p>
+            <p className="font-medium text-neutral-900">How referrals appear</p>
             <ol className="mt-2 list-decimal pl-5 space-y-1 text-neutral-600">
               <li>
-                Copy your referral link from{' '}
-                <Link href="/agency-crm/co-branding-tools" className="text-brand underline-offset-2 hover:underline">
-                  Referral &amp; Branding
-                </Link>
-                {myCode ? (
-                  <span>
-                    {' '}
-                    (code <span className="font-mono text-neutral-800">{myCode}</span>)
-                  </span>
-                ) : null}
-                .
+                {canShare ? (
+                  <>
+                    Copy your referral link from{' '}
+                    <Link href={AGENT_REFERRAL_PATH} className="text-brand underline-offset-2 hover:underline">
+                      Referral &amp; Branding
+                    </Link>
+                    {myCode ? (
+                      <span>
+                        {' '}
+                        (code <span className="font-mono text-neutral-800">{myCode}</span>)
+                      </span>
+                    ) : null}
+                    .
+                  </>
+                ) : (
+                  <>
+                    Complete setup and wait for activation — then copy your link from{' '}
+                    <Link href={AGENT_ONBOARDING_PATH} className="text-brand underline-offset-2 hover:underline">
+                      Setup
+                    </Link>
+                    .
+                  </>
+                )}
               </li>
-              <li>Share it with the student or use it when capturing the lead.</li>
-              <li>They show up automatically in this list — no IDs to type.</li>
+              <li>Share it so the person registers under your code.</li>
+              <li>
+                They appear here as a <strong>Lead</strong> first; once promoted in CRM they become a{' '}
+                <strong>Student</strong> you can open for applications and fees.
+              </li>
             </ol>
           </div>
         )}
@@ -376,7 +400,7 @@ export default function AgencyLeads() {
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex rounded-lg border border-neutral-200 overflow-hidden bg-white">
             {[
-              { id: 'students', label: isAgent ? 'My students' : 'Referred students' },
+              { id: 'students', label: isAgent ? 'My referrals' : 'Referred students' },
               { id: 'applications', label: 'Applications' },
             ].map((t) => (
               <button
@@ -428,11 +452,13 @@ export default function AgencyLeads() {
             <div className="p-12 text-center text-neutral-500">
               <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-40" />
               <p className="ui-text-strong">
-                No {tab === 'students' ? 'students' : 'applications'} yet
+                No {tab === 'students' ? 'referrals' : 'applications'} yet
               </p>
               <p className="ui-text-meta mt-1 max-w-md mx-auto">
                 {isAgent
-                  ? 'Share your referral link — new students appear here automatically.'
+                  ? canShare
+                    ? 'Share your referral link — new leads and students appear here automatically.'
+                    : 'Finish partner setup first. After activation you can share your referral link.'
                   : 'Use Assign student above, or wait for referrals from an agency link.'}
               </p>
               {canAssign && !showAssign && (
@@ -447,11 +473,11 @@ export default function AgencyLeads() {
               )}
               {isAgent && (
                 <Link
-                  href="/agency-crm/co-branding-tools"
+                  href={canShare ? AGENT_REFERRAL_PATH : AGENT_ONBOARDING_PATH}
                   className="ui-btn-secondary mt-4 inline-flex items-center gap-2 text-sm"
                 >
                   <Link2 className="h-4 w-4" />
-                  Get referral link
+                  {canShare ? 'Get referral link' : 'Finish setup to share'}
                 </Link>
               )}
             </div>
@@ -461,7 +487,8 @@ export default function AgencyLeads() {
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50/60">
                     {!isAgent && <th className="px-4 py-3 ui-text-caption uppercase">Agency</th>}
-                    <th className="px-4 py-3 ui-text-caption uppercase">Student / Lead</th>
+                    <th className="px-4 py-3 ui-text-caption uppercase">Name</th>
+                    <th className="px-4 py-3 ui-text-caption uppercase">Type</th>
                     <th className="px-4 py-3 ui-text-caption uppercase">Contact</th>
                     <th className="px-4 py-3 ui-text-caption uppercase">Status</th>
                     <th className="px-4 py-3 ui-text-caption uppercase">Application</th>
@@ -470,7 +497,9 @@ export default function AgencyLeads() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  {rows.map((r) => (
+                  {rows.map((r) => {
+                    const entityType = getReferralEntityType(r);
+                    return (
                     <tr key={r.id} className="hover:bg-neutral-50/70">
                       {!isAgent && (
                         <td className="px-4 py-3">
@@ -489,9 +518,20 @@ export default function AgencyLeads() {
                             {r.student.fullName}
                           </Link>
                         ) : r.lead ? (
-                          <span>{r.lead.fullName}</span>
+                          <span className="font-medium text-neutral-800">{r.lead.fullName}</span>
                         ) : (
                           '—'
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {entityType ? (
+                          <span
+                            className={`inline-flex text-xs px-2 py-0.5 rounded-full border ${referralEntityBadgeClass(entityType)}`}
+                          >
+                            {entityType}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-neutral-400">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-neutral-600">
@@ -499,7 +539,9 @@ export default function AgencyLeads() {
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-100">
-                          {r.status}
+                          {entityType === 'Lead' && !r.student
+                            ? 'Awaiting CRM conversion'
+                            : r.status}
                         </span>
                         {r.student?.isEnrolled && (
                           <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
@@ -530,7 +572,8 @@ export default function AgencyLeads() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

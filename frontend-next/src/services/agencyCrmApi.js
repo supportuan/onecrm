@@ -45,14 +45,23 @@ export const updatePartner = async (id, payload) =>
 export const advanceOnboarding = async (id, stage) =>
   handleResponse(await tenantFetch(`${API_URL}/partners/${id}/onboarding`, json({ stage })));
 
-export const signAgreement = async (id) =>
-  handleResponse(await tenantFetch(`${API_URL}/partners/${id}/sign-agreement`, { method: 'POST' }));
+export const signAgreement = async (id, body = {}) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/partners/${id}/sign-agreement`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  );
 
 export const submitOnboardingDocs = async (id) =>
   handleResponse(await tenantFetch(`${API_URL}/partners/${id}/submit-docs`, { method: 'POST' }));
 
 export const updatePartnerStatus = async (id, status) =>
   handleResponse(await tenantFetch(`${API_URL}/partners/${id}/status`, putJson({ status })));
+
+export const approvePartnerLogin = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/partners/${id}/approve-login`, { method: 'POST' }));
 
 export const listAgencyLeads = async ({ page, limit, search, agencyPartnerId } = {}) => {
   const params = new URLSearchParams();

@@ -7,12 +7,14 @@ import {
   CommissionStatus,
 } from '@prisma/client';
 import { sendError, sendSuccess } from '../../utils/response.js';
+import { resolveFileRefsDeep } from '../../lib/file-storage.js';
 import * as service from './agency-crm.service.js';
 import {
   advancePartnerOnboarding,
   OnboardingTransitionError,
   provisionPartnerFromAgentUser,
   setPartnerStatus,
+  approvePartnerLogin,
   signPartnerAgreement,
   submitPartnerOnboardingDocs,
 } from './agency-partner.lifecycle.js';
@@ -345,10 +347,25 @@ export const updatePartnerStatus = async (req: Request, res: Response, next: Nex
   }
 };
 
+export const approvePartnerLoginHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'id required', null, 400);
+    const updated = await approvePartnerLogin(id, req.user?.id);
+    return sendSuccess(res, 'partner login approved', updated);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
 export const signAgreement = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = numId(req.params.id);
     if (!id || !req.user?.id) return sendError(res, 'invalid request', null, 400);
+    if (req.body?.accepted !== true) {
+      return sendError(res, 'You must accept the agreement text before signing', null, 400);
+    }
     const updated = await signPartnerAgreement(id, req.user.id, req.user.role, {
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
@@ -384,7 +401,9 @@ export const getDocuments = async (req: Request, res: Response, next: NextFuncti
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const docs = await listPartnerDocuments(id);
+    const partner = await service.getPartner(id, actor(req));
+    if (!partner) return sendError(res, 'not found', null, 404);
+    const docs = await resolveFileRefsDeep(await listPartnerDocuments(id));
     return sendSuccess(res, 'partner documents', docs);
   } catch (err) {
     next(err);
@@ -395,10 +414,14 @@ export const uploadDocument = async (req: Request, res: Response, next: NextFunc
   try {
     const id = numId(req.params.id);
     if (!id || !req.file) return sendError(res, 'file required', null, 400);
-    const doc = await uploadPartnerDocument(id, req.file, {
-      type: (req.body?.type as any) || undefined,
-      notes: req.body?.notes,
-    });
+    const partner = await service.getPartner(id, actor(req));
+    if (!partner) return sendError(res, 'not found', null, 404);
+    const doc = await resolveFileRefsDeep(
+      await uploadPartnerDocument(id, req.file, {
+        type: (req.body?.type as any) || undefined,
+        notes: req.body?.notes,
+      })
+    );
     return sendSuccess(res, 'document uploaded', doc, 201);
   } catch (err) {
     next(err);
@@ -410,6 +433,8 @@ export const removeDocument = async (req: Request, res: Response, next: NextFunc
     const partnerId = numId(req.params.id);
     const docId = numId(req.params.docId);
     if (!partnerId || !docId) return sendError(res, 'invalid id', null, 400);
+    const partner = await service.getPartner(partnerId, actor(req));
+    if (!partner) return sendError(res, 'not found', null, 404);
     await deletePartnerDocument(partnerId, docId);
     return sendSuccess(res, 'document deleted', { id: docId });
   } catch (err: any) {
@@ -422,6 +447,8 @@ export const getActivities = async (req: Request, res: Response, next: NextFunct
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
+    const partner = await service.getPartner(id, actor(req));
+    if (!partner) return sendError(res, 'not found', null, 404);
     const rows = await listPartnerActivities(id);
     return sendSuccess(res, 'partner activities', rows);
   } catch (err) {
@@ -433,6 +460,8 @@ export const addActivity = async (req: Request, res: Response, next: NextFunctio
   try {
     const id = numId(req.params.id);
     if (!id || !req.body?.activityType) return sendError(res, 'activityType required', null, 400);
+    const partner = await service.getPartner(id, actor(req));
+    if (!partner) return sendError(res, 'not found', null, 404);
     const row = await logPartnerActivity({
       agencyPartnerId: id,
       actorId: req.user?.id,
@@ -467,6 +496,10 @@ export const sendBroadcast = async (req: Request, res: Response, next: NextFunct
 export const getCommissionRules = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const agencyPartnerId = numId(req.query.agencyPartnerId) ?? undefined;
+    if (agencyPartnerId) {
+      const partner = await service.getPartner(agencyPartnerId, actor(req));
+      if (!partner) return sendError(res, 'not found', null, 404);
+    }
     const rows = await listCommissionRules(agencyPartnerId);
     return sendSuccess(res, 'commission rules', rows);
   } catch (err) {
@@ -501,6 +534,8 @@ export const commissionStatement = async (req: Request, res: Response, next: Nex
     const agencyPartnerId = numId(req.query.agencyPartnerId);
     if (!agencyPartnerId) return sendError(res, 'agencyPartnerId required', null, 400);
     const period = typeof req.query.period === 'string' ? req.query.period : undefined;
+    const partner = await service.getPartner(agencyPartnerId, actor(req));
+    if (!partner) return sendError(res, 'not found', null, 404);
     const data = await getCommissionStatement({ agencyPartnerId, period });
     return sendSuccess(res, 'commission statement', data);
   } catch (err) {

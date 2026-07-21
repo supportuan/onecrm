@@ -68,6 +68,12 @@ export const assertOnboardingTransition = (opts: {
     return;
   }
 
-  // Staff (non-partner): forward-only. MANAGE route gates who can call admin advances.
+  // Staff also advance one stage at a time so verification and approval
+  // cannot be silently skipped.
+  if (toIdx !== fromIdx + 1) {
+    throw new OnboardingTransitionError(
+      `Invalid transition: complete ${ONBOARDING_STAGE_ORDER[fromIdx + 1]} first`
+    );
+  }
   return;
 };

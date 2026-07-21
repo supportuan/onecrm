@@ -1,19 +1,26 @@
 "use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getDefaultHrRoute } from "@/features/hr/routing";
 import { RefreshCw } from "lucide-react";
 
-export default function Home() {
+function HomeRedirect() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (loading) return;
 
+    const ref = searchParams.get("ref");
     if (!isAuthenticated) {
-      router.push("/login");
+      // Preserve agency referral codes instead of dropping them on /login.
+      if (ref) {
+        router.replace(`/register?ref=${encodeURIComponent(ref)}`);
+      } else {
+        router.push("/login");
+      }
       return;
     }
 
@@ -33,18 +40,28 @@ export default function Home() {
     } else {
       router.push("/login");
     }
-  }, [isAuthenticated, loading, user, router]);
+  }, [isAuthenticated, loading, user, router, searchParams]);
 
   return (
     <div className="relative min-h-screen flex flex-col justify-center items-center bg-neutral-50 text-brand font-sans select-none">
       <div className="flex flex-col items-center gap-4">
-        <div className="relative flex items-center justify-center h-12 w-12 rounded-lg border border-neutral-200 bg-white text-neutral-600">
-          <RefreshCw className="h-5 w-5 animate-spin" />
-        </div>
-        <p className="text-neutral-500 text-sm animate-pulse">
-          Redirecting...
-        </p>
+        <RefreshCw className="h-8 w-8 animate-spin text-brand/60" />
+        <p className="text-sm text-neutral-500">Loading…</p>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="relative min-h-screen flex flex-col justify-center items-center bg-neutral-50 text-brand font-sans select-none">
+          <RefreshCw className="h-8 w-8 animate-spin text-brand/60" />
+        </div>
+      }
+    >
+      <HomeRedirect />
+    </Suspense>
   );
 }

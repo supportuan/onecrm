@@ -34,6 +34,12 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   'HrMarketingPerformance',
   'HrCounsellorPerformance',
   'HrPerformanceReview',
+  // CRM / Agency — scoped once tenantId columns are present
+  'Student',
+  'Application',
+  'AgencyPartner',
+  'Lead',
+  'Campaign',
 ]);
 
 // findUnique/findUniqueOrThrow/upsert.where require a WhereUniqueInput, which

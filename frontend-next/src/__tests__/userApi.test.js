@@ -73,13 +73,13 @@ describe('getUsers', () => {
 
 // ─── registerUser ─────────────────────────────────────────────
 describe('registerUser', () => {
-  it('calls plain fetch (not authFetch) at /api/users/register', async () => {
+  it('calls plain fetch (not authFetch) at /api/auth/register', async () => {
     okFetch({ success: true, data: { id: 1 } });
     const payload = { fullName: 'Alice', email: 'alice@test.com', password: 'pass123', role: 'STUDENT' };
     await registerUser(payload);
 
     expect(fetch).toHaveBeenCalledWith(
-      `${BASE}/register`,
+      `/api/auth/register`,
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -1,3 +1,5 @@
+import { authenticateToken } from '../../../middleware/authenticate.js';
+import { authorizePermission } from '../../../middleware/authorize.js';
 import express from 'express';
 
 import {
@@ -13,6 +15,15 @@ import {
 } from '../controllers/lead-communication.controller.js';
 
 const router = express.Router();
+
+const viewLeads = [
+  authenticateToken,
+  authorizePermission('Marketing', 'Lead Management', 'VIEW'),
+] as const;
+const editLeads = [
+  authenticateToken,
+  authorizePermission('Marketing', 'Lead Management', 'EDIT'),
+] as const;
 
 /**
  * @swagger
@@ -30,7 +41,7 @@ const router = express.Router();
  *       200:
  *         description: Activities retrieved successfully
  */
-router.get('/leads/:id/activities', getLeadActivities);
+router.get('/leads/:id/activities', ...viewLeads, getLeadActivities);
 
 /**
  * @swagger
@@ -65,7 +76,7 @@ router.get('/leads/:id/activities', getLeadActivities);
  *       200:
  *         description: Activity created successfully
  */
-router.post('/leads/:id/activities', createLeadActivity);
+router.post('/leads/:id/activities', ...editLeads, createLeadActivity);
 
 /**
  * @swagger
@@ -97,7 +108,7 @@ router.post('/leads/:id/activities', createLeadActivity);
  *       200:
  *         description: Email sent successfully
  */
-router.post('/leads/:id/send-email', sendEmailToLead);
+router.post('/leads/:id/send-email', ...editLeads, sendEmailToLead);
 
 /**
  * @swagger
@@ -126,7 +137,7 @@ router.post('/leads/:id/send-email', sendEmailToLead);
  *       200:
  *         description: SMS sent successfully
  */
-router.post('/leads/:id/send-sms', sendSMSToLead);
+router.post('/leads/:id/send-sms', ...editLeads, sendSMSToLead);
 
 /**
  * @swagger
@@ -155,7 +166,7 @@ router.post('/leads/:id/send-sms', sendSMSToLead);
  *       200:
  *         description: WhatsApp message sent successfully
  */
-router.post('/leads/:id/send-whatsapp', sendWhatsAppToLead);
+router.post('/leads/:id/send-whatsapp', ...editLeads, sendWhatsAppToLead);
 
 /**
  * @swagger
@@ -190,6 +201,6 @@ router.post('/leads/:id/send-whatsapp', sendWhatsAppToLead);
  *       200:
  *         description: Meeting scheduled successfully
  */
-router.post('/leads/:id/schedule-meeting', scheduleMeetingForLead);
+router.post('/leads/:id/schedule-meeting', ...editLeads, scheduleMeetingForLead);
 
 export default router;

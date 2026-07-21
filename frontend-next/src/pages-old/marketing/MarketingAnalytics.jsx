@@ -154,6 +154,12 @@ export default function MarketingAnalytics() {
       (sum, campaign) => sum + num(campaign.spent),
       0
     );
+    const totalRevenue = campaigns.reduce(
+      (sum, campaign) => sum + num(campaign.revenueGenerated),
+      0
+    );
+    const marketingRoi =
+      totalSpent > 0 ? ((totalRevenue - totalSpent) / totalSpent) * 100 : 0;
 
     const totalLeads =
       leads.length ||
@@ -229,7 +235,9 @@ export default function MarketingAnalytics() {
           dailyBudget: num(details.dailyBudget),
           leads: leadsCount,
           conversions,
+          revenueGenerated: num(campaign.revenueGenerated),
           costPerLead: spent > 0 && leadsCount > 0 ? spent / leadsCount : 0,
+          roi: spent > 0 ? ((num(campaign.revenueGenerated) - spent) / spent) * 100 : 0,
           conversionRate: leadsCount > 0 ? (conversions / leadsCount) * 100 : 0,
         };
       })
@@ -283,6 +291,8 @@ export default function MarketingAnalytics() {
       activeCampaigns,
       totalBudget,
       totalSpent,
+      totalRevenue,
+      marketingRoi,
       totalLeads,
       contactedLeads,
       qualifiedLeads,
@@ -318,7 +328,13 @@ export default function MarketingAnalytics() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f8fb]  space-y-6">
+    <div className="space-y-6 text-[13px] [&_th]:text-xs [&_th]:font-medium [&_td]:text-xs [&_td]:font-normal">
+      <section className="rounded-xl border border-slate-200 bg-white px-5 py-4">
+        <h2 className="text-base font-semibold text-slate-900">Revenue Intelligence</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Connect marketing investment, campaign efficiency, and attributable revenue.
+        </p>
+      </section>
       {/* <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <button
           onClick={fetchAnalytics}
@@ -337,14 +353,16 @@ export default function MarketingAnalytics() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-        <KpiCard title="Total Campaigns" value={formatNumber(analytics.totalCampaigns)} subtitle={`${analytics.activeCampaigns} active campaigns`} icon={<BarChart3 className="h-6 w-6 text-blue-600" />} bg="bg-blue-50" />
-        <KpiCard title="Budget Allocated" value={formatCurrency(analytics.totalBudget)} subtitle="Total paid campaign budget" icon={<IndianRupee className="h-6 w-6 text-emerald-600" />} bg="bg-emerald-50" />
-        <KpiCard title="Amount Spent" value={formatCurrency(analytics.totalSpent)} subtitle={`${formatPercent(analytics.budgetUsage)} budget used`} icon={<TrendingUp className="h-6 w-6 text-orange-600" />} bg="bg-orange-50" />
-        <KpiCard title="Total Leads" value={formatNumber(analytics.totalLeads)} subtitle={`${analytics.contactedLeads} contacted leads`} icon={<Users className="h-6 w-6 text-purple-600" />} bg="bg-purple-50" />
-        <KpiCard title="Cost Per Lead" value={formatCurrency(analytics.costPerLead)} subtitle="Spent amount / leads" icon={<Target className="h-6 w-6 text-rose-600" />} bg="bg-rose-50" />
-        <KpiCard title="Lead Conversion" value={formatPercent(analytics.conversionRate)} subtitle={`${analytics.convertedLeads} converted students`} icon={<Zap className="h-6 w-6 text-yellow-600" />} bg="bg-yellow-50" />
-        <KpiCard title="Campaign Efficiency" value={analytics.leadsPerThousand.toFixed(1)} subtitle="Leads per ₹1000 spent" icon={<Activity className="h-6 w-6 text-cyan-600" />} bg="bg-cyan-50" />
-        <KpiCard title="Lead Response Time" value={analytics.avgResponseTime} subtitle="Average contactedAt - createdAt" icon={<Clock className="h-6 w-6 text-slate-600" />} bg="bg-slate-100" />
+        <KpiCard title="Total Campaigns" value={formatNumber(analytics.totalCampaigns)} subtitle={`${analytics.activeCampaigns} active campaigns`} icon={<BarChart3 className="h-5 w-5" />} />
+        <KpiCard title="Budget Allocated" value={formatCurrency(analytics.totalBudget)} subtitle="Total paid campaign budget" icon={<IndianRupee className="h-5 w-5" />} />
+        <KpiCard title="Amount Spent" value={formatCurrency(analytics.totalSpent)} subtitle={`${formatPercent(analytics.budgetUsage)} budget used`} icon={<TrendingUp className="h-5 w-5" />} />
+        <KpiCard title="Revenue Generated" value={formatCurrency(analytics.totalRevenue)} subtitle="Confirmed campaign-attributed revenue" icon={<IndianRupee className="h-5 w-5" />} />
+        <KpiCard title="Marketing ROI" value={formatPercent(analytics.marketingRoi)} subtitle="(Revenue - spend) / spend" icon={<TrendingUp className="h-5 w-5" />} />
+        <KpiCard title="Total Leads" value={formatNumber(analytics.totalLeads)} subtitle={`${analytics.contactedLeads} contacted leads`} icon={<Users className="h-5 w-5" />} />
+        <KpiCard title="Cost Per Lead" value={formatCurrency(analytics.costPerLead)} subtitle="Spent amount / leads" icon={<Target className="h-5 w-5" />} />
+        <KpiCard title="Lead Conversion" value={formatPercent(analytics.conversionRate)} subtitle={`${analytics.convertedLeads} converted students`} icon={<Zap className="h-5 w-5" />} />
+        <KpiCard title="Campaign Efficiency" value={analytics.leadsPerThousand.toFixed(1)} subtitle="Leads per ₹1000 spent" icon={<Activity className="h-5 w-5" />} />
+        <KpiCard title="Lead Response Time" value={analytics.avgResponseTime} subtitle="Average contactedAt - createdAt" icon={<Clock className="h-5 w-5" />} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
@@ -355,12 +373,12 @@ export default function MarketingAnalytics() {
               const width = max > 0 ? (item.value / max) * 100 : 0;
               return (
                 <div key={item.label}>
-                  <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                  <div className="flex justify-between text-xs font-medium text-slate-700 mb-1">
                     <span>{index + 1}. {item.label}</span>
                     <span>{formatNumber(item.value)}</span>
                   </div>
                   <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Math.max(width, item.value > 0 ? 8 : 0)}%` }} />
+                    <div className="h-full bg-brand rounded-full" style={{ width: `${Math.max(width, item.value > 0 ? 8 : 0)}%` }} />
                   </div>
                 </div>
               );
@@ -372,14 +390,14 @@ export default function MarketingAnalytics() {
           <div className="space-y-4">
             {analytics.sourcePerformance.length === 0 ? <EmptyText text="No source data available." /> : analytics.sourcePerformance.slice(0, 8).map((item) => (
               <div key={item.source}>
-                <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                <div className="flex justify-between text-xs font-medium text-slate-700 mb-1">
                   <span>{item.source}</span>
                   <span>{formatNumber(item.leads)} leads</span>
                 </div>
                 <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(item.percentage, 100)}%` }} />
+                  <div className="h-full bg-brand rounded-full" style={{ width: `${Math.min(item.percentage, 100)}%` }} />
                 </div>
-                <p className="text-[11px] text-slate-400 font-bold mt-1">
+                <p className="text-[11px] text-slate-400 font-normal mt-1">
                   {formatPercent(item.percentage)} of total leads · {formatPercent(item.conversionRate)} converted
                 </p>
               </div>
@@ -394,12 +412,12 @@ export default function MarketingAnalytics() {
               const width = (item.count / max) * 100;
               return (
                 <div key={item.month}>
-                  <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                  <div className="flex justify-between text-xs font-medium text-slate-700 mb-1">
                     <span>{item.month}</span>
                     <span>{formatNumber(item.count)}</span>
                   </div>
                   <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-purple-500 rounded-full" style={{ width: `${width}%` }} />
+                    <div className="h-full bg-brand rounded-full" style={{ width: `${width}%` }} />
                   </div>
                 </div>
               );
@@ -409,6 +427,37 @@ export default function MarketingAnalytics() {
       </div>
 
 
+
+      <Panel title="Campaign Financial Performance" subtitle="Spend, attributable revenue, ROI, and efficiency by campaign">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 text-slate-500">
+              <tr>
+                <th className="px-5 py-3 font-black">Campaign</th>
+                <th className="px-5 py-3 font-black text-right">Spend</th>
+                <th className="px-5 py-3 font-black text-right">Revenue</th>
+                <th className="px-5 py-3 font-black text-right">ROI</th>
+                <th className="px-5 py-3 font-black text-right">Leads</th>
+                <th className="px-5 py-3 font-black text-right">Cost / Lead</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {analytics.campaignPerformance.length === 0 ? (
+                <tr><td colSpan="6" className="px-5 py-10 text-center text-slate-400 font-bold">No campaign financial data found.</td></tr>
+              ) : analytics.campaignPerformance.map((campaign) => (
+                <tr key={campaign.id} className="hover:bg-slate-50">
+                  <td className="px-5 py-4 font-black text-slate-900">{campaign.name}</td>
+                  <td className="px-5 py-4 text-right font-bold">{formatCurrency(campaign.spent)}</td>
+                  <td className="px-5 py-4 text-right font-bold">{formatCurrency(campaign.revenueGenerated)}</td>
+                  <td className="px-5 py-4 text-right font-black text-brand">{formatPercent(campaign.roi)}</td>
+                  <td className="px-5 py-4 text-right font-bold">{formatNumber(campaign.leads)}</td>
+                  <td className="px-5 py-4 text-right font-bold">{formatCurrency(campaign.costPerLead)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
 
       <Panel title="Lead Source Details" subtitle="Detailed source-wise lead breakdown" height="h-[430px]">
         <div className="overflow-x-auto">
@@ -439,7 +488,7 @@ export default function MarketingAnalytics() {
                   <td className="px-5 py-4 text-right font-bold">{formatNumber(source.converted)}</td>
                   <td className="px-5 py-4 text-right font-bold">{formatNumber(source.lost)}</td>
                   <td className="px-5 py-4 text-right font-bold">{formatPercent(source.percentage)}</td>
-                  <td className="px-5 py-4 text-right font-black text-emerald-600">{formatPercent(source.conversionRate)}</td>
+                  <td className="px-5 py-4 text-right font-black text-brand">{formatPercent(source.conversionRate)}</td>
                 </tr>
               ))}
             </tbody>
@@ -476,7 +525,7 @@ export default function MarketingAnalytics() {
                     <td className="px-5 py-4 text-right font-bold">{formatNumber(counsellor.proposed)}</td>
                     <td className="px-5 py-4 text-right font-bold">{formatNumber(counsellor.converted)}</td>
                     <td className="px-5 py-4 text-right font-bold">{formatNumber(counsellor.lost)}</td>
-                    <td className="px-5 py-4 text-right font-black text-blue-600">{formatPercent(conversion)}</td>
+                    <td className="px-5 py-4 text-right font-black text-brand">{formatPercent(conversion)}</td>
                   </tr>
                 );
               })}
@@ -488,16 +537,16 @@ export default function MarketingAnalytics() {
   );
 }
 
-function KpiCard({ title, value, subtitle, icon, bg }) {
+function KpiCard({ title, value, subtitle, icon }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm hover:shadow-md transition">
+    <div className="app-glass-card rounded-2xl p-5 transition hover:-translate-y-0.5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-black text-slate-500">{title}</p>
-          <h2 className="text-3xl font-black text-slate-900 mt-2">{value}</h2>
-          <p className="text-xs font-bold text-slate-400 mt-2">{subtitle}</p>
+          <p className="text-xs font-medium text-slate-500">{title}</p>
+          <h2 className="text-2xl font-semibold text-slate-900 mt-2">{value}</h2>
+          <p className="text-[11px] font-normal text-slate-400 mt-2">{subtitle}</p>
         </div>
-        <div className={`h-12 w-12 rounded-2xl ${bg} flex items-center justify-center`}>
+        <div className="app-gradient-icon">
           {icon}
         </div>
       </div>
@@ -525,11 +574,11 @@ function Panel({
 }) {
   return (
     <div
-      className={`bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col ${height}`}
+      className={`app-glass-card rounded-2xl overflow-hidden flex flex-col ${height}`}
     >
       <div className="px-5 py-4 border-b border-slate-100 flex-shrink-0">
-        <h2 className="text-lg font-black text-slate-900">{title}</h2>
-        <p className="text-xs font-bold text-slate-400 mt-0.5">
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        <p className="text-[11px] font-normal text-slate-400 mt-0.5">
           {subtitle}
         </p>
       </div>
@@ -543,7 +592,7 @@ function Panel({
 
 function EmptyText({ text }) {
   return (
-    <div className="py-10 text-center text-sm font-bold text-slate-400">
+    <div className="py-10 text-center text-xs font-normal text-slate-400">
       {text}
     </div>
   );

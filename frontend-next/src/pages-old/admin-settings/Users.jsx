@@ -19,6 +19,20 @@ import {
 
 const creatableRoles = ["ADMIN", "COUNSELLOR", "HR", "STUDENT", "AGENT"];
 const DEFAULT_SELECTED_ACTIONS = ["VIEW", "EDIT"];
+const MODULE_DISPLAY_NAMES = {
+  "Student CRM": "Student Hub",
+  "Agency CRM": "Agent Hub",
+  HR: "Human Resource",
+  Resources: "Knowledge Hub",
+};
+const OPTION_DISPLAY_NAMES = {
+  "Marketing Analytics": "Revenue Intelligence",
+  "Student Management": "Student Alliance",
+  "Resource Library": "Knowledge Library",
+  "Manage Resources": "Manage Knowledge",
+};
+const displayModuleName = (name) => MODULE_DISPLAY_NAMES[name] || name;
+const displayOptionName = (name) => OPTION_DISPLAY_NAMES[name] || name;
 
 const MODULE_ACCESS_OPTIONS = [
   {
@@ -68,6 +82,10 @@ const MODULE_ACCESS_OPTIONS = [
     module: "Admin & Settings",
     options: ["User Management", "Roles", "Permissions", "Settings"],
   },
+  {
+    module: "Resources",
+    options: ["Resource Library", "Manage Resources"],
+  },
 ];
 
 const createEmptyModuleAccess = () => {
@@ -110,8 +128,11 @@ const getDefaultModuleAccessByRole = (role) => {
   };
 
   if (role === "HR") giveModuleAccess("HR");
+  if (role === "HR") giveModuleAccess("Resources");
   if (role === "STUDENT") giveModuleAccess("Student CRM");
+  if (role === "STUDENT") giveModuleAccess("Resources");
   if (role === "AGENT") giveModuleAccess("Agency CRM");
+  if (role === "AGENT") giveModuleAccess("Resources");
 
   if (role === "COUNSELLOR") {
     giveModuleAccess("Marketing");
@@ -124,6 +145,7 @@ const getDefaultModuleAccessByRole = (role) => {
     giveModuleAccess("Agency CRM");
     giveModuleAccess("HR");
     giveModuleAccess("Admin & Settings");
+    giveModuleAccess("Resources");
   }
 
   return access;
@@ -229,7 +251,7 @@ export default function UserManagementPage() {
   }, []);
 
   const pendingAgents = useMemo(() => {
-    return users.filter((u) => u.role === "AGENT" && !u.isApproved);
+    return users.filter((u) => (u.role === "AGENT" || u.role === "AGENCY_FREELANCER") && !u.isApproved);
   }, [users]);
 
   const pendingStudents = useMemo(() => {
@@ -256,7 +278,7 @@ export default function UserManagementPage() {
         if (statusFilter === "ACTIVE") return user.isActive;
         if (statusFilter === "INACTIVE") return !user.isActive;
         if (statusFilter === "PENDING") {
-          return user.role === "AGENT" && !user.isApproved;
+          return (user.role === "AGENT" || user.role === "AGENCY_FREELANCER") && !user.isApproved;
         }
         return true;
       });
@@ -774,14 +796,14 @@ export default function UserManagementPage() {
                             <span
                               className={`rounded-full px-3 py-1 text-xs font-bold ${!user.isActive
                                 ? "bg-red-50 text-red-700"
-                                : user.role === "AGENT" && !user.isApproved
+                                : (user.role === "AGENT" || user.role === "AGENCY_FREELANCER") && !user.isApproved
                                   ? "bg-amber-50 text-amber-700"
                                   : "bg-emerald-50 text-emerald-700"
                                 }`}
                             >
                               {!user.isActive
                                 ? "Inactive"
-                                : user.role === "AGENT" && !user.isApproved
+                                : (user.role === "AGENT" || user.role === "AGENCY_FREELANCER") && !user.isApproved
                                   ? "Pending Approval"
                                   : "Active"}
                             </span>
@@ -1019,7 +1041,7 @@ export default function UserManagementPage() {
                               : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                               }`}
                           >
-                            <span>{moduleItem.module}</span>
+                            <span>{displayModuleName(moduleItem.module)}</span>
 
                             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500">
                               {selectedCount}
@@ -1034,7 +1056,7 @@ export default function UserManagementPage() {
                     <div className="mb-3 flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-bold text-slate-800">
-                          {selectedModule}
+                          {displayModuleName(selectedModule)}
                         </h4>
 
                         <p className="text-xs text-slate-500">
@@ -1081,7 +1103,7 @@ export default function UserManagementPage() {
                                   : "text-slate-700"
                                   }`}
                               >
-                                {optionName}
+                                {displayOptionName(optionName)}
                               </p>
 
                               <p className="mt-1 text-xs text-slate-500">
@@ -1122,7 +1144,7 @@ export default function UserManagementPage() {
                           ).map(([moduleName, options]) => (
                             <div key={moduleName}>
                               <p className="text-xs font-bold text-slate-700">
-                                {moduleName}
+                                {displayModuleName(moduleName)}
                               </p>
 
                               <div className="mt-1 flex flex-wrap gap-1.5">
@@ -1131,7 +1153,7 @@ export default function UserManagementPage() {
                                     key={optionName}
                                     className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
                                   >
-                                    {optionName}
+                                    {displayOptionName(optionName)}
                                   </span>
                                 ))}
                               </div>

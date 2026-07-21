@@ -347,6 +347,8 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
+    const app = await assertApplicationAccess(req, id);
+    if (!app) return sendError(res, 'not found', null, 404);
     const updated = await service.updateApplication(id, req.body || {});
     return sendSuccess(res, 'application updated', updated);
   } catch (err) {
@@ -380,6 +382,8 @@ export const advanceStage = async (req: Request, res: Response, next: NextFuncti
     if (!id) return sendError(res, 'invalid id', null, 400);
     const { stage, notes } = req.body || {};
     if (!stage) return sendError(res, 'stage is required', null, 400);
+    const app = await assertApplicationAccess(req, id);
+    if (!app) return sendError(res, 'not found', null, 404);
     const result = await service.setStage(id, stage, req.user?.id, notes);
     return sendSuccess(res, 'stage updated', result);
   } catch (err: any) {

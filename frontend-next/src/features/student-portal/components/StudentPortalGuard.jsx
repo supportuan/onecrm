@@ -12,7 +12,7 @@ export default function StudentPortalGuard({ children, skipPolicyCheck = false }
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated) {
-      router.replace('/student-login');
+      router.replace('/login');
       return;
     }
     if (user?.role !== 'STUDENT') {

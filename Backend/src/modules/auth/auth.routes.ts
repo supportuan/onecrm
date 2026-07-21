@@ -70,10 +70,10 @@ router.post('/register', authController.register);
  *             properties:
  *               email:
  *                 type: string
- *                 example: superadmin@onecrm.com
+ *                 example: user@example.com
  *               password:
  *                 type: string
- *                 example: SuperAdmin@123
+ *                 format: password
  *     responses:
  *       200:
  *         description: Login successful

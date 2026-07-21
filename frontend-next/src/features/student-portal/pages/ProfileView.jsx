@@ -129,7 +129,7 @@ export default function ProfileViewPage() {
 
       <StudentPortalPanel className={`${sp.panelPad} flex flex-col gap-5 sm:flex-row sm:items-center`}>
         <div className="relative shrink-0">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#e8eef7] text-xl font-semibold text-[#0b2a5b]">
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-xl font-semibold text-brand">
             {profile.profilePhotoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

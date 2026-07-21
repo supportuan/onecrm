@@ -7,7 +7,7 @@ export function AppLogo({ className = 'h-9 w-9', priority = false }) {
   return (
     <Image
       src="/images/applyUniNow.png"
-      alt="ONECRM"
+      alt="ApplyUniNow"
       width={48}
       height={48}
       priority={priority}
@@ -17,8 +17,8 @@ export function AppLogo({ className = 'h-9 w-9', priority = false }) {
 }
 
 export function AppBrand({
-  subtitle = 'Role based access',
-  title = 'ONECRM',
+  subtitle = 'Intelligence Connecting Seamlessly',
+  title = 'ApplyUniNow',
   compact = false,
   href = null,
 }) {

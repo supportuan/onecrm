@@ -42,6 +42,10 @@ export const moduleAccessToPermissions = (
   if (Object.values(agency).some(hasView)) perms.add('VIEW_AGENCY_CRM');
   if (Object.values(agency).some(hasEdit)) perms.add('MANAGE_AGENCY_CRM');
 
+  const resources = moduleOpts('Resources');
+  if (Object.values(resources).some(hasView)) perms.add('VIEW_RESOURCES');
+  if (Object.values(resources).some(hasEdit)) perms.add('MANAGE_RESOURCES');
+
   const hr = moduleOpts('HR');
   const hrHasView = Object.values(hr).some(hasView);
   const hrHasEdit = Object.values(hr).some(hasEdit);

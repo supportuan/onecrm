@@ -85,7 +85,17 @@ export const updateLeadStatusController = async (req: Request, res: Response) =>
     const leadId = Number(req.params.id);
     const { status } = req.body;
 
-    const allowed = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSED', 'CONVERTED', 'LOST'];
+    const allowed = [
+      'NEW',
+      'CONTACTED',
+      'NOT_CONTACTED',
+      'CALLBACK',
+      'FOLLOW_UP',
+      'QUALIFIED',
+      'PROPOSED',
+      'CONVERTED',
+      'LOST',
+    ];
 
     if (!allowed.includes(status)) {
       return res.status(400).json({
@@ -156,13 +166,14 @@ export const getLeads = async (req: Request, res: Response, next: NextFunction) 
     const search = req.query.search as string;
     const status = req.query.status as LeadStatus;
     const sourceId = req.query.sourceId ? parseInt(req.query.sourceId as string) : undefined;
+    const country = req.query.country as string;
     const page = req.query.page ? parseInt(req.query.page as string) : undefined;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
     const sortBy = req.query.sortBy as string;
     const sortOrder = req.query.sortOrder as 'asc' | 'desc';
 
     // If counsellor, restrict leads to those assigned to them
-    const filters: any = { search, status, sourceId, page, limit, sortBy, sortOrder };
+    const filters: any = { search, status, sourceId, country, page, limit, sortBy, sortOrder };
     if (req.user && req.user.role === UserRole.COUNSELLOR) {
       filters.assignedCounsellorId = req.user.id;
     }
@@ -287,7 +298,6 @@ export const getLeadActivities = async (req: Request, res: Response, next: NextF
   try {
     const id = parseInt(req.params.id as string);
     if (isNaN(id)) return sendError(res, 'Invalid lead ID', null, 400);
-
     const activities = await marketingService.getLeadActivities(id);
     return sendSuccess(res, 'Lead activities retrieved successfully', activities);
   } catch (error) {

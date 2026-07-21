@@ -209,6 +209,12 @@ function ApplicationPanel({ app, canPayFees }) {
 
             <div>
               <h3 className="text-sm font-semibold text-neutral-800">Fees & payments</h3>
+              {!canPayFees && (
+                <p className="text-xs text-neutral-600 mt-1 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  Paying fees is not enabled on your partner account. Fee status is shown for tracking; staff
+                  collect payments unless your coordinator turns on fee payment for you.
+                </p>
+              )}
               {!fees.length && !payments.length ? (
                 <p className="text-sm text-neutral-500 mt-2">No payment records yet.</p>
               ) : (
@@ -237,7 +243,9 @@ function ApplicationPanel({ app, canPayFees }) {
                               {payingFeeId === fee.id ? 'Processing…' : 'Pay now'}
                             </button>
                           ) : (
-                            <span className="text-xs text-neutral-400">Payment not enabled</span>
+                            <span className="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg max-w-[14rem] text-right">
+                              Fee payment is managed by UniNow staff — ask your coordinator if a payment is needed.
+                            </span>
                           )}
                         </div>
                       </div>

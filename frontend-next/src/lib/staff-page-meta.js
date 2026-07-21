@@ -16,8 +16,8 @@ export function getStaffPageMeta(pathname = '') {
     title = 'Landing Pages & Forms';
     description = 'Create and manage your landing pages and forms';
   } else if (pathname.startsWith('/marketing/marketing-analytics')) {
-    title = 'Marketing Analytics';
-    description = 'Analyze your marketing performance';
+    title = 'Revenue Intelligence';
+    description = 'Connect marketing performance with financial outcomes';
   } else if (pathname === '/admin-settings/users') {
     title = 'User Management';
     description = 'Create, manage and assign permissions to users.';
@@ -25,8 +25,8 @@ export function getStaffPageMeta(pathname = '') {
     title = 'Roles & Permissions';
     description = 'Create and manage roles and permissions.';
   } else if (pathname.startsWith('/marketing')) {
-    title = 'Marketing Dashboard';
-    description = 'Manage your marketing activities';
+    title = 'Dashboard';
+    description = 'Clean, focused insight into lead movement, sources, and actions that need attention.';
   } else if (pathname.startsWith('/notifications')) {
     title = 'Notifications';
     description = 'Manage your notifications';
@@ -58,20 +58,20 @@ export function getStaffPageMeta(pathname = '') {
     title = 'Overview';
     description = 'Manage your HR activities';
   } else if (pathname.startsWith('/student-crm/student-management')) {
-    title = 'Student Management';
-    description = 'Manage your student CRM activities';
+    title = 'Student Alliance';
+    description = 'Nurture applicants, manage milestones, and keep every student record connected.';
   } else if (pathname.startsWith('/student-crm/applications')) {
-    title = 'Student Applications';
-    description = 'Manage your applications';
+    title = 'Applications';
+    description = 'Track every application from preparation through enrolment.';
   } else if (pathname.startsWith('/student-crm/visa-management')) {
     title = 'Visa Management';
     description = 'Manage student visa workflows';
   } else if (pathname.startsWith('/student-crm/settings')) {
-    title = 'Student CRM Settings';
-    description = 'Configure student CRM settings';
+    title = 'CRM Settings';
+    description = 'Configure Student Hub settings';
   } else if (pathname.startsWith('/student-crm')) {
-    title = 'Student CRM';
-    description = 'Manage your student CRM activities';
+    title = 'Student Hub';
+    description = 'Manage student relationships, applications, and milestones';
   } else if (pathname.startsWith('/agency-crm/dashboard')) {
     title = 'Dashboard';
     description = 'Agent portal overview';
@@ -100,11 +100,17 @@ export function getStaffPageMeta(pathname = '') {
     title = 'Student';
     description = 'Assigned student workspace';
   } else if (pathname.startsWith('/agency-crm')) {
-    title = 'Agency CRM';
+    title = 'Agent Hub';
     description = 'Agency partner operations';
+  } else if (pathname.startsWith('/resources/manage')) {
+    title = 'Manage Knowledge';
+    description = 'Upload files and track acknowledgements';
+  } else if (pathname.startsWith('/resources')) {
+    title = 'Knowledge Hub';
+    description = 'Curated knowledge for in-house teams, academics, and agents';
   } else if (pathname.startsWith('/allied-services')) {
     title = 'Allied Services';
-    description = 'Manage your Allied Services';
+    description = 'One connected ecosystem for every stage of the international education journey.';
   }
 
   return { breadcrumb, title, description };

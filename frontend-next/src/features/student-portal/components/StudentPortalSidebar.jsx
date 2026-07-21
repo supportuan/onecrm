@@ -6,6 +6,7 @@ import {
   FileText,
   CreditCard,
   UserRound,
+  Library,
   PanelLeftClose,
 } from 'lucide-react';
 import { StudentPortalBrand, StudentPortalLogo } from './StudentPortalBrand';
@@ -15,6 +16,7 @@ export { SIDEBAR_OPEN, SIDEBAR_COLLAPSED };
 
 const NAV = [
   { label: 'Applications', href: '/applicant/applications', icon: FileText },
+  { label: 'Knowledge Hub', href: '/applicant/resources', icon: Library },
   { label: 'Payments', href: '/applicant/payments', icon: CreditCard },
   { label: 'Profile', href: '/applicant/profile/view', icon: UserRound },
 ];
@@ -26,9 +28,21 @@ export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
 
   return (
     <aside
-      className="fixed inset-y-0 left-0 z-30 flex h-screen flex-col overflow-hidden border-r border-neutral-200/70 bg-white transition-[width] duration-200 ease-out"
+      className="app-sidebar-with-waves fixed inset-y-0 left-0 z-30 flex h-screen flex-col overflow-hidden border-r border-neutral-200/70 bg-white transition-[width] duration-200 ease-out"
       style={{ width }}
     >
+      <div className="app-sidebar-wave-blobs" aria-hidden="true">
+        <svg viewBox="0 0 240 320" preserveAspectRatio="none">
+          <path
+            className="app-wave-blob-primary"
+            d="M0 132C43 89 85 160 128 116C171 72 197 104 240 58V320H0V132Z"
+          />
+          <path
+            className="app-wave-blob-secondary"
+            d="M0 196C48 148 92 226 145 174C190 130 216 165 240 142V320H0V196Z"
+          />
+        </svg>
+      </div>
       <div
         className={`flex-none flex items-center border-b border-neutral-100/80 ${
           sidebarOpen ? 'justify-between gap-2 px-4 h-14' : 'justify-center h-14'
@@ -69,11 +83,11 @@ export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
                 <Link
                   href={item.href}
                   title={!sidebarOpen ? item.label : undefined}
-                  className={`group flex items-center text-[13px] font-medium transition-all duration-150 ${
+                  className={`app-nav-item group flex items-center text-[13px] font-medium ${
                     sidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center p-2.5'
                   } rounded-xl ${
                     active
-                      ? 'bg-brand text-white shadow-sm'
+                      ? 'app-nav-item-active bg-brand text-white'
                       : 'text-slate-600 hover:bg-brand-soft hover:text-brand'
                   }`}
                 >

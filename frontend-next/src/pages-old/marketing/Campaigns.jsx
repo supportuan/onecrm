@@ -2252,6 +2252,7 @@ const INITIAL_CAMPAIGN_FORM = {
   type: 'EMAIL',
   budget: '',
   spent: 0,
+  revenueGenerated: 0,
   startDate: '',
   endDate: '',
   status: 'DRAFT',
@@ -2835,6 +2836,10 @@ const Campaigns = () => {
           fullCampaign.spent !== null && fullCampaign.spent !== undefined
             ? Number(fullCampaign.spent)
             : 0,
+        revenueGenerated:
+          fullCampaign.revenueGenerated !== null && fullCampaign.revenueGenerated !== undefined
+            ? Number(fullCampaign.revenueGenerated)
+            : 0,
         startDate: formatDateForInput(fullCampaign.startDate),
         endDate: formatDateForInput(fullCampaign.endDate),
         status: fullCampaign.status || 'DRAFT',
@@ -2942,6 +2947,7 @@ const Campaigns = () => {
         launchDetails: filterLaunchDetailsByType(campaignForm.type, campaignForm.launchDetails),
         budget: usesBudget(campaignForm.type) && campaignForm.budget ? parseFloat(campaignForm.budget) : null,
         spent: usesBudget(campaignForm.type) && campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
+        revenueGenerated: Number(campaignForm.revenueGenerated || 0),
         startDate: campaignForm.startDate
           ? new Date(campaignForm.startDate).toISOString()
           : null,
@@ -2967,6 +2973,7 @@ const Campaigns = () => {
         type: 'EMAIL',
         budget: '',
         spent: 0,
+        revenueGenerated: 0,
         startDate: '',
         endDate: '',
         status: 'DRAFT',
@@ -3037,6 +3044,7 @@ const Campaigns = () => {
         launchDetails: filterLaunchDetailsByType(campaignForm.type, campaignForm.launchDetails),
         budget: usesBudget(campaignForm.type) && campaignForm.budget ? parseFloat(campaignForm.budget) : null,
         spent: usesBudget(campaignForm.type) && campaignForm.spent ? parseFloat(campaignForm.spent) : 0,
+        revenueGenerated: Number(campaignForm.revenueGenerated || 0),
         startDate: campaignForm.startDate ? new Date(campaignForm.startDate).toISOString() : null,
         endDate: campaignForm.endDate ? new Date(campaignForm.endDate).toISOString() : null,
         audienceType: showAudienceType ? campaignForm.audienceType || 'ALL' : 'ALL',
@@ -3115,6 +3123,13 @@ const Campaigns = () => {
 
   return (
     <div className="space-y-6">
+      <section className="rounded-lg border border-neutral-200/50 bg-white px-5 py-4 shadow-xs">
+        <h2 className="text-lg font-bold text-neutral-900">Campaign Mission</h2>
+        <p className="mt-1 text-sm text-neutral-600">
+          Plan every campaign around visibility, brand awareness, and measurable goals.
+        </p>
+      </section>
+
       {/* FILTER & ACTIONS BAR - high-fidelity rounded pills */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white px-4 py-3 rounded-lg border border-neutral-200/50 shadow-xs">
         <div className="flex flex-1 items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 sm:max-w-md shadow-xs transition-all focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-neutral-900/60">
@@ -3845,6 +3860,24 @@ const Campaigns = () => {
                 </div>
               )}
 
+              <div className="space-y-1">
+                <label>Revenue Generated (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={campaignForm.revenueGenerated}
+                  onChange={(e) =>
+                    setCampaignForm((p) => ({
+                      ...p,
+                      revenueGenerated: parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
+                />
+                <p className="text-xs text-neutral-500">Enter confirmed revenue attributable to this campaign.</p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="">Start Date</label>
@@ -4057,6 +4090,24 @@ const Campaigns = () => {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-1">
+                <label>Revenue Generated (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={campaignForm.revenueGenerated}
+                  onChange={(e) =>
+                    setCampaignForm((p) => ({
+                      ...p,
+                      revenueGenerated: parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:border-brand outline-none transition font-semibold text-neutral-700 bg-white"
+                />
+                <p className="text-xs text-neutral-500">Enter confirmed revenue attributable to this campaign.</p>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">

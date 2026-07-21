@@ -5,7 +5,8 @@ import { Copy, Layers, Save } from 'lucide-react';
 import { getMyPartner, listPartners, updatePartner } from '@/services/agencyCrmApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
-import { isAgencyPartnerRole } from '../agentPortal';
+import { isAgencyPartnerRole, canShareReferralLink, AGENT_ONBOARDING_PATH } from '../agentPortal';
+import Link from 'next/link';
 
 const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
@@ -71,10 +72,12 @@ export default function CoBrandingTools() {
 
   const referralLink =
     typeof window !== 'undefined' && partner?.agencyCode
-      ? `${window.location.origin}/?ref=${partner.agencyCode}`
+      ? `${window.location.origin}/register?ref=${encodeURIComponent(partner.agencyCode)}`
       : partner?.agencyCode
-        ? `/?ref=${partner.agencyCode}`
+        ? `/register?ref=${encodeURIComponent(partner.agencyCode)}`
         : '';
+
+  const shareAllowed = !isAgent || canShareReferralLink(partner);
 
   const save = async (e) => {
     e.preventDefault();
@@ -89,7 +92,7 @@ export default function CoBrandingTools() {
   };
 
   const copyLink = async () => {
-    if (!referralLink) return;
+    if (!shareAllowed || !referralLink) return;
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
@@ -145,16 +148,33 @@ export default function CoBrandingTools() {
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="rounded-lg border border-neutral-200 bg-white p-6 space-y-4">
             <h2 className="font-medium text-brand">Referral link</h2>
-            <p className="text-sm text-neutral-500">
-              Share this link so leads are attributed to agency code <strong>{partner.agencyCode}</strong>.
-            </p>
-            <div className="flex gap-2">
-              <input className={INPUT} readOnly value={referralLink} />
-              <button type="button" onClick={copyLink} className="px-3 py-2 border border-neutral-200 rounded-lg">
-                <Copy className="w-4 h-4" />
-              </button>
-            </div>
-            {copied && <p className="text-xs text-emerald-600">Copied to clipboard</p>}
+            {shareAllowed ? (
+              <>
+                <p className="text-sm text-neutral-500">
+                  Share this link so leads are attributed to agency code <strong>{partner.agencyCode}</strong>.
+                </p>
+                <div className="flex gap-2">
+                  <input className={INPUT} readOnly value={referralLink} />
+                  <button type="button" onClick={copyLink} className="px-3 py-2 border border-neutral-200 rounded-lg">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                {copied && <p className="text-xs text-emerald-600">Copied to clipboard</p>}
+              </>
+            ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+                <p className="text-sm text-amber-950">
+                  Referral sharing unlocks after your partner account is <strong>ACTIVE</strong>. Finish setup
+                  and wait for admin activation.
+                </p>
+                <p className="text-xs text-amber-900/80">
+                  Current stage: {partner.onboardingStage || '—'}. Links for inactive partners are rejected.
+                </p>
+                <Link href={AGENT_ONBOARDING_PATH} className="inline-flex text-sm font-medium text-brand hover:underline">
+                  Go to setup →
+                </Link>
+              </div>
+            )}
           </div>
 
           <div

@@ -1759,20 +1759,23 @@ export const promoteLeadToStudent = async (
       },
     });
 
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/student-login`;
-    sendCampaignEmail({
-      to: lead.email,
-      subject: 'Your ApplyUniNow student account',
-      html: `
-        <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:20px;">
-          <h2>Welcome, ${lead.fullName}</h2>
-          <p>Your student account has been created. Log in at <a href="${loginUrl}">${loginUrl}</a></p>
-          <p><strong>Email:</strong> ${lead.email}</p>
-          <p><strong>Temporary password:</strong> ${tempPassword}</p>
-          <p>You will be asked to set a new password on first login.</p>
-        </div>
-      `,
-    }).catch((err) => console.error('[Student welcome email]', err));
+    // Only send welcome email if we just created the user (tempPassword set).
+    if (tempPassword) {
+      const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/student-login`;
+      sendCampaignEmail({
+        to: lead.email,
+        subject: 'Your ApplyUniNow student account',
+        html: `
+          <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:20px;">
+            <h2>Welcome, ${lead.fullName}</h2>
+            <p>Your student account has been created. Log in at <a href="${loginUrl}">${loginUrl}</a></p>
+            <p><strong>Email:</strong> ${lead.email}</p>
+            <p><strong>Temporary password:</strong> ${tempPassword}</p>
+            <p>You will be asked to set a new password on first login.</p>
+          </div>
+        `,
+      }).catch((err) => console.error('[Student welcome email]', err));
+    }
   } else if (!user.tenantId) {
     const tenantId = await getDefaultTenantId(assignedToId ?? actingUserId ?? null);
     if (tenantId) {
@@ -1825,8 +1828,8 @@ export const promoteLeadToStudent = async (
     universityRecord = await pickUniversityForCountry(countryRow.id, opts.university || lead.preferredCourse);
   }
 
-  const universityName = opts.university || universityRecord?.name || lead.preferredCourse || 'TBD';
-  const course = opts.course || lead.preferredCourse || 'General';
+  const universityName = opts.university || universityRecord?.name || lead.preferredCourse || 'Undecided';
+  const course = opts.course || lead.preferredCourse || 'Undecided';
 
   let application = await prisma.application.findFirst({
     where: { studentId: student.id },
@@ -1884,9 +1887,7 @@ export const promoteLeadToStudent = async (
     const { linkReferralsForConvertedLead } = await import(
       '../agency-crm/agency-referral.service.js'
     );
-    if (application?.id) {
-      await linkReferralsForConvertedLead(leadId, student.id, application.id);
-    }
+    await linkReferralsForConvertedLead(leadId, student.id, application?.id);
   } catch (err) {
     console.warn('[Agency CRM] referral link failed:', (err as Error)?.message);
   }

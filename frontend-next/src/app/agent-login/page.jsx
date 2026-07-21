@@ -1,5 +1,5 @@
-import AgentLogin from '@/features/agency-crm/pages/AgentLogin';
+import { redirect } from 'next/navigation';
 
 export default function AgentLoginPage() {
-  return <AgentLogin />;
+  redirect('/login');
 }

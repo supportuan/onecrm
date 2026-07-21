@@ -2,11 +2,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const MenuItem = ({ icon: Icon, label, path, onClick, nested = false, children }) => {
+const MenuItem = ({ icon: Icon, label, path, onClick, nested = false, exact = false, children }) => {
   const pathname = usePathname() || '';
-  const active = path ? pathname.startsWith(path) : false;
+  const active = path
+    ? pathname === path || (!exact && pathname.startsWith(`${path}/`))
+    : false;
 
-  const baseClasses = `flex items-center gap-2.5 rounded-[var(--ui-radius)] py-1.5 text-[13px] transition ${
+  const baseClasses = `flex items-center gap-2.5 rounded-[var(--ui-radius)] py-1.5 text-[13px] transition-all duration-200 ease-out hover:translate-x-0.5 active:scale-[0.99] ${
     nested ? 'pl-8 pr-3' : 'px-3'
   } ${
     active

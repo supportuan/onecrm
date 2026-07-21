@@ -220,7 +220,7 @@ export default function CommissionManagement() {
             </h1>
             <p className="text-sm text-neutral-500 mt-1">
               {isAgent
-                ? 'Track your earnings and statement totals.'
+                ? 'Track your earnings and statement totals. Payouts are processed by UniNow staff.'
                 : 'Verify commissions, build payout batches, and manage rules.'}
             </p>
           </div>
@@ -235,6 +235,22 @@ export default function CommissionManagement() {
             </button>
           )}
         </div>
+
+        {isAgent && (
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+            <p className="font-medium text-neutral-900">View only</p>
+            <p className="mt-1 text-neutral-600">
+              You can review commission status and amounts here. Approvals and payouts are handled by UniNow —
+              contact your coordinator if something looks wrong.
+            </p>
+            <ol className="mt-3 list-decimal pl-5 space-y-1 text-neutral-600 text-xs">
+              <li>Earned when a referred student reaches <strong>Enrolled</strong> (or visa-approved, if configured).</li>
+              <li><strong>Pending</strong> — waiting for staff verification.</li>
+              <li><strong>Approved</strong> — queued for payout.</li>
+              <li><strong>Paid</strong> — included in a completed payout batch.</li>
+            </ol>
+          </div>
+        )}
 
         {msg && <p className="text-sm text-neutral-700">{msg}</p>}
 
@@ -345,6 +361,11 @@ export default function CommissionManagement() {
             <div className="p-12 text-center text-neutral-500">
               <Percent className="w-10 h-10 mx-auto mb-3 opacity-40" />
               <p>No commissions yet.</p>
+              {isAgent && (
+                <p className="text-xs mt-1 max-w-sm mx-auto">
+                  Commissions appear when a referred student reaches Enrolled (then Pending → Approved → Paid).
+                </p>
+              )}
             </div>
           ) : (
             <table className="w-full text-sm">
