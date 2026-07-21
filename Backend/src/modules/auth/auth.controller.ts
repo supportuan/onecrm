@@ -51,6 +51,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         const { user, accessToken, refreshToken, isFirstLogin, mustChangePassword, showPolicyModal } =
             await authService.login(data.email, data.password, data.type);
         const enabledModules = await resolveEnabledModules(user.role, user.tenantId ?? null);
+        const { countPendingAcknowledgements } = await import('../resources/resources.service.js');
+        const pendingResourceAcknowledgements = await countPendingAcknowledgements({
+            userId: user.id,
+            role: user.role as any,
+            tenantId: user.tenantId ?? null,
+        });
+
         const { resolveFileRef } = await import('../../lib/file-storage.js');
         const profilePhotoUrl = (await resolveFileRef(user.profilePhotoUrl)) || null;
 
@@ -69,6 +76,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
                 policyAcceptedAt: user.policyAcceptedAt ?? null,
                 showPolicyModal,
                 profilePhotoUrl,
+                pendingResourceAcknowledgements,
             },
             accessToken,
             refreshToken,
@@ -126,7 +134,8 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
             return sendError(res, 'Unauthorized', null, 401);
         }
 
-        const user = await authService.getUserProfile(req.user.id);
+        const authenticatedUser = req.user;
+        const user = await authService.getUserProfile(authenticatedUser.id);
 
         if (!user) {
             return sendError(res, 'User not found', null, 404);
@@ -136,19 +145,31 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
 
         try {
             enabledModules = await resolveEnabledModules(
-                req.user.role,
-                req.user.tenantId ?? user.tenantId ?? null
+                authenticatedUser.role,
+                authenticatedUser.tenantId ?? user.tenantId ?? null
             );
         } catch (moduleError) {
             console.error('Failed to resolve enabled modules:', moduleError);
             enabledModules =
-                req.user.role === 'SUPER_ADMIN' ? allModuleKeys() : [];
+                authenticatedUser.role === 'SUPER_ADMIN' ? allModuleKeys() : [];
         }
 
         return sendSuccess(res, 'Authenticated user retrieved successfully', {
             ...user,
-            tenantId: req.user.tenantId ?? user.tenantId ?? null,
+            tenantId: authenticatedUser.tenantId ?? user.tenantId ?? null,
             enabledModules,
+            pendingResourceAcknowledgements: await (async () => {
+                try {
+                    const { countPendingAcknowledgements } = await import('../resources/resources.service.js');
+                    return await countPendingAcknowledgements({
+                        userId: authenticatedUser.id,
+                        role: authenticatedUser.role as any,
+                        tenantId: authenticatedUser.tenantId ?? user.tenantId ?? null,
+                    });
+                } catch {
+                    return 0;
+                }
+            })(),
         });
     } catch (error) {
         next(error);
@@ -222,18 +243,45 @@ export const acceptPolicy = async (req: Request, res: Response, next: NextFuncti
 //     console.info(`Password reset link for ${email}: ${resetUrl}`);
 // };
 
-export const sendResetEmail = async (email: string, token: string) => {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+const resolveFrontendBaseUrl = (req?: Request): string => {
+    const fromEnv = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+    if (fromEnv) return fromEnv;
+
+    const origin = typeof req?.headers?.origin === 'string' ? req.headers.origin.trim() : '';
+    if (origin && /^https?:\/\//i.test(origin) && !/localhost|127\.0\.0\.1/i.test(origin)) {
+        return origin.replace(/\/$/, '');
+    }
+
+    const referer = typeof req?.headers?.referer === 'string' ? req.headers.referer.trim() : '';
+    if (referer) {
+        try {
+            const u = new URL(referer);
+            if (u.protocol === 'http:' || u.protocol === 'https:') {
+                if (!/localhost|127\.0\.0\.1/i.test(u.hostname)) {
+                    return `${u.protocol}//${u.host}`;
+                }
+            }
+        } catch {
+            /* ignore bad referer */
+        }
+    }
+
+    return 'http://localhost:3000';
+};
+
+export const sendResetEmail = async (email: string, token: string, req?: Request) => {
+    const frontendUrl = resolveFrontendBaseUrl(req);
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
-    console.log("resetUrl", resetUrl);
+    console.info(`Password reset email queued for recipient`);
+    // Do not log the reset URL/token — that enables account takeover from logs.
 
     const transporter = createEmailTransporter();
 
     await transporter.sendMail({
         from: getEmailFrom(),
         to: email,
-        subject: "Reset your One CRM password",
+        subject: "Reset your ApplyUniNow password",
         //     html: `
         //   <div style="font-family: Arial, sans-serif;">
         //     <h2>Password Reset</h2>
@@ -274,7 +322,7 @@ export const sendResetEmail = async (email: string, token: string) => {
                             <td width="70" valign="middle">
                             <img
                                 src="https://your-domain.com/logo.png"
-                                alt="OneCRM"
+                                alt="ApplyUniNow"
                                 width="52"
                                 height="52"
                                 style="display:block;border-radius:8px;"
@@ -283,7 +331,7 @@ export const sendResetEmail = async (email: string, token: string) => {
 
                             <td valign="middle">
                             <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">
-                                ONECRM
+                                ApplyUniNow
                             </h1>
 
                             <p style="margin:6px 0 0;color:#cbd5e1;font-size:14px;">
@@ -306,7 +354,7 @@ export const sendResetEmail = async (email: string, token: string) => {
 
                         <p style="margin-top:20px;font-size:15px;line-height:1.8;color:#475569;">
                         We received a request to reset the password for your
-                        <strong>OneCRM</strong> account.
+                        <strong>ApplyUniNow</strong> account.
                         </p>
 
                         <div style="
@@ -379,7 +427,7 @@ export const sendResetEmail = async (email: string, token: string) => {
 
                         <p style="margin-top:35px;font-size:15px;color:#111827;">
                         Regards,<br/>
-                        <strong>OneCRM Team</strong>
+                        <strong>ApplyUniNow Team</strong>
                         </p>
 
                     </td>
@@ -394,7 +442,7 @@ export const sendResetEmail = async (email: string, token: string) => {
                         </p>
 
                         <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
-                        © ${new Date().getFullYear()} OneCRM. All rights reserved.
+                        © ${new Date().getFullYear()} ApplyUniNow. All rights reserved.
                         </p>
 
                     </td>
@@ -419,8 +467,11 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
         const data = forgotPasswordSchema.parse(req.body);
         const token = createResetToken();
         const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
-        await authService.createPasswordResetToken(data.email, token, expiresAt);
-        await sendResetEmail(data.email, token);
+        const created = await authService.createPasswordResetToken(data.email, token, expiresAt);
+        if (created) {
+            await sendResetEmail(data.email, token, req);
+        }
+        // Always the same response — do not reveal whether the email exists.
         return sendSuccess(res, 'Password reset instructions sent if the email exists', null);
     } catch (error) {
         next(error);

@@ -11,6 +11,7 @@ import {
   getStatistics,
   updatePartnerStatus,
   advanceOnboarding,
+  approvePartnerLogin,
   listPartnerDocuments,
   verifyPartnerDocument,
 } from '@/services/agencyCrmApi';
@@ -49,9 +50,12 @@ export default function AgencyManagement() {
   const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [showNew, setShowNew] = useState(false);
+  const [activePanel, setActivePanel] = useState('details');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
   const [docs, setDocs] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [docsError, setDocsError] = useState('');
   const [caps, setCaps] = useState({
     canPayFees: false,
     canMessageUniversity: false,
@@ -114,11 +118,19 @@ export default function AgencyManagement() {
       canViewCommission: c.canViewCommission !== false,
     });
     if (canManage && selected.id) {
+      setDocsLoading(true);
+      setDocsError('');
       listPartnerDocuments(selected.id)
         .then((r) => setDocs(r?.data || []))
-        .catch(() => setDocs([]));
+        .catch((error) => {
+          setDocs([]);
+          setDocsError(error?.message || 'Unable to load submitted documents');
+        })
+        .finally(() => setDocsLoading(false));
     } else {
       setDocs([]);
+      setDocsError('');
+      setDocsLoading(false);
     }
   }, [selected, canManage]);
 
@@ -128,7 +140,7 @@ export default function AgencyManagement() {
         <div className="ui-panel p-6 space-y-3">
           <h1 className="ui-text-h2">Partner operations</h1>
           <p className="ui-text-body">
-            Agency Management is an administrator screen. Use the Agent Portal for your profile,
+            Agency Management is an administrator screen. Use the Agent Hub for your profile,
             students, and commissions.
           </p>
           <a href="/agency-crm/onboarding" className="ui-btn-primary inline-flex">
@@ -154,7 +166,6 @@ export default function AgencyManagement() {
         country: form.country,
         services: form.services,
         commissionRate: Number(form.commissionRate),
-        status: form.status,
         notes: form.notes,
       });
       flash('Agency updated');
@@ -184,11 +195,34 @@ export default function AgencyManagement() {
       });
       setShowNew(false);
       setForm(emptyForm());
-      setSelectedId(res?.data?.id);
-      flash('Agency partner created');
+      flash('Agency created. Configure permissions and onboarding separately.');
       await load();
+      setSelectedId(res?.data?.id);
+      setActivePanel('access');
     } catch (e) {
       flash(e?.message || 'Create failed');
+    }
+  };
+
+  const changeStatus = async (status, successMessage) => {
+    if (!selectedId) return;
+    try {
+      await updatePartnerStatus(selectedId, status);
+      flash(successMessage);
+      await load();
+    } catch (e) {
+      flash(e?.message || 'Status update failed');
+    }
+  };
+
+  const changeOnboardingStage = async (stage, successMessage) => {
+    if (!selectedId) return;
+    try {
+      await advanceOnboarding(selectedId, stage);
+      flash(successMessage);
+      await load();
+    } catch (e) {
+      flash(e?.message || 'Onboarding update failed');
     }
   };
 
@@ -209,6 +243,7 @@ export default function AgencyManagement() {
               type="button"
               onClick={() => {
                 setShowNew(true);
+                setActivePanel('details');
                 setForm(emptyForm());
               }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm rounded-lg"
@@ -220,6 +255,40 @@ export default function AgencyManagement() {
         </div>
 
         {msg && <p className="text-sm text-neutral-700">{msg}</p>}
+
+        {canManage && !isFreelancer && (() => {
+          const awaiting = partners.filter((p) => {
+            const stage = p.onboardingStage;
+            return (
+              stage === 'DOCS_SUBMITTED' ||
+              stage === 'AGREEMENT_SIGNED' ||
+              stage === 'VERIFIED' ||
+              stage === 'APPROVED'
+            ) && stage !== 'ACTIVE' && p.status !== 'ACTIVE';
+          });
+          if (!awaiting.length) return null;
+          return (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              <p className="font-medium">Partners awaiting onboarding action ({awaiting.length})</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {awaiting.slice(0, 8).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="text-xs px-2.5 py-1 rounded-lg border border-amber-300 bg-white hover:bg-amber-50"
+                    onClick={() => {
+                      setSelectedId(p.id);
+                      setShowNew(false);
+                      setActivePanel('access');
+                    }}
+                  >
+                    {p.agencyName}
+                  </button>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
 
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -237,7 +306,7 @@ export default function AgencyManagement() {
           </div>
         )}
 
-        <div className={`grid gap-6 ${isFreelancer ? '' : 'lg:grid-cols-[280px_1fr]'}`}>
+        <div className={`grid gap-5 ${isFreelancer ? '' : 'lg:grid-cols-[240px_minmax(0,1fr)]'}`}>
           {!isFreelancer && (
             <div className="ui-panel p-4 space-y-3">
               <div className="relative">
@@ -264,14 +333,21 @@ export default function AgencyManagement() {
                     }`}
                   >
                     <div className="font-medium text-brand">{p.agencyName}</div>
-                    <div className="text-xs text-neutral-500">{p.agencyCode}</div>
+                    <div className="text-xs text-neutral-500">
+                      {p.agencyCode} · {ONBOARDING_STAGE_LABELS[p.onboardingStage] || p.onboardingStage}
+                    </div>
+                    {(p._count?.documents || 0) > 0 && (
+                      <div className="mt-1 text-[11px] font-medium text-amber-700">
+                        {p._count.documents} submitted document{p._count.documents === 1 ? '' : 's'}
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="ui-panel p-6">
+          <div className="ui-panel min-w-0 p-4 sm:p-5">
             {!selected && !showNew && (
               <div className="text-center py-12 text-neutral-500">
                 <Building2 className="w-10 h-10 mx-auto mb-3 opacity-40" />
@@ -288,7 +364,7 @@ export default function AgencyManagement() {
 
             {(selected || showNew) && (
               <form onSubmit={showNew ? addPartner : savePartner} className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <Users className="w-5 h-5 text-neutral-500" />
                   <h2 className="text-lg font-medium text-brand">
                     {showNew ? 'New agency partner' : selected.agencyName}
@@ -300,9 +376,47 @@ export default function AgencyManagement() {
                   )}
                 </div>
 
+                {!showNew && canManage && !isFreelancer && (
+                  <div className="flex flex-wrap gap-2 border-b border-neutral-200 pb-3">
+                    <button
+                      type="button"
+                      onClick={() => setActivePanel('details')}
+                      className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                        activePanel === 'details'
+                          ? 'bg-brand text-white'
+                          : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
+                      }`}
+                    >
+                      Agency details
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePanel('access')}
+                      className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                        activePanel === 'access'
+                          ? 'bg-brand text-white'
+                          : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100'
+                      }`}
+                    >
+                      Onboarding &amp; documents
+                      {(selected?._count?.documents || docs.length) > 0 &&
+                        ` (${selected?._count?.documents || docs.length} docs)`}
+                    </button>
+                  </div>
+                )}
+
+                {(showNew || activePanel === 'details') && (
+                  <>
+                {showNew && (
+                  <p className="text-xs text-neutral-500">
+                    Fields marked <span className="font-semibold text-red-600">*</span> are required.
+                    Permissions are configured after the agency is created.
+                  </p>
+                )}
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <label className="block space-y-1">
-                    <span className="text-xs text-neutral-500">Agency name</span>
+                    <span className="text-xs text-neutral-500">Agency name <span className="text-red-600">*</span></span>
                     <input className={INPUT} required value={form.agencyName} onChange={(e) => setForm({ ...form, agencyName: e.target.value })} disabled={!canManage || isFreelancer} />
                   </label>
                   <label className="block space-y-1">
@@ -312,16 +426,16 @@ export default function AgencyManagement() {
                   {showNew && (
                     <>
                       <label className="block space-y-1">
-                        <span className="text-xs text-neutral-500">Contact full name</span>
+                        <span className="text-xs text-neutral-500">Contact full name <span className="text-red-600">*</span></span>
                         <input className={INPUT} required value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
                       </label>
                       <label className="block space-y-1">
-                        <span className="text-xs text-neutral-500">Login email</span>
+                        <span className="text-xs text-neutral-500">Login email <span className="text-red-600">*</span></span>
                         <input type="email" className={INPUT} required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                       </label>
                       <label className="block space-y-1">
-                        <span className="text-xs text-neutral-500">Initial password</span>
-                        <input className={INPUT} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                        <span className="text-xs text-neutral-500">Initial password <span className="text-red-600">*</span></span>
+                        <input type="password" className={INPUT} required minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                       </label>
                     </>
                   )}
@@ -345,16 +459,6 @@ export default function AgencyManagement() {
                     <span className="text-xs text-neutral-500">Commission rate (%)</span>
                     <input type="number" step="0.1" className={INPUT} value={form.commissionRate} onChange={(e) => setForm({ ...form, commissionRate: e.target.value })} disabled={!canManage || isFreelancer} />
                   </label>
-                  {!isFreelancer && (
-                    <label className="block space-y-1">
-                      <span className="text-xs text-neutral-500">Status</span>
-                      <select className={INPUT} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} disabled={!canManage}>
-                        {Object.entries(PARTNER_STATUS_LABELS).map(([k, v]) => (
-                          <option key={k} value={k}>{v}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
                 </div>
 
                 <label className="block space-y-1">
@@ -367,84 +471,163 @@ export default function AgencyManagement() {
                     placeholder="e.g. Study abroad, visa support"
                   />
                 </label>
+                  </>
+                )}
 
-                {!showNew && canManage && !isFreelancer && selectedId && (
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
-                    {['VERIFIED', 'APPROVED', 'ACTIVE', 'INACTIVE', 'BLACKLISTED'].map((st) => (
-                      <button
-                        key={st}
-                        type="button"
-                        className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
-                        onClick={async () => {
-                          await updatePartnerStatus(selectedId, st);
-                          flash(`Status → ${st}`);
-                          await load();
-                        }}
-                      >
-                        Mark {PARTNER_STATUS_LABELS[st]}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
-                      onClick={async () => {
-                        await advanceOnboarding(selectedId, 'VERIFIED');
-                        flash('Onboarding verified');
-                        await load();
-                      }}
+                {!showNew && activePanel === 'access' && canManage && !isFreelancer && selectedId && selected && (
+                  <div className="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3">
+                    <p className="text-sm font-semibold text-neutral-800">Partner lifecycle</p>
+                    <p className="text-xs text-neutral-500">
+                      Approve login → partner uploads documents and signs the agreement → staff verifies, approves, and activates.
+                    </p>
+                    <div
+                      className={`rounded-lg border px-3 py-2 text-sm ${
+                        docs.length
+                          ? 'border-amber-200 bg-amber-50 text-amber-950'
+                          : 'border-neutral-200 bg-neutral-50 text-neutral-600'
+                      }`}
                     >
-                      Verify onboarding
-                    </button>
-                    <button
-                      type="button"
-                      className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
-                      onClick={async () => {
-                        await advanceOnboarding(selectedId, 'APPROVED');
-                        flash('Partner approved');
-                        await load();
-                      }}
-                    >
-                      Approve partner
-                    </button>
-                    <button
-                      type="button"
-                      className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
-                      onClick={async () => {
-                        await advanceOnboarding(selectedId, 'ACTIVE');
-                        flash('Partner activated');
-                        await load();
-                      }}
-                    >
-                      Activate
-                    </button>
+                      {docsLoading
+                        ? 'Loading submitted documents…'
+                        : docsError
+                          ? docsError
+                          : docs.length
+                            ? `${docs.length} submitted document${docs.length === 1 ? '' : 's'} awaiting review below.`
+                            : 'No documents have been uploaded by this partner.'}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 xl:grid-cols-6">
+                      {ONBOARDING_STAGE_ORDER.map((s) => (
+                        <span
+                          key={s}
+                          className={`truncate rounded-md px-2 py-1 text-center text-[10px] ${
+                            s === selected.onboardingStage
+                              ? 'bg-brand text-white'
+                              : 'bg-white border border-neutral-200 text-neutral-500'
+                          }`}
+                        >
+                          {ONBOARDING_STAGE_LABELS[s]}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {!selected.user?.isApproved ? (
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
+                          onClick={async () => {
+                            try {
+                              await approvePartnerLogin(selectedId);
+                              flash('Portal login approved — partner can complete setup');
+                              await load();
+                            } catch (e) {
+                              flash(e?.message || 'Approve login failed');
+                            }
+                          }}
+                        >
+                          1. Allow portal login
+                        </button>
+                      ) : (
+                        <span className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Portal login allowed
+                        </span>
+                      )}
+                      {selected.onboardingStage === 'AGREEMENT_SIGNED' && (
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 text-xs rounded-lg bg-brand text-white hover:opacity-90"
+                          onClick={() =>
+                            changeOnboardingStage(
+                              'VERIFIED',
+                              'Partner documents and agreement verified'
+                            )
+                          }
+                        >
+                          2. Verify partner
+                        </button>
+                      )}
+                      {selected.onboardingStage === 'VERIFIED' && (
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 text-xs rounded-lg bg-brand text-white hover:opacity-90"
+                          onClick={() =>
+                            changeOnboardingStage('APPROVED', 'Partner approved')
+                          }
+                        >
+                          3. Approve partner
+                        </button>
+                      )}
+                      {selected.onboardingStage === 'APPROVED' && (
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 text-xs rounded-lg bg-brand text-white hover:opacity-90"
+                          onClick={() =>
+                            changeOnboardingStage(
+                              'ACTIVE',
+                              'Partner activated — referral sharing unlocked'
+                            )
+                          }
+                        >
+                          4. Activate partner
+                        </button>
+                      )}
+                      {selected.onboardingStage === 'ACTIVE' && (
+                        <span className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          {selected.status === 'ACTIVE'
+                            ? 'Active — referrals enabled'
+                            : `${PARTNER_STATUS_LABELS[selected.status] || selected.status} — referrals disabled`}
+                        </span>
+                      )}
+                      {!['SUSPENDED', 'INACTIVE', 'BLACKLISTED'].includes(selected.status) ? (
+                        <>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                            onClick={() => changeStatus('SUSPENDED', 'Partner suspended')}
+                          >
+                            Suspend
+                          </button>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                            onClick={() => changeStatus('INACTIVE', 'Partner marked inactive')}
+                          >
+                            Mark inactive
+                          </button>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 text-xs rounded-lg border border-red-200 text-red-700 hover:bg-red-50"
+                            onClick={() => changeStatus('BLACKLISTED', 'Partner blacklisted')}
+                          >
+                            Blacklist
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 text-xs rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
+                          onClick={() => {
+                            const restoredStatus =
+                              selected.onboardingStage === 'ACTIVE'
+                                ? 'ACTIVE'
+                                : selected.onboardingStage === 'APPROVED'
+                                  ? 'APPROVED'
+                                  : selected.onboardingStage === 'VERIFIED'
+                                    ? 'VERIFIED'
+                                    : 'PENDING';
+                            return changeStatus(restoredStatus, 'Partner access restored');
+                          }}
+                        >
+                          Restore access
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {canManage && !isFreelancer && !showNew && selected && (
-                  <div className="space-y-4 rounded-lg border border-neutral-200 p-4 bg-neutral-50/50">
-                    <div>
-                      <p className="text-xs font-semibold text-neutral-700 mb-1">Onboarding stage</p>
-                      <p className="text-sm text-neutral-800">
-                        {ONBOARDING_STAGE_LABELS[selected.onboardingStage] || selected.onboardingStage}
-                      </p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {ONBOARDING_STAGE_ORDER.map((s) => (
-                          <span
-                            key={s}
-                            className={`text-[10px] px-2 py-0.5 rounded-full ${
-                              s === selected.onboardingStage
-                                ? 'bg-brand text-white'
-                                : 'bg-white border border-neutral-200 text-neutral-500'
-                            }`}
-                          >
-                            {ONBOARDING_STAGE_LABELS[s]}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold text-neutral-700 mb-2">Capabilities</p>
+                {canManage && !isFreelancer && !showNew && activePanel === 'access' && selected && (
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <div className="order-2 rounded-lg border border-neutral-200 bg-neutral-50/60 p-4 xl:order-2">
+                      <p className="text-xs font-semibold text-neutral-700 mb-2">Agency permissions</p>
                       <div className="grid sm:grid-cols-2 gap-2 text-sm">
                         {[
                           ['canPayFees', 'Can pay student fees'],
@@ -466,30 +649,49 @@ export default function AgencyManagement() {
                         type="button"
                         className="mt-2 text-xs px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
                         onClick={async () => {
-                          await updatePartner(selectedId, { capabilities: caps });
-                          flash('Capabilities saved');
-                          await load();
+                          try {
+                            const response = await updatePartner(selectedId, { capabilities: caps });
+                            if (response?.data) {
+                              setPartners((current) =>
+                                current.map((partner) =>
+                                  partner.id === selectedId ? response.data : partner
+                                )
+                              );
+                            }
+                            flash('Permissions updated');
+                          } catch (e) {
+                            flash(e?.message || 'Permission update failed');
+                          }
                         }}
                       >
-                        Save capabilities
+                        Save permissions
                       </button>
                     </div>
 
-                    <div>
-                      <p className="text-xs font-semibold text-neutral-700 mb-2">Partner documents</p>
-                      {!docs.length ? (
+                    <div className="order-1 rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+                      <p className="text-sm font-semibold text-neutral-800 mb-1">
+                        Submitted documents ({docs.length})
+                      </p>
+                      <p className="mb-2 text-xs text-neutral-500">
+                        Open each file, then verify or reject it before verifying the partner.
+                      </p>
+                      {docsLoading ? (
+                        <p className="text-xs text-neutral-500">Loading submitted documents…</p>
+                      ) : docsError ? (
+                        <p className="text-xs text-red-700">{docsError}</p>
+                      ) : !docs.length ? (
                         <p className="text-xs text-neutral-500">No documents uploaded.</p>
                       ) : (
                         <ul className="space-y-2">
                           {docs.map((d) => (
-                            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 text-sm bg-white border border-neutral-200 rounded-lg px-3 py-2">
-                              <div>
+                            <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm">
+                              <div className="min-w-0">
                                 <p className="font-medium">{d.fileName}</p>
                                 <p className="text-xs text-neutral-500">
                                   {d.type} · v{d.version} · {d.verificationStatus || 'PENDING'}
                                 </p>
                               </div>
-                              <div className="flex gap-1">
+                              <div className="flex shrink-0 items-center gap-2">
                                 {d.fileUrl && (
                                   <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-brand underline">
                                     View
@@ -500,9 +702,13 @@ export default function AgencyManagement() {
                                     type="button"
                                     className="text-xs px-2 py-1 border rounded"
                                     onClick={async () => {
-                                      await verifyPartnerDocument(selectedId, d.id, { verificationStatus: 'VERIFIED' });
-                                      setDocs((await listPartnerDocuments(selectedId))?.data || []);
-                                      flash('Document verified');
+                                      try {
+                                        await verifyPartnerDocument(selectedId, d.id, { verificationStatus: 'VERIFIED' });
+                                        setDocs((await listPartnerDocuments(selectedId))?.data || []);
+                                        flash('Document verified');
+                                      } catch (error) {
+                                        flash(error?.message || 'Document verification failed');
+                                      }
                                     }}
                                   >
                                     Verify
@@ -513,9 +719,13 @@ export default function AgencyManagement() {
                                     type="button"
                                     className="text-xs px-2 py-1 border rounded text-red-600"
                                     onClick={async () => {
-                                      await verifyPartnerDocument(selectedId, d.id, { verificationStatus: 'REJECTED' });
-                                      setDocs((await listPartnerDocuments(selectedId))?.data || []);
-                                      flash('Document rejected');
+                                      try {
+                                        await verifyPartnerDocument(selectedId, d.id, { verificationStatus: 'REJECTED' });
+                                        setDocs((await listPartnerDocuments(selectedId))?.data || []);
+                                        flash('Document rejected');
+                                      } catch (error) {
+                                        flash(error?.message || 'Document rejection failed');
+                                      }
                                     }}
                                   >
                                     Reject
@@ -530,6 +740,8 @@ export default function AgencyManagement() {
                   </div>
                 )}
 
+                {(showNew || activePanel === 'details') && (
+                  <>
                 <label className="block space-y-1">
                   <span className="text-xs text-neutral-500">Notes</span>
                   <textarea className={`${INPUT} min-h-[80px]`} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} disabled={!canManage || isFreelancer} />
@@ -547,6 +759,8 @@ export default function AgencyManagement() {
                       </button>
                     )}
                   </div>
+                )}
+                  </>
                 )}
               </form>
             )}

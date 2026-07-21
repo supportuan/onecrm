@@ -5,6 +5,7 @@ import { uploadExcel, uploadMedia } from '../../../middleware/upload.middleware.
 import leadActivityRoutes from './lead-activity.routes.js';
 import leadReplyRoutes from './lead-reply.routes.js';
 import { authenticateToken } from '../../../middleware/authenticate.js';
+import { tenantContextMiddleware } from '../../../middleware/tenant-context.js';
 import { authorizeRole, authorizePermission } from '../../../middleware/authorize.js';
 import { updateLeadStatusController } from "../controllers/marketing.controller.js";
 import * as marketingController from "../controllers/marketing.controller.js";
@@ -14,6 +15,9 @@ const router = Router();
 
 router.post(
   '/leads/bulk-upload',
+  authenticateToken,
+  tenantContextMiddleware,
+  authorizePermission('Marketing', 'Lead Management', 'EDIT'),
   uploadExcel.single('file'),
   controller.bulkUploadLeads
 );
@@ -28,7 +32,7 @@ router.post(
  * /api/marketing/public/website-leads:
  *   post:
  *     summary: Create a website lead
- *     description: Public API used by the ApplyUniNow website to create leads in OneCRM.
+ *     description: Public API used by the ApplyUniNow website to create leads.
  *     tags: [Marketing]
  *     security: []
  *     requestBody:
@@ -90,6 +94,11 @@ router.post(
   marketingController.createWebsiteLead
 );
 
+router.post('/landing-pages/:slug/submit', controller.submitLandingPageForm);
+
+// Every non-public marketing route is authenticated and executes inside the
+// request tenant context. Route-level permission checks below remain in place.
+router.use(authenticateToken, tenantContextMiddleware);
 
 router.post(
   '/social-media/upload-media',
@@ -162,7 +171,7 @@ router.use('/', leadActivityRoutes);
  *                 data:
  *                   type: object
  */
-router.get('/dashboard', controller.getDashboard);
+router.get('/dashboard', authenticateToken, controller.getDashboard);
 
 /**
  * @swagger
@@ -174,7 +183,7 @@ router.get('/dashboard', controller.getDashboard);
  *       200:
  *         description: Successfully retrieved lead trends
  */
-router.get('/intake-trends', controller.getIntakeTrends);
+router.get('/intake-trends', authenticateToken, controller.getIntakeTrends);
 
 /**
  * @swagger
@@ -186,7 +195,7 @@ router.get('/intake-trends', controller.getIntakeTrends);
  *       200:
  *         description: Successfully retrieved funnel analytics
  */
-router.get('/funnels', controller.getFunnels);
+router.get('/funnels', authenticateToken, controller.getFunnels);
 
 /**
  * @swagger
@@ -198,7 +207,7 @@ router.get('/funnels', controller.getFunnels);
  *       200:
  *         description: Successfully generated marketing reports
  */
-router.get('/analytics', controller.getAnalytics);
+router.get('/analytics', authenticateToken, controller.getAnalytics);
 
 // ==========================================
 // 2. Leads Management
@@ -220,7 +229,7 @@ router.get('/analytics', controller.getAnalytics);
  *         name: status
  *         schema:
  *           type: string
- *           enum: [NEW, CONTACTED, QUALIFIED, PROPOSED, CONVERTED, LOST]
+ *           enum: [NEW, CONTACTED, NOT_CONTACTED, CALLBACK, FOLLOW_UP, QUALIFIED, PROPOSED, CONVERTED, LOST]
  *         description: Filter leads by status
  *       - in: query
  *         name: sourceId
@@ -253,7 +262,7 @@ router.get('/leads', authenticateToken, authorizePermission('Marketing', 'Lead M
  *       200:
  *         description: Successfully retrieved lead sources
  */
-router.get('/sources', controller.getSources);
+router.get('/sources', authenticateToken, controller.getSources);
 
 /**
  * @swagger
@@ -307,7 +316,7 @@ router.get('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Le
  *                 type: integer
  *               status:
  *                 type: string
- *                 enum: [NEW, CONTACTED, QUALIFIED, PROPOSED, CONVERTED, LOST]
+ *                 enum: [NEW, CONTACTED, NOT_CONTACTED, CALLBACK, FOLLOW_UP, QUALIFIED, PROPOSED, CONVERTED, LOST]
  *     responses:
  *       201:
  *         description: Lead successfully created
@@ -379,7 +388,12 @@ router.patch('/leads/:leadId/assign-counsellor', authenticateToken, authorizePer
  *       200:
  *         description: Successfully retrieved lead activities
  */
-router.get('/leads/:id/activities', controller.getLeadActivities);
+router.get(
+  '/leads/:id/activities',
+  authenticateToken,
+  authorizePermission('Marketing', 'Lead Management', 'VIEW'),
+  controller.getLeadActivities
+);
 
 /**
  * @swagger
@@ -413,7 +427,12 @@ router.get('/leads/:id/activities', controller.getLeadActivities);
  *       201:
  *         description: Activity successfully logged
  */
-router.post('/leads/:id/activities', controller.createLeadActivity);
+router.post(
+  '/leads/:id/activities',
+  authenticateToken,
+  authorizePermission('Marketing', 'Lead Management', 'EDIT'),
+  controller.createLeadActivity
+);
 
 // ==========================================
 // 3. Campaigns
@@ -583,7 +602,7 @@ router.delete('/campaigns/:id', authenticateToken, authorizePermission('Marketin
  *       200:
  *         description: Leads successfully associated with campaign
  */
-router.post('/campaigns/:id/leads', controller.addCampaignLeads);
+router.post('/campaigns/:id/leads', authenticateToken, authorizePermission('Marketing', 'Campaigns', 'EDIT'), controller.addCampaignLeads);
 
 /**
  * @swagger
@@ -654,7 +673,7 @@ router.post('/campaigns/:id/launch', authenticateToken, authorizePermission('Mar
  *       200:
  *         description: Successfully retrieved automation workflows
  */
-router.get('/automations', controller.getAutomations);
+router.get('/automations', authenticateToken, controller.getAutomations);
 
 /**
  * @swagger
@@ -666,7 +685,7 @@ router.get('/automations', controller.getAutomations);
  *       200:
  *         description: Successfully retrieved automation performance summary
  */
-router.get('/automations/summary', controller.getAutomationSummary);
+router.get('/automations/summary', authenticateToken, controller.getAutomationSummary);
 
 /**
  * @swagger
@@ -684,7 +703,7 @@ router.get('/automations/summary', controller.getAutomationSummary);
  *       200:
  *         description: Successfully retrieved automation workflow
  */
-router.get('/automations/:id', controller.getAutomationById);
+router.get('/automations/:id', authenticateToken, controller.getAutomationById);
 
 /**
  * @swagger
@@ -716,7 +735,7 @@ router.get('/automations/:id', controller.getAutomationById);
  *       201:
  *         description: Automation workflow successfully created
  */
-router.post('/automations', controller.createAutomation);
+router.post('/automations', authenticateToken, controller.createAutomation);
 
 /**
  * @swagger
@@ -740,7 +759,7 @@ router.post('/automations', controller.createAutomation);
  *       200:
  *         description: Automation workflow successfully updated
  */
-router.put('/automations/:id', controller.updateAutomation);
+router.put('/automations/:id', authenticateToken, controller.updateAutomation);
 
 /**
  * @swagger
@@ -758,7 +777,7 @@ router.put('/automations/:id', controller.updateAutomation);
  *       200:
  *         description: Automation workflow successfully soft-deleted
  */
-router.delete('/automations/:id', controller.deleteAutomation);
+router.delete('/automations/:id', authenticateToken, controller.deleteAutomation);
 
 // ==========================================
 // 5. Landing Pages
@@ -774,7 +793,7 @@ router.delete('/automations/:id', controller.deleteAutomation);
  *       200:
  *         description: Successfully retrieved forms summary
  */
-router.get('/forms/summary', controller.getFormsSummary);
+router.get('/forms/summary', authenticateToken, controller.getFormsSummary);
 
 /**
  * @swagger
@@ -786,7 +805,7 @@ router.get('/forms/summary', controller.getFormsSummary);
  *       200:
  *         description: Successfully retrieved landing pages
  */
-router.get('/landing-pages', controller.getLandingPages);
+router.get('/landing-pages', authenticateToken, controller.getLandingPages);
 
 /**
  * @swagger
@@ -804,7 +823,7 @@ router.get('/landing-pages', controller.getLandingPages);
  *       200:
  *         description: Successfully retrieved landing page details
  */
-router.get('/landing-pages/:id', controller.getLandingPageById);
+router.get('/landing-pages/:id', authenticateToken, controller.getLandingPageById);
 
 /**
  * @swagger
@@ -846,7 +865,7 @@ router.get('/landing-pages/:id', controller.getLandingPageById);
  *       201:
  *         description: Landing page successfully created
  */
-router.post('/landing-pages', controller.createLandingPage);
+router.post('/landing-pages', authenticateToken, controller.createLandingPage);
 
 /**
  * @swagger
@@ -870,7 +889,7 @@ router.post('/landing-pages', controller.createLandingPage);
  *       200:
  *         description: Landing page successfully updated
  */
-router.put('/landing-pages/:id', controller.updateLandingPage);
+router.put('/landing-pages/:id', authenticateToken, controller.updateLandingPage);
 
 /**
  * @swagger
@@ -888,7 +907,7 @@ router.put('/landing-pages/:id', controller.updateLandingPage);
  *       200:
  *         description: Landing page successfully soft-deleted
  */
-router.delete('/landing-pages/:id', controller.deleteLandingPage);
+router.delete('/landing-pages/:id', authenticateToken, controller.deleteLandingPage);
 
 /**
  * @swagger
@@ -941,8 +960,6 @@ router.delete('/landing-pages/:id', controller.deleteLandingPage);
  *       404:
  *         description: Landing page with specified slug not found
  */
-router.post('/landing-pages/:slug/submit', controller.submitLandingPageForm);
-
 // ==========================================
 // 6. Marketing Analytics Endpoints
 // ==========================================
@@ -1165,8 +1182,8 @@ router.get('/analytics/summary', controller.getAnalyticsSummary);
  *       201:
  *         description: Successfully upserted dashboard metric
  */
-router.post('/dashboard/metrics', controller.upsertDashboardMetric);
-router.patch('/leads/:id/status', authenticateToken, updateLeadStatusController);
+router.post('/dashboard/metrics', authenticateToken, controller.upsertDashboardMetric);
+router.patch('/leads/:id/status', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), updateLeadStatusController);
 /**
  * @swagger
  * /api/marketing/dashboard/metrics/{id}:
@@ -1189,7 +1206,7 @@ router.patch('/leads/:id/status', authenticateToken, updateLeadStatusController)
  *       200:
  *         description: Successfully updated dashboard metric
  */
-router.put('/dashboard/metrics/:id', controller.updateDashboardMetric);
+router.put('/dashboard/metrics/:id', authenticateToken, controller.updateDashboardMetric);
 
 /**
  * @swagger
@@ -1221,7 +1238,7 @@ router.put('/dashboard/metrics/:id', controller.updateDashboardMetric);
  *       201:
  *         description: Successfully upserted intake trend
  */
-router.post('/intake-trends', controller.upsertIntakeTrend);
+router.post('/intake-trends', authenticateToken, controller.upsertIntakeTrend);
 
 /**
  * @swagger
@@ -1245,7 +1262,7 @@ router.post('/intake-trends', controller.upsertIntakeTrend);
  *       200:
  *         description: Successfully updated intake trend
  */
-router.put('/intake-trends/:id', controller.updateIntakeTrend);
+router.put('/intake-trends/:id', authenticateToken, controller.updateIntakeTrend);
 
 /**
  * @swagger
@@ -1274,7 +1291,7 @@ router.put('/intake-trends/:id', controller.updateIntakeTrend);
  *       201:
  *         description: Successfully upserted student funnel stage
  */
-router.post('/funnels/student', controller.upsertStudentFunnelStage);
+router.post('/funnels/student', authenticateToken, controller.upsertStudentFunnelStage);
 
 /**
  * @swagger
@@ -1298,7 +1315,7 @@ router.post('/funnels/student', controller.upsertStudentFunnelStage);
  *       200:
  *         description: Successfully updated student funnel stage
  */
-router.put('/funnels/student/:id', controller.updateStudentFunnelStage);
+router.put('/funnels/student/:id', authenticateToken, controller.updateStudentFunnelStage);
 
 /**
  * @swagger
@@ -1327,7 +1344,7 @@ router.put('/funnels/student/:id', controller.updateStudentFunnelStage);
  *       201:
  *         description: Successfully upserted agency funnel stage
  */
-router.post('/funnels/agency', controller.upsertAgencyFunnelStage);
+router.post('/funnels/agency', authenticateToken, controller.upsertAgencyFunnelStage);
 
 /**
  * @swagger
@@ -1351,7 +1368,7 @@ router.post('/funnels/agency', controller.upsertAgencyFunnelStage);
  *       200:
  *         description: Successfully updated agency funnel stage
  */
-router.put('/funnels/agency/:id', controller.updateAgencyFunnelStage);
+router.put('/funnels/agency/:id', authenticateToken, controller.updateAgencyFunnelStage);
 
 /**
  * @swagger
@@ -1380,7 +1397,7 @@ router.put('/funnels/agency/:id', controller.updateAgencyFunnelStage);
  *       201:
  *         description: Successfully upserted performance daily point
  */
-router.post('/analytics/performance', controller.upsertMarketingPerformance);
+router.post('/analytics/performance', authenticateToken, controller.upsertMarketingPerformance);
 
 /**
  * @swagger
@@ -1404,7 +1421,7 @@ router.post('/analytics/performance', controller.upsertMarketingPerformance);
  *       200:
  *         description: Successfully updated performance daily point
  */
-router.put('/analytics/performance/:id', controller.updateMarketingPerformance);
+router.put('/analytics/performance/:id', authenticateToken, controller.updateMarketingPerformance);
 
 /**
  * @swagger
@@ -1434,7 +1451,7 @@ router.put('/analytics/performance/:id', controller.updateMarketingPerformance);
  *       201:
  *         description: Successfully upserted channel analytics
  */
-router.post('/analytics/channels', controller.upsertMarketingChannelAnalytics);
+router.post('/analytics/channels', authenticateToken, controller.upsertMarketingChannelAnalytics);
 
 /**
  * @swagger
@@ -1458,7 +1475,7 @@ router.post('/analytics/channels', controller.upsertMarketingChannelAnalytics);
  *       200:
  *         description: Successfully updated channel analytics
  */
-router.put('/analytics/channels/:id', controller.updateMarketingChannelAnalytics);
+router.put('/analytics/channels/:id', authenticateToken, controller.updateMarketingChannelAnalytics);
 
 /**
  * @swagger
@@ -1484,7 +1501,7 @@ router.put('/analytics/channels/:id', controller.updateMarketingChannelAnalytics
  *       201:
  *         description: Successfully upserted agency funnel analytics
  */
-router.post('/analytics/agency-funnel', controller.upsertAgencyFunnelAnalytics);
+router.post('/analytics/agency-funnel', authenticateToken, controller.upsertAgencyFunnelAnalytics);
 
 /**
  * @swagger
@@ -1530,7 +1547,7 @@ router.post('/analytics/agency-funnel', controller.upsertAgencyFunnelAnalytics);
  *       404:
  *         description: Campaign not found
  */
-router.post('/campaigns/:id/execute', controller.executeCampaign);
+router.post('/campaigns/:id/execute', authenticateToken, authorizePermission('Marketing', 'Campaigns', 'EDIT'), controller.executeCampaign);
 
 /**
  * @swagger
@@ -1572,20 +1589,20 @@ router.get('/campaigns/:id/messages', controller.getCampaignMessages);
  */
 router.get('/campaigns/:id/analytics', controller.getCampaignAnalytics);
 
-router.put('/analytics/agency-funnel/:id', controller.updateAgencyFunnelAnalytics);
+router.put('/analytics/agency-funnel/:id', authenticateToken, controller.updateAgencyFunnelAnalytics);
 router.use('/meta', metaRoutes);
 
 router.post(
   '/leads/:leadId/create-student-login',
   authenticateToken,
-  authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
+  authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR', 'MARKETING_MANAGER', 'TELECALLER'),
   controller.createStudentLogin
 );
 
 router.post(
   '/students/:userId/convert-to-lead',
   authenticateToken,
-  authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR'),
+  authorizeRole('SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR', 'MARKETING_MANAGER', 'TELECALLER'),
   controller.convertStudentToLead
 );
 

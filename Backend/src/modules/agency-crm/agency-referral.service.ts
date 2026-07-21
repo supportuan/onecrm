@@ -13,7 +13,8 @@ export const resolvePartnerByReferralCode = async (code: string) => {
   return prisma.agencyPartner.findFirst({
     where: {
       agencyCode: code.trim().toUpperCase(),
-      status: { in: [AgencyPartnerStatus.ACTIVE, AgencyPartnerStatus.APPROVED] },
+      status: AgencyPartnerStatus.ACTIVE,
+      onboardingStage: 'ACTIVE',
     },
   });
 };

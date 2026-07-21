@@ -97,18 +97,6 @@ const isToday = (dateValue) => {
   return date.toDateString() === today.toDateString();
 };
 
-const isContacted = (lead) =>
-  Boolean(lead.contactedAt) || lead.status === 'CONTACTED';
-
-const isQualified = (lead) =>
-  Boolean(lead.qualifiedAt) || lead.status === 'QUALIFIED';
-
-const isProposed = (lead) =>
-  Boolean(lead.proposedAt) || lead.status === 'PROPOSED';
-
-const isConverted = (lead) =>
-  Boolean(lead.convertedAt) || lead.status === 'CONVERTED';
-
 const getSourceName = (lead) =>
   lead.source?.name || lead.sourceName || lead.source || 'Unknown';
 
@@ -197,20 +185,18 @@ const MarketingDashboard = () => {
 
     const pendingFollowUps = filteredLeads.filter(
       (lead) =>
-        !isContacted(lead) &&
-        lead.status !== 'CONVERTED' &&
-        lead.status !== 'LOST'
+        ['NEW', 'NOT_CONTACTED', 'CALLBACK', 'FOLLOW_UP'].includes(lead.status)
     ).length;
 
     const activeCampaigns = filteredCampaigns.filter(
       (campaign) => campaign.status === 'ACTIVE'
     ).length;
 
-    const contacted = filteredLeads.filter(isContacted).length;
-    const qualified = filteredLeads.filter(isQualified).length;
-    const proposed = filteredLeads.filter(isProposed).length;
-    const converted = filteredLeads.filter(isConverted).length;
-
+    const contacted = filteredLeads.filter((lead) => lead.status === 'CONTACTED').length;
+    const newLeads = filteredLeads.filter((lead) => lead.status === 'NEW').length;
+    const notContacted = filteredLeads.filter((lead) => lead.status === 'NOT_CONTACTED').length;
+    const callbacks = filteredLeads.filter((lead) => lead.status === 'CALLBACK').length;
+    const followUps = filteredLeads.filter((lead) => lead.status === 'FOLLOW_UP').length;
     const paidCampaigns = filteredCampaigns.filter(
       (campaign) => campaign.type !== 'EMAIL'
     );
@@ -254,9 +240,10 @@ const MarketingDashboard = () => {
       pendingFollowUps,
       activeCampaigns,
       contacted,
-      qualified,
-      proposed,
-      converted,
+      newLeads,
+      notContacted,
+      callbacks,
+      followUps,
       totalBudget,
       totalSpent,
       sources,
@@ -301,7 +288,7 @@ const MarketingDashboard = () => {
       />
 
       <div className="ui-container space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+        <div className="app-glass-card flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
               <select
@@ -322,7 +309,7 @@ const MarketingDashboard = () => {
 
           <button
             onClick={fetchDashboard}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1a365d] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#223f6b] active:scale-95 cursor-pointer"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-bold text-white shadow-sm transition active:scale-95 cursor-pointer"
           >
             <RefreshCw className="h-4 w-4 cursor-pointer" />
             Refresh
@@ -368,15 +355,16 @@ const MarketingDashboard = () => {
 
         <div className="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
           <Panel
-            title="Lead Journey Snapshot"
-            subtitle="Current movement of marketing leads"
+            title="Engagement Tracker"
+            subtitle="Measurable progress across each stage of the lead journey"
             height="h-[420px]"
           >
-            <JourneyBar label="Total Leads" value={dashboard.totalLeads} total={dashboard.totalLeads} color="bg-[#1e3a8a]" />
-            <JourneyBar label="Contacted" value={dashboard.contacted} total={dashboard.totalLeads} color="bg-[#0ea5e9]" />
-            <JourneyBar label="Qualified" value={dashboard.qualified} total={dashboard.totalLeads} color="bg-[#22c55e]" />
-            <JourneyBar label="Proposed" value={dashboard.proposed} total={dashboard.totalLeads} color="bg-[#8b5cf6]" />
-            <JourneyBar label="Converted" value={dashboard.converted} total={dashboard.totalLeads} color="bg-[#f97316]" />
+            <JourneyBar label="Total Leads" value={dashboard.totalLeads} total={dashboard.totalLeads} />
+            <JourneyBar label="New" value={dashboard.newLeads} total={dashboard.totalLeads} />
+            <JourneyBar label="Contacted" value={dashboard.contacted} total={dashboard.totalLeads} />
+            <JourneyBar label="Not Contacted" value={dashboard.notContacted} total={dashboard.totalLeads} />
+            <JourneyBar label="Callback" value={dashboard.callbacks} total={dashboard.totalLeads} />
+            <JourneyBar label="Follow-up" value={dashboard.followUps} total={dashboard.totalLeads} />
 
             <div className="mt-6 rounded-xl border border-neutral-100 bg-neutral-50 p-4">
               <InfoRow label="Budget Allocated" value={formatCurrency(dashboard.totalBudget)} />
@@ -386,13 +374,13 @@ const MarketingDashboard = () => {
             </div>
           </Panel>
 
-          <div className="flex h-[420px] flex-col justify-between rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="app-glass-card flex h-[420px] flex-col justify-between rounded-2xl p-6">
             <div>
               <h2 className="text-[17px] font-extrabold text-brand">
-                Quick Actions
+                Embedded Task Widgets
               </h2>
               <p className="mt-1 text-[12px] font-medium text-neutral-500">
-                Fast access to common marketing tasks
+                Complete common marketing tasks without losing context
               </p>
 
               <div className="mt-6 grid grid-cols-3 gap-3">
@@ -401,14 +389,14 @@ const MarketingDashboard = () => {
                 <QuickButton
                   title="Leads"
                   icon={<FileText className="mb-1.5 h-5 w-5" />}
-                  className="border border-slate-300/50 bg-slate-200 text-neutral-800 hover:bg-slate-300"
+                  className="border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[var(--ui-text-secondary)] hover:border-brand/60 hover:bg-brand-soft hover:text-brand"
                   onClick={() => router.push('/marketing/lead-management')}
                 />
 
                 <QuickButton
                   title="Campaigns"
                   icon={<Send className="mb-1.5 h-5 w-5" />}
-                  className="border border-slate-300/50 bg-slate-200 text-neutral-800 hover:bg-slate-300"
+                  className="border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[var(--ui-text-secondary)] hover:border-brand/60 hover:bg-brand-soft hover:text-brand"
                   onClick={() => router.push('/marketing/campaigns')}
                 />
 
@@ -422,15 +410,15 @@ const MarketingDashboard = () => {
                       <Upload className="mb-1.5 h-5 w-5" />
                     )
                   }
-                  className="border border-neutral-200/50 bg-slate-100 text-neutral-800 hover:bg-slate-200"
+                  className="border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[var(--ui-text-secondary)] hover:border-brand/60 hover:bg-brand-soft hover:text-brand"
                   disabled={uploadingLeads}
                   onClick={() => fileInputRef.current?.click()}
                 />
 
                 <QuickButton
-                  title="Analytics"
+                  title="Revenue Intelligence"
                   icon={<MessageSquare className="mb-1.5 h-5 w-5" />}
-                  className="border border-slate-300/50 bg-slate-200 text-neutral-800 hover:bg-slate-300"
+                  className="border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[var(--ui-text-secondary)] hover:border-brand/60 hover:bg-brand-soft hover:text-brand"
                   onClick={() => router.push('/marketing/marketing-analytics')}
                 />
               </div>
@@ -445,7 +433,11 @@ const MarketingDashboard = () => {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-2">
-          <Panel title="Lead Source Snapshot" subtitle="Top sources bringing leads" height="h-[420px]">
+          <Panel
+            title="Source Analytics Breakdown"
+            subtitle="Lead volume and contribution by acquisition source"
+            height="h-[420px]"
+          >
             {dashboard.sources.length === 0 ? (
               <EmptyText text="No lead source data available." />
             ) : (
@@ -455,14 +447,17 @@ const MarketingDashboard = () => {
                   label={item.source}
                   value={item.count}
                   total={dashboard.totalLeads}
-                  color="bg-[#0ea5e9]"
                   helper={`${item.percentage.toFixed(1)}% of total leads`}
                 />
               ))
             )}
           </Panel>
 
-          <Panel title="Recent Leads" subtitle="Latest marketing leads in selected period" height="h-[420px]">
+          <Panel
+            title="Latest Records"
+            subtitle="Recently added lead data in the selected period"
+            height="h-[420px]"
+          >
             {dashboard.recentLeads.length === 0 ? (
               <EmptyText text="No recent leads found." />
             ) : (
@@ -473,7 +468,7 @@ const MarketingDashboard = () => {
                     className="flex items-center justify-between gap-4 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white text-xs font-extrabold text-neutral-700">
+                      <div className="app-gradient-icon text-xs font-extrabold">
                         {getInitials(lead.fullName)}
                       </div>
 
@@ -508,7 +503,7 @@ const MarketingDashboard = () => {
 
 function KpiCard({ title, value, trend, icon }) {
   return (
-    <div className="group relative overflow-hidden rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md">
+    <div className="app-glass-card group relative overflow-hidden rounded-2xl p-6 transition-all duration-300">
       <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-neutral-50 opacity-80 transition-transform duration-300 group-hover:scale-110" />
 
       <div className="relative flex items-center justify-between">
@@ -516,7 +511,7 @@ function KpiCard({ title, value, trend, icon }) {
           {title}
         </span>
 
-        <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-2 text-neutral-700 transition-transform duration-200 group-hover:scale-110">
+        <div className="app-gradient-icon transition-transform duration-200 group-hover:scale-110">
           {icon}
         </div>
       </div>
@@ -526,7 +521,7 @@ function KpiCard({ title, value, trend, icon }) {
           {value}
         </h3>
 
-        <div className="mt-3 flex items-center gap-1 text-[13px] font-extrabold text-emerald-500">
+        <div className="mt-3 flex items-center gap-1 text-[13px] font-medium text-[var(--ui-text-muted)]">
           <span>{trend}</span>
         </div>
       </div>
@@ -537,7 +532,7 @@ function KpiCard({ title, value, trend, icon }) {
 function Panel({ title, subtitle, children, height = 'h-auto' }) {
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-[20px] border border-neutral-200 bg-white shadow-sm ${height}`}
+      className={`app-glass-card flex flex-col overflow-hidden rounded-2xl ${height}`}
     >
       <div className="flex-shrink-0 border-b border-neutral-100 p-6">
         <h2 className="text-[17px] font-extrabold text-brand">
@@ -553,7 +548,7 @@ function Panel({ title, subtitle, children, height = 'h-auto' }) {
   );
 }
 
-function JourneyBar({ label, value, total, color, helper }) {
+function JourneyBar({ label, value, total, helper }) {
   const width =
     total > 0
       ? Math.max((Number(value || 0) / total) * 100, value > 0 ? 8 : 0)
@@ -570,7 +565,7 @@ function JourneyBar({ label, value, total, color, helper }) {
 
       <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${color}`}
+          className="h-full rounded-full bg-brand transition-all duration-500"
           style={{ width: `${width}%` }}
         />
       </div>
@@ -592,7 +587,7 @@ function QuickButton({ title, icon, className, onClick, disabled = false }) {
       onClick={onClick}
       className={`flex min-h-[92px] flex-col items-center justify-center rounded-[14px] p-4 text-xs font-semibold shadow-sm transition duration-200 hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
     >
-      {icon}
+      <span className="app-gradient-icon mb-2">{icon}</span>
       <span className="text-[10px] font-bold leading-tight sm:text-xs">
         {title}
       </span>

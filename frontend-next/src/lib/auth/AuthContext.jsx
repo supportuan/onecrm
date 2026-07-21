@@ -7,6 +7,7 @@ import {
   setAccessToken as syncAccessToken,
   registerSessionExpiredHandler,
   clearStoredSession,
+  persistAccessTokenCookie,
 } from '@/lib/auth/session';
 
 const AuthContext = createContext({
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }) => {
       setRefreshToken(storedRefresh);
       setUser(JSON.parse(storedUser));
       syncAccessToken(storedAccess);
+      persistAccessTokenCookie(storedAccess);
       syncProfile();
     }
 
@@ -93,6 +95,7 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(accessTokenValue);
     setRefreshToken(refreshTokenValue);
     syncAccessToken(accessTokenValue);
+    persistAccessTokenCookie(accessTokenValue);
     localStorage.setItem('currentUser', JSON.stringify(userData));
     localStorage.setItem('accessToken', accessTokenValue);
     localStorage.setItem('refreshToken', refreshTokenValue);
@@ -132,6 +135,7 @@ export const AuthProvider = ({ children }) => {
       setRefreshToken(data.data.refreshToken);
       localStorage.setItem('accessToken', data.data.accessToken);
       localStorage.setItem('refreshToken', data.data.refreshToken);
+      persistAccessTokenCookie(data.data.accessToken);
       return data.data;
     } catch (error) {
       clearSession();

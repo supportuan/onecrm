@@ -29,6 +29,13 @@ export function clearStoredSession() {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('currentUser');
+  document.cookie = 'accessToken=; Path=/; Max-Age=0; SameSite=Lax';
+}
+
+export function persistAccessTokenCookie(token) {
+  if (typeof window === 'undefined' || !token) return;
+  // Used by /uploads (img/src / Next rewrite) where Authorization headers are not sent.
+  document.cookie = `accessToken=${encodeURIComponent(token)}; Path=/; SameSite=Lax`;
 }
 
 export function expireSession() {

@@ -12,6 +12,8 @@ export const MODULE_PERMISSIONS = [
   'MANAGE_STUDENT_CRM',
   'VIEW_AGENCY_CRM',
   'MANAGE_AGENCY_CRM',
+  'VIEW_RESOURCES',
+  'MANAGE_RESOURCES',
   'VIEW_HR',
   'VIEW_ADMIN',
 ] as const;
@@ -47,6 +49,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   // GLOBAL_ADMIN is the tenant administrator: full access within its own tenant.
   GLOBAL_ADMIN: [...ALL_PERMISSIONS],
   HR: [
+    'VIEW_RESOURCES',
     'VIEW_HR',
     'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
     'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
@@ -54,14 +57,17 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   COUNSELLOR: [
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
+    'VIEW_RESOURCES',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
   MARKETING_MANAGER: [
     'VIEW_MARKETING', 'MANAGE_MARKETING',
+    'VIEW_RESOURCES',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'VIEW_REPORTS',
   ],
   TELECALLER: [
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM',
+    'VIEW_RESOURCES',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
   // Both agent roles are portal-scoped VIEW. Partner ops (MANAGE) stay admin-only;
@@ -69,10 +75,12 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   AGENCY_FREELANCER: [
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
+    'VIEW_RESOURCES',
   ],
   AGENT: [
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
+    'VIEW_RESOURCES',
   ],
   STUDENT: [],
 };
@@ -94,6 +102,7 @@ export type ModuleKey =
   | 'MARKETING'
   | 'STUDENT_CRM'
   | 'AGENCY_CRM'
+  | 'RESOURCES'
   | 'ADMIN';
 
 export interface ModuleDefinition {
@@ -106,7 +115,7 @@ export interface ModuleDefinition {
 export const MODULE_CATALOG: ModuleDefinition[] = [
   {
     key: 'HR',
-    label: 'Human Resources',
+    label: 'Human Resource',
     permissions: [
       'VIEW_HR',
       ...HR_PERMISSIONS,
@@ -119,17 +128,22 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
   },
   {
     key: 'STUDENT_CRM',
-    label: 'Student CRM',
+    label: 'Student Hub',
     permissions: ['VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'],
   },
   {
     key: 'AGENCY_CRM',
-    label: 'Agency CRM',
+    label: 'Agent Hub',
     permissions: ['VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM'],
   },
   {
+    key: 'RESOURCES',
+    label: 'Knowledge Hub',
+    permissions: ['VIEW_RESOURCES', 'MANAGE_RESOURCES'],
+  },
+  {
     key: 'ADMIN',
-    label: 'Admin Settings',
+    label: 'Admin & Settings',
     permissions: ['VIEW_ADMIN', 'MANAGE_ADMINS', 'MANAGE_SYSTEM'],
   },
 ];
@@ -147,4 +161,4 @@ export const PERMISSION_TO_MODULE: Record<string, ModuleKey> = (() => {
 
 // Modules enabled by default when a new tenant is created (super admin
 // can override at onboarding time).
-export const DEFAULT_TENANT_MODULES: ModuleKey[] = ['HR', 'ADMIN'];
+export const DEFAULT_TENANT_MODULES: ModuleKey[] = ['HR', 'ADMIN', 'RESOURCES'];

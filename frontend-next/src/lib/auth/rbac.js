@@ -17,23 +17,31 @@ export const PERMISSION_CATEGORIES = [
     ],
   },
   {
-    title: 'Student CRM',
+    title: 'Student Hub',
     key: 'student_crm',
     permissions: [
-      { key: 'VIEW_STUDENT_CRM', name: 'view student crm', desc: 'access student management, applications, counselling, visas.' },
-      { key: 'MANAGE_STUDENT_CRM', name: 'manage student crm', desc: 'create/edit students, applications and counselling records.' },
+      { key: 'VIEW_STUDENT_CRM', name: 'view student hub', desc: 'access Student Alliance, applications, counselling, and visas.' },
+      { key: 'MANAGE_STUDENT_CRM', name: 'manage student hub', desc: 'create and edit students, applications, and counselling records.' },
     ],
   },
   {
-    title: 'Agency CRM',
+    title: 'Agent Hub',
     key: 'agency_crm',
     permissions: [
-      { key: 'VIEW_AGENCY_CRM', name: 'view agency crm', desc: 'access agency management, leads, commissions and co-branding.' },
-      { key: 'MANAGE_AGENCY_CRM', name: 'manage agency crm', desc: 'create/edit agencies, commissions and co-branding tools.' },
+      { key: 'VIEW_AGENCY_CRM', name: 'view agent hub', desc: 'access agency management, leads, commissions, and co-branding.' },
+      { key: 'MANAGE_AGENCY_CRM', name: 'manage agent hub', desc: 'create and edit agencies, commissions, and co-branding tools.' },
     ],
   },
   {
-    title: 'HR — module access',
+    title: 'Knowledge Hub',
+    key: 'resources',
+    permissions: [
+      { key: 'VIEW_RESOURCES', name: 'view knowledge hub', desc: 'access curated knowledge for permitted audiences.' },
+      { key: 'MANAGE_RESOURCES', name: 'manage knowledge hub', desc: 'upload, publish, target, and track knowledge acknowledgements.' },
+    ],
+  },
+  {
+    title: 'Human Resource — module access',
     key: 'hr_module',
     permissions: [
       { key: 'VIEW_HR', name: 'view hr module', desc: 'access the hrms module from the sidebar.' },
@@ -111,8 +119,14 @@ export const HIDDEN_ROLES = new Set(['STUDENT']);
 // Maps a top-level module (by sidebar label) to the permission(s) that grant it.
 export const MODULE_PERMISSION_MAP = {
   Marketing: ['VIEW_MARKETING', 'MANAGE_MARKETING'],
+  Dashboard: ['VIEW_MARKETING', 'MANAGE_MARKETING'],
+  'Student Hub': ['VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'],
   'Student CRM': ['VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'],
+  'Agent Hub': ['VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM'],
   'Agency CRM': ['VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM'],
+  'Knowledge Hub': ['VIEW_RESOURCES', 'MANAGE_RESOURCES'],
+  Resources: ['VIEW_RESOURCES', 'MANAGE_RESOURCES'],
+  'Human Resource': ['VIEW_HR'],
   HR: ['VIEW_HR'],
   HRMS: ['VIEW_HR'],
   'Admin Settings': ['VIEW_ADMIN', 'MANAGE_SYSTEM', 'MANAGE_ADMINS'],
@@ -124,8 +138,14 @@ export const MODULE_PERMISSION_MAP = {
 // Items without an entry here are not tenant-gated.
 export const MODULE_KEY_MAP = {
   Marketing: 'MARKETING',
+  Dashboard: 'MARKETING',
+  'Student Hub': 'STUDENT_CRM',
   'Student CRM': 'STUDENT_CRM',
+  'Agent Hub': 'AGENCY_CRM',
   'Agency CRM': 'AGENCY_CRM',
+  'Knowledge Hub': 'RESOURCES',
+  Resources: 'RESOURCES',
+  'Human Resource': 'HR',
   HR: 'HR',
   HRMS: 'HR',
   'Admin Settings': 'ADMIN',
@@ -137,6 +157,7 @@ export const ROLE_PERMISSIONS = {
   SUPER_ADMIN: [...ALL_PERMISSIONS],
   GLOBAL_ADMIN: [...ALL_PERMISSIONS],
   HR: [
+    'VIEW_RESOURCES',
     'VIEW_HR',
     'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
     'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
@@ -144,14 +165,17 @@ export const ROLE_PERMISSIONS = {
   ],
   COUNSELLOR: [
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
+    'VIEW_RESOURCES',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
   MARKETING_MANAGER: [
     'VIEW_MARKETING', 'MANAGE_MARKETING',
+    'VIEW_RESOURCES',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'VIEW_REPORTS',
   ],
   TELECALLER: [
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM',
+    'VIEW_RESOURCES',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
   // Both agent roles are portal-scoped VIEW. Partner ops stay admin-only;
@@ -159,12 +183,14 @@ export const ROLE_PERMISSIONS = {
   AGENCY_FREELANCER: [
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
+    'VIEW_RESOURCES',
   ],
   AGENT: [
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
+    'VIEW_RESOURCES',
   ],
-  STUDENT: [],
+  STUDENT: ['VIEW_RESOURCES'],
 };
 
 const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_');

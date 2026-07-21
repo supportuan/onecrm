@@ -1,5 +1,5 @@
-import StudentLogin from '@/features/student-portal/pages/StudentLogin';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <StudentLogin />;
+  redirect('/login');
 }

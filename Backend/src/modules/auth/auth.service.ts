@@ -14,6 +14,7 @@ interface RegisterData {
   password: string;
   role: UserRole;
   agencyDetails?: any;
+  referralCode?: string | null;
 }
 
 export const register = async (data: RegisterData) => {
@@ -72,7 +73,7 @@ export const register = async (data: RegisterData) => {
     // Send Welcome Email to Agent
     sendCampaignEmail({
       to: data.email,
-      subject: 'Welcome to OneCRM - Agent Registration Received',
+      subject: 'Welcome to ApplyUniNow - Agent Registration Received',
       html: `
         <!DOCTYPE html>
         <html>
@@ -91,7 +92,7 @@ export const register = async (data: RegisterData) => {
                   <tr>
                     <td style="background:#0f172a;padding:28px;text-align:center;">
                       <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;">
-                        ONECRM
+                        ApplyUniNow
                       </h1>
                       <p style="margin-top:8px;color:#cbd5e1;font-size:14px;">
                         Agent Registration Confirmation
@@ -110,7 +111,7 @@ export const register = async (data: RegisterData) => {
                       <p style="font-size:15px;color:#4b5563;line-height:1.8;">
                         Thank you for registering as an
                         <strong>Agent</strong> with
-                        <strong>OneCRM</strong>.
+                        <strong>ApplyUniNow</strong>.
                       </p>
 
                       <div style="
@@ -138,7 +139,7 @@ export const register = async (data: RegisterData) => {
                         <li>Your application will be reviewed by our administrators.</li>
                         <li>Your agency details will be verified.</li>
                         <li>Once approved, you'll receive another email confirming your account activation.</li>
-                        <li>After approval, you can log in and start managing student applications through the OneCRM portal.</li>
+                        <li>After approval, you can log in and start managing student applications through the ApplyUniNow portal.</li>
                       </ul>
 
                       <table width="100%" cellpadding="0" cellspacing="0" style="margin:30px 0;background:#eff6ff;border-radius:10px;">
@@ -153,12 +154,12 @@ export const register = async (data: RegisterData) => {
 
                       <p style="font-size:14px;color:#4b5563;line-height:1.8;">
                         We appreciate your interest in partnering with us and look
-                        forward to welcoming you to the OneCRM Agent Network.
+                        forward to welcoming you to the ApplyUniNow Agent Network.
                       </p>
 
                       <p style="margin-top:30px;font-size:15px;color:#111827;">
                         Regards,<br/>
-                        <strong>OneCRM Team</strong>
+                        <strong>ApplyUniNow Team</strong>
                       </p>
 
                     </td>
@@ -173,7 +174,7 @@ export const register = async (data: RegisterData) => {
                       </p>
 
                       <p style="margin-top:10px;color:#94a3b8;font-size:12px;">
-                        © ${new Date().getFullYear()} OneCRM. All rights reserved.
+                        © ${new Date().getFullYear()} ApplyUniNow. All rights reserved.
                       </p>
 
                     </td>
@@ -200,7 +201,7 @@ export const register = async (data: RegisterData) => {
     // Send Welcome Email to Student
     sendCampaignEmail({
       to: data.email,
-      subject: 'Welcome to OneCRM - Student Account Registered',
+      subject: 'Welcome to ApplyUniNow - Student Account Registered',
       
       html: `
           <!DOCTYPE html>
@@ -225,7 +226,7 @@ export const register = async (data: RegisterData) => {
                           <td width="70" valign="middle">
                             <img
                               src="https://your-domain.com/logo.png"
-                              alt="OneCRM"
+                              alt="ApplyUniNow"
                               width="52"
                               height="52"
                               style="display:block;border-radius:8px;"
@@ -234,7 +235,7 @@ export const register = async (data: RegisterData) => {
 
                           <td valign="middle">
                             <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">
-                              ONECRM
+                              ApplyUniNow
                             </h1>
 
                             <p style="margin:6px 0 0;color:#cbd5e1;font-size:14px;">
@@ -257,7 +258,7 @@ export const register = async (data: RegisterData) => {
 
                       <p style="margin-top:20px;font-size:15px;line-height:1.8;color:#475569;">
                         Thank you for registering with
-                        <strong>OneCRM</strong>.
+                        <strong>ApplyUniNow</strong>.
                         Your student account has been created successfully.
                       </p>
 
@@ -316,14 +317,14 @@ export const register = async (data: RegisterData) => {
                             font-weight:600;
                           "
                         >
-                          Login to OneCRM
+                          Login to ApplyUniNow
                         </a>
 
                       </div>
 
                       <p style="margin-top:40px;color:#111827;font-size:15px;">
                         Regards,<br/>
-                        <strong>OneCRM Team</strong>
+                        <strong>ApplyUniNow Team</strong>
                       </p>
 
                     </td>
@@ -338,7 +339,7 @@ export const register = async (data: RegisterData) => {
                       </p>
 
                       <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
-                        © ${new Date().getFullYear()} OneCRM. All rights reserved.
+                        © ${new Date().getFullYear()} ApplyUniNow. All rights reserved.
                       </p>
 
                     </td>
@@ -364,6 +365,69 @@ export const register = async (data: RegisterData) => {
     });
   }
 
+  // Agent self-register: create partner shell so admins can track setup before login approval.
+  if (data.role === UserRole.AGENT || data.role === UserRole.AGENCY_FREELANCER) {
+    try {
+      const { provisionPartnerFromAgentUser } = await import(
+        '../agency-crm/agency-partner.lifecycle.js'
+      );
+      await provisionPartnerFromAgentUser(user.id);
+    } catch (err) {
+      console.warn('[Agency CRM] partner provision on register skipped:', (err as Error)?.message);
+    }
+  }
+
+  // Capture agency referral on self-registration (student or agent with ?ref=).
+  const referralCode =
+    (data.referralCode || data.agencyDetails?.agencyCode || '').toString().trim() || null;
+  if (referralCode && (data.role === UserRole.STUDENT || data.role === UserRole.AGENT)) {
+    try {
+      const { createLead } = await import('../marketing/services/marketing.service.js');
+      const { prisma: db } = await import('../../prisma.js');
+      let lead;
+      try {
+        lead = await createLead({
+          fullName: data.fullName,
+          email: data.email,
+          phone: data.phone || null,
+          referralCode,
+          remark: `Self-registered via referral ${referralCode}`,
+          studentUserId: data.role === UserRole.STUDENT ? user.id : undefined,
+          isStudentLoginCreated: data.role === UserRole.STUDENT,
+        });
+      } catch (dupErr) {
+        // Lead may already exist — attach referral and continue.
+        lead = await db.lead.findFirst({
+          where: { email: data.email, deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (lead) {
+          const { attachReferralToLead } = await import(
+            '../agency-crm/agency-referral.service.js'
+          );
+          await attachReferralToLead(lead.id, referralCode).catch(() => null);
+        } else {
+          throw dupErr;
+        }
+      }
+
+      // Student self-register should land in CRM as Student (not stuck as Lead).
+      if (data.role === UserRole.STUDENT && lead?.id) {
+        try {
+          const { promoteLeadToStudent } = await import(
+            '../student-crm/student-crm.service.js'
+          );
+          await promoteLeadToStudent(lead.id, {}, user.id);
+        } catch (promoteErr) {
+          console.warn('[Agency CRM] promote on register partial — student not created:', (promoteErr as Error)?.message);
+        }
+      }
+    } catch (err) {
+      // Log but don't fail registration — user already exists; referral linkage is best-effort.
+      console.error('[Agency CRM] referral on register failed:', (err as Error)?.message);
+    }
+  }
+
   return user;
 };
 
@@ -384,7 +448,7 @@ export const login = async (email: string, password: string, loginType?: 'studen
     throw new Error('Please use the student login page');
   }
 
-  if (user.role === UserRole.AGENT && !user.isApproved) {
+  if ((user.role === UserRole.AGENT || user.role === UserRole.AGENCY_FREELANCER) && !user.isApproved) {
     throw new Error('Agent account has not been approved by an administrator yet');
   }
 
@@ -543,10 +607,13 @@ export const changePassword = async (userId: number, currentPassword: string, ne
   if (!isValid) throw new Error('Current password is incorrect');
 
   const passwordHash = await hashPassword(newPassword);
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: userId },
     data: { passwordHash, mustChangePassword: false },
   });
+  // Invalidate all refresh sessions after password change.
+  await prisma.refreshToken.deleteMany({ where: { userId } });
+  return updated;
 };
 
 export const acceptPolicy = async (userId: number) => {
@@ -566,7 +633,11 @@ export const acceptPolicy = async (userId: number) => {
 
 export const createPasswordResetToken = async (email: string, token: string, expiresAt: Date) => {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error('Email not found');
+  // Do not reveal whether the email exists — return null and let the controller
+  // always respond with the same success message.
+  if (!user) {
+    return null;
+  }
 
   return prisma.passwordResetToken.create({
     data: {
@@ -589,4 +660,6 @@ export const resetPassword = async (token: string, newPassword: string) => {
 
   await prisma.user.update({ where: { id: resetToken.userId }, data: { passwordHash } });
   await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
+  // Invalidate every refresh session for this user.
+  await prisma.refreshToken.deleteMany({ where: { userId: resetToken.userId } });
 };

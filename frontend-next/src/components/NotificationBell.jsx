@@ -119,10 +119,10 @@ const NotificationBell = () => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="ui-btn-ghost !p-2 text-[var(--ui-text-muted)]"
+        className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-[var(--ui-text-muted)] transition hover:bg-brand-soft hover:text-brand active:scale-95"
         aria-label="notifications"
       >
-        <Bell className="h-[16px] w-[16px]" strokeWidth={1.5} />
+        <Bell className="h-5 w-5" strokeWidth={1.75} />
         {unread > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-accent px-1 text-[9px] font-bold text-white">
             {unread > 9 ? '9+' : unread}

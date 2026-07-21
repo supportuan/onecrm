@@ -122,6 +122,7 @@ export const getLeads = async (filters: {
   search?: string;
   status?: LeadStatus;
   sourceId?: number;
+  country?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -131,7 +132,17 @@ export const getLeads = async (filters: {
   const page = filters.page || 1;
   const limit = filters.limit || 10;
   const skip = (page - 1) * limit;
-  const sortBy = filters.sortBy || 'createdAt';
+  const allowedSortFields = new Set([
+    'createdAt',
+    'updatedAt',
+    'fullName',
+    'email',
+    'country',
+    'status',
+    'rating',
+    'source',
+  ]);
+  const sortBy = allowedSortFields.has(filters.sortBy || '') ? filters.sortBy! : 'createdAt';
   const sortOrder = filters.sortOrder || 'desc';
 
   const whereClause: any = {
@@ -144,6 +155,10 @@ export const getLeads = async (filters: {
 
   if (filters.sourceId) {
     whereClause.sourceId = filters.sourceId;
+  }
+
+  if (filters.country) {
+    whereClause.country = { equals: filters.country, mode: 'insensitive' };
   }
 
   if (filters.assignedCounsellorId) {
@@ -206,6 +221,9 @@ export const getLeads = async (filters: {
       isStudentLoginCreated: lead.isStudentLoginCreated,
       studentUserId: lead.studentUserId,
       contactedAt: lead.contactedAt,
+      notContactedAt: lead.notContactedAt,
+      callbackAt: lead.callbackAt,
+      followUpAt: lead.followUpAt,
       qualifiedAt: lead.qualifiedAt,
       proposedAt: lead.proposedAt,
       convertedAt: lead.convertedAt,
@@ -303,11 +321,22 @@ export const createLead = async (data: any) => {
     ...leadData
   } = data;
 
+  let tenantId = leadData.tenantId;
+  if (tenantId == null) {
+    try {
+      const { getDefaultTenantId } = await import('../../../utils/tenant-default.js');
+      tenantId = await getDefaultTenantId();
+    } catch {
+      tenantId = undefined;
+    }
+  }
+
   const lead = await prisma.lead.create({
     data: {
       ...leadData,
       email,
       phone,
+      ...(tenantId != null ? { tenantId } : {}),
     },
     include: {
       source: true,
@@ -529,13 +558,14 @@ export const assignCounsellor = async (
 export const updateLeadRating = async (leadId: number, rating: string) => {
   const isQualified = ['HOT', 'WARM'].includes(String(rating).toUpperCase());
 
-  const lead = await prisma.lead.findUnique({
-    where: { id: leadId },
+  const lead = await prisma.lead.findFirst({
+    where: { id: leadId, deletedAt: null },
     select: {
       status: true,
       qualifiedAt: true,
     },
   });
+  if (!lead) throw new Error('Lead not found');
 
   const canMoveToQualified =
     isQualified &&
@@ -561,9 +591,41 @@ export const updateLeadRating = async (leadId: number, rating: string) => {
 };
 export const updateLeadStatus = async (leadId: number, status: LeadStatus) => {
   const now = new Date();
+  const scopedLead = await prisma.lead.findFirst({
+    where: { id: leadId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!scopedLead) throw new Error('Lead not found');
+
+  // CONVERTED must mean "in Student CRM", not login-only / status-only.
+  if (status === 'CONVERTED') {
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, deletedAt: null } });
+    if (!lead) throw new Error('Lead not found');
+    const student = await prisma.student.findFirst({
+      where: { OR: [{ email: lead.email }, { sourceLeadId: leadId }] },
+    });
+    if (!student) {
+      const { promoteLeadToStudent } = await import(
+        '../../student-crm/student-crm.service.js'
+      );
+      await promoteLeadToStudent(leadId, {});
+      return prisma.lead.findUnique({
+        where: { id: leadId },
+        include: {
+          source: true,
+          assignedCounsellor: true,
+          assignedBy: true,
+        },
+      });
+    }
+  }
+
   const data: any = { status };
 
   if (status === 'CONTACTED') data.contactedAt = now;
+  if (status === 'NOT_CONTACTED') data.notContactedAt = now;
+  if (status === 'CALLBACK') data.callbackAt = now;
+  if (status === 'FOLLOW_UP') data.followUpAt = now;
   if (status === 'QUALIFIED') data.qualifiedAt = now;
   if (status === 'PROPOSED') data.proposedAt = now;
   if (status === 'CONVERTED') data.convertedAt = now;
@@ -580,9 +642,14 @@ export const updateLeadStatus = async (leadId: number, status: LeadStatus) => {
   });
 };
 export const deleteLead = async (id: number) => {
+  const existing = await prisma.lead.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true },
+  });
+  if (!existing) throw new Error('Lead not found');
   // Soft delete
   return await prisma.lead.update({
-    where: { id },
+    where: { id: existing.id },
     data: { deletedAt: new Date() },
   });
 };
@@ -710,6 +777,7 @@ export const getCampaigns = async (filters: {
 
   let totalBudget = 0;
   let totalSpent = 0;
+  let totalRevenue = 0;
   let totalLeads = 0;
 
   // const allItemsMapped = allCampaigns.map(c => {
@@ -751,6 +819,7 @@ export const getCampaigns = async (filters: {
     totalSpent += c.type === CampaignType.SOCIAL_MEDIA
       ? c.metaSpend || 0
       : c.spent || 0;
+    totalRevenue += c.revenueGenerated || 0;
     totalLeads += metrics.leads;
 
     // return {
@@ -776,6 +845,7 @@ export const getCampaigns = async (filters: {
       type: c.type,
       budget: c.budget,
       spent: c.spent,
+      revenueGenerated: c.revenueGenerated,
 
       // Meta reporting fields
       metaCampaignId: c.metaCampaignId,
@@ -833,6 +903,7 @@ export const getCampaigns = async (filters: {
     summary: {
       totalBudget,
       totalSpent,
+      totalRevenue,
       totalLeads
     },
     total,
@@ -904,15 +975,19 @@ export const createCampaign = async (data: any) => {
 };
 
 export const updateCampaign = async (id: number, data: any) => {
+  const existing = await prisma.campaign.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+  if (!existing) throw new Error('Campaign not found');
   return await prisma.campaign.update({
-    where: { id },
+    where: { id: existing.id },
     data,
   });
 };
 
 export const deleteCampaign = async (id: number) => {
+  const existing = await prisma.campaign.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+  if (!existing) throw new Error('Campaign not found');
   return await prisma.campaign.update({
-    where: { id },
+    where: { id: existing.id },
     data: { deletedAt: new Date() },
   });
 };
@@ -923,6 +998,15 @@ export const addCampaignLeads = async (
   status = 'SENT',
   engagement = 'medium'
 ) => {
+  const [campaign, tenantLeads] = await Promise.all([
+    prisma.campaign.findFirst({ where: { id: campaignId, deletedAt: null }, select: { id: true } }),
+    prisma.lead.findMany({ where: { id: { in: leadIds }, deletedAt: null }, select: { id: true } }),
+  ]);
+  if (!campaign) throw new Error('Campaign not found');
+  if (tenantLeads.length !== new Set(leadIds).size) {
+    throw new Error('One or more leads are unavailable in this tenant');
+  }
+
   const data = leadIds.map(leadId => ({
     campaignId,
     leadId,
@@ -1422,13 +1506,17 @@ export const getAnalyticsData = async () => {
   const campaignPerformance = campaigns.map(c => {
     const leadsCount = c.leads.length;
     const costPerLead = leadsCount > 0 && c.spent ? c.spent / leadsCount : 0;
+    const spent = c.spent || 0;
+    const revenue = c.revenueGenerated || 0;
+    const roi = spent > 0 ? ((revenue - spent) / spent) * 100 : 0;
     return {
       campaignName: c.name,
       budget: c.budget || 0,
-      spent: c.spent || 0,
+      spent,
+      revenueGenerated: revenue,
       leadsGenerated: leadsCount,
       costPerLead: parseFloat(costPerLead.toFixed(2)),
-      roi: c.spent && c.spent > 0 ? `${(((leadsCount * 250) / c.spent) * 100).toFixed(0)}%` : '0%', // Mock revenue generation per lead for ROI calculation
+      roi: `${roi.toFixed(1)}%`,
     };
   });
 
@@ -1874,200 +1962,44 @@ export const getCampaignAnalytics = async (campaignId: number) => {
 };
 
 /**
- * Promote a lead to a student login (User with role STUDENT).
+ * Convert lead → student login + CRM Student + draft application (same pipeline as Student CRM promote).
  */
 export const createStudentLogin = async (leadId: number, suppliedPassword?: string) => {
-  // 1️⃣ Validate lead existence
-  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+  const lead = await prisma.lead.findFirst({ where: { id: leadId, deletedAt: null } });
   if (!lead) throw new Error('Lead not found');
-  if (lead.isStudentLoginCreated) throw new Error('Student login already created for this lead');
 
-  // 2️⃣ Ensure no existing user with the same email
-  const existingUser = await prisma.user.findUnique({ where: { email: lead.email } });
-  if (existingUser) throw new Error('User with this email already exists');
+  const { promoteLeadToStudent } = await import(
+    '../../student-crm/student-crm.service.js'
+  );
+  const result = await promoteLeadToStudent(
+    leadId,
+    { password: suppliedPassword },
+  );
 
-  // 3️⃣ Generate temporary password
-  const tempPassword = suppliedPassword || crypto.randomBytes(9).toString('base64');
-  const passwordHash = await hashPassword(tempPassword);
-
-  // 4️⃣ Create STUDENT user
-  // const tenantId = await getDefaultTenantId(lead.assignedCounsellorId ?? null);
-  const user = await prisma.user.create({
-    data: {
-      fullName: lead.fullName,
-      email: lead.email,
-      phone: lead.phone,
-      passwordHash,
-      role: UserRole.STUDENT,
-      // tenantId,
-      isActive: true,
-      isApproved: true,
-      mustChangePassword: true,
-    },
-  });
-
-  // 5️⃣ Update lead with reference and flag
-  // await prisma.lead.update({
-  //   where: { id: leadId },
-  //   data: {
-  //     studentUserId: user.id,
-  //     isStudentLoginCreated: true,
-  //   },
-  // });
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: {
-      studentUserId: user.id,
-      isStudentLoginCreated: true,
-      status: LeadStatus.CONVERTED,
-      convertedAt: new Date(),
-    },
-  });
-
-  // 6️⃣ Send welcome email with temporary password
-  try {
-    await sendCampaignEmail({
-      to: user.email,
-      subject: 'Your Student Account – Temporary Password',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8" />
-        </head>
-        <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:30px 0;">
-            <tr>
-              <td align="center">
-
-                <table width="620" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.08);">
-
-                  <!-- Header -->
-                  <tr>
-                    <td style="background:#0f172a;padding:30px;text-align:center;">
-                      <h1 style="margin:0;color:#ffffff;font-size:28px;">
-                        ONECRM
-                      </h1>
-                      <p style="margin-top:8px;color:#cbd5e1;font-size:14px;">
-                        Student Portal
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- Body -->
-                  <tr>
-                    <td style="padding:40px;">
-
-                      <h2 style="margin:0;color:#1e293b;">
-                        Welcome, ${user.fullName} 👋
-                      </h2>
-
-                      <p style="margin-top:18px;font-size:15px;line-height:26px;color:#475569;">
-                        Your student account has been successfully created.
-                        You can now access the Student Portal using the credentials below.
-                      </p>
-
-                      <table width="100%" cellpadding="12" cellspacing="0"
-                        style="margin:30px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
-
-                        <tr>
-                          <td width="140" style="font-weight:bold;color:#334155;">
-                            Email
-                          </td>
-                          <td style="color:#0f172a;">
-                            ${user.email}
-                          </td>
-                        </tr>
-
-                        <tr>
-                          <td style="font-weight:bold;color:#334155;">
-                            Temporary Password
-                          </td>
-                          <td style="color:#dc2626;font-weight:bold;font-size:16px;">
-                            ${tempPassword}
-                          </td>
-                        </tr>
-
-                      </table>
-
-                      <div style="text-align:center;margin:35px 0;">
-                        <a
-                          href="https://crm.applyuninow.com/login"
-                          style="
-                            background:#2563eb;
-                            color:#ffffff;
-                            text-decoration:none;
-                            padding:14px 34px;
-                            border-radius:8px;
-                            display:inline-block;
-                            font-weight:bold;
-                            font-size:15px;
-                          "
-                        >
-                          Login to Student Portal
-                        </a>
-                      </div>
-
-                      <div style="background:#fff7ed;border-left:4px solid #f97316;padding:16px;border-radius:6px;">
-                        <strong style="color:#9a3412;">
-                          Important Security Notice
-                        </strong>
-
-                        <p style="margin:8px 0 0;color:#7c2d12;font-size:14px;line-height:22px;">
-                          This password is temporary.
-                          Please log in and change your password immediately to keep your account secure.
-                        </p>
-                      </div>
-
-                      <p style="margin-top:35px;color:#475569;font-size:14px;line-height:24px;">
-                        If you have any questions or need assistance, please contact our support team.
-                      </p>
-
-                      <p style="margin-top:30px;color:#0f172a;">
-                        Regards,<br>
-                        <strong>ApplyUniNow</strong>
-                      </p>
-
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background:#f8fafc;padding:20px;text-align:center;color:#64748b;font-size:12px;">
-                      © ${new Date().getFullYear()} OneCRM. All Rights Reserved.
-                    </td>
-                  </tr>
-
-                </table>
-
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `,
-    });
-  } catch (err) {
-    console.error('Failed to send welcome email:', err);
-  }
-
-  return user;
+  // Shape expected by marketing UI (response.data.id = user id).
+  return {
+    id: result.user.id,
+    email: result.user.email,
+    fullName: result.user.fullName,
+    role: result.user.role,
+    tempPassword: result.tempPassword,
+    studentId: result.student?.id ?? null,
+    applicationId: result.application?.id ?? null,
+  };
 };
 
-/**
- * Convert an existing student user into a marketing lead.
- * The student user remains active for login.
- */
 export const convertStudentToLead = async (userId: number, overrides: any = {}) => {
   // 1️⃣ Fetch student user
   const student = await prisma.user.findUnique({ where: { id: userId } });
   if (!student) throw new Error('Student user not found');
   if (student.role !== UserRole.STUDENT) throw new Error('User is not a student');
 
-  // 2️⃣ Guard against duplicate lead (by email or studentUserId)
+  // 2️⃣ Guard against duplicate lead (by email AND studentUserId)
   const duplicate = await prisma.lead.findFirst({
     where: {
-      OR: [{ email: student.email }, { studentUserId: student.id }],
+      email: student.email,
+      studentUserId: student.id,
+      deletedAt: null,
     },
   });
   if (duplicate) throw new Error('A lead already exists for this student');

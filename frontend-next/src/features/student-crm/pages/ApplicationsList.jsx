@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus,
   Search,
@@ -58,6 +58,7 @@ const STAGE_FILTERS = [
 
 export default function ApplicationsList() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { can } = usePermissions();
   const canManage = can('MANAGE_STUDENT_CRM');
 
@@ -68,7 +69,10 @@ export default function ApplicationsList() {
 
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('ALL');
-  const [studentFilterId, setStudentFilterId] = useState(null);
+  const [studentFilterId, setStudentFilterId] = useState(() => {
+    const requestedStudentId = Number(searchParams.get('student'));
+    return requestedStudentId > 0 ? requestedStudentId : null;
+  });
 
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const flash = (kind, msg) => {
@@ -122,6 +126,19 @@ export default function ApplicationsList() {
       .then((r) => setStats(r?.data || null))
       .catch(() => {});
   }, [refresh]);
+
+  useEffect(() => {
+    if (loading) return;
+    const requestedApplicationId = Number(searchParams.get('app'));
+    if (
+      requestedApplicationId > 0 &&
+      allApps.some((application) => application.id === requestedApplicationId)
+    ) {
+      router.replace(`/student-crm/applications/${requestedApplicationId}`);
+      return;
+    }
+
+  }, [allApps, loading, router, searchParams]);
 
   const reloadLeads = async () => {
     try {
@@ -301,7 +318,9 @@ export default function ApplicationsList() {
       {/* Toolbar */}
       <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="ui-text-meta">
-          {allApps.length} application{allApps.length === 1 ? '' : 's'} across {students.length} student{students.length === 1 ? '' : 's'}.
+          Follow {allApps.length} application{allApps.length === 1 ? '' : 's'} across{' '}
+          {students.length} student{students.length === 1 ? '' : 's'}, from preparation to
+          enrolment.
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           {canManage && visibleLeads.length > 0 && (
@@ -343,8 +362,8 @@ export default function ApplicationsList() {
           {[
             ['Students', stats.totalStudents],
             ['Enrolled', stats.enrolled],
-            ['Active apps', allApps.filter((a) => !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage)).length],
-            ['In visa', stageCounts.VISA_PROCESS || 0],
+            ['Active applications', allApps.filter((a) => !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage)).length],
+            ['Visa processing', stageCounts.VISA_PROCESS || 0],
           ].map(([label, value]) => (
             <div key={label} className="ui-surface px-4 py-3">
               <p className="ui-text-meta">{label}</p>

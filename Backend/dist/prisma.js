@@ -31,6 +31,12 @@ const TENANT_SCOPED_MODELS = new Set([
     'HrMarketingPerformance',
     'HrCounsellorPerformance',
     'HrPerformanceReview',
+    // CRM / Agency — scoped once tenantId columns are present
+    'Student',
+    'Application',
+    'AgencyPartner',
+    'Lead',
+    'Campaign',
 ]);
 // findUnique/findUniqueOrThrow/upsert.where require a WhereUniqueInput, which
 // Prisma rejects when wrapped in AND. Those ops are excluded from auto-merge —

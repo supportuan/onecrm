@@ -63,7 +63,7 @@ export default function RecruitmentPipeline() {
         </p>
       </div>
 
-      <div className="sticky top-0 z-20 -mx-1 mb-6 rounded-2xl border border-[var(--ui-border)] bg-white/90 p-1.5 shadow-sm backdrop-blur-md">
+      <div className="sticky top-0 z-20 -mx-1 mb-6 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg)] p-1.5 shadow-sm backdrop-blur-md">
         <nav
           role="tablist"
           aria-label="Recruitment sections"

@@ -6,6 +6,7 @@ export const registerSchema = z.object({
     phone: z.string().optional().nullable(),
     password: z.string().min(8),
     role: z.enum(['SUPER_ADMIN', 'GLOBAL_ADMIN', 'COUNSELLOR', 'STUDENT', 'HR', 'AGENT']),
+    referralCode: z.string().optional().nullable(),
     agencyDetails: z.object({
         agencyName: z.string().min(1),
         agencyCode: z.string().optional().nullable(),

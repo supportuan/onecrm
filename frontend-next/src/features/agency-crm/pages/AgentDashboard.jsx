@@ -27,6 +27,8 @@ import {
   stageIndex,
   AGENT_STUDENTS_PATH,
   AGENT_ONBOARDING_PATH,
+  AGENT_REFERRAL_PATH,
+  canShareReferralLink,
 } from '../agentPortal';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
@@ -69,6 +71,7 @@ export default function AgentDashboard() {
   const needsOnboarding = Boolean(stage && stage !== 'ACTIVE');
   const nextAction = nextOnboardingAction(stage);
   const currentIdx = stageIndex(stage);
+  const canShare = canShareReferralLink(partner);
 
   return (
     <div className="ui-container space-y-6 py-6">
@@ -81,10 +84,10 @@ export default function AgentDashboard() {
               : 'Overview of referrals, applications, and commissions'}
           </p>
         </div>
-        {isAgent && !needsOnboarding && (
+        {isAgent && canShare && (
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/agency-crm/co-branding-tools"
+              href={AGENT_REFERRAL_PATH}
               className="ui-btn-secondary inline-flex items-center gap-2 text-sm"
             >
               <Link2 className="h-4 w-4" />
@@ -94,7 +97,7 @@ export default function AgentDashboard() {
               href={AGENT_STUDENTS_PATH}
               className="ui-btn-primary inline-flex items-center gap-2 text-sm"
             >
-              My students <ArrowRight className="h-4 w-4" />
+              My referrals <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         )}
@@ -167,19 +170,28 @@ export default function AgentDashboard() {
             <p className="text-sm font-semibold text-brand">1. Complete setup</p>
             <p className="text-xs text-neutral-500">Documents, agreement, activation</p>
           </Link>
-          <Link
-            href="/agency-crm/co-branding-tools"
-            className="ui-panel p-4 hover:bg-neutral-50 transition space-y-1"
-          >
-            <p className="text-sm font-semibold text-brand">2. Share referral link</p>
-            <p className="text-xs text-neutral-500">Students join under your code</p>
-          </Link>
+          {canShare ? (
+            <Link
+              href={AGENT_REFERRAL_PATH}
+              className="ui-panel p-4 hover:bg-neutral-50 transition space-y-1"
+            >
+              <p className="text-sm font-semibold text-brand">2. Share referral link</p>
+              <p className="text-xs text-neutral-500">Students join under your code</p>
+            </Link>
+          ) : (
+            <div className="ui-panel p-4 space-y-1 opacity-70">
+              <p className="text-sm font-semibold text-neutral-700">2. Share referral link</p>
+              <p className="text-xs text-neutral-500">
+                Unlocks after your account is ACTIVE
+              </p>
+            </div>
+          )}
           <Link
             href={AGENT_STUDENTS_PATH}
             className="ui-panel p-4 hover:bg-neutral-50 transition space-y-1"
           >
-            <p className="text-sm font-semibold text-brand">3. Track my students</p>
-            <p className="text-xs text-neutral-500">Applications, fees, progress</p>
+            <p className="text-sm font-semibold text-brand">3. Track my referrals</p>
+            <p className="text-xs text-neutral-500">Leads, students, applications</p>
           </Link>
         </section>
       )}

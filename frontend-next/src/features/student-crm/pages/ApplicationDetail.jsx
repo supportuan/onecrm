@@ -36,6 +36,7 @@ import {
   createApplicationTask,
   updateApplicationTask,
   deleteApplicationTask,
+  getApplicationReadiness,
 } from '@/services/studentCrmApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { APPLICATION_STAGES, getNextStage, getStageLabel } from '@/features/student-crm/constants';
@@ -75,6 +76,7 @@ export default function ApplicationDetail({ applicationId }) {
   const [visaUploadingDocId, setVisaUploadingDocId] = useState(null);
   const [taskBusy, setTaskBusy] = useState(false);
   const [visaWorkflow, setVisaWorkflow] = useState([]);
+  const [readiness, setReadiness] = useState(null);
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const flash = (kind, msg) => {
     setToast({ kind, msg });
@@ -87,6 +89,13 @@ export default function ApplicationDetail({ applicationId }) {
       const res = await getApplication(applicationId);
       const data = res?.data || null;
       setApp(data);
+      if (data?.id) {
+        getApplicationReadiness(data.id)
+          .then((r) => setReadiness(r?.data || null))
+          .catch(() => setReadiness(null));
+      } else {
+        setReadiness(null);
+      }
       if (data?.country) {
         getProcessStages(data.country)
           .then((r) => setVisaWorkflow(r?.data?.visaWorkflow || []))
@@ -133,6 +142,16 @@ export default function ApplicationDetail({ applicationId }) {
 
   const handleJumpStage = async (stageKey) => {
     if (!app) return;
+    const gated = ['SUBMITTED', 'UNDER_REVIEW', 'OFFER_RECEIVED'].includes(stageKey);
+    if (gated && readiness && !readiness.canSubmit) {
+      const blockers = [];
+      if (!readiness.documentsVerified) blockers.push('verify required documents');
+      if (!readiness.feesPaid) blockers.push('collect required fees');
+      const ok = window.confirm(
+        `This stage usually needs: ${blockers.join(' and ') || 'readiness checks'}. Jump anyway?`
+      );
+      if (!ok) return;
+    }
     try {
       await advanceApplicationStage(app.id, { stage: stageKey });
       flash('ok', 'Stage updated');
@@ -415,6 +434,30 @@ export default function ApplicationDetail({ applicationId }) {
           isFinal={isFinal}
           isOverdue={isOverdue}
         />
+
+        {readiness && !isFinal && (
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm ${
+              readiness.canSubmit
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                : 'border-amber-200 bg-amber-50 text-amber-950'
+            }`}
+          >
+            <p className="font-medium">Application stage is the source of truth</p>
+            <p className="mt-1 text-xs opacity-90">
+              {readiness.canSubmit
+                ? 'Required documents are verified and fees are paid — ready to submit / advance.'
+                : [
+                    !readiness.documentsVerified
+                      ? `Docs: ${readiness.missingDocuments?.length ? readiness.missingDocuments.join(', ') : 'awaiting verification'}`
+                      : 'Docs: verified',
+                    !readiness.feesPaid
+                      ? `Fees: ${readiness.unpaidFees?.length || 0} unpaid`
+                      : 'Fees: paid',
+                  ].join(' · ')}
+            </p>
+          </div>
+        )}
 
         <StageStepper app={app} onJump={canManage ? handleJumpStage : null} />
 

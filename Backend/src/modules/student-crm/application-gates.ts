@@ -58,7 +58,7 @@ export const assertStageAdvanceAllowed = async (
   applicationId: number,
   toStage: string,
 ): Promise<void> => {
-  if (!['SUBMITTED', 'UNDER_REVIEW', 'OFFER_RECEIVED'].includes(toStage)) return;
+  if (!['SUBMITTED', 'UNDER_REVIEW', 'OFFER_RECEIVED', 'ENROLLED'].includes(toStage)) return;
 
   const readiness = await getApplicationReadiness(applicationId);
   if (!readiness) throw new Error('application not found');

@@ -31,6 +31,7 @@ export default function AgencyOnboarding() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -98,9 +99,13 @@ export default function AgencyOnboarding() {
 
   const onSign = async () => {
     if (!partner?.id || !allowSign) return;
+    if (!agreementAccepted) {
+      setMsg('Please read and accept the agency agreement before signing');
+      return;
+    }
     setBusy(true);
     try {
-      await signAgreement(partner.id);
+      await signAgreement(partner.id, { agreementVersion: 'v1', accepted: true });
       await load();
       setMsg('Agreement signed — awaiting admin verification');
     } catch (err) {
@@ -199,11 +204,39 @@ export default function AgencyOnboarding() {
               <StepIcon done={idx >= stageIndex('AGREEMENT_SIGNED')} current={allowSign} />
               <div className="space-y-2">
                 <p className="font-medium text-neutral-800">3. Sign agency agreement</p>
+                {allowSign && (
+                  <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700 space-y-2 max-h-48 overflow-y-auto">
+                    <p className="font-semibold text-neutral-900">ApplyUniNow Agency Partner Agreement (v1)</p>
+                    <p>
+                      By signing, you confirm that you are authorised to represent this agency, that KYC documents
+                      submitted are accurate, and that you will refer students in accordance with ApplyUniNow policies,
+                      commission rules, and data-protection requirements.
+                    </p>
+                    <p>
+                      You agree not to misrepresent university offers, fees, or visa outcomes; to keep student data
+                      confidential; and to accept that commissions are payable only after configured triggers
+                      (for example enrolment or visa approval) and admin verification.
+                    </p>
+                    <p>
+                      ApplyUniNow may suspend or terminate partner access for fraud, document forgery, or policy breaches.
+                      This electronic acceptance records your IP address, user agent, and agreement version.
+                    </p>
+                    <label className="flex items-start gap-2 pt-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5"
+                        checked={agreementAccepted}
+                        onChange={(e) => setAgreementAccepted(e.target.checked)}
+                      />
+                      <span>I have read and agree to the Agency Partner Agreement (v1).</span>
+                    </label>
+                  </div>
+                )}
                 <button
                   type="button"
                   className="ui-btn-secondary"
                   onClick={onSign}
-                  disabled={busy || !allowSign}
+                  disabled={busy || !allowSign || !agreementAccepted}
                 >
                   Sign agreement
                 </button>

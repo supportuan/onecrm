@@ -8,6 +8,9 @@ const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:4000";
 
 const nextConfig = {
   output: "standalone",
+  turbopack: {
+    root: __dirname,
+  },
   // Allow large file uploads (videos up to 100MB) via the rewrite proxy
   experimental: {
     serverActions: {

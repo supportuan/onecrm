@@ -4,15 +4,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Command, LogOut, Menu, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, PanelLeftClose } from "lucide-react";
 import MenuItem from "./MenuItem";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { useWorkspace } from "../lib/workspaceContext";
 import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
 import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
+import { SIDEBAR_COLLAPSED, SIDEBAR_OPEN } from "@/lib/layout-shell";
 
 const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Users") return "User Management";
@@ -26,6 +27,13 @@ const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Payroll") return "Payroll Inputs";
   if (subLabel === "Overview") return "Employee Directory";
   if (subLabel === "Student Management") return "Student Management";
+  if (subLabel === "Student Information Hub") return "Student Management";
+  if (subLabel === "Student Alliance") return "Student Management";
+  if (subLabel === "Application Tracking") return "Applications";
+  if (subLabel === "Revenue Intelligence") return "Marketing Analytics";
+  if (subLabel === "Knowledge Library") return "Resource Library";
+  if (subLabel === "Manage Knowledge") return "Manage Resources";
+  if (subLabel === "Upload Knowledge") return "Manage Resources";
   if (subLabel === "Students & Referrals") return "Agency Leads";
   if (subLabel === "My Students") return "Agency Leads";
 
@@ -45,24 +53,29 @@ const hasConfiguredModuleAccess = (moduleAccess) => {
 const filterSubItemsByModuleAccess = (item, access) =>
   item.subItems?.filter((sub) => {
     const optName = getPermissionOptionName(sub.label);
+    const accessKey = item.accessKey || item.label;
+
+    if (accessKey === "Marketing" && sub.label === "Dashboard") {
+      return Object.values(access[accessKey] || {}).some(
+        (actions) => Array.isArray(actions) && actions.length > 0
+      );
+    }
 
     if (optName === "Roles") {
-      const hasRoles = access[item.label]?.["Roles"]?.length > 0;
-      const hasPerms = access[item.label]?.["Permissions"]?.length > 0;
+      const hasRoles = access[accessKey]?.["Roles"]?.length > 0;
+      const hasPerms = access[accessKey]?.["Permissions"]?.length > 0;
       return hasRoles || hasPerms;
     }
 
-    return access[item.label]?.[optName]?.length > 0;
+    return access[accessKey]?.[optName]?.length > 0;
   }) || [];
 
-const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
+const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
   const location = usePathname() || "";
   const router = useRouter();
 
-  const { user, logout } = useAuth();
-  const { logout: workspaceLogout } = useWorkspace();
-  const { logout: authLogout } = useAuth();
-  const { can, permissionMap } = usePermissions();
+  const { user } = useAuth();
+  const { can } = usePermissions();
 
   const [openSections, setOpenSections] = useState({});
   const [flyoutMenu, setFlyoutMenu] = useState(null);
@@ -79,16 +92,28 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
       : new Set();
 
     const tenantAllows = (item) => {
-      const moduleKey = MODULE_KEY_MAP[item.label];
+      const moduleKey = MODULE_KEY_MAP[item.accessKey || item.label];
       if (!moduleKey) return true;
+      // The tenant module is enabled in the database, but older admin sessions
+      // may still carry an enabledModules snapshot from before Knowledge Hub existed.
+      if (moduleKey === "RESOURCES" && user.role === "GLOBAL_ADMIN") return true;
       return enabledModules.has(moduleKey);
     };
 
     const moduleVisible = (item) => {
       if (!tenantAllows(item)) return false;
 
-      const required = MODULE_PERMISSION_MAP[item.label];
+      const accessKey = item.accessKey || item.label;
+      const required = MODULE_PERMISSION_MAP[accessKey];
       if (!required) return true;
+
+      const configuredOptions = user.moduleAccess?.[accessKey];
+      const hasExplicitModuleAccess =
+        configuredOptions &&
+        Object.values(configuredOptions).some(
+          (actions) => Array.isArray(actions) && actions.length > 0
+        );
+      if (hasExplicitModuleAccess) return true;
 
       return can(required);
     };
@@ -112,7 +137,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
       return {
         ...item,
         displayLabel: item.agentDisplayLabel || item.displayLabel || item.label,
-        path: item.label === "Agency CRM" ? "/agency-crm/dashboard" : item.path,
+        path: item.accessKey === "Agency CRM" ? "/agency-crm/dashboard" : item.path,
         subItems: item.subItems?.map((sub) => ({
           ...sub,
           label: sub.agentLabel || sub.label,
@@ -140,8 +165,20 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
       .map((item) => {
         if (!item.subItems) return withAgentLabels(item);
 
-        const moduleAccessSubItems = filterSubItemsByModuleAccess(item, access)
+        let moduleAccessSubItems = filterSubItemsByModuleAccess(item, access)
           .filter(audienceAllows);
+
+        // Knowledge Hub is role/audience driven. Existing users may predate the
+        // Resources moduleAccess entry, so do not hide permitted library/upload links.
+        if (item.accessKey === "Resources") {
+          const permittedResourceItems = item.subItems.filter(subVisible);
+          moduleAccessSubItems = [
+            ...moduleAccessSubItems,
+            ...permittedResourceItems.filter(
+              (sub) => !moduleAccessSubItems.some((current) => current.path === sub.path)
+            ),
+          ];
+        }
 
         if (moduleAccessSubItems.length === 0) return null;
 
@@ -151,7 +188,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
         });
       })
       .filter(Boolean);
-  }, [user, can, permissionMap]);
+  }, [user, can]);
 
   const sectionKeys = useMemo(
     () => filteredNavMenu.map((item) => item.label),
@@ -164,19 +201,25 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
     )?.label;
 
     if (activeSection) {
-      setOpenSections(
-        sectionKeys.reduce((acc, key) => {
-          acc[key] = key === activeSection;
-          return acc;
-        }, {})
-      );
+      const frame = requestAnimationFrame(() => {
+        setOpenSections(
+          sectionKeys.reduce((acc, key) => {
+            acc[key] = key === activeSection;
+            return acc;
+          }, {})
+        );
+      });
+      return () => cancelAnimationFrame(frame);
     }
+    return undefined;
   }, [location, filteredNavMenu, sectionKeys]);
 
   useEffect(() => {
     if (sidebarOpen) {
-      setFlyoutMenu(null);
+      const frame = requestAnimationFrame(() => setFlyoutMenu(null));
+      return () => cancelAnimationFrame(frame);
     }
+    return undefined;
   }, [sidebarOpen]);
 
   useEffect(() => {
@@ -211,6 +254,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
 
     setFlyoutMenu({
       label: item.label,
+      path: item.path,
       subItems: item.subItems,
       top: Math.max(8, rect.top - 8),
     });
@@ -226,125 +270,99 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
     }, 150);
   };
 
-  const handleLogout = () => {
-    logout?.();
-    router.push("/login");
-    localStorage.clear();
-  };
-
   return (
     <>
       <aside
-        className="
-          fixed inset-y-0 left-0 z-30 flex h-screen flex-col
-          border-r border-neutral-200 bg-white text-neutral-800
-          transition-[width] duration-300 ease-in-out
-        "
-        style={{
-          width: sidebarOpen ? "288px" : "80px",
-        }}
+        className="app-sidebar-with-waves fixed inset-y-0 left-0 z-30 flex h-screen flex-col overflow-hidden border-r border-neutral-200/70 bg-white text-neutral-800 transition-[width] duration-200 ease-out"
+        style={{ width: sidebarOpen ? SIDEBAR_OPEN : SIDEBAR_COLLAPSED }}
       >
-
-        <div className="flex-none p-5 pb-3">
-          <div className="flex items-center justify-between gap-3 border-b border-neutral-200 pb-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-900">
-                <Command className="h-4 w-4" />
-              </div>
-
-
-              {sidebarOpen && (
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-neutral-900">
-                    ONECRM
-                  </p>
-                  <p className="text-xs text-neutral-500 truncate">
-                    Role based access
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="app-sidebar-wave-blobs" aria-hidden="true">
+          <svg viewBox="0 0 240 320" preserveAspectRatio="none">
+            <path
+              className="app-wave-blob-primary"
+              d="M0 132C43 89 85 160 128 116C171 72 197 104 240 58V320H0V132Z"
+            />
+            <path
+              className="app-wave-blob-secondary"
+              d="M0 196C48 148 92 226 145 174C190 130 216 165 240 142V320H0V196Z"
+            />
+          </svg>
         </div>
-        {/* <button
-          type="button"
-          onClick={onToggleSidebar}
-          className=" inline-flex pl-8 h-15 w-15 shrink-0 items-center rounded-xl text-slate-700 cursor-pointer"
-          aria-label="Toggle sidebar"
+        <div
+          className={`flex h-20 flex-none items-center border-b border-neutral-100/80 ${
+            sidebarOpen ? "justify-between gap-1 px-2" : "justify-center"
+          }`}
         >
-          <Menu className="h-5 w-5" />
-        </button>
-
-        {sidebarOpen && (
-          <div className="px-5 py-2 flex-none">
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
-              <p className="text-xs text-neutral-500">Logged in as</p>
-              <p className="text-sm font-medium text-neutral-900 mt-0.5">
-                {user?.role || "User"}
-              </p>
-              <p className="text-xs text-neutral-500 mt-1 truncate">
-                {user?.fullName || user?.email}
-              </p>
-            </div>
-          </div>
-        )} */}
-
-        <div className="flex items-center justify-between gap-2  px-4 py-2">
-          {/* User Info */}
-          {sidebarOpen && (
-            <div className="ml-4 flex-1">
-              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-5 py-1">
-                <p className="text-xs text-neutral-500">Logged in as</p>
-                <p className="text-sm font-medium text-neutral-900">
-                  {user?.role || "User"}
+          {sidebarOpen ? (
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Image
+                src="/images/applyUniNow.png"
+                alt="ApplyUniNow"
+                width={60}
+                height={60}
+                className="h-14 w-14 shrink-0 object-contain"
+              />
+              <div className="min-w-0 leading-tight">
+                <p className="app-title-gradient truncate text-[18px] font-semibold tracking-tight">
+                  ONECRM
                 </p>
-                <p className="text-xs text-neutral-500 truncate">
-                  {user?.fullName || user?.email}
+                <p className="truncate text-[10px] font-medium tracking-tight text-neutral-500">
+                  Intelligence Connecting Seamlessly
                 </p>
               </div>
             </div>
-          )}
-
+          ) : null}
           <button
             type="button"
             onClick={onToggleSidebar}
-            className="flex h-12 w-12 items-center ml-1.5 justify-center rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-            aria-label="Toggle sidebar"
+            className={`inline-flex shrink-0 items-center justify-center rounded-xl transition hover:bg-neutral-100 ${
+              sidebarOpen
+                ? "h-6 w-6 text-neutral-400 hover:text-neutral-700"
+                : "h-10 w-10"
+            }`}
+            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            title={!sidebarOpen ? "Expand sidebar" : undefined}
           >
             {sidebarOpen ? (
-              <ChevronLeft className="h-5 w-5" />
+              <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
             ) : (
-              <ChevronRight className="h-5 w-5" />
+              <Image
+                src="/images/applyUniNow.png"
+                alt="ApplyUniNow"
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+              />
             )}
           </button>
         </div>
 
-        <div
-          className={`
-            flex-1 overflow-y-auto sidebar-scrollbar py-3 space-y-1
-            ${sidebarOpen ? "px-5" : "px-3"}
-          `}
+        <nav
+          className={`flex-1 overflow-y-auto sidebar-scrollbar py-3 ${
+            sidebarOpen ? "px-3" : "px-2"
+          }`}
         >
+          <div className="space-y-1">
           {filteredNavMenu.map((item) => {
             const hasSubItems = item.subItems && item.subItems.length > 0;
+            const sectionActive = isSectionActive(item);
 
             return (
               <div key={item.label} className="space-y-1">
-
                 {hasSubItems ? (
                   <>
                     <button
                       type="button"
                       title={!sidebarOpen ? (item.displayLabel || item.label) : ""}
                       className={`
-                        flex w-full items-center rounded-lg py-2.5 text-xs font-medium transition
+                        app-nav-item group flex w-full items-center rounded-xl text-[13px] font-medium
                         ${sidebarOpen
-                          ? "justify-between gap-3 px-3"
-                          : "justify-center px-2"
+                          ? "justify-between gap-3 px-3 py-2.5"
+                          : "justify-center p-2.5"
                         }
-                        ${isSectionActive(item)
-                          ? "bg-neutral-100 text-neutral-900"
-                          : "text-neutral-600 hover:bg-neutral-50"
+                        ${sectionActive
+                          ? "app-nav-item-active bg-brand text-white"
+                          : "text-slate-600 hover:bg-brand-soft hover:text-brand"
                         }
                       `}
                       onMouseEnter={(e) => {
@@ -357,16 +375,6 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                           closeFlyoutWithDelay();
                         }
                       }}
-                      // onClick={() => {
-                      //   if (!sidebarOpen) return;
-
-                      //   if (item.label === "Marketing" && item.path) {
-                      //     router.push(item.path);
-                      //   }
-
-                      //   toggleSection(item.label);
-                      // }}
-
                       onClick={() => {
                         if (!sidebarOpen) {
                           if (item.path) {
@@ -383,14 +391,23 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                         toggleSection(item.label);
                       }}
                     >
-                      <span className="flex items-center gap-3 text-neutral-800">
-                        <item.icon className="h-4 w-4 shrink-0 text-neutral-500" />
+                      <span className="flex min-w-0 items-center gap-3">
+                        <item.icon
+                          className={`h-[17px] w-[17px] shrink-0 ${
+                            sectionActive
+                              ? "text-white"
+                              : "text-slate-400 group-hover:text-brand"
+                          }`}
+                          strokeWidth={1.75}
+                        />
                         {sidebarOpen && <span>{item.displayLabel || item.label}</span>}
                       </span>
 
                       {sidebarOpen && (
                         <ChevronDown
-                          className={`h-4 w-4 text-neutral-400 transition-transform ${openSections[item.label]
+                          className={`h-4 w-4 transition-transform ${
+                            sectionActive ? "text-white/70" : "text-neutral-400"
+                          } ${openSections[item.label]
                             ? "rotate-180"
                             : "rotate-0"
                             }`}
@@ -401,7 +418,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                     {sidebarOpen && (
                       <div
                         className={`${openSections[item.label] ? "block" : "hidden"
-                          } space-y-1 pt-2`}
+                          } space-y-1 pb-1 pt-1`}
                       >
                         {item.subItems.map((sub) => (
                           <MenuItem
@@ -410,6 +427,7 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                             label={sub.label}
                             path={sub.path}
                             nested
+                            exact={sub.path === item.path}
                           />
                         ))}
                       </div>
@@ -420,92 +438,44 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                     type="button"
                     title={!sidebarOpen ? (item.displayLabel || item.label) : ""}
                     className={`
-                      flex w-full items-center rounded-lg py-2.5 text-xs font-medium transition
+                      app-nav-item group flex w-full items-center rounded-xl text-[13px] font-medium
                       ${sidebarOpen
-                        ? "gap-3 px-3"
-                        : "justify-center px-2"
+                        ? "gap-3 px-3 py-2.5"
+                        : "justify-center p-2.5"
                       }
                       ${location === item.path
-                        ? "bg-neutral-100 text-neutral-900"
-                        : "text-neutral-600 hover:bg-neutral-50"
+                        ? "app-nav-item-active bg-brand text-white"
+                        : "text-slate-600 hover:bg-brand-soft hover:text-brand"
                       }
                     `}
                     onClick={() => {
                       router.push(item.path);
                     }}
                   >
-                    <item.icon className="h-4 w-4 shrink-0 text-neutral-500" />
+                    <item.icon
+                      className={`h-[17px] w-[17px] shrink-0 ${
+                        location === item.path
+                          ? "text-white"
+                          : "text-slate-400 group-hover:text-brand"
+                      }`}
+                      strokeWidth={1.75}
+                    />
                     {sidebarOpen && <span>{item.displayLabel || item.label}</span>}
                   </button>
                 )}
               </div>
             );
           })}
-        </div>
-
-
-        {/* <div className="flex-none w-full border-t border-neutral-200 bg-neutral-10 px-4 py-4">
-          <div className="mx-auto flex max-w-[220px] flex-col items-center justify-center text-center">
-            <p className="text-xs font-semibold text-neutral-700">
-              Created by AUN Tech Consulting
-            </p>
-
-            <p className="mt-1 text-[11px] text-neutral-500">
-              Version 3.3.1
-            </p>
-
-            <p className="text-[10px] leading-4 text-neutral-400">
-              Optimised Services & Performance Enhancements
-            </p>
           </div>
-        </div> */}
+        </nav>
 
-        {sidebarOpen &&
-          <div className="flex-none w-full border-t border-neutral-200 bg-neutral-10 px-4 py-4">
-            <div className="mx-auto flex max-w-[220px] flex-col items-center justify-center text-center">
-              <p className="text-xs font-semibold text-neutral-700">
-                Created by AUN Tech Consulting
-              </p>
-
-              <p className="mt-1 text-[11px] text-neutral-500">
-                Version 3.3.1
-              </p>
-
-              <p className="text-[10px] leading-4 text-neutral-400">
-                Optimised Services & Performance Enhancements
-              </p>
-            </div>
-          </div>
-
-        }
-
-        <div className="flex-none p-5 border-t border-neutral-200 bg-neutral-50">
-          <button
-            onClick={() => {
-              handleLogout();
-
-              try {
-                authLogout();
-              } catch (e) { }
-
-              try {
-                workspaceLogout();
-              } catch (e) { }
-            }}
-            title={!sidebarOpen ? "Logout" : ""}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white p-3 border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            {sidebarOpen && <span>Logout</span>}
-          </button>
-        </div>
       </aside>
 
       {flyoutMenu && !sidebarOpen && (
         <div
           className="fixed z-50 min-w-[240px] rounded-xl border border-neutral-200 bg-white p-2 shadow-xl "
           style={{
-            left: "88px",
+            left: `${SIDEBAR_COLLAPSED + 8}px`,
             top: `${flyoutMenu.top}px`,
           }}
           onMouseEnter={() => {
@@ -531,15 +501,16 @@ const Sidebar = ({ sidebarOpen, onClose, onToggleSidebar }) => {
                   setFlyoutMenu(null);
                 }}
                 className={` cursor-pointer
-                  flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition
-                  ${location.startsWith(sub.path)
-                    ? "bg-neutral-100 text-neutral-900"
-                    : "text-neutral-600 hover:bg-neutral-50"
+                  flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition
+                  ${location === sub.path ||
+                    (sub.path !== flyoutMenu.path && location.startsWith(`${sub.path}/`))
+                    ? "bg-brand text-white"
+                    : "text-slate-600 hover:bg-brand-soft hover:text-brand"
                   }
                 `}
               >
                 {sub.icon && (
-                  <sub.icon className="h-4 w-4 shrink-0 text-neutral-500" />
+                  <sub.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                 )}
                 <span>{sub.label}</span>
               </button>

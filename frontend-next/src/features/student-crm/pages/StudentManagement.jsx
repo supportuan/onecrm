@@ -334,7 +334,7 @@ export default function StudentManagement() {
 
   const tabs = [
     { id: 'personal', label: 'Personal', icon: User },
-    { id: 'study', label: 'Study plan', icon: Globe },
+    { id: 'study', label: 'Study Explorer', icon: Globe },
     { id: 'education', label: 'Education', icon: BookOpen },
     { id: 'tests', label: 'Exams', icon: GraduationCap },
     { id: 'process', label: 'Checklist', icon: CheckCircle2 },
@@ -351,7 +351,7 @@ export default function StudentManagement() {
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <p className="ui-text-body max-w-xl">
-            Manage student profiles, academic history, and applications.
+            One connected hub for applicant profiles, milestones, study choices, and applications.
           </p>
           {canManage && (
             <button
@@ -490,6 +490,16 @@ export default function StudentManagement() {
                     );
                   })}
                 </div>
+
+                {tab === 'study' && (
+                  <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3">
+                    <p className="text-sm font-semibold text-blue-950">Study Explorer</p>
+                    <p className="mt-1 text-xs leading-relaxed text-blue-800">
+                      Explore the course and university catalogue, save multiple study options,
+                      and use a selected plan to prefill a new application.
+                    </p>
+                  </div>
+                )}
 
                 {tab === 'personal' && (
                   <div className="ui-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-4">

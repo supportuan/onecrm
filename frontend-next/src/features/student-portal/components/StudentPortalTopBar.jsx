@@ -9,6 +9,7 @@ import StudentAvatarLink from './StudentAvatarLink';
 const PAGE_META = [
   { prefix: '/applicant/profile/edit', title: 'Edit profile' },
   { prefix: '/applicant/profile/view', title: 'Profile' },
+  { prefix: '/applicant/resources', title: 'Knowledge Hub' },
   { prefix: '/applicant/payments', title: 'Payments' },
   { prefix: '/applicant/applications', title: 'Applications' },
   { prefix: '/applicant/accept-policy', title: 'Accept policy' },
@@ -24,7 +25,7 @@ export default function StudentPortalTopBar({ sidebarOpen, onToggleSidebar }) {
 
   const handleLogout = () => {
     logout?.();
-    router.push('/student-login');
+    router.push('/login');
     localStorage.clear();
   };
 
@@ -40,7 +41,7 @@ export default function StudentPortalTopBar({ sidebarOpen, onToggleSidebar }) {
           <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
 
-        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-brand">
+        <h1 className="app-title-gradient min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight">
           {meta.title}
         </h1>
       </div>
@@ -53,7 +54,7 @@ export default function StudentPortalTopBar({ sidebarOpen, onToggleSidebar }) {
           onClick={handleLogout}
           title="Log out"
           aria-label="Log out"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#0b2a5b] transition hover:bg-[#e8eef7] active:scale-[0.98]"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-brand transition hover:bg-brand-soft active:scale-[0.98]"
         >
           <LogOut className="h-4 w-4" strokeWidth={2} />
         </button>

@@ -49,7 +49,7 @@ function ResetPasswordContent() {
     <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-brand px-4 py-12">
       <div className="w-auto rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
         <div className="mb-6 text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">OneCRM Reset Password</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">ApplyUniNow Reset Password</p>
           <h1 className="mt-4 text-2xl font-semibold text-brand">Set a new password</h1>
           <p className="mt-2 text-sm text-neutral-500">Enter your new password to continue.</p>
         </div>

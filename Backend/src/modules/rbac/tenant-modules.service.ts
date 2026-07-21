@@ -5,8 +5,10 @@ import {
   ModuleKey,
 } from './rbac.constants.js';
 
-// tenantId -> Set of enabled module keys. Loaded lazily, invalidated on write.
-const cache = new Map<number, Set<ModuleKey>>();
+// Keep the cache short-lived so migrations or operational DB changes cannot
+// leave a running API process with stale module access indefinitely.
+const CACHE_TTL_MS = 30_000;
+const cache = new Map<number, { modules: Set<ModuleKey>; expiresAt: number }>();
 
 export const loadTenantModules = async (tenantId: number): Promise<Set<ModuleKey>> => {
   const rows = await prisma.tenantModule.findMany({
@@ -14,12 +16,14 @@ export const loadTenantModules = async (tenantId: number): Promise<Set<ModuleKey
     select: { moduleKey: true },
   });
   const set = new Set<ModuleKey>(rows.map((r) => r.moduleKey as ModuleKey));
-  cache.set(tenantId, set);
+  cache.set(tenantId, { modules: set, expiresAt: Date.now() + CACHE_TTL_MS });
   return set;
 };
 
 export const getEnabledModules = async (tenantId: number): Promise<Set<ModuleKey>> => {
-  return cache.get(tenantId) ?? (await loadTenantModules(tenantId));
+  const cached = cache.get(tenantId);
+  if (cached && cached.expiresAt > Date.now()) return cached.modules;
+  return loadTenantModules(tenantId);
 };
 
 export const isModuleEnabled = async (

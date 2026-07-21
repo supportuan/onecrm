@@ -11,7 +11,7 @@ import {
 
 /**
  * Agency CRM layout: block agents from admin-only partner-ops screens.
- * Navigation lives in the main sidebar (Agent Portal) — no duplicate top tabs.
+ * Navigation lives in the main sidebar (Agent Hub) — no duplicate top tabs.
  */
 export default function AgencyCrmLayout({ children }) {
   const { user, loading } = useAuth();

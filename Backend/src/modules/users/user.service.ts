@@ -1,5 +1,5 @@
 import { prisma } from '../../prisma.js';
-import { UserRole, AgencyPartnerStatus } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { hashPassword } from '../../utils/password.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
@@ -70,6 +70,10 @@ const MODULE_ACCESS_OPTIONS = [
     module: "Admin & Settings",
     options: ["User Management", "Roles", "Permissions", "Settings"],
   },
+  {
+    module: "Resources",
+    options: ["Resource Library", "Manage Resources"],
+  },
 ];
 
 export const createEmptyModuleAccess = () => {
@@ -99,6 +103,7 @@ export const getDefaultModuleAccessByRole = (role: string) => {
 
   if (role === "HR") {
     giveModuleActions("HR", ["VIEW", "EDIT"]);
+    giveModuleActions("Resources", ["VIEW"]);
   } else if (role === "STUDENT") {
     // Students use the applicant portal only — no staff CRM sidebar access.
   } else if (role === "AGENT" || role === "AGENCY_FREELANCER") {
@@ -117,18 +122,30 @@ export const getDefaultModuleAccessByRole = (role: string) => {
       access["Agency CRM"] = access["Agency CRM"] || {};
       access["Agency CRM"][optionName] = ["VIEW"];
     });
+    access["Resources"] = access["Resources"] || {};
+    access["Resources"]["Resource Library"] = ["VIEW"];
   } else if (role === "COUNSELLOR") {
     giveModuleActions("Marketing", ["VIEW"]);
     giveModuleActions("Student CRM", ["VIEW"]);
+    giveModuleActions("Resources", ["VIEW"]);
+  } else if (role === "MARKETING_MANAGER") {
+    giveModuleActions("Marketing", ["VIEW", "EDIT"]);
+    giveModuleActions("Resources", ["VIEW"]);
+  } else if (role === "TELECALLER") {
+    giveModuleActions("Marketing", ["VIEW"]);
+    giveModuleActions("Student CRM", ["VIEW"]);
+    giveModuleActions("Resources", ["VIEW"]);
   } else if (role === "GLOBAL_ADMIN") {
     giveModuleActions("Marketing", ["VIEW", "EDIT"]);
     giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
     giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
+    giveModuleActions("Resources", ["VIEW", "EDIT"]);
     giveModuleActions("Admin & Settings", ["VIEW", "EDIT"]);
   } else if (role === "SUPER_ADMIN") {
     giveModuleActions("Marketing", ["VIEW", "EDIT"]);
     giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
     giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
+    giveModuleActions("Resources", ["VIEW", "EDIT"]);
     giveModuleActions("HR", ["VIEW", "EDIT"]);
     giveModuleActions("Admin & Settings", ["VIEW", "EDIT"]);
   }
@@ -327,7 +344,7 @@ export const createUser = async (data: {
 
     sendCampaignEmail({
       to: normalizedEmail,
-      subject: 'Welcome to OneCRM - Your Account Details',
+      subject: 'Welcome to ApplyUniNow - Your Account Details',
       
 
       html: `
@@ -342,7 +359,7 @@ export const createUser = async (data: {
                     <tr>
                       <td style="background:#0f172a;padding:30px;text-align:center;">
                         <h1 style="margin:0;color:#ffffff;font-size:30px;font-weight:700;">
-                          Welcome to OneCRM
+                          Welcome to ApplyUniNow
                         </h1>
                         <p style="margin-top:10px;color:#E0E7FF;font-size:15px;">
                           Smart CRM Platform for Education & Business Management
@@ -359,7 +376,7 @@ export const createUser = async (data: {
                         </p>
 
                         <p style="font-size:15px;line-height:28px;color:#475569;margin-bottom:25px;">
-                          Congratulations! Your <strong>OneCRM</strong> account has been successfully created.
+                          Congratulations! Your <strong>ApplyUniNow</strong> account has been successfully created.
                           You have been assigned the role of
                           <strong style="color:#4F46E5;">${displayRole}</strong>.
                         </p>
@@ -418,7 +435,7 @@ export const createUser = async (data: {
                                   display:inline-block;
                                   font-size:15px;
                                   font-weight:600;">
-                            Login to OneCRM
+                            Login to ApplyUniNow
                           </a>
                         </div>
 
@@ -440,7 +457,7 @@ export const createUser = async (data: {
 
                         <p style="margin-top:30px;font-size:15px;color:#334155;">
                           Best Regards,<br>
-                          <strong>OneCRM Team</strong>
+                          <strong>ApplyUniNow Team</strong>
                         </p>
 
                       </td>
@@ -451,7 +468,7 @@ export const createUser = async (data: {
                       <td style="background:#F8FAFC;padding:25px;text-align:center;border-top:1px solid #E2E8F0;">
 
                         <p style="margin:0;font-size:13px;color:#64748B;">
-                          © ${new Date().getFullYear()} OneCRM. All Rights Reserved.
+                          © ${new Date().getFullYear()} ApplyUniNow. All Rights Reserved.
                         </p>
 
                         <p style="margin-top:8px;font-size:12px;color:#94A3B8;">
@@ -586,14 +603,13 @@ export const updateUser = async (
       vars: { name: updated.fullName, role: updated.roleLabel || updated.role },
     });
 
+    // Approving login lets the agent complete docs/agreement — do NOT auto-activate.
+    // Activation (referral sharing) stays on Agency Management → Activate partner.
     if (updated.role === UserRole.AGENT || updated.role === UserRole.AGENCY_FREELANCER) {
-      const { provisionPartnerFromAgentUser, setPartnerStatus } = await import(
+      const { provisionPartnerFromAgentUser } = await import(
         '../agency-crm/agency-partner.lifecycle.js'
       );
-      const partner = await provisionPartnerFromAgentUser(id);
-      if (partner && partner.status === AgencyPartnerStatus.PENDING) {
-        await setPartnerStatus(partner.id, AgencyPartnerStatus.ACTIVE, updatedById);
-      }
+      await provisionPartnerFromAgentUser(id);
     }
   }
 

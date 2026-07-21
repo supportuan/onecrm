@@ -16,6 +16,7 @@ import crmSettingsRouter from './modules/crm-settings/crm-settings.routes.js';
 import uploadsRouter from './modules/uploads/uploads.routes.js';
 import agencyCrmRouter from './modules/agency-crm/agency-crm.routes.js';
 import agencyCrmPublicRouter from './modules/agency-crm/agency-crm.public.routes.js';
+import resourcesRouter from './modules/resources/resources.routes.js';
 import superAdminRouter from './modules/super-admin/super-admin.routes.js';
 import path from 'path';
 import { ensureDefaultTenantSeeded } from './modules/rbac/rbac.service.js';
@@ -25,8 +26,19 @@ import { startHrPerformanceReviewScheduler } from './modules/hr/hr-performance.s
 import { startStudentCrmScheduler } from './modules/student-crm/student-crm.scheduler.js';
 import { warmIndustryCache } from './modules/crm-settings/crm-settings.service.js';
 import countryRoutes from './modules/countries/country.routes.js';
+import { authenticateTokenOrCookie } from './middleware/authenticate.js';
+import { getJwtAccessSecret, getJwtRefreshSecret } from './utils/jwt.js';
 const app = express();
 const port = process.env.PORT || 4000;
+
+// Fail fast if JWT secrets are missing/default outside test.
+try {
+  getJwtAccessSecret();
+  getJwtRefreshSecret();
+} catch (err) {
+  console.error('[ApplyUniNow] Fatal JWT configuration error:', (err as Error).message);
+  process.exit(1);
+}
 
 
 app.use(cors());
@@ -37,7 +49,7 @@ setupSwagger(app);
 
 // Health check endpoint (must be registered before authenticated routers)
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, status: 'ok', message: 'One CRM TypeScript backend is running' });
+  res.json({ success: true, status: 'ok', message: 'ApplyUniNow backend is running' });
 });
 
 // Mount Modular API Routes
@@ -52,31 +64,32 @@ app.use('/api/crm-settings', crmSettingsRouter);
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/agency-crm/public', agencyCrmPublicRouter);
 app.use('/api/agency-crm', agencyCrmRouter);
+app.use('/api/resources', resourcesRouter);
 app.use('/api/super-admin', superAdminRouter);
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', authenticateTokenOrCookie, express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api/countries', countryRoutes);
 
 // Mount global error handling middleware
 app.use(errorHandler);
 
 app.listen(port, async () => {
-  console.log(`[One CRM] Backend server listening on http://localhost:${port}`);
-  console.log(`[One CRM] Swagger UI available at http://localhost:${port}/api-docs`);
-  console.log('[One CRM] Multi-tenant: ON (HR root models auto-scoped via ALS + Prisma extension)');
+  console.log(`[ApplyUniNow] Backend server listening on http://localhost:${port}`);
+  console.log(`[ApplyUniNow] Swagger UI available at http://localhost:${port}/api-docs`);
+  console.log('[ApplyUniNow] Multi-tenant: ON (HR root models auto-scoped via ALS + Prisma extension)');
   try {
     await ensureDefaultTenantSeeded();
-    console.log('[One CRM] RBAC seeded for default tenant');
+    console.log('[ApplyUniNow] RBAC seeded for default tenant');
     await backfillHrSeedsForExistingTenants();
-    console.log('[One CRM] HR defaults backfilled where missing');
+    console.log('[ApplyUniNow] HR defaults backfilled where missing');
     await backfillStaffEmployees();
-    console.log('[One CRM] HR employee records ensured for staff users');
+    console.log('[ApplyUniNow] HR employee records ensured for staff users');
     startNotificationScheduler();
-    console.log('[One CRM] Notification scheduler started');
+    console.log('[ApplyUniNow] Notification scheduler started');
     startStudentCrmScheduler();
-    console.log('[One CRM] Student CRM scheduler started');
+    console.log('[ApplyUniNow] Student Hub scheduler started');
     startHrPerformanceReviewScheduler();
-    warmIndustryCache().catch((err) => console.warn('[One CRM] Industry cache warm skipped', err));
+    warmIndustryCache().catch((err) => console.warn('[ApplyUniNow] Industry cache warm skipped', err));
   } catch (err) {
-    console.error('[One CRM] Failed to initialize RBAC permissions', err);
+    console.error('[ApplyUniNow] Failed to initialize RBAC permissions', err);
   }
 });

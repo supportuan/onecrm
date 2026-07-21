@@ -34,12 +34,19 @@ export const getUsers = async (role) => {
 };
 
 export const registerUser = async (userData) => {
-  // Uses regular fetch because it's a public endpoint
-  const res = await fetch(`${API_URL}/register`, {
+  // Public registration goes through auth API (not /api/users/register).
+  const endpoint = `/api/auth/register`;
+  // #region agent log
+  fetch('http://127.0.0.1:7488/ingest/1561ea09-c578-4523-9e9d-87c6f4089806',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d27ab4'},body:JSON.stringify({sessionId:'d27ab4',runId:'post-fix',hypothesisId:'H4',location:'userApi.js:registerUser',message:'registerUser calling endpoint',data:{endpoint,role:userData?.role??null,hasReferralInPayload:Boolean(userData?.referralCode||userData?.agencyRef||userData?.ref)},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(userData),
   });
+  // #region agent log
+  fetch('http://127.0.0.1:7488/ingest/1561ea09-c578-4523-9e9d-87c6f4089806',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'d27ab4'},body:JSON.stringify({sessionId:'d27ab4',runId:'post-fix',hypothesisId:'H4',location:'userApi.js:registerUser:response',message:'registerUser response status',data:{endpoint,status:res.status,ok:res.ok},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   return handleResponse(res);
 };
 

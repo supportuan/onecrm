@@ -9,7 +9,18 @@ import { DEFAULT_AGENT_CAPABILITIES, mergeCapabilities } from './agency-capabili
 type Actor = { id?: number; role?: string };
 
 const PARTNER_INCLUDE = {
-  user: { select: { id: true, fullName: true, email: true, phone: true, role: true, isActive: true } },
+  user: {
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      role: true,
+      isActive: true,
+      isApproved: true,
+    },
+  },
+  _count: { select: { documents: true } },
 };
 
 const slugCode = (name: string) =>
@@ -163,7 +174,7 @@ export const createPartner = async (data: {
         passwordHash: await hashPassword(data.password),
         role: UserRole.AGENT,
         isActive: true,
-        isApproved: true,
+        isApproved: false,
         moduleAccess: getDefaultModuleAccessByRole('AGENT'),
       },
     });
@@ -173,6 +184,7 @@ export const createPartner = async (data: {
   const existingPartner = await prisma.agencyPartner.findUnique({ where: { userId } });
   if (existingPartner) throw new Error('agency partner already exists for this user');
 
+  const owner = await prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } });
   const partner = await prisma.agencyPartner.create({
     data: {
       userId,
@@ -189,6 +201,7 @@ export const createPartner = async (data: {
       status: data.status ?? AgencyPartnerStatus.PENDING,
       notes: data.notes ?? null,
       capabilities: DEFAULT_AGENT_CAPABILITIES,
+      tenantId: owner?.tenantId ?? null,
     },
     include: PARTNER_INCLUDE,
   });
@@ -229,10 +242,11 @@ export const updatePartner = async (
   if (!existing) throw new Error('partner not found');
 
   const payload = { ...data };
+  // Status must go through setPartnerStatus / advanceOnboarding, never generic save.
+  delete payload.status;
   if (isAgencyPartnerUser(actor?.role)) {
     delete payload.agencyCode;
     delete payload.commissionRate;
-    delete payload.status;
     delete payload.email;
     delete payload.capabilities;
   } else if (!hasFullAgencyAccess(actor?.role)) {

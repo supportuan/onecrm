@@ -38,6 +38,8 @@ export const getLeads = async (filters = {}) => {
     params.append("status", filters.status);
   if (filters.sourceId !== undefined && filters.sourceId !== null)
     params.append("sourceId", filters.sourceId);
+  if (filters.country !== undefined && filters.country !== null)
+    params.append("country", filters.country);
   if (filters.page !== undefined && filters.page !== null)
     params.append("page", filters.page);
   if (filters.limit !== undefined && filters.limit !== null)

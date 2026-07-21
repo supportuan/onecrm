@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import Sidebar from '@/components/Sidebar';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useWorkspace } from '@/lib/workspaceContext';
@@ -27,13 +27,28 @@ jest.mock('@/lib/auth/PermissionsContext', () => ({
 // Provide some mocked menu items in case the actual file requires complex mocking
 jest.mock('@/lib/menu', () => ({
   navMenu: [
-    { label: 'Marketing', path: '/marketing', icon: () => <svg data-testid="icon" />, subItems: [] },
-    { label: 'Student CRM', path: '/student-crm', icon: () => <svg data-testid="icon" />, subItems: [] },
+    {
+      label: 'Marketing',
+      path: '/marketing',
+      icon: () => <svg data-testid="icon" />,
+      subItems: [
+        {
+          label: 'Dashboard',
+          path: '/marketing',
+          icon: () => <svg data-testid="icon" />,
+        },
+        {
+          label: 'Revenue Intelligence',
+          path: '/marketing/marketing-analytics',
+          icon: () => <svg data-testid="icon" />,
+        },
+      ],
+    },
+    { label: 'Student Hub', path: '/student-crm', icon: () => <svg data-testid="icon" />, subItems: [] },
   ],
 }));
 
 describe('Sidebar Component', () => {
-  const mockLogout = jest.fn();
   const mockPush = jest.fn();
 
   beforeEach(() => {
@@ -42,7 +57,7 @@ describe('Sidebar Component', () => {
     usePathname.mockReturnValue('/');
     useAuth.mockReturnValue({
       user: { role: 'ADMIN', enabledModules: ['MARKETING', 'STUDENT_CRM'], moduleAccess: {} },
-      logout: mockLogout,
+      logout: jest.fn(),
     });
     useWorkspace.mockReturnValue({ logout: jest.fn() });
     usePermissions.mockReturnValue({ can: jest.fn().mockReturnValue(true), permissionMap: {} });
@@ -53,9 +68,9 @@ describe('Sidebar Component', () => {
     
     // Brand name shows when open
     expect(screen.getByText('ONECRM')).toBeInTheDocument();
-    
-    // User info shows when open
-    expect(screen.getByText('ADMIN')).toBeInTheDocument();
+
+    // Profile details live in the top navigation, not the sidebar footer.
+    expect(screen.queryByText('ADMIN')).not.toBeInTheDocument();
   });
 
   it('hides specific elements when sidebar is closed', () => {
@@ -64,19 +79,38 @@ describe('Sidebar Component', () => {
     // Brand name is hidden when closed
     expect(screen.queryByText('ONECRM')).not.toBeInTheDocument();
     
-    // User info is hidden when closed
     expect(screen.queryByText('ADMIN')).not.toBeInTheDocument();
   });
 
 
 
-  it('calls auth logout function when logout button is clicked', () => {
+  it('renders the ApplyUniNow slogan when open', () => {
     render(<Sidebar sidebarOpen={true} onClose={jest.fn()} onToggleSidebar={jest.fn()} />);
-    
-    const logoutBtn = screen.getByText('Logout');
-    fireEvent.click(logoutBtn);
-    
-    expect(mockLogout).toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith('/login');
+
+    expect(screen.getByText('Intelligence Connecting Seamlessly')).toBeInTheDocument();
+  });
+
+  it('shows renamed marketing pages for legacy module-access keys', () => {
+    usePathname.mockReturnValue('/marketing/marketing-analytics');
+    useAuth.mockReturnValue({
+      user: {
+        role: 'COUNSELLOR',
+        enabledModules: ['MARKETING'],
+        moduleAccess: {
+          Marketing: {
+            'Marketing Analytics': ['VIEW'],
+          },
+        },
+      },
+      logout: jest.fn(),
+    });
+    usePermissions.mockReturnValue({ can: jest.fn().mockReturnValue(false), permissionMap: {} });
+
+    render(<Sidebar sidebarOpen={true} onClose={jest.fn()} onToggleSidebar={jest.fn()} />);
+
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Revenue Intelligence')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard').closest('a')).not.toHaveClass('bg-brand-soft');
+    expect(screen.getByText('Revenue Intelligence').closest('a')).toHaveClass('bg-brand-soft');
   });
 });

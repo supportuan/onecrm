@@ -1,14 +1,40 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  Briefcase,
+  CheckCircle,
+  Clock,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  Loader2,
+} from 'lucide-react';
+import AuthPageShell from '@/components/AuthPageShell';
 import { registerUser } from '@/services/userApi';
-import { UserPlus, Eye, EyeOff, Sparkles, GraduationCap, Briefcase, CheckCircle, Clock } from 'lucide-react';
+
+const inputClass =
+  'w-full rounded-xl border border-white/80 bg-white/65 px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none backdrop-blur-md transition duration-200 placeholder:text-slate-400 hover:bg-white/80 focus:border-blue-400 focus:bg-white/90 focus:ring-2 focus:ring-blue-500/15';
 
 function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '', confirmPassword: '', role: 'STUDENT' });
+  const requestedRole = (searchParams.get('role') || '').toUpperCase();
+  const initialRole = requestedRole === 'AGENT' ? 'AGENT' : 'STUDENT';
+  const asSchool = (searchParams.get('as') || '').toLowerCase() === 'school';
+  const partnerLabel = asSchool ? 'School' : 'Agent';
+
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    role: initialRole,
+    agencyName: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,213 +42,301 @@ function RegisterPageContent() {
 
   useEffect(() => {
     const ref = searchParams.get('ref');
-    if (ref && typeof window !== 'undefined') {
-      localStorage.setItem('agencyReferralCode', ref.toUpperCase());
-    }
+    if (!ref) return;
+    localStorage.setItem('agencyReferralCode', ref.toUpperCase());
   }, [searchParams]);
 
-  const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
+
     setLoading(true);
     setError('');
     try {
-      const res = await registerUser({
+      const referralCode =
+        localStorage.getItem('agencyReferralCode') || searchParams.get('ref') || undefined;
+      const response = await registerUser({
         fullName: form.fullName,
         email: form.email,
         phone: form.phone || undefined,
         password: form.password,
         role: form.role,
+        referralCode,
+        ...(form.role === 'AGENT'
+          ? {
+              agencyDetails: {
+                agencyName: form.agencyName || form.fullName,
+                agencyCode: referralCode,
+              },
+            }
+          : {}),
       });
-      if (res.success) {
-        setSuccess(form.role);
-      } else {
-        setError(res.message || 'Registration failed. Please try again.');
+
+      if (!response.success) {
+        throw new Error(response.message || 'Registration failed. Please try again.');
       }
-    } catch {
-      setError('Network error. Please try again.');
+
+      localStorage.removeItem('agencyReferralCode');
+      setSuccess(form.role);
+    } catch (registrationError) {
+      setError(registrationError.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   if (success) {
+    const isStudent = success === 'STUDENT';
     return (
-      <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-brand px-4 py-12">
-        <div className="w-auto rounded-lg border border-neutral-200 bg-white p-10 shadow-sm text-center">
-          <div className="flex justify-center mb-6">
-            <div className={`flex h-20 w-20 items-center justify-center rounded-lg ${success === 'STUDENT' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-              {success === 'STUDENT' ? <CheckCircle className="h-10 w-10" /> : <Clock className="h-10 w-10" />}
-            </div>
+      <AuthPageShell>
+        <div className="w-full rounded-[24px] border border-white/70 bg-white/[0.86] p-9 text-center shadow-[0_30px_100px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-black/[0.04] backdrop-blur-2xl backdrop-saturate-150 sm:p-10">
+          <div
+            className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${
+              isStudent
+                ? 'bg-emerald-50 text-emerald-600'
+                : 'bg-amber-50 text-amber-600'
+            }`}
+          >
+            {isStudent ? <CheckCircle className="h-8 w-8" /> : <Clock className="h-8 w-8" />}
           </div>
-          {success === 'STUDENT' ? (
-            <>
-              <h1 className="text-2xl font-semibold text-brand mb-3">Registration Successful!</h1>
-              <p className="text-neutral-500 text-sm mb-6">Your student account has been created. A welcome email has been sent to <strong className="text-neutral-700">{form.email}</strong>.</p>
-              <button onClick={() => router.push('/login')} className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-semibold text-brand hover:bg-emerald-400 transition">
-                Go to Login
-              </button>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-semibold text-brand mb-3">Registration Received!</h1>
-              <p className="text-neutral-500 text-sm mb-2">Your Agent registration has been submitted.</p>
-              <p className="text-neutral-500 text-sm mb-6">An administrator will review your account and you'll receive an email at <strong className="text-neutral-700">{form.email}</strong> once approved.</p>
-              <button onClick={() => router.push('/login')} className="w-full rounded-lg bg-amber-500 px-4 py-3 text-sm font-semibold text-brand hover:bg-amber-400 transition">
-                Back to Login
-              </button>
-            </>
-          )}
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+            {isStudent ? 'Registration successful' : 'Registration received'}
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">
+            {isStudent
+              ? 'Your student account is ready. You can now continue to the login screen.'
+              : `Your ${partnerLabel.toLowerCase()} account is awaiting administrator approval.`}
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push('/login')}
+            className="mt-7 w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            Continue to login
+          </button>
         </div>
-      </main>
+      </AuthPageShell>
     );
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-neutral-50 text-brand px-4 py-12">
-      <div className="w-auto">
-        <div className="rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
-          {/* Header */}
-          <div className="mb-8 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-neutral-50 border border-neutral-700/20 text-neutral-500">
-                <UserPlus className="h-7 w-7" />
-              </div>
-            </div>
-            <p className="text-sm uppercase tracking-[0.3em] text-neutral-500 mb-2">OneCRM Portal</p>
-            <h1 className="text-2xl font-semibold text-brand">Create an Account</h1>
-            <p className="mt-1 text-sm text-neutral-500">Register as a Student or Agent</p>
+    <AuthPageShell>
+      <div className="w-full rounded-[24px] border border-white/70 bg-white/[0.86] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-black/[0.04] backdrop-blur-2xl backdrop-saturate-150 sm:p-10">
+        <div className="mb-7 flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8eef8] p-1.5 ring-1 ring-white/60">
+            <Image
+              src="/images/applyUniNow.png"
+              alt="Apply UniNow"
+              width={36}
+              height={36}
+              className="h-8 w-8 object-contain"
+              priority
+              unoptimized
+            />
           </div>
+          <div className="leading-tight">
+            <p className="text-[13px] font-semibold text-slate-900">Apply UniNow</p>
+            <p className="text-[11px] text-slate-500">Account registration</p>
+          </div>
+        </div>
 
-          {/* Role selector */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {[
-              { value: 'STUDENT', label: 'Student', icon: GraduationCap, color: 'emerald' },
-              { value: 'AGENT', label: 'Agent', icon: Briefcase, color: 'amber' },
-            ].map(({ value, label, icon: Icon, color }) => (
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+            Create your account
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Choose your account type and enter your details.
+          </p>
+        </div>
+
+        <div className="mb-6 grid grid-cols-2 gap-3">
+          {[
+            { value: 'STUDENT', label: 'Student', icon: GraduationCap },
+            { value: 'AGENT', label: partnerLabel, icon: Briefcase },
+          ].map(({ value, label, icon: Icon }) => {
+            const selected = form.role === value;
+            return (
               <button
                 key={value}
                 type="button"
-                onClick={() => setForm((p) => ({ ...p, role: value }))}
-                className={`flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${form.role === value
-                    ? 'border-brand bg-neutral-100 text-brand'
-                    : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-400'
-                  }`}
+                onClick={() => setForm((current) => ({ ...current, role: value }))}
+                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition ${
+                  selected
+                    ? 'border-blue-300 bg-blue-50 text-blue-800 ring-2 ring-blue-500/10'
+                    : 'border-slate-200 bg-white/60 text-slate-600 hover:bg-white'
+                }`}
               >
-                <Icon className="h-5 w-5" />
-                <span className="text-xs font-semibold">{label}</span>
+                <Icon className="h-4 w-4" />
+                {label}
               </button>
-            ))}
+            );
+          })}
+        </div>
+
+        {form.role === 'AGENT' && (
+          <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-xs leading-relaxed text-amber-800">
+            {partnerLabel} accounts require administrator approval before login.
           </div>
+        )}
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-slate-600">Full name</span>
+            <input
+              name="fullName"
+              autoComplete="name"
+              value={form.fullName}
+              onChange={handleChange}
+              required
+              className={inputClass}
+              placeholder="Jane Smith"
+            />
+          </label>
 
           {form.role === 'AGENT' && (
-            <div className="mb-5 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
-              ⚠️ Agent accounts require <strong>admin approval</strong> before you can log in.
-            </div>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                {partnerLabel} name
+              </span>
+              <input
+                name="agencyName"
+                value={form.agencyName}
+                onChange={handleChange}
+                required
+                className={inputClass}
+                placeholder={asSchool ? 'School name' : 'Agency name'}
+              />
+            </label>
           )}
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-600">Full Name</label>
-              <input
-                name="fullName"
-                value={form.fullName}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-brand outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                placeholder="Jane Smith"
-              />
-            </div>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-slate-600">Email</span>
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              value={form.email}
+              onChange={handleChange}
+              required
+              className={inputClass}
+              placeholder="jane@example.com"
+            />
+          </label>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-600">Email</label>
-              <input
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-brand outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                placeholder="jane@example.com"
-              />
-            </div>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-slate-600">
+              Phone <span className="font-normal text-slate-400">(optional)</span>
+            </span>
+            <input
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              value={form.phone}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="+91 99999 99999"
+            />
+          </label>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-600">Phone <span className="text-neutral-500">(optional)</span></label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-slate-600">Password</span>
+            <div className="relative">
               <input
-                name="phone"
-                type="tel"
-                value={form.phone}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-brand outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                placeholder="+91 99999 99999"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-600">Password</label>
-              <div className="relative">
-                <input
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                  minLength={8}
-                  className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 pr-11 text-sm text-brand outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                  placeholder="Min. 8 characters"
-                />
-                <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute right-3.5 top-3.5 text-neutral-500 hover:text-neutral-600 transition">
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-600">Confirm Password</label>
-              <input
-                name="confirmPassword"
+                name="password"
                 type={showPassword ? 'text' : 'password'}
-                value={form.confirmPassword}
+                autoComplete="new-password"
+                value={form.password}
                 onChange={handleChange}
                 required
-                className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm text-brand outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200"
-                placeholder="Repeat your password"
+                minLength={8}
+                className={`${inputClass} pr-11`}
+                placeholder="Minimum 8 characters"
               />
-            </div>
-
-            {error && <div className="rounded-lg bg-red-50 border border-red-500/20 p-3 text-sm text-red-700">{error}</div>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex w-full justify-center items-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-70 mt-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              {loading ? 'Creating Account...' : `Register as ${form.role === 'STUDENT' ? 'Student' : 'Agent'}`}
-            </button>
-
-            <div className="text-center text-sm text-neutral-500 pt-1">
-              Already have an account?{' '}
-              <button type="button" onClick={() => router.push('/login')} className="text-neutral-700 hover:text-brand font-semibold">
-                Sign in
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
-          </form>
-        </div>
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-slate-600">
+              Confirm password
+            </span>
+            <input
+              name="confirmPassword"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+              minLength={8}
+              className={inputClass}
+              placeholder="Repeat your password"
+            />
+          </label>
+
+          {error && (
+            <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {loading
+              ? 'Creating account…'
+              : `Register as ${form.role === 'STUDENT' ? 'Student' : partnerLabel}`}
+          </button>
+
+          <p className="pt-1 text-center text-sm text-slate-500">
+            Already have an account?{' '}
+            <button
+              type="button"
+              onClick={() => router.push('/login')}
+              className="font-semibold text-blue-700 hover:text-blue-900"
+            >
+              Sign in
+            </button>
+          </p>
+        </form>
       </div>
-    </main>
+    </AuthPageShell>
   );
 }
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<main className="min-h-screen flex items-center justify-center text-neutral-500">Loading…</main>}>
+    <Suspense
+      fallback={
+        <AuthPageShell>
+          <div className="flex min-h-48 items-center justify-center rounded-[24px] bg-white/90">
+            <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+          </div>
+        </AuthPageShell>
+      }
+    >
       <RegisterPageContent />
     </Suspense>
   );

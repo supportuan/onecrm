@@ -11,7 +11,17 @@ export const createLeadSchema = z.object({
   sourceId: z.number().int().optional().nullable(),
   assignedCounsellorId: z.number().int().optional().nullable(),
   assignedById: z.number().int().optional().nullable(),
-  status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSED', 'CONVERTED', 'LOST']).optional(),
+  status: z.enum([
+    'NEW',
+    'CONTACTED',
+    'NOT_CONTACTED',
+    'CALLBACK',
+    'FOLLOW_UP',
+    'QUALIFIED',
+    'PROPOSED',
+    'CONVERTED',
+    'LOST',
+  ]).optional(),
   rating: z.enum(['HOT', 'WARM', 'COLD', 'MAYBE']).optional(),
   remark: z.string().optional().nullable(),
   utmSource: z.string().optional().nullable(),
@@ -49,6 +59,7 @@ export const createCampaignSchema = z.object({
   budget: z.number().nonnegative().optional().nullable(),
 
   spent: z.number().nonnegative().optional(),
+  revenueGenerated: z.number().nonnegative().optional(),
 
   startDate: z
     .string()

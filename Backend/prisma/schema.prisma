@@ -13,6 +13,9 @@ datasource db {
 enum LeadStatus {
   NEW
   CONTACTED
+  NOT_CONTACTED
+  CALLBACK
+  FOLLOW_UP
   QUALIFIED
   PROPOSED
   CONVERTED
@@ -24,6 +27,12 @@ enum LeadRating {
   WARM
   COLD
   MAYBE
+}
+
+enum ResourceCategory {
+  INHOUSE
+  ACADEMICS
+  AGENTS
 }
 
 enum CampaignType {
@@ -189,6 +198,13 @@ model Tenant {
   hrPerformanceReviews     HrPerformanceReview[]
   hrOnboardingTemplates    HrOnboardingTemplate[]
   hrOfferLetterTemplates   HrOfferLetterTemplate[]
+
+  students       Student[]
+  agencyPartners AgencyPartner[]
+  leads          Lead[]
+  campaigns      Campaign[]
+  applications   Application[]
+  resources      Resource[]
 }
 
 // Per-tenant module enablement. If a row is missing, the module is OFF.
@@ -442,6 +458,9 @@ model Lead {
   remark                String?
   
   contactedAt           DateTime?
+  notContactedAt        DateTime?
+  callbackAt            DateTime?
+  followUpAt            DateTime?
   qualifiedAt           DateTime?
   proposedAt            DateTime?
   convertedAt           DateTime?
@@ -458,6 +477,7 @@ model Lead {
   updatedAt             DateTime   @updatedAt
   deletedAt             DateTime?
 
+  tenantId              Int?
   externalCampaignId String?
   platform           String?
   launchDetails      Json?
@@ -470,6 +490,9 @@ model Lead {
   campaigns          CampaignLead[]
   convertedStudent   Student?         @relation("LeadConvertedStudent")
   agencyReferrals    AgencyReferral[]
+  tenant             Tenant?          @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 model LeadActivity {
@@ -487,10 +510,12 @@ model LeadActivity {
 
 model Campaign {
   id             Int            @id @default(autoincrement())
+  tenantId       Int?
   name           String
   type           CampaignType
   budget         Float?
   spent          Float?         @default(0)
+  revenueGenerated Float        @default(0)
   startDate      DateTime?
   endDate        DateTime?
   status         CampaignStatus @default(DRAFT)
@@ -525,6 +550,9 @@ model Campaign {
 
   leads      CampaignLead[]
   launchLogs CampaignLaunchLog[]
+  tenant     Tenant?             @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 model CampaignLead {
@@ -730,6 +758,8 @@ model User {
   agencyAnnouncementReads AgencyAnnouncementRead[]
   commissionPayoutsCreated CommissionPayout[]     @relation("PayoutCreatedBy")
   hrCandidateStageChanges HrCandidateStageEvent[] @relation("HrCandidateStageChangedBy")
+  resourcesUploaded       Resource[]              @relation("ResourceUploader")
+  resourceAcknowledgements ResourceAcknowledgement[]
 }
 
 model Notification {
@@ -951,11 +981,14 @@ model Student {
   chats             Chat[]
   agencyReferrals   AgencyReferral[]
   agencyCommissions AgencyCommission[]
+  tenantId          Int?
+  tenant            Tenant?             @relation(fields: [tenantId], references: [id])
 
   @@index([email])
   @@index([contactId])
   @@index([deletedAt])
   @@index([source])
+  @@index([tenantId])
 }
 
 model StudentUniversity {
@@ -1045,20 +1078,53 @@ model StudentChecklist {
 }
 
 model Resource {
-  id          Int       @id @default(autoincrement())
-  name        String
-  url         String?
-  slug        String    @unique
-  parentId    Int?
-  userType    Int       @default(1)
-  folderImage String?
-  isFolder    Boolean   @default(false)
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                      Int       @id @default(autoincrement())
+  tenantId                Int?
+  name                    String
+  description             String?
+  url                     String?
+  slug                    String    @unique
+  parentId                Int?
+  userType                Int       @default(1)
+  folderImage             String?
+  isFolder                Boolean   @default(false)
+  requiresAcknowledgement Boolean   @default(false)
+  category                ResourceCategory @default(INHOUSE)
+  /// Country names allowed to access ACADEMICS resources.
+  targetCountries         Json      @default("[]")
+  /// Audience keys: ALL, STUDENT, AGENT, STAFF
+  targetRoles             Json      @default("[]")
+  fileName                String?
+  mimeType                String?
+  fileSize                Int?
+  uploadedById            Int?
+  isPublished             Boolean   @default(true)
+  deletedAt               DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
-  parent   Resource?  @relation("ResourceTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children Resource[] @relation("ResourceTree")
+  tenant           Tenant?                   @relation(fields: [tenantId], references: [id])
+  uploadedBy       User?                     @relation("ResourceUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  parent           Resource?                 @relation("ResourceTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children         Resource[]                @relation("ResourceTree")
+  acknowledgements ResourceAcknowledgement[]
+
+  @@index([tenantId, deletedAt])
+  @@index([isPublished, deletedAt])
+  @@index([category, isPublished, deletedAt])
+}
+
+model ResourceAcknowledgement {
+  id             Int      @id @default(autoincrement())
+  resourceId     Int
+  userId         Int
+  acknowledgedAt DateTime @default(now())
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, userId])
+  @@index([userId])
 }
 
 model Faq {
@@ -1147,11 +1213,14 @@ model Application {
   tasks             ApplicationTask[]
   agencyReferrals   AgencyReferral[]
   agencyCommissions AgencyCommission[]
+  tenantId          Int?
+  tenant            Tenant?                 @relation(fields: [tenantId], references: [id])
 
   @@index([studentId])
   @@index([stage])
   @@index([assignedToId])
   @@index([studyPlanId])
+  @@index([tenantId])
 }
 
 model ApplicationTask {
@@ -1213,9 +1282,12 @@ model AgencyPartner {
   rules       AgencyCommissionRule[]
   agreementAcceptances AgencyAgreementAcceptance[]
   payoutLines CommissionPayoutLine[]
+  tenantId         Int?
+  tenant           Tenant?                @relation(fields: [tenantId], references: [id])
 
   @@index([status])
   @@index([agencyCode])
+  @@index([tenantId])
 }
 
 model AgencyPartnerDocument {

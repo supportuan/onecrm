@@ -46,11 +46,19 @@ const LEAD_RATING_OPTIONS = ['HOT', 'WARM', 'COLD', 'MAYBE'];
 const LEAD_STATUS_OPTIONS = [
   'NEW',
   'CONTACTED',
+  'NOT_CONTACTED',
+  'CALLBACK',
+  'FOLLOW_UP',
   'QUALIFIED',
   'PROPOSED',
   'CONVERTED',
   'LOST',
 ];
+const formatLeadStatus = (status) =>
+  String(status || 'NEW')
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 const DATE_FILTER_OPTIONS = [
   { label: 'All Time', value: 'all' },
@@ -180,6 +188,8 @@ const LeadManagement = () => {
 
   const [dateFilter, setDateFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [countryFilterId, setCountryFilterId] = useState('');
   const [ratingFilter, setRatingFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [counsellorFilter, setCounsellorFilter] = useState('');
@@ -219,6 +229,10 @@ const LeadManagement = () => {
       );
     }
 
+    if (countryFilter) {
+      filtered = filtered.filter((lead) => lead.country === countryFilter);
+    }
+
     if (ratingFilter) {
       filtered = filtered.filter((lead) => lead.rating === ratingFilter);
     }
@@ -241,6 +255,7 @@ const LeadManagement = () => {
     user,
     dateFilter,
     sourceFilter,
+    countryFilter,
     ratingFilter,
     statusFilter,
     counsellorFilter,
@@ -318,6 +333,9 @@ const LeadManagement = () => {
     try {
       const response = await getLeads({
         search,
+        sourceId: sourceFilter || undefined,
+        country: countryFilter || undefined,
+        status: statusFilter || undefined,
         page,
         limit,
         sortBy,
@@ -349,7 +367,7 @@ const LeadManagement = () => {
 
   useEffect(() => {
     fetchLeadsList();
-  }, [search, page, sortBy, sortOrder]);
+  }, [search, sourceFilter, countryFilter, statusFilter, page, sortBy, sortOrder]);
 
   const buildLeadMessage = (type, lead) => {
     const course = lead.preferredCourse || 'your selected course';
@@ -454,7 +472,7 @@ const LeadManagement = () => {
       const response = await createStudentLogin(leadId);
 
       if (response.success) {
-        alert('Student login created successfully. A welcome email has been sent with credentials.');
+        alert('Student converted: login, CRM profile, and draft application created. Welcome email sent if a new login was created.');
         fetchLeadsList();
 
         if (activeLead && activeLead.id === leadId) {
@@ -696,6 +714,8 @@ const LeadManagement = () => {
     setSearch('');
     setDateFilter('all');
     setSourceFilter('');
+    setCountryFilter('');
+    setCountryFilterId('');
     setRatingFilter('');
     setStatusFilter('');
     setCounsellorFilter('');
@@ -771,7 +791,7 @@ const LeadManagement = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-3">
           <select
             value={dateFilter}
             onChange={(e) => {
@@ -803,6 +823,17 @@ const LeadManagement = () => {
             ))}
           </select>
 
+          <CountryDropdown
+            value={countryFilterId}
+            onChange={(country) => {
+              setCountryFilterId(country?.id ? String(country.id) : '');
+              setCountryFilter(country?.name || '');
+              setPage(1);
+            }}
+            placeholder="All Countries"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
+          />
+
           <select
             value={ratingFilter}
             onChange={(e) => {
@@ -830,7 +861,7 @@ const LeadManagement = () => {
             <option value="">All Stages</option>
             {LEAD_STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {formatLeadStatus(status)}
               </option>
             ))}
           </select>
@@ -902,10 +933,17 @@ const LeadManagement = () => {
                   </th>
 
                   <th
-                    onClick={() => handleSort('sourceId')}
+                    onClick={() => handleSort('source')}
                     className="w-[10%]  px-3 py-4 text-sm font-semibold text-[#556987] text-center"
                   >
                     Source
+                  </th>
+
+                  <th
+                    onClick={() => handleSort('country')}
+                    className="w-[10%] px-3 py-4 text-sm font-semibold text-[#556987] text-center"
+                  >
+                    Country
                   </th>
 
                   <th className="w-[12%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
@@ -951,7 +989,7 @@ const LeadManagement = () => {
                           {lead.fullName}
                         </span>
                         <span className="text-slate-400 text-xs font-semibold mt-1">
-                          {lead.country || 'Unknown'} {formatRelativeTime(lead.createdAt)}
+                          {formatRelativeTime(lead.createdAt)}
                         </span>
                       </div>
                     </td>
@@ -987,6 +1025,12 @@ const LeadManagement = () => {
                     <td className="px-3 py-4 text-center">
                       <span className="font-semibold text-slate-700 text-sm">
                         {lead.source?.name || 'N/A'}
+                      </span>
+                    </td>
+
+                    <td className="px-3 py-4 text-center">
+                      <span className="font-semibold text-slate-700 text-sm">
+                        {lead.country || 'N/A'}
                       </span>
                     </td>
 
@@ -1074,12 +1118,11 @@ const LeadManagement = () => {
                         onChange={(e) => handleLeadStatusChange(lead.id, e.target.value)}
                         className="border border-slate-200 bg-white px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none "
                       >
-                        <option value="NEW">New</option>
-                        <option value="CONTACTED">Contacted</option>
-                        <option value="QUALIFIED">Qualified</option>
-                        <option value="PROPOSED">Proposed</option>
-                        <option value="CONVERTED">Converted</option>
-                        <option value="LOST">Lost</option>
+                        {LEAD_STATUS_OPTIONS.map((status) => (
+                          <option key={status} value={status}>
+                            {formatLeadStatus(status)}
+                          </option>
+                        ))}
                       </select>
                     </td>
                     <td className="px-4 py-5 text-right" onClick={(e) => e.stopPropagation()}>
@@ -1088,13 +1131,13 @@ const LeadManagement = () => {
                           <button
                             onClick={() => handleCreateStudentLogin(lead.id)}
                             className="bg-red-800 hover:bg-red-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap "
-                            title="Create Student Login"
+                            title="Convert to student (login + CRM profile + application)"
                           >
-                            Create Login
+                            Convert to student
                           </button>
                         ) : (
                           <span className=" bg-emerald-600 text-white text-[11px] font-medium border border-slate-200  px-2 py-0.5 rounded-full whitespace-nowrap">
-                            Login Active
+                            In CRM
                           </span>
                         )}
 
@@ -1216,7 +1259,7 @@ const LeadManagement = () => {
             <div className="mt-3 p-3 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between text-xs font-semibold">
               <div className="flex flex-col">
                 <span className="text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">
-                  Student Login
+                  Student CRM
                 </span>
                 <span
                   className={
@@ -1228,8 +1271,8 @@ const LeadManagement = () => {
 
                 >
                   {activeLead.isStudentLoginCreated
-                    ? 'Login Active'
-                    : 'No Login Created'}
+                    ? 'Converted in CRM'
+                    : 'Not converted yet'}
                 </span>
               </div>
 
@@ -1238,7 +1281,7 @@ const LeadManagement = () => {
                   onClick={() => handleCreateStudentLogin(activeLead.id)}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition "
                 >
-                  Create Login
+                  Convert to student
                 </button>
               )}
             </div>

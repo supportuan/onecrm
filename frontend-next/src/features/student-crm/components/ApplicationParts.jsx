@@ -249,7 +249,9 @@ export const StageStepper = ({ app, onJump }) => {
         <div>
           <h4 className="ui-text-h3">Workflow</h4>
           <p className="ui-text-meta mt-0.5">
-            {onJump ? 'Click any stage to jump.' : 'Read-only view of progress.'}
+            {onJump
+              ? 'Application stage drives progress. Jump only when docs/fees allow (backend enforces gates).'
+              : 'Read-only view of application stage progress.'}
           </p>
         </div>
         {app.stage === 'OFFER_REJECTED' && (

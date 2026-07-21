@@ -1,4 +1,5 @@
 import {
+  AgencyDocumentVerificationStatus,
   AgencyOnboardingStage,
   AgencyPartnerStatus,
   UserRole,
@@ -131,6 +132,24 @@ export const advancePartnerOnboarding = async (
     throw new OnboardingTransitionError('forbidden');
   }
 
+  if (stage === AgencyOnboardingStage.VERIFIED) {
+    const documents = await prisma.agencyPartnerDocument.findMany({
+      where: { agencyPartnerId: partnerId },
+      select: { verificationStatus: true },
+    });
+    if (
+      documents.length === 0 ||
+      documents.some(
+        (document) =>
+          document.verificationStatus !== AgencyDocumentVerificationStatus.VERIFIED
+      )
+    ) {
+      throw new OnboardingTransitionError(
+        'Verify every onboarding document before verifying the partner'
+      );
+    }
+  }
+
   const now = new Date();
   const data: Record<string, unknown> = { onboardingStage: stage };
 
@@ -174,6 +193,45 @@ export const advancePartnerOnboarding = async (
   return updated;
 };
 
+export const approvePartnerLogin = async (partnerId: number, actorId?: number) => {
+  const partner = await prisma.agencyPartner.findUnique({ where: { id: partnerId } });
+  if (!partner) throw new Error('partner not found');
+
+  await prisma.user.update({
+    where: { id: partner.userId },
+    data: { isApproved: true, isActive: true },
+  });
+
+  if (actorId) {
+    await prisma.agencyActivity.create({
+      data: {
+        agencyPartnerId: partnerId,
+        actorId,
+        activityType: 'NOTE',
+        subject: 'Portal login approved',
+        comment: 'Agent can sign in to complete documents and agreement (not yet ACTIVE for referrals).',
+      },
+    });
+  }
+
+  return prisma.agencyPartner.findUnique({
+    where: { id: partnerId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          isApproved: true,
+        },
+      },
+    },
+  });
+};
+
 export const setPartnerStatus = async (
   partnerId: number,
   status: AgencyPartnerStatus,
@@ -207,10 +265,19 @@ export const setPartnerStatus = async (
       data: { isApproved: true, isActive: true },
     });
   }
-  if (status === AgencyPartnerStatus.INACTIVE || status === AgencyPartnerStatus.BLACKLISTED) {
+  if (
+    status === AgencyPartnerStatus.INACTIVE ||
+    status === AgencyPartnerStatus.SUSPENDED ||
+    status === AgencyPartnerStatus.BLACKLISTED
+  ) {
     await prisma.user.update({
       where: { id: partner.userId },
-      data: { isActive: status !== AgencyPartnerStatus.BLACKLISTED },
+      data: { isActive: false },
+    });
+  } else if (status !== AgencyPartnerStatus.ACTIVE) {
+    await prisma.user.update({
+      where: { id: partner.userId },
+      data: { isActive: true },
     });
   }
 

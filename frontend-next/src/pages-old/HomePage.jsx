@@ -5,7 +5,7 @@ const HomePage = ({ customers, loading, error }) => {
   return (
     <main className="page-root">
       <section className="page-header">
-        <h1>One CRM</h1>
+        <h1>OneCRM</h1>
         <p>Customer list managed by React and Node.js with PostgreSQL.</p>
       </section>
 
