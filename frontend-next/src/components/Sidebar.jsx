@@ -15,6 +15,7 @@ import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
 import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
 import { SIDEBAR_COLLAPSED, SIDEBAR_OPEN } from "@/lib/layout-shell";
 import { BRAND_LOGO_SRC, BRAND_NAME, BRAND_TAGLINE } from "@/components/AppBrand";
+import { MODULE_CRIMSON } from "@/lib/module-themes";
 
 const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Users") return "User Management";
@@ -310,7 +311,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
                     height={22}
                     className="h-[22px] w-[22px] shrink-0 object-contain"
                   />
-                  <p className="app-title-gradient truncate text-[24px] font-semibold leading-none tracking-tight">
+                  <p className="app-title-gradient truncate text-[var(--type-display)] font-semibold leading-none tracking-tight">
                     {BRAND_NAME}
                   </p>
                 </div>
@@ -355,6 +356,18 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
           {filteredNavMenu.map((item) => {
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const sectionActive = isSectionActive(item);
+            const isCrimson = item.navTheme === "crimson";
+            const leafActive = location === item.path || location.startsWith(`${item.path}/`);
+
+            const navIdle = isCrimson
+              ? "text-slate-600 hover:bg-[var(--module-crimson-soft)] hover:text-[var(--module-crimson)]"
+              : "text-slate-600 hover:bg-brand-soft hover:text-brand";
+            const navActive = isCrimson
+              ? "bg-[var(--module-crimson)] text-white shadow-sm"
+              : "app-nav-item-active bg-brand text-white";
+            const iconIdle = isCrimson
+              ? "text-slate-400 group-hover:text-[var(--module-crimson)]"
+              : "text-slate-400 group-hover:text-brand";
 
             return (
               <div key={item.label} className="space-y-1">
@@ -369,11 +382,13 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
                           ? "justify-between gap-3 px-3 py-2.5"
                           : "justify-center p-2.5"
                         }
-                        ${sectionActive
-                          ? "app-nav-item-active bg-brand text-white"
-                          : "text-slate-600 hover:bg-brand-soft hover:text-brand"
-                        }
+                        ${sectionActive ? navActive : navIdle}
                       `}
+                      style={
+                        sectionActive && isCrimson
+                          ? { backgroundColor: MODULE_CRIMSON }
+                          : undefined
+                      }
                       onMouseEnter={(e) => {
                         if (!sidebarOpen) {
                           openFlyout(item, e);
@@ -403,13 +418,11 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
                       <span className="flex min-w-0 items-center gap-3">
                         <item.icon
                           className={`h-[17px] w-[17px] shrink-0 ${
-                            sectionActive
-                              ? "text-white"
-                              : "text-slate-400 group-hover:text-brand"
+                            sectionActive ? "text-white" : iconIdle
                           }`}
                           strokeWidth={1.75}
                         />
-                        {sidebarOpen && <span>{item.displayLabel || item.label}</span>}
+                        {sidebarOpen && <span className="truncate">{item.displayLabel || item.label}</span>}
                       </span>
 
                       {sidebarOpen && (
@@ -452,24 +465,24 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
                         ? "gap-3 px-3 py-2.5"
                         : "justify-center p-2.5"
                       }
-                      ${location === item.path
-                        ? "app-nav-item-active bg-brand text-white"
-                        : "text-slate-600 hover:bg-brand-soft hover:text-brand"
-                      }
+                      ${leafActive ? navActive : navIdle}
                     `}
+                    style={
+                      leafActive && isCrimson
+                        ? { backgroundColor: MODULE_CRIMSON }
+                        : undefined
+                    }
                     onClick={() => {
                       router.push(item.path);
                     }}
                   >
                     <item.icon
                       className={`h-[17px] w-[17px] shrink-0 ${
-                        location === item.path
-                          ? "text-white"
-                          : "text-slate-400 group-hover:text-brand"
+                        leafActive ? "text-white" : iconIdle
                       }`}
                       strokeWidth={1.75}
                     />
-                    {sidebarOpen && <span>{item.displayLabel || item.label}</span>}
+                    {sidebarOpen && <span className="truncate">{item.displayLabel || item.label}</span>}
                   </button>
                 )}
               </div>
@@ -481,7 +494,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
         {sidebarOpen ? (
           <div className="relative z-[1] flex-none border-t border-neutral-100/80 px-3 py-3">
             <p className="text-[10px] font-semibold leading-snug text-neutral-500">
-              AUNTech (V 3.3.1)
+              © AUNTech (V 3.3.1)
             </p>
             <p className="mt-0.5 text-[10px] font-medium leading-snug text-neutral-400">
               Optimized services &amp; performance enhancements.

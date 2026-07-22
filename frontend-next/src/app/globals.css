@@ -17,6 +17,23 @@
   --brand-accent-hover: #b2101a;
   --brand-page: #f8fafc;
 
+  /* Shared typography scale — use across all modules */
+  --type-caption: 11px;
+  --type-meta: 12px;
+  --type-body-sm: 13px;
+  --type-body: 14px;
+  --type-strong: 14px;
+  --type-h3: 15px;
+  --type-h2: 18px;
+  --type-h1: 20px;
+  --type-page-title: 22px;
+  --type-display: 24px;
+
+  /* Crimson accent for newer ops modules (RGB 194, 32, 50) */
+  --module-crimson: #c22032;
+  --module-crimson-hover: #a41b2a;
+  --module-crimson-soft: #fce8eb;
+
   --ui-bg: #ffffff;
   --ui-bg-elevated: #ffffff;
   --ui-bg-control: #f1f5f9;
@@ -184,50 +201,61 @@ textarea {
     @apply rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] overflow-hidden;
   }
 
-  /* ── Typography — weight over size ── */
+  /* ── Typography — shared scale via CSS vars ── */
   .ui-text-caption {
-    @apply text-[11px] font-normal uppercase tracking-[0.12em] text-[var(--ui-text-muted)] leading-none;
+    @apply font-normal uppercase tracking-[0.12em] text-[var(--ui-text-muted)] leading-none;
+    font-size: var(--type-caption);
   }
 
   .ui-text-meta {
-    @apply text-[12px] text-[var(--ui-text-muted)] leading-snug;
+    @apply text-[var(--ui-text-muted)] leading-snug;
+    font-size: var(--type-meta);
   }
 
   .ui-text-body {
-    @apply text-[14px] text-[var(--ui-text-secondary)] leading-relaxed;
+    @apply text-[var(--ui-text-secondary)] leading-relaxed;
+    font-size: var(--type-body);
   }
 
   .ui-text-strong {
-    @apply text-[14px] font-medium text-[var(--ui-text)] leading-snug;
+    @apply font-medium text-[var(--ui-text)] leading-snug;
+    font-size: var(--type-strong);
   }
 
   .ui-text-h3 {
-    @apply text-[15px] font-medium text-[var(--ui-text)] leading-snug;
+    @apply font-medium text-[var(--ui-text)] leading-snug;
+    font-size: var(--type-h3);
   }
 
   .ui-text-h2 {
-    @apply text-[18px] font-medium text-[var(--ui-text)] leading-tight tracking-[-0.01em];
+    @apply font-medium text-[var(--ui-text)] leading-tight tracking-[-0.01em];
+    font-size: var(--type-h2);
   }
 
   .ui-text-h1 {
-    @apply text-[20px] font-medium text-[var(--ui-text)] leading-tight tracking-[-0.02em];
+    @apply font-medium text-[var(--ui-text)] leading-tight tracking-[-0.02em];
+    font-size: var(--type-h1);
   }
 
   .ui-section-title {
-    @apply text-[11px] font-normal uppercase tracking-[0.14em] text-[var(--ui-text-muted)];
+    @apply font-normal uppercase tracking-[0.14em] text-[var(--ui-text-muted)];
+    font-size: var(--type-caption);
   }
 
   /* ── Form controls — clean, flat ── */
   .ui-label {
-    @apply mb-2 block text-[12px] text-[var(--ui-text-secondary)];
+    @apply mb-2 block text-[var(--ui-text-secondary)];
+    font-size: var(--type-meta);
   }
 
   .ui-input {
-    @apply w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-3 py-2.5 text-[14px] text-[var(--ui-text)] outline-none transition placeholder:text-[var(--ui-text-muted)] focus:border-brand focus:ring-2 focus:ring-brand/15 focus:outline-none;
+    @apply w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-3 py-2.5 text-[var(--ui-text)] outline-none transition placeholder:text-[var(--ui-text-muted)] focus:border-brand focus:ring-2 focus:ring-brand/15 focus:outline-none;
+    font-size: var(--type-body);
   }
 
   .ui-field {
-    @apply w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-3 py-2.5 text-[14px] text-[var(--ui-text)] placeholder:text-[var(--ui-text-muted)] outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-50 disabled:bg-[var(--ui-bg-page)];
+    @apply w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-3 py-2.5 text-[var(--ui-text)] placeholder:text-[var(--ui-text-muted)] outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-50 disabled:bg-[var(--ui-bg-page)];
+    font-size: var(--type-body);
   }
 
   .ui-select {
@@ -237,15 +265,18 @@ textarea {
 
   /* ── Buttons — brand navy primary, red accent CTA ── */
   .ui-btn-primary {
-    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] bg-brand px-4 py-2.5 text-[13px] font-medium text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] bg-brand px-4 py-2.5 font-medium text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40;
+    font-size: var(--type-body-sm);
   }
 
   .ui-btn-accent {
-    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] bg-brand-accent px-4 py-2.5 text-[13px] font-medium text-white transition hover:bg-brand-accent-hover disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] bg-brand-accent px-4 py-2.5 font-medium text-white transition hover:bg-brand-accent-hover disabled:cursor-not-allowed disabled:opacity-40;
+    font-size: var(--type-body-sm);
   }
 
   .ui-btn-secondary {
-    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-2.5 text-[13px] font-medium text-[var(--ui-text)] transition hover:border-[var(--ui-border-strong)] hover:bg-brand-soft/60 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-4 py-2.5 font-medium text-[var(--ui-text)] transition hover:border-[var(--ui-border-strong)] hover:bg-brand-soft/60 disabled:cursor-not-allowed disabled:opacity-40;
+    font-size: var(--type-body-sm);
   }
 
   .ui-btn-ghost {
@@ -1127,6 +1158,30 @@ button {
 
 .module-marketing :where(tbody tr):hover {
   background: color-mix(in srgb, var(--brand) 6%, white) !important;
+}
+
+/* Crimson modules — remap brand tokens to #C22032 for page chrome & accents. */
+.module-crimson {
+  --brand: var(--module-crimson);
+  --brand-hover: var(--module-crimson-hover);
+  --brand-soft: var(--module-crimson-soft);
+  --ui-accent: var(--module-crimson);
+  --ui-accent-hover: var(--module-crimson-hover);
+  --ui-accent-gradient: linear-gradient(
+    105deg,
+    #d63a4a 0%,
+    #c22032 52%,
+    #a41b2a 100%
+  );
+  --ui-wave-primary: #c22032;
+  --ui-wave-secondary: #e0707c;
+}
+
+/* Universal content typography — shared base size for every staff module. */
+.app-type-scale,
+.app-main-content {
+  font-size: var(--type-body);
+  line-height: 1.5;
 }
 
 @media print {
