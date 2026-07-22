@@ -33,6 +33,6 @@ export const isHrSelfServiceOnly = (role) => {
 export const getDefaultHrRoute = (role) => {
   if (!hasHrModuleAccess(role)) return null;
   if (role === 'HR') return '/hr/employee-directory';
-  if (isHrSelfServiceOnly(role)) return '/hr/me';
+  // Staff (self-service) and operators both land on Overview.
   return '/hr';
 };

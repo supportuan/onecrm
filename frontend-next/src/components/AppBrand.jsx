@@ -3,11 +3,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
+export const BRAND_NAME = 'ONECRM';
+export const BRAND_TAGLINE = 'Intelligence Connecting Seamlessly';
+export const BRAND_LOGO_SRC = '/images/applyUniNow.png';
+
 export function AppLogo({ className = 'h-9 w-9', priority = false }) {
   return (
     <Image
-      src="/images/applyUniNow.png"
-      alt="ApplyUniNow"
+      src={BRAND_LOGO_SRC}
+      alt={BRAND_NAME}
       width={48}
       height={48}
       priority={priority}
@@ -17,20 +21,21 @@ export function AppLogo({ className = 'h-9 w-9', priority = false }) {
 }
 
 export function AppBrand({
-  subtitle = 'Intelligence Connecting Seamlessly',
-  title = 'ApplyUniNow',
+  subtitle = BRAND_TAGLINE,
+  title = BRAND_NAME,
   compact = false,
   href = null,
+  logoClassName,
+  titleClassName = 'text-sm font-bold tracking-tight text-brand truncate',
+  subtitleClassName = 'text-[10px] text-brand-muted truncate leading-snug',
 }) {
   const inner = (
     <>
-      <AppLogo className={compact ? 'h-8 w-8' : 'h-9 w-9'} />
+      <AppLogo className={logoClassName || (compact ? 'h-8 w-8' : 'h-9 w-9')} />
       {!compact && (
         <div className="min-w-0 overflow-hidden">
-          <p className="text-sm font-bold tracking-tight text-brand truncate">{title}</p>
-          {subtitle && (
-            <p className="text-[10px] text-brand-muted truncate leading-snug">{subtitle}</p>
-          )}
+          <p className={titleClassName}>{title}</p>
+          {subtitle && <p className={subtitleClassName}>{subtitle}</p>}
         </div>
       )}
     </>

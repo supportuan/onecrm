@@ -8,14 +8,17 @@ const backendUrl = process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:4000";
 
 const nextConfig = {
   output: "standalone",
+  // Pin to this app so Turbopack does not watch the monorepo parent (multiple lockfiles).
   turbopack: {
-    root: __dirname,
+    root: path.resolve(__dirname),
   },
   // Allow large file uploads (videos up to 100MB) via the rewrite proxy
   experimental: {
     serverActions: {
       bodySizeLimit: '100mb',
     },
+    // Persistent Turbopack cache grows without bound and respawns workers (memory pressure).
+    turbopackFileSystemCacheForDev: false,
   },
   async rewrites() {
     return [

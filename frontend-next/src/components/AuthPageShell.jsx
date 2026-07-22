@@ -2,12 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import { useAppearanceStore } from '@/lib/stores/appearanceStore';
 
 const LuminaFluidBackground = dynamic(() => import('./LuminaFluidBackground'), {
   ssr: false,
 });
 
 export default function AuthPageShell({ children, wide = false }) {
+  const { loginTheme: theme } = useAppearanceStore();
   const [enableFluid, setEnableFluid] = useState(false);
 
   useEffect(() => {
@@ -22,13 +24,14 @@ export default function AuthPageShell({ children, wide = false }) {
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-4 py-12 text-white sm:px-6">
       {enableFluid ? (
-        <LuminaFluidBackground />
+        <LuminaFluidBackground fluidColor={theme.fluidColor} rainbow />
       ) : (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
+              theme.fallbackGradient ||
               'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,94,255,0.18), transparent 55%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(120,220,210,0.1), transparent 50%)',
           }}
         />

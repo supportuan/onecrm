@@ -8,32 +8,32 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* ApplyUniNow logo palette */
-  --brand: #5b5ce2;
-  --brand-hover: #7c3aed;
-  --brand-soft: #f0efff;
-  --brand-muted: #64748b;
-  --brand-accent: #e31837;
-  --brand-accent-hover: #c4142f;
-  --brand-page: #f7f8fd;
+  /* ApplyUniNow / ONECRM brand palette (royal blue + crimson) */
+  --brand: #134790;
+  --brand-hover: #0b3987;
+  --brand-soft: #eaf2fc;
+  --brand-muted: #829ab1;
+  --brand-accent: #d50b1c;
+  --brand-accent-hover: #b2101a;
+  --brand-page: #f8fafc;
 
   --ui-bg: #ffffff;
-  --ui-bg-elevated: #fafaff;
-  --ui-bg-control: #f1f2f8;
-  --ui-glass: rgba(255, 255, 255, 0.82);
-  --ui-glass-border: rgba(255, 255, 255, 0.6);
-  --ui-glass-shadow: 0 10px 30px rgba(80, 80, 120, 0.08);
-  --ui-wave-primary: #6d5ef7;
-  --ui-wave-secondary: #ec4899;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-control: #f1f5f9;
+  --ui-glass: rgba(255, 255, 255, 0.88);
+  --ui-glass-border: rgba(255, 255, 255, 0.65);
+  --ui-glass-shadow: 0 10px 30px rgba(7, 47, 109, 0.08);
+  --ui-wave-primary: #134790;
+  --ui-wave-secondary: #4e7fcc;
   --ui-bg-page: var(--brand-page);
-  --ui-border: #e7e8f0;
-  --ui-border-strong: #d4d6e2;
-  --ui-text: #17172b;
-  --ui-text-secondary: #4f566b;
-  --ui-text-muted: #8d93a6;
+  --ui-border: #e5eaf0;
+  --ui-border-strong: #d7e3f4;
+  --ui-text: #102a43;
+  --ui-text-secondary: #486581;
+  --ui-text-muted: #829ab1;
   --ui-accent: var(--brand);
   --ui-accent-hover: var(--brand-hover);
-  --ui-accent-gradient: linear-gradient(105deg, #1677ff 0%, #7357e8 52%, #d946ef 100%);
+  --ui-accent-gradient: linear-gradient(105deg, #2a5fb3 0%, #134790 52%, #072f6d 100%);
   --ui-radius: 6px;
   --ui-sidebar-open: 240px;
   --ui-sidebar-collapsed: 56px;
@@ -384,7 +384,7 @@ button {
   right: -120px;
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #60a5fa, #a855f7);
+  background: linear-gradient(135deg, var(--brand), var(--brand-hover));
 }
 
 .app-dark::after {
@@ -392,7 +392,7 @@ button {
   left: -110px;
   width: 350px;
   height: 350px;
-  background: linear-gradient(135deg, #fb7185, #fb923c);
+  background: linear-gradient(135deg, var(--brand-accent), color-mix(in srgb, var(--brand) 55%, white));
 }
 
 .app-wave-blobs {
@@ -469,10 +469,10 @@ button {
   border-radius: 9999px;
   background: linear-gradient(
     135deg,
-    rgba(96, 165, 250, 0.12),
-    rgba(168, 85, 247, 0.12)
+    color-mix(in srgb, var(--brand) 14%, transparent),
+    color-mix(in srgb, var(--brand-hover) 12%, transparent)
   ) !important;
-  color: #4f46e5 !important;
+  color: var(--brand) !important;
 }
 
 .holiday-illustration {
@@ -494,7 +494,7 @@ button {
   border-radius: 50% 50% 0 0;
   content: "";
   transform: rotate(-5deg);
-  background: linear-gradient(135deg, #60a5fa, #a855f7 60%, #ec4899);
+  background: linear-gradient(135deg, var(--brand), var(--brand-hover) 55%, var(--brand-accent));
   filter: blur(1px);
 }
 
@@ -504,7 +504,7 @@ button {
   bottom: 34px;
   width: 86px;
   height: 86px;
-  color: #4f46e5;
+  color: var(--brand);
   transform: rotate(6deg);
 }
 
@@ -516,7 +516,7 @@ button {
   height: 42px;
   border-radius: 100% 0 100% 0;
   content: "";
-  background: #7c3aed;
+  background: var(--brand-hover);
 }
 
 .holiday-illustration-leaf {
@@ -553,10 +553,213 @@ button {
     radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--brand-hover) 14%, transparent), transparent 32%);
 }
 
-.login-dark-ambient {
+.login-dark-ambient,
+.login-dark-ambient-brand {
   background:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 94, 255, 0.18), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(120, 220, 210, 0.1), transparent 50%);
+    radial-gradient(ellipse 80% 55% at 22% 18%, rgba(19, 71, 144, 0.42), transparent 58%),
+    radial-gradient(ellipse 55% 42% at 78% 72%, rgba(213, 11, 28, 0.2), transparent 52%),
+    radial-gradient(ellipse 50% 38% at 55% 88%, rgba(7, 47, 109, 0.45), transparent 55%),
+    radial-gradient(ellipse 40% 30% at 88% 22%, rgba(78, 127, 204, 0.22), transparent 50%);
+}
+
+.login-dark-ambient-mist {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(77, 167, 166, 0.28), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(43, 149, 149, 0.22), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 15% 85%, rgba(0, 128, 129, 0.35), transparent 55%);
+}
+
+.login-dark-ambient-aurora {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(22, 119, 255, 0.22), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(217, 70, 239, 0.16), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 15% 85%, rgba(115, 87, 232, 0.28), transparent 55%);
+}
+
+/* Mobile login ambient fallback shapes — teal palette */
+.login-mobile-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #d4e9ea;
+  isolation: isolate;
+}
+
+.login-mobile-ambient-shift {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(77, 167, 166, 0.45), transparent 42%),
+    radial-gradient(circle at 85% 75%, rgba(43, 149, 149, 0.35), transparent 40%),
+    radial-gradient(circle at 50% 55%, rgba(0, 128, 129, 0.22), transparent 45%);
+  animation: login-mobile-bg-shift 10s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.login-mobile-orb {
+  position: absolute;
+  display: block;
+  border-radius: 9999px;
+  pointer-events: none;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.login-mobile-orb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  filter: blur(40px);
+  transform: translateZ(0);
+}
+
+.login-mobile-orb-a {
+  top: -8%;
+  left: -20%;
+  width: min(85vw, 360px);
+  height: min(85vw, 360px);
+  animation: login-mobile-drift-a 8s ease-in-out infinite alternate;
+}
+
+.login-mobile-orb-a::before {
+  background: rgba(77, 167, 166, 0.65);
+}
+
+.login-mobile-orb-b {
+  right: -18%;
+  bottom: 4%;
+  width: min(75vw, 320px);
+  height: min(75vw, 320px);
+  animation: login-mobile-drift-b 11s ease-in-out infinite alternate;
+}
+
+.login-mobile-orb-b::before {
+  background: rgba(43, 149, 149, 0.55);
+}
+
+.login-mobile-orb-c {
+  left: 30%;
+  top: 48%;
+  width: min(60vw, 260px);
+  height: min(60vw, 260px);
+  animation: login-mobile-drift-c 9s ease-in-out infinite alternate;
+}
+
+.login-mobile-orb-c::before {
+  background: rgba(0, 128, 129, 0.45);
+}
+
+@keyframes login-mobile-bg-shift {
+  0% {
+    transform: translate3d(-3%, 2%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(4%, -4%, 0) scale(1.08);
+  }
+}
+
+@keyframes login-mobile-drift-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(48px, 56px, 0) scale(1.2);
+  }
+}
+
+@keyframes login-mobile-drift-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-56px, -40px, 0) scale(1.18);
+  }
+}
+
+@keyframes login-mobile-drift-c {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  100% {
+    transform: translate3d(36px, -48px, 0) scale(1.25);
+  }
+}
+
+@keyframes login-mobile-float-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.login-mobile-reveal {
+  opacity: 0;
+  animation: login-mobile-float-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.login-mobile-reveal-1 { animation-delay: 0.05s; }
+.login-mobile-reveal-2 { animation-delay: 0.16s; }
+.login-mobile-reveal-3 { animation-delay: 0.28s; }
+.login-mobile-reveal-4 { animation-delay: 0.4s; }
+.login-mobile-reveal-5 { animation-delay: 0.52s; }
+.login-mobile-reveal-6 { animation-delay: 0.64s; }
+.login-mobile-reveal-7 { animation-delay: 0.76s; }
+
+.login-mobile-field {
+  width: 100%;
+  border: 0;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  border-radius: 0;
+  padding: 0.85rem 0.15rem;
+  font-size: 16px;
+  color: #fff;
+  outline: none;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+
+.login-mobile-field::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.login-mobile-field:focus {
+  border-bottom-color: color-mix(in srgb, var(--brand) 90%, white);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--brand) 5%, transparent));
+}
+
+.login-mobile-field-light {
+  color: #0f172a;
+  border-bottom-color: rgba(15, 23, 42, 0.22);
+}
+
+.login-mobile-field-light::placeholder {
+  color: rgba(15, 23, 42, 0.38);
+}
+
+.login-mobile-field-light:focus {
+  border-bottom-color: var(--brand);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--brand) 5%, transparent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-mobile-ambient-shift,
+  .login-mobile-orb-a,
+  .login-mobile-orb-b,
+  .login-mobile-orb-c {
+    animation: none;
+  }
+
+  .login-mobile-reveal {
+    opacity: 1;
+    animation: none;
+  }
 }
 
 .app-nav-item {
@@ -781,7 +984,7 @@ button {
 .app-dark :where(.ui-card, .ui-panel, .ui-surface):hover {
   border-color: color-mix(in srgb, var(--brand) 28%, var(--ui-border));
   box-shadow:
-    0 16px 42px rgba(74, 67, 140, 0.12),
+    0 16px 42px rgba(7, 47, 109, 0.1),
     0 0 0 1px color-mix(in srgb, var(--brand) 7%, transparent);
 }
 
@@ -896,10 +1099,10 @@ button {
   border-radius: 9999px !important;
   background: linear-gradient(
     135deg,
-    rgba(96, 165, 250, 0.12),
-    rgba(168, 85, 247, 0.12)
+    color-mix(in srgb, var(--brand) 14%, transparent),
+    color-mix(in srgb, var(--brand-hover) 12%, transparent)
   ) !important;
-  color: #4f46e5 !important;
+  color: var(--brand) !important;
 }
 
 .module-marketing div:has(> svg):is(
@@ -915,11 +1118,11 @@ button {
   [class*="bg-emerald-50"],
   [class*="bg-slate-100"]
 ) > svg {
-  color: #4f46e5 !important;
+  color: var(--brand) !important;
 }
 
 .module-marketing :where(thead, [class~="bg-slate-50"], [class~="bg-neutral-50/60"]) {
-  background: rgba(247, 248, 253, 0.78) !important;
+  background: color-mix(in srgb, var(--brand-page) 92%, white) !important;
 }
 
 .module-marketing :where(tbody tr):hover {

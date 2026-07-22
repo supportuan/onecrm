@@ -14,6 +14,7 @@ import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
 import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
 import { SIDEBAR_COLLAPSED, SIDEBAR_OPEN } from "@/lib/layout-shell";
+import { BRAND_LOGO_SRC, BRAND_NAME, BRAND_TAGLINE } from "@/components/AppBrand";
 
 const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Users") return "User Management";
@@ -25,7 +26,7 @@ const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Leave") return "Leave Management";
   if (subLabel === "Performance") return "Performance Reviews";
   if (subLabel === "Payroll") return "Payroll Inputs";
-  if (subLabel === "Overview") return "Employee Directory";
+  if (subLabel === "Overview") return "Overview";
   if (subLabel === "Student Management") return "Student Management";
   if (subLabel === "Student Information Hub") return "Student Management";
   if (subLabel === "Student Alliance") return "Student Management";
@@ -168,13 +169,13 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
         let moduleAccessSubItems = filterSubItemsByModuleAccess(item, access)
           .filter(audienceAllows);
 
-        // Knowledge Hub is role/audience driven. Existing users may predate the
-        // Resources moduleAccess entry, so do not hide permitted library/upload links.
-        if (item.accessKey === "Resources") {
-          const permittedResourceItems = item.subItems.filter(subVisible);
+        // Knowledge Hub / HR are permission-driven for staff. Existing users may
+        // predate moduleAccess entries, so merge any permitted sidebar links.
+        if (item.accessKey === "Resources" || item.accessKey === "HR") {
+          const permittedItems = item.subItems.filter(subVisible);
           moduleAccessSubItems = [
             ...moduleAccessSubItems,
-            ...permittedResourceItems.filter(
+            ...permittedItems.filter(
               (sub) => !moduleAccessSubItems.some((current) => current.path === sub.path)
             ),
           ];
@@ -296,18 +297,18 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
           {sidebarOpen ? (
             <div className="flex min-w-0 items-center gap-1.5">
               <Image
-                src="/images/applyUniNow.png"
-                alt="ApplyUniNow"
+                src={BRAND_LOGO_SRC}
+                alt={BRAND_NAME}
                 width={60}
                 height={60}
                 className="h-14 w-14 shrink-0 object-contain"
               />
               <div className="min-w-0 leading-tight">
                 <p className="app-title-gradient truncate text-[18px] font-semibold tracking-tight">
-                  ONECRM
+                  {BRAND_NAME}
                 </p>
                 <p className="truncate text-[10px] font-medium tracking-tight text-neutral-500">
-                  Intelligence Connecting Seamlessly
+                  {BRAND_TAGLINE}
                 </p>
               </div>
             </div>
@@ -327,8 +328,8 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
               <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
             ) : (
               <Image
-                src="/images/applyUniNow.png"
-                alt="ApplyUniNow"
+                src={BRAND_LOGO_SRC}
+                alt={BRAND_NAME}
                 width={32}
                 height={32}
                 className="h-8 w-8 object-contain"

@@ -7,6 +7,11 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { uploadProfilePhoto } from '@/lib/apiService';
 import { initials } from '@/lib/layout-shell';
 import { notifyStaffProfilePhotoUpdated } from '@/components/StaffAvatarLink';
+import { useAppearanceStore } from '@/lib/stores/appearanceStore';
+import LogoLoader from '@/components/LogoLoader';
+
+const panelClass =
+  'w-full rounded-2xl border border-[var(--ui-border)] bg-white/90 p-6 shadow-[var(--ui-glass-shadow)] backdrop-blur-sm';
 
 export default function StaffProfilePage() {
   const { user, updateUser, syncProfile } = useAuth();
@@ -20,8 +25,8 @@ export default function StaffProfilePage() {
 
   if (!user) {
     return (
-      <div className="p-6">
-        <p className="text-sm text-neutral-500">Loading profile…</p>
+      <div className="flex min-h-[40vh] items-center justify-center p-6">
+        <LogoLoader label="Loading profile…" size="md" />
       </div>
     );
   }
@@ -56,7 +61,7 @@ export default function StaffProfilePage() {
         </p>
       </div>
 
-      <section className="w-full rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+      <section className={panelClass}>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div className="relative shrink-0">
             <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-xl font-semibold text-brand">
@@ -111,7 +116,7 @@ export default function StaffProfilePage() {
             type="button"
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:border-brand/30 hover:bg-brand-soft"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--ui-border)] bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:border-brand/30 hover:bg-brand-soft"
           >
             {uploading ? (
               <>
@@ -127,8 +132,8 @@ export default function StaffProfilePage() {
         </div>
       </section>
 
-      <section className="w-full rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
-        <h3 className="text-[15px] font-semibold tracking-tight text-brand border-b border-neutral-100 pb-3">
+      <section className={`${panelClass} space-y-4`}>
+        <h3 className="border-b border-[var(--ui-border)] pb-3 text-[15px] font-semibold tracking-tight text-brand">
           Account details
         </h3>
         <Row icon={Mail} label="Email" value={user.email} />
@@ -141,13 +146,65 @@ export default function StaffProfilePage() {
         <div className="pt-2">
           <Link
             href="/change-password"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:border-brand/30 hover:bg-brand-soft"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--ui-border)] bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:border-brand/30 hover:bg-brand-soft"
           >
             <KeyRound className="h-3.5 w-3.5" /> Change password
           </Link>
         </div>
       </section>
+
+      <AppearanceSection />
     </div>
+  );
+}
+
+function AppearanceSection() {
+  const { loginThemeId, themes, setLoginThemeId } = useAppearanceStore();
+
+  return (
+    <section className={`${panelClass} space-y-4`}>
+      <div className="border-b border-[var(--ui-border)] pb-3">
+        <h3 className="text-[15px] font-semibold tracking-tight text-brand">Appearance</h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Choose Brand, Aurora, or Mist. Colors update across the app right away, and on the login screen.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        {themes.map((theme) => {
+          const active = loginThemeId === theme.id;
+          const blurb =
+            theme.id === 'brand'
+              ? 'Royal blue + crimson (logo)'
+              : theme.id === 'aurora'
+                ? 'Blue → purple app accents'
+                : 'Teal palette (#008081)';
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => setLoginThemeId(theme.id)}
+              aria-pressed={active}
+              className={`flex flex-1 items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition ${
+                active
+                  ? 'border-brand bg-brand-soft ring-2 ring-brand/20'
+                  : 'border-[var(--ui-border)] bg-white hover:border-brand/30 hover:bg-brand-soft/40'
+              }`}
+            >
+              <span
+                className="h-10 w-10 shrink-0 rounded-full border border-white shadow-sm ring-1 ring-slate-200"
+                style={{ backgroundImage: theme.swatch }}
+                aria-hidden
+              />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-brand">{theme.label}</span>
+                <span className="mt-0.5 block text-[11px] text-slate-500">{blurb}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -158,7 +215,7 @@ function Row({ icon: Icon, label, value }) {
         {Icon && <Icon className="h-3.5 w-3.5" />}
         {label}
       </span>
-      <span className="text-right font-medium text-brand break-all">{value || '—'}</span>
+      <span className="break-all text-right font-medium text-brand">{value || '—'}</span>
     </div>
   );
 }

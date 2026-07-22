@@ -28,7 +28,6 @@ import {
   Plane,
   RotateCcw,
   Search,
-  Settings,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -96,11 +95,6 @@ export const navMenu = [
         label: "Visa management",
         path: "/student-crm/visa-management",
         icon: Plane,
-      },
-      {
-        label: "CRM Settings",
-        path: "/student-crm/settings",
-        icon: Settings,
       },
     ],
   },
@@ -174,7 +168,7 @@ export const navMenu = [
     path: "/hr",
     icon: ShieldCheck,
     subItems: [
-      { label: "Overview", path: "/hr", icon: LayoutDashboard, permission: ["MANAGE_EMPLOYEES", "VIEW_ALL_EMPLOYEES"] },
+      { label: "Overview", path: "/hr", icon: LayoutDashboard, permission: ["VIEW_HR"] },
       { label: "My HR", path: "/hr/me", icon: Clock, permission: ["VIEW_HR"] },
       { label: "Employee Directory", path: "/hr/employee-directory", icon: Users, permission: ["VIEW_ALL_EMPLOYEES", "MANAGE_EMPLOYEES"] },
       { label: "Recruitment", path: "/hr/recruitment-tracker", icon: Search, permission: ["MANAGE_EMPLOYEES"] },

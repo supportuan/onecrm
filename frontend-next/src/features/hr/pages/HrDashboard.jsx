@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { isHrSelfServiceOnly } from '@/features/hr/routing';
 import {
   Fingerprint,
@@ -27,7 +26,6 @@ import { hasPermission } from '@/lib/auth/rbac';
 import {
   getMyAttendance,
   submitRemoteClockIn,
-  getAttendanceEvents,
   getHrDashboardSummary,
 } from '@/services/hrApi';
 
@@ -42,17 +40,10 @@ const QUICK_LINKS = [
 ];
 
 export default function HrDashboard() {
-  const router = useRouter();
   const { user } = useAuth();
   const role = user?.role;
 
   const can = (perm) => hasPermission(role, perm);
-
-  useEffect(() => {
-    if (role && isHrSelfServiceOnly(role)) {
-      router.replace('/hr/me');
-    }
-  }, [role, router]);
 
   const [clockState, setClockState] = useState({ status: 'unknown', lastEvent: null });
   const [clockBusy, setClockBusy] = useState(false);
@@ -162,8 +153,9 @@ export default function HrDashboard() {
   const operator = !isHrSelfServiceOnly(role);
   const allowedLinks = QUICK_LINKS.filter((l) => {
     if (!can(l.perm)) return false;
+    // My HR is for staff self-service; other links show for anyone with the permission.
     if (l.selfServiceOnly) return !operator;
-    return operator;
+    return true;
   });
 
   const showKpiRow = can('VIEW_HR');

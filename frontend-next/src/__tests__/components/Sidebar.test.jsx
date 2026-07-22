@@ -84,7 +84,7 @@ describe('Sidebar Component', () => {
 
 
 
-  it('renders the ApplyUniNow slogan when open', () => {
+  it('renders the ONECRM slogan when open', () => {
     render(<Sidebar sidebarOpen={true} onClose={jest.fn()} onToggleSidebar={jest.fn()} />);
 
     expect(screen.getByText('Intelligence Connecting Seamlessly')).toBeInTheDocument();
