@@ -281,7 +281,7 @@ export default function Attendance() {
         </div>
       )}
 
-      <div className="ui-container">
+      <div className="ui-container w-full max-w-none">
         <div className="flex flex-wrap gap-1 bg-white border border-neutral-200 rounded-lg p-1 w-fit">
           {TABS.map((tab) => {
             const Icon = tab.icon;
@@ -517,8 +517,8 @@ export default function Attendance() {
         )}
 
         {activeTab === 'team' && canManage && (
-          <div className="space-y-4">
-            <div className="ui-card">
+          <div className="space-y-4 w-full">
+            <div className="ui-panel p-5 md:p-6 w-full">
               <div className="flex flex-wrap items-end justify-between gap-4 mb-4">
                 <div>
                   <h3 className="text-base font-semibold text-brand">Team attendance</h3>

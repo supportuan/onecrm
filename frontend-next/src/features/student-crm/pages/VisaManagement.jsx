@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plane, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { listVisaTracking } from '@/services/studentCrmApi';
 import { getVisaStatusLabel, getStageLabel } from '@/features/student-crm/constants';
 import { formatDate } from '@/features/student-crm/components/ApplicationParts';
@@ -42,30 +42,20 @@ export default function VisaManagementPage() {
   });
 
   return (
-    <div className="ui-page">
-      <div className="ui-container space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-brand flex items-center gap-2">
-              <Plane className="h-6 w-6" />
-              Visa management
-            </h1>
-            <p className="text-sm text-neutral-500 mt-1">
-              All visa applications across students — status, appointments, and documents.
-            </p>
-          </div>
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input
-              className="pl-9 pr-3 py-2 text-sm border border-neutral-200 rounded-lg w-64"
-              placeholder="Search student or university..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+        <div className="relative w-full sm:w-auto sm:ml-auto">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input
+            className="pl-9 pr-3 py-2 text-sm border border-neutral-200 rounded-lg w-full sm:w-64"
+            placeholder="Search student or university..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+      </div>
 
-        <div className="ui-panel overflow-hidden">
+      <div className="ui-panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -131,7 +121,6 @@ export default function VisaManagementPage() {
             </table>
           </div>
         </div>
-      </div>
     </div>
   );
 }

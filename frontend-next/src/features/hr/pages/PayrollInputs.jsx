@@ -148,26 +148,28 @@ export default function PayrollInputs() {
   const totalDeductions = payslips.reduce((sum, p) => sum + (p.deductions || 0), 0);
 
   return (
-    <div className="ui-page text-neutral-800">
-      {/* Premium Title */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-brand">
-            Payroll & Financial Inputs
-          </h1>
-          <p className="text-slate-550 text-sm mt-1">
-            Configure salary components, audit active payroll ledger cards, and execute monthly institution-wide disbursement batches.
-          </p>
-        </div>
+    <div className="text-neutral-800">
+      <div className="mb-6 flex flex-col lg:flex-row lg:items-center gap-3">
+        {(activeTab === 'structures' || activeTab === 'payslips') && (
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search name or ID…"
+              className="w-full pl-10 pr-3 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-800 placeholder:text-neutral-400 focus:border-brand outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
 
-        {/* Tab switchers */}
-        <div className="flex bg-slate-200/60 p-1 border border-slate-300 rounded-lg shadow-inner shrink-0">
+        <div className="flex flex-wrap bg-neutral-50 border border-neutral-200 rounded-lg p-1 shrink-0 lg:ml-auto">
           <button
             onClick={() => { setActiveTab('structures'); setSearchQuery(''); }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
               activeTab === 'structures'
-                ? 'bg-brand text-white shadow-md'
-                : 'text-neutral-600 hover:text-slate-855'
+                ? 'bg-brand text-white shadow-sm'
+                : 'text-neutral-600 hover:text-brand hover:bg-white'
             }`}
           >
             <Wallet size={14} />
@@ -175,10 +177,10 @@ export default function PayrollInputs() {
           </button>
           <button
             onClick={() => { setActiveTab('execute'); setSearchQuery(''); }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
               activeTab === 'execute'
-                ? 'bg-brand text-white shadow-md'
-                : 'text-neutral-600 hover:text-slate-855'
+                ? 'bg-brand text-white shadow-sm'
+                : 'text-neutral-600 hover:text-brand hover:bg-white'
             }`}
           >
             <Cpu size={14} />
@@ -186,10 +188,10 @@ export default function PayrollInputs() {
           </button>
           <button
             onClick={() => { setActiveTab('payslips'); setSearchQuery(''); }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
               activeTab === 'payslips'
-                ? 'bg-brand text-white shadow-md'
-                : 'text-neutral-600 hover:text-slate-855'
+                ? 'bg-brand text-white shadow-sm'
+                : 'text-neutral-600 hover:text-brand hover:bg-white'
             }`}
           >
             <FileText size={14} />
@@ -216,19 +218,9 @@ export default function PayrollInputs() {
         {/* Tab 1: Salary Structures */}
         {activeTab === 'structures' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="ui-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Filter personnel by name or university ID..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-800 placeholder-slate-400 focus:border-brand outline-none transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="px-5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[10px] font-semibold text-neutral-600">
-                {activeStructures} Configured Ledgers
+            <div className="flex justify-end">
+              <div className="px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[10px] font-semibold text-neutral-600">
+                {activeStructures} configured ledgers
               </div>
             </div>
 
@@ -392,19 +384,9 @@ export default function PayrollInputs() {
         {/* Tab 3: Statements Ledger */}
         {activeTab === 'payslips' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="ui-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search generated statements by name or employee ID..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-medium text-slate-850 placeholder-slate-400 focus:border-brand outline-none transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="px-5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[10px] font-semibold text-neutral-600">
-                {filteredPayslips.length} Generated Statements
+            <div className="flex justify-end">
+              <div className="px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-[10px] font-semibold text-neutral-600">
+                {filteredPayslips.length} generated statements
               </div>
             </div>
 

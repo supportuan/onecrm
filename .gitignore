@@ -16,3 +16,6 @@ Backend/node_modules/
 Backend/.env
 Backend/.env.*
 !Backend/.env.production.example
+
+# Project handover pack (generated docs / local artefacts)
+Project-Handover/

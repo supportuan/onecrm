@@ -164,18 +164,27 @@ export default function PerformanceReviews() {
 
   return (
     <div className="ui-container">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="ui-text-body max-w-xl">
-            Counsellor reviews use live CRM data — leads, conversions, enrollments, and revenue.
-            Weekly reviews auto-generate every Monday; monthly on the 1st.
-          </p>
+      {error && <div className="ui-error">{error}</div>}
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1 min-w-0">
+          {[
+            { label: 'Reviews', value: reviews.length },
+            { label: 'Avg conversion', value: avgConversion === '—' ? '—' : `${avgConversion}%` },
+            { label: 'Avg rating', value: avgRating === '—' ? '—' : `${avgRating} / 5` },
+            { label: 'KPI target', value: `${kpiTarget}%` },
+          ].map((stat) => (
+            <div key={stat.label} className="ui-panel px-3 py-2.5">
+              <p className="text-[10px] font-medium text-[var(--ui-text-muted)]">{stat.label}</p>
+              <p className="text-base font-semibold text-brand mt-0.5 tabular-nums">{stat.value}</p>
+            </div>
+          ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <select
             value={periodType}
             onChange={(e) => handlePeriodTypeChange(e.target.value)}
-            className="ui-field ui-select w-auto min-w-[120px]"
+            className="ui-field ui-select w-auto min-w-[110px] py-2 text-xs"
           >
             <option value="monthly">Monthly</option>
             <option value="weekly">Weekly</option>
@@ -183,7 +192,7 @@ export default function PerformanceReviews() {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="ui-field ui-select w-auto min-w-[140px]"
+            className="ui-field ui-select w-auto min-w-[130px] py-2 text-xs"
           >
             {periodOptions.map((o) => (
               <option key={o.value} value={o.value}>
@@ -195,28 +204,12 @@ export default function PerformanceReviews() {
             type="button"
             onClick={handleGenerate}
             disabled={generating}
-            className="ui-btn-primary inline-flex items-center gap-2"
+            className="ui-btn-primary inline-flex items-center gap-2 py-2 text-xs"
           >
-            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             Calculate reviews
           </button>
         </div>
-      </div>
-
-      {error && <div className="ui-error">{error}</div>}
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Reviews', value: reviews.length },
-          { label: 'Avg conversion', value: avgConversion === '—' ? '—' : `${avgConversion}%` },
-          { label: 'Avg rating', value: avgRating === '—' ? '—' : `${avgRating} / 5` },
-          { label: 'KPI target', value: `${kpiTarget}%` },
-        ].map((stat) => (
-          <div key={stat.label} className="ui-panel p-4">
-            <p className="ui-text-caption normal-case tracking-normal">{stat.label}</p>
-            <p className="ui-text-h2 mt-1">{stat.value}</p>
-          </div>
-        ))}
       </div>
 
       {/* Live preview from CRM leads */}

@@ -344,31 +344,30 @@ export default function StudentManagement() {
   ];
 
   return (
-    <div className="ui-container text-neutral-800">
+    <div className="text-neutral-800 space-y-4">
       {toast.msg && (
         <div className="fixed bottom-6 right-6 z-50 ui-text-body border border-[var(--ui-border)] bg-white px-4 py-3 rounded-[var(--ui-radius)]">
           {toast.msg}
         </div>
       )}
 
-        {canManage ? (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setShowNew(true)}
-              className="ui-btn-primary inline-flex items-center gap-2"
-            >
-              <Plus size={16} /> New student
-            </button>
-          </div>
-        ) : null}
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:h-[calc(100vh-11rem)] lg:min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[calc(100vh-8.5rem)] lg:min-h-0">
           <div className="lg:col-span-3 ui-panel flex flex-col min-h-0 lg:h-full overflow-hidden">
-            <div className="p-4 border-b border-[var(--ui-border)] space-y-3">
-              <div className="flex justify-between items-center">
-                <h2 className="ui-text-strong">Students</h2>
-                <span className="ui-text-meta">{students.length}</span>
+            <div className="p-3 border-b border-[var(--ui-border)] space-y-2.5">
+              <div className="flex justify-between items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <h2 className="ui-text-strong">Students</h2>
+                  <span className="ui-text-meta">{students.length}</span>
+                </div>
+                {canManage ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowNew(true)}
+                    className="ui-btn-primary inline-flex items-center gap-1.5 shrink-0 !px-2.5 !py-1.5 text-xs"
+                  >
+                    <Plus size={14} /> New student
+                  </button>
+                ) : null}
               </div>
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -405,18 +404,18 @@ export default function StudentManagement() {
             </div>
           </div>
 
-          <div className="lg:col-span-9 min-h-0 overflow-y-auto space-y-4">
+          <div className="lg:col-span-9 min-h-0 overflow-y-auto space-y-3">
             {!profile || !form ? (
-              <div className="ui-panel p-12 text-center text-neutral-500">
-                <User size={32} className="mx-auto mb-3 opacity-50" />
+              <div className="ui-panel p-8 text-center text-neutral-500">
+                <User size={28} className="mx-auto mb-2 opacity-50" />
                 <p className="text-sm">Select a student to view or edit their profile.</p>
               </div>
             ) : (
               <>
-                <div className="ui-panel p-5 flex flex-wrap items-center justify-between gap-3">
-                  <div>
+                <div className="ui-panel px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-lg font-semibold text-brand">{form.fullName}</h2>
+                      <h2 className="text-base font-semibold text-brand">{form.fullName}</h2>
                       {profile.isEnrolled && (
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
                           Enrolled

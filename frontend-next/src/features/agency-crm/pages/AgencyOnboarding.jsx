@@ -125,13 +125,6 @@ export default function AgencyOnboarding() {
 
   return (
     <div className="ui-container space-y-6 max-w-2xl">
-      <div>
-        <h1 className="ui-text-h2">Agent onboarding</h1>
-        <p className="ui-text-body mt-1">
-          Complete steps in order: registration → documents → agreement → admin verification → activation.
-        </p>
-      </div>
-
       {msg && <div className="ui-panel p-3 text-sm">{msg}</div>}
 
       {partner ? (

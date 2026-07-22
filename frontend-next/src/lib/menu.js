@@ -101,15 +101,9 @@ export const navMenu = [
   {
     label: "Agent Hub",
     accessKey: "Agency CRM",
-    path: "/agency-crm/dashboard",
+    path: "/agency-crm/agency-management",
     icon: Folder,
     subItems: [
-      {
-        label: "Dashboard",
-        path: "/agency-crm/dashboard",
-        icon: LayoutDashboard,
-        audience: "all",
-      },
       {
         label: "Agency Management",
         path: "/agency-crm/agency-management",

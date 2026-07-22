@@ -136,16 +136,18 @@ export default function AgencyManagement() {
 
   if (isFreelancer) {
     return (
-      <div className="ui-container py-12 max-w-lg">
-        <div className="ui-panel p-6 space-y-3">
-          <h1 className="ui-text-h2">Partner operations</h1>
-          <p className="ui-text-body">
-            Agency Management is an administrator screen. Use the Agent Hub for your profile,
-            students, and commissions.
-          </p>
-          <a href="/agency-crm/onboarding" className="ui-btn-primary inline-flex">
-            Go to onboarding
-          </a>
+      <div className="ui-page">
+        <div className="ui-container py-12 max-w-lg">
+          <div className="ui-panel p-6 space-y-3">
+            <h1 className="ui-text-h2">Partner operations</h1>
+            <p className="ui-text-body">
+              Agency Management is an administrator screen. Use the Agent Hub for your profile,
+              students, and commissions.
+            </p>
+            <a href="/agency-crm/onboarding" className="ui-btn-primary inline-flex">
+              Go to onboarding
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -229,15 +231,22 @@ export default function AgencyManagement() {
   return (
     <div className="ui-page">
       <div className="ui-container space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-brand">Agency management</h1>
-            <p className="text-sm text-neutral-500 mt-1">
-              {isFreelancer
-                ? 'View your agency profile, referral code, and commission terms.'
-                : 'Manage agency partners, contracts, and commission rates.'}
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {stats && (
+            <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+              {[
+                { label: 'Referrals', value: stats.totalReferrals },
+                { label: 'Active students', value: stats.activeStudents },
+                { label: 'Enrolled', value: stats.enrolledStudents },
+                { label: 'Commission paid', value: `£${stats.totalCommissionAmount?.toFixed?.(0) ?? stats.totalCommissionAmount}` },
+              ].map((c) => (
+                <div key={c.label} className="ui-panel px-3 py-1.5 min-w-[88px]">
+                  <p className="text-[10px] font-medium text-neutral-500">{c.label}</p>
+                  <p className="text-sm font-semibold text-brand tabular-nums leading-tight">{c.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
           {canManage && !isFreelancer && (
             <button
               type="button"
@@ -246,7 +255,7 @@ export default function AgencyManagement() {
                 setActivePanel('details');
                 setForm(emptyForm());
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm rounded-lg"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm rounded-lg shrink-0 ml-auto"
             >
               <Plus className="w-4 h-4" />
               Add agency
@@ -289,22 +298,6 @@ export default function AgencyManagement() {
             </div>
           );
         })()}
-
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { label: 'Referrals', value: stats.totalReferrals },
-              { label: 'Active students', value: stats.activeStudents },
-              { label: 'Enrolled', value: stats.enrolledStudents },
-              { label: 'Commission paid', value: `£${stats.totalCommissionAmount?.toFixed?.(0) ?? stats.totalCommissionAmount}` },
-            ].map((c) => (
-              <div key={c.label} className="ui-panel p-4">
-                <p className="ui-text-meta">{c.label}</p>
-                <p className="text-xl font-semibold text-brand mt-1">{c.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className={`grid gap-5 ${isFreelancer ? '' : 'lg:grid-cols-[240px_minmax(0,1fr)]'}`}>
           {!isFreelancer && (

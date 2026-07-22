@@ -156,15 +156,15 @@ textarea {
 
   /* ── Layout ── */
   .ui-page {
-    @apply min-h-screen bg-transparent text-[var(--ui-text)] px-6 py-10 md:px-10;
+    @apply bg-transparent text-[var(--ui-text)];
   }
 
   .ui-page-shell {
-    @apply space-y-8 text-[var(--ui-text)];
+    @apply space-y-4 text-[var(--ui-text)];
   }
 
   .ui-container {
-    @apply space-y-8;
+    @apply space-y-4;
   }
 
   /* ── Surfaces — flat, border-only, no shadows ── */

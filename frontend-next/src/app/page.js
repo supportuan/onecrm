@@ -34,7 +34,7 @@ function HomeRedirect() {
     } else if (role === "COUNSELLOR" || role === "TELECALLER" || role === "MARKETING_MANAGER") {
       router.push("/marketing");
     } else if (role === "AGENT" || role === "AGENCY_FREELANCER") {
-      router.push("/agency-crm/dashboard");
+      router.push("/agency-crm/agency-leads");
     } else if (role === "STUDENT") {
       router.push("/applicant/applications");
     } else {

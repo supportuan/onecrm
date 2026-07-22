@@ -16,7 +16,7 @@ export const isAgentBlockedPath = (pathname) =>
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
 
-export const AGENT_HOME_PATH = '/agency-crm/dashboard';
+export const AGENT_HOME_PATH = '/agency-crm/agency-leads';
 export const AGENT_ONBOARDING_PATH = '/agency-crm/onboarding';
 export const AGENT_STUDENTS_PATH = '/agency-crm/agency-leads';
 export const AGENT_REFERRAL_PATH = '/agency-crm/co-branding-tools';

@@ -128,13 +128,6 @@ export default function AgencyCommunications() {
 
   return (
     <div className="ui-container space-y-6">
-      <div>
-        <h1 className="ui-text-h2">{isAgent ? 'Notifications & activity' : 'Agent communications'}</h1>
-        <p className="ui-text-body mt-1">
-          Announcements, policy updates, and activity logs.
-        </p>
-      </div>
-
       {msg && <div className="ui-panel p-3 text-sm">{msg}</div>}
 
       <div className="flex gap-2 border-b border-neutral-200">

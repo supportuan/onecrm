@@ -167,7 +167,7 @@ export default function HrDashboard() {
     if (h < 17) return 'Good afternoon';
     return 'Good evening';
   })();
-  const firstName = (user?.name || user?.fullName || '').split(' ')[0];
+  const displayName = user?.fullName || user?.name || '';
 
   return (
     <div className="text-brand">
@@ -186,7 +186,13 @@ export default function HrDashboard() {
         {/* Compact greeting strip — replaces duplicate page title */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <p className="text-[13px] text-neutral-500 tracking-tight">
-            {greeting}{firstName ? `, ${firstName}` : ''} · here&apos;s what needs your attention today.
+            {greeting}
+            {displayName ? (
+              <>
+                , <span className="font-semibold text-brand">{displayName}</span>
+              </>
+            ) : null}{' '}
+            · here&apos;s what needs your attention today.
           </p>
           <span className="px-2.5 py-1 bg-white border border-neutral-200 rounded-full text-[10.5px] font-medium text-neutral-500 tracking-wide capitalize">
             {(role || 'unknown').toLowerCase().replace(/_/g, ' ')}

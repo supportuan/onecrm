@@ -98,7 +98,7 @@ const Layout = ({ children }) => {
         <div className="z-20 flex-none border-b border-[var(--ui-border)] bg-[var(--ui-bg)]">
           <TopNavbar />
         </div>
-        <main className="min-h-0 flex-1 w-full overflow-y-auto overflow-x-hidden px-4 pb-4 pt-6 sm:px-6 lg:px-8">
+        <main className="min-h-0 flex-1 w-full overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>
