@@ -26,8 +26,11 @@ const MODULE_DISPLAY_NAMES = {
   Resources: "Knowledge Hub",
 };
 const OPTION_DISPLAY_NAMES = {
+  "Lead Management": "Opportunity Tracking",
+  "Campaigns": "Campaign Mission",
   "Marketing Analytics": "Revenue Intelligence",
   "Student Management": "Student Alliance",
+  "Applications": "Application Tracking System",
   "Resource Library": "Knowledge Library",
   "Manage Resources": "Manage Knowledge",
 };

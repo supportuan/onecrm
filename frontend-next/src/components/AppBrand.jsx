@@ -3,8 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-export const BRAND_NAME = 'ONECRM';
-export const BRAND_TAGLINE = 'Intelligence Connecting Seamlessly';
+export const BRAND_NAME = 'OneCRM';
+export const BRAND_TAGLINE = 'Intelligence Connecting Seamlessly!';
 export const BRAND_LOGO_SRC = '/images/applyUniNow.png';
 
 export function AppLogo({ className = 'h-9 w-9', priority = false }) {

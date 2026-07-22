@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Receipt, Plus, Save, CheckCircle2, X, DollarSign, Calendar,
+  Receipt, Plus, Save, CheckCircle2, X, IndianRupee, Calendar,
   AlertTriangle, TrendingDown, Users
 } from 'lucide-react';
 import { getPayrollDeductions, upsertPayrollDeduction, getSalaryStructures } from '@/services/hrApi';
@@ -121,7 +121,7 @@ export default function PayrollDeductions() {
           { label: 'Leave Deductions', value: totalLeaveDeduction, icon: Users, color: 'blue' },
           { label: 'Tax Deductions', value: totalTax, icon: TrendingDown, color: 'red' },
           { label: 'Other Deductions', value: totalOther, icon: AlertTriangle, color: 'yellow' },
-          { label: 'Total Deductions', value: grandTotal, icon: DollarSign, color: 'gray' },
+          { label: 'Total Deductions', value: grandTotal, icon: IndianRupee, color: 'gray' },
         ].map(card => {
           const Icon = card.icon;
           return (

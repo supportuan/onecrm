@@ -1,12 +1,12 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Wallet, Receipt } from 'lucide-react';
+import { IndianRupee, Receipt } from 'lucide-react';
 import PayrollInputs from './PayrollInputs';
 import PayrollDeductions from './PayrollDeductions';
 
 const TABS = [
-  { key: 'run', label: 'Payroll run', icon: Wallet, component: PayrollInputs },
+  { key: 'run', label: 'Payroll run', icon: IndianRupee, component: PayrollInputs },
   { key: 'deductions', label: 'Deductions', icon: Receipt, component: PayrollDeductions },
 ];
 

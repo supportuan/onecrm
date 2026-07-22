@@ -196,12 +196,7 @@ export const getLeads = async (filters: {
   ]);
 
   const items = leads.map((lead: any) => {
-    let interestedIn = lead.preferredCourse || "";
-    if (lead.preferredCourse && lead.preferredCountry) {
-      interestedIn = `${lead.preferredCourse} in ${lead.preferredCountry}`;
-    } else if (lead.preferredCountry) {
-      interestedIn = lead.preferredCountry;
-    }
+    const interestedIn = lead.preferredCourse || "";
     return {
       id: lead.id,
       fullName: lead.fullName,

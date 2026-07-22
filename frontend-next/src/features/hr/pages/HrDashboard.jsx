@@ -15,7 +15,7 @@ import {
   CalendarCheck,
   Search,
   Star,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   MapPin,
   Wifi,
@@ -30,13 +30,13 @@ import {
 } from '@/services/hrApi';
 
 const QUICK_LINKS = [
+  { label: 'Employee directory', path: '/hr/employee-directory', icon: Users, perm: 'VIEW_ALL_EMPLOYEES' },
   { label: 'My HR', path: '/hr/me', icon: Fingerprint, perm: 'VIEW_HR', selfServiceOnly: true },
   { label: 'Recruitment', path: '/hr/recruitment-tracker', icon: Search, perm: 'MANAGE_EMPLOYEES' },
-  { label: 'Employee directory', path: '/hr/employee-directory', icon: Users, perm: 'VIEW_ALL_EMPLOYEES' },
   { label: 'Attendance', path: '/hr/attendance', icon: Clock, perm: 'VIEW_ATTENDANCE' },
   { label: 'Leave', path: '/hr/leave-management', icon: CalendarCheck, perm: 'VIEW_LEAVE' },
   { label: 'Performance', path: '/hr/performance-reviews', icon: Star, perm: 'VIEW_REPORTS' },
-  { label: 'Payroll', path: '/hr/payroll', icon: DollarSign, perm: 'MANAGE_PAYROLL' },
+  { label: 'Payroll', path: '/hr/payroll', icon: IndianRupee, perm: 'MANAGE_PAYROLL' },
 ];
 
 export default function HrDashboard() {

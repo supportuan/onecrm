@@ -198,22 +198,22 @@ describe('getLeads', () => {
     expect(call.take).toBe(5);
   });
 
-  it('builds interestedIn from course and country', async () => {
+  it('sets interestedIn to course name only', async () => {
     const lead = makeLead({ preferredCourse: 'Engineering', preferredCountry: 'UK' });
     mockPrisma.lead.findMany.mockResolvedValue([lead]);
     mockPrisma.lead.count.mockResolvedValue(1);
 
     const result = await getLeads({});
-    expect(result.items[0].interestedIn).toBe('Engineering in UK');
+    expect(result.items[0].interestedIn).toBe('Engineering');
   });
 
-  it('returns only country when course is absent', async () => {
+  it('returns empty interestedIn when course is absent', async () => {
     const lead = makeLead({ preferredCourse: null, preferredCountry: 'Australia' });
     mockPrisma.lead.findMany.mockResolvedValue([lead]);
     mockPrisma.lead.count.mockResolvedValue(1);
 
     const result = await getLeads({});
-    expect(result.items[0].interestedIn).toBe('Australia');
+    expect(result.items[0].interestedIn).toBe('');
   });
 });
 

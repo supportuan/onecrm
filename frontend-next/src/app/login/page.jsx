@@ -33,7 +33,7 @@ const loginFont = Poppins({
 const PRIVACY_COPY = `${BRAND_NAME} uses your information to provide and personalize our services. We protect your data and do not share it with third parties for marketing without your consent. Please review our Privacy and Cookie Policies for more information.`;
 
 const fieldClass =
-  'w-full rounded-xl border border-white/80 bg-white/65 px-3.5 py-3 text-[14px] text-slate-900 shadow-sm outline-none backdrop-blur-md transition duration-200 placeholder:text-slate-400 hover:bg-white/80 focus:border-brand focus:bg-white/90 focus:ring-2 focus:ring-brand/15';
+  'w-full rounded-xl border border-white/80 bg-white/65 px-3 py-2.5 text-[13px] text-slate-900 shadow-sm outline-none backdrop-blur-md transition duration-200 placeholder:text-slate-400 hover:bg-white/80 focus:border-brand focus:bg-white/90 focus:ring-2 focus:ring-brand/15';
 
 function PrivacyInfoButton({ onClick, light = false }) {
   return (
@@ -61,18 +61,18 @@ function PrivacyInfoButton({ onClick, light = false }) {
 
 function LoginBrandMark({ theme, light = false }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2.5">
       <div
-        className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ${
-          light ? 'shadow-sm ring-1 ring-black/5' : 'ring-1 ring-black/5'
+        className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-950 ${
+          light ? 'shadow-sm ring-1 ring-black/10' : 'ring-1 ring-white/15'
         }`}
       >
         <Image
-          src="/images/onecrm-mark.png"
+          src="/images/favicon-star-gold.png"
           alt={BRAND_NAME}
-          width={48}
-          height={48}
-          className="h-[88%] w-[88%] object-contain"
+          width={36}
+          height={36}
+          className="h-[78%] w-[78%] object-contain"
           priority
           unoptimized
         />
@@ -80,12 +80,12 @@ function LoginBrandMark({ theme, light = false }) {
       <div className="min-w-0 leading-tight">
         <p
           className={`truncate font-semibold tracking-tight text-slate-900 ${
-            light ? 'text-[14px]' : 'text-[15px]'
+            light ? 'text-[13px]' : 'text-[14px]'
           }`}
         >
           {BRAND_NAME}
         </p>
-        <p className="text-[11px] text-slate-500">{BRAND_TAGLINE}</p>
+        <p className="text-[10px] text-slate-500">{BRAND_TAGLINE}</p>
       </div>
     </div>
   );
@@ -335,23 +335,22 @@ export default function LoginPage() {
           )}
 
           <div
-            className={`relative z-10 mx-auto w-full max-w-[480px] transition duration-700 ease-out ${
+            className={`relative z-10 mx-auto w-full max-w-[380px] transition duration-700 ease-out ${
               mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
             }`}
           >
-            <div className="app-glass-card w-full rounded-[24px] p-8 ring-1 ring-white/50 backdrop-saturate-150 transition-shadow duration-500 sm:p-10">
-              <div className="mb-6 flex items-start justify-between gap-4">
+            <div className="app-glass-card w-full rounded-[20px] p-6 ring-1 ring-white/50 backdrop-saturate-150 transition-shadow duration-500 sm:p-7">
+              <div className="mb-4 flex items-start justify-between gap-3">
                 <LoginBrandMark theme={theme} />
 
                 <PrivacyInfoButton onClick={() => setPrivacyOpen(true)} />
               </div>
 
-              <h1 className="text-[1.65rem] font-semibold tracking-tight text-slate-900">Sign in</h1>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
-                Continue to {BRAND_NAME} — {BRAND_TAGLINE.toLowerCase()}.
-              </p>
+              <h1 className="text-[1.2rem] font-semibold leading-snug tracking-tight text-slate-900 sm:text-[1.3rem]">
+                Your journey starts with a quick login
+              </h1>
 
-              <form className="mt-7 space-y-4" onSubmit={handleSubmit} noValidate>
+              <form className="mt-5 space-y-3.5" onSubmit={handleSubmit} noValidate>
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-medium text-slate-600">Email</span>
                   <input
@@ -411,7 +410,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="app-gradient-action mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-[14px] font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+                  className="app-gradient-action mt-0.5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {loading ? (
                     <>

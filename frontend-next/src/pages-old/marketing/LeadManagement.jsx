@@ -38,7 +38,9 @@ import {
   ChevronDown,
   ArrowUpDown,
   MessageSquare,
-  Send
+  Send,
+  Lock,
+  LockOpen,
 } from 'lucide-react';
 import AddLeadModal from '@/components/AddLeadModal';
 
@@ -569,7 +571,7 @@ const LeadManagement = () => {
         'Email',
         'Phone',
         'Source',
-        'Interested In',
+        'Course',
         'Lead Status',
         'Assigned By',
         'Assigned To',
@@ -583,7 +585,7 @@ const LeadManagement = () => {
         lead.email || '',
         lead.phone || '',
         lead.source?.name || '',
-        lead.interestedIn || lead.preferredCourse || '',
+        lead.preferredCourse || lead.interestedIn || '',
         lead.rating || 'WARM',
         lead.assignedBy?.name || '-',
         lead.assignedCounsellor?.fullName ||
@@ -947,7 +949,7 @@ const LeadManagement = () => {
                   </th>
 
                   <th className="w-[12%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Interested In
+                    Course
                   </th>
 
                   <th
@@ -1036,7 +1038,7 @@ const LeadManagement = () => {
 
                     <td className="px-3 py-4 text-center">
                       <span className="font-semibold text-slate-700 text-sm">
-                        {lead.interestedIn || lead.preferredCourse || 'N/A'}
+                        {lead.preferredCourse || 'N/A'}
                       </span>
                     </td>
 
@@ -1125,25 +1127,31 @@ const LeadManagement = () => {
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-4 py-5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-2">
                         {!lead.isStudentLoginCreated ? (
                           <button
+                            type="button"
                             onClick={() => handleCreateStudentLogin(lead.id)}
-                            className="bg-red-800 hover:bg-red-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm transition-all whitespace-nowrap "
-                            title="Convert to student (login + CRM profile + application)"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-red-600 ring-1 ring-red-200 transition hover:bg-red-100 hover:text-red-700 active:scale-95"
+                            title="Create login"
+                            aria-label="Create login"
                           >
-                            Convert to student
+                            <Lock className="h-4 w-4" strokeWidth={2.25} />
                           </button>
                         ) : (
-                          <span className=" bg-emerald-600 text-white text-[11px] font-medium border border-slate-200  px-2 py-0.5 rounded-full whitespace-nowrap">
-                            In CRM
+                          <span
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200"
+                            title="Login created"
+                            aria-label="Login created"
+                          >
+                            <LockOpen className="h-4 w-4" strokeWidth={2.25} />
                           </span>
                         )}
 
                         <button
                           onClick={(e) => handleDeleteLead(e, lead.id)}
-                          className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition  opacity-0 group-hover:opacity-100"
+                          className="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition opacity-0 group-hover:opacity-100"
                           title="Delete Lead"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1257,31 +1265,49 @@ const LeadManagement = () => {
             </div>
 
             <div className="mt-3 p-3 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between text-xs font-semibold">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">
-                  Student CRM
-                </span>
-                <span
-                  className={
-                    activeLead.isStudentLoginCreated
-                      ? 'text-emerald-600 font-bold'
-                      : 'text-slate-500'
-
-                  }
-
-                >
-                  {activeLead.isStudentLoginCreated
-                    ? 'Converted in CRM'
-                    : 'Not converted yet'}
-                </span>
+              <div className="flex items-center gap-2.5">
+                {activeLead.isStudentLoginCreated ? (
+                  <span
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200"
+                    title="Login created"
+                  >
+                    <LockOpen className="h-4 w-4" strokeWidth={2.25} />
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600 ring-1 ring-red-200"
+                    title="Login not created"
+                  >
+                    <Lock className="h-4 w-4" strokeWidth={2.25} />
+                  </span>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">
+                    Student login
+                  </span>
+                  <span
+                    className={
+                      activeLead.isStudentLoginCreated
+                        ? 'text-emerald-600 font-bold'
+                        : 'text-red-600 font-bold'
+                    }
+                  >
+                    {activeLead.isStudentLoginCreated
+                      ? 'Login created'
+                      : 'Create login'}
+                  </span>
+                </div>
               </div>
 
               {!activeLead.isStudentLoginCreated && (
                 <button
+                  type="button"
                   onClick={() => handleCreateStudentLogin(activeLead.id)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition "
+                  className="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition"
+                  title="Create login"
                 >
-                  Convert to student
+                  <Lock className="h-3.5 w-3.5" strokeWidth={2.25} />
+                  Create login
                 </button>
               )}
             </div>

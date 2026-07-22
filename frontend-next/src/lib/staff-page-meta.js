@@ -4,11 +4,11 @@ export function getStaffPageMeta(pathname = '') {
   let description = "Here's what's happening today.";
 
   if (pathname === '/marketing/lead-management') {
-    title = 'Lead Management';
-    description = 'Manage and track all your leads in one place';
+    title = 'Opportunity Tracking';
+    description = 'Organizing and control over incoming prospects';
   } else if (pathname.startsWith('/marketing/campaigns')) {
-    title = 'Campaigns';
-    description = 'Create and monitor marketing campaigns';
+    title = 'Campaign Mission';
+    description = 'Highlighting visibility and brand pressure';
   } else if (pathname.startsWith('/marketing/automation')) {
     title = 'Automation';
     description = 'Automate your marketing workflows';
@@ -17,7 +17,7 @@ export function getStaffPageMeta(pathname = '') {
     description = 'Create and manage your landing pages and forms';
   } else if (pathname.startsWith('/marketing/marketing-analytics')) {
     title = 'Revenue Intelligence';
-    description = 'Connect marketing performance with financial outcomes';
+    description = 'Connecting Marketing data to financial Outcomes';
   } else if (pathname === '/admin-settings/users') {
     title = 'User Management';
     description = 'Create, manage and assign permissions to users.';
@@ -25,7 +25,7 @@ export function getStaffPageMeta(pathname = '') {
     title = 'Roles & Permissions';
     description = 'Create and manage roles and permissions.';
   } else if (pathname.startsWith('/marketing')) {
-    title = 'Dashboard';
+    title = 'Performance Console';
     description = 'Clean, focused insight into lead movement, sources, and actions that need attention.';
   } else if (pathname.startsWith('/notifications')) {
     title = 'Notifications';
@@ -58,10 +58,11 @@ export function getStaffPageMeta(pathname = '') {
     title = 'Overview';
     description = 'Manage your HR activities';
   } else if (pathname.startsWith('/student-crm/student-management')) {
-    title = 'Student Alliance';
-    description = 'Nurture applicants, manage milestones, and keep every student record connected.';
+    title = 'Student Information Hub';
+    description =
+      'Application tracking system for applicant milestones and nurturing.';
   } else if (pathname.startsWith('/student-crm/applications')) {
-    title = 'Applications';
+    title = 'Application Tracking System';
     description = 'Track every application from preparation through enrolment.';
   } else if (pathname.startsWith('/student-crm/visa-management')) {
     title = 'Visa Management';

@@ -61,8 +61,8 @@ describe('TopNavbar Component', () => {
     usePathname.mockReturnValue('/marketing/lead-management');
     render(<TopNavbar onToggleSidebar={jest.fn()} />);
     
-    expect(screen.getByText('Lead Management')).toBeInTheDocument();
-    expect(screen.getByText('Manage and track all your leads in one place')).toBeInTheDocument();
+    expect(screen.getByText('Opportunity Tracking')).toBeInTheDocument();
+    expect(screen.getByText('Organizing and control over incoming prospects')).toBeInTheDocument();
   });
 
   it('calls logout function when logout button is clicked', () => {

@@ -329,6 +329,7 @@ const MarketingDashboard = () => {
             value={formatNumber(dashboard.totalLeads)}
             trend="Marketing leads in selected period"
             icon={<Users className="h-5 w-5" />}
+            iconClass="bg-sky-50 text-sky-600"
           />
 
           <KpiCard
@@ -336,6 +337,7 @@ const MarketingDashboard = () => {
             value={formatNumber(dashboard.newLeadsToday)}
             trend="Created today"
             icon={<Plus className="h-5 w-5" />}
+            iconClass="bg-emerald-50 text-emerald-600"
           />
 
           <KpiCard
@@ -343,6 +345,7 @@ const MarketingDashboard = () => {
             value={formatNumber(dashboard.pendingFollowUps)}
             trend="Not contacted yet"
             icon={<CalendarClock className="h-5 w-5" />}
+            iconClass="bg-amber-50 text-amber-600"
           />
 
           <KpiCard
@@ -350,13 +353,14 @@ const MarketingDashboard = () => {
             value={formatNumber(dashboard.activeCampaigns)}
             trend="Campaigns in selected period"
             icon={<Megaphone className="h-5 w-5" />}
+            iconClass="bg-rose-50 text-rose-600"
           />
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
           <Panel
-            title="Engagement Tracker"
-            subtitle="Measurable progress across each stage of the lead journey"
+            title="Touchpoints"
+            subtitle="Suggests measurable progress along the journey"
             height="h-[420px]"
           >
             <JourneyBar label="Total Leads" value={dashboard.totalLeads} total={dashboard.totalLeads} />
@@ -377,10 +381,10 @@ const MarketingDashboard = () => {
           <div className="app-glass-card flex h-[420px] flex-col justify-between rounded-2xl p-6">
             <div>
               <h2 className="text-[17px] font-extrabold text-brand">
-                Embedded Task Widgets
+                Quick Actions
               </h2>
               <p className="mt-1 text-[12px] font-medium text-neutral-500">
-                Complete common marketing tasks without losing context
+                Centralised shortcuts for immediate tasks
               </p>
 
               <div className="mt-6 grid grid-cols-3 gap-3">
@@ -435,7 +439,7 @@ const MarketingDashboard = () => {
         <div className="grid gap-6 xl:grid-cols-2">
           <Panel
             title="Source Analytics Breakdown"
-            subtitle="Lead volume and contribution by acquisition source"
+            subtitle="Highlighting the leads flow from different channels"
             height="h-[420px]"
           >
             {dashboard.sources.length === 0 ? (
@@ -455,7 +459,7 @@ const MarketingDashboard = () => {
 
           <Panel
             title="Latest Records"
-            subtitle="Recently added lead data in the selected period"
+            subtitle="Suggesting recently added leads data"
             height="h-[420px]"
           >
             {dashboard.recentLeads.length === 0 ? (
@@ -501,7 +505,7 @@ const MarketingDashboard = () => {
   );
 };
 
-function KpiCard({ title, value, trend, icon }) {
+function KpiCard({ title, value, trend, icon, iconClass = 'bg-brand-soft text-brand' }) {
   return (
     <div className="app-glass-card group relative overflow-hidden rounded-2xl p-6 transition-all duration-300">
       <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-neutral-50 opacity-80 transition-transform duration-300 group-hover:scale-110" />
@@ -511,7 +515,9 @@ function KpiCard({ title, value, trend, icon }) {
           {title}
         </span>
 
-        <div className="app-gradient-icon transition-transform duration-200 group-hover:scale-110">
+        <div
+          className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-110 ${iconClass}`}
+        >
           {icon}
         </div>
       </div>
