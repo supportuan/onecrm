@@ -33,11 +33,11 @@ const TopNavbar = ({ onToggleSidebar }) => {
                     {breadcrumb ? (
                       <p className="text-[11px] font-semibold text-slate-400 leading-none">{breadcrumb}</p>
                     ) : null}
-                    <h1 className="app-title-gradient truncate text-[24px] font-semibold leading-tight">
+                    <h1 className="app-title-gradient truncate text-[var(--type-page-title)] font-semibold leading-tight">
                         {title}
                     </h1>
                     {description && (
-                        <p className="max-w-xl text-xs font-medium leading-snug text-slate-500 line-clamp-2">
+                        <p className="max-w-xl text-[var(--type-body-sm)] font-medium leading-snug text-slate-500 line-clamp-2">
                             {description}
                         </p>
                     )}
@@ -51,11 +51,11 @@ const TopNavbar = ({ onToggleSidebar }) => {
                     <button
                         type="button"
                         onClick={() => setIsAddLeadOpen(true)}
-                        className="app-icon-action inline-flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm ring-1 ring-white/10 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:ring-brand/60 active:translate-y-0 active:scale-95"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[var(--ui-text-muted)] transition hover:bg-brand-soft hover:text-brand active:scale-95"
                         title="Add lead"
                         aria-label="Add lead"
                     >
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-5 w-5" strokeWidth={1.75} />
                     </button>
                 )}
 
@@ -68,7 +68,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
                     title="Log out"
                     aria-label="Log out"
                 >
-                    <LogOut className="h-5 w-5" />
+                    <LogOut className="h-5 w-5" strokeWidth={1.75} />
                 </button>
             </div>
             {canAddLead && (

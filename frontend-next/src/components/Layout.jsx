@@ -9,6 +9,7 @@ import {
   SIDEBAR_OPEN,
   STAFF_SIDEBAR_STORAGE_KEY,
 } from '@/lib/layout-shell';
+import { isCrimsonModulePath } from '@/lib/module-themes';
 
 const ApplicationWaveBlobs = () => (
   <div className="app-wave-blobs" aria-hidden="true">
@@ -85,9 +86,14 @@ const Layout = ({ children }) => {
     ? (sidebarOpen ? SIDEBAR_OPEN : SIDEBAR_COLLAPSED)
     : SIDEBAR_OPEN;
   const isMarketingModule = Boolean(pathname?.startsWith('/marketing'));
+  const isCrimsonModule = isCrimsonModulePath(pathname || '');
 
   return (
-    <div className={`app-dark h-screen overflow-hidden bg-[var(--ui-bg-page)] text-[var(--ui-text)] ${isMarketingModule ? 'module-marketing' : ''}`}>
+    <div
+      className={`app-dark app-type-scale h-screen overflow-hidden bg-[var(--ui-bg-page)] text-[var(--ui-text)] ${
+        isMarketingModule ? 'module-marketing' : ''
+      } ${isCrimsonModule ? 'module-crimson' : ''}`}
+    >
       <ApplicationWaveBlobs />
       <Sidebar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
 
@@ -98,7 +104,7 @@ const Layout = ({ children }) => {
         <div className="z-20 flex-none border-b border-[var(--ui-border)] bg-[var(--ui-bg)]">
           <TopNavbar />
         </div>
-        <main className="min-h-0 flex-1 w-full overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 lg:px-8">
+        <main className="app-main-content min-h-0 flex-1 w-full overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>

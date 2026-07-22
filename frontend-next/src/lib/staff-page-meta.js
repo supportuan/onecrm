@@ -108,6 +108,30 @@ export function getStaffPageMeta(pathname = '') {
   } else if (pathname.startsWith('/allied-services')) {
     title = 'Allied Services';
     description = '';
+  } else if (pathname.startsWith('/operations')) {
+    title = 'Operations';
+    description = '';
+  } else if (pathname.startsWith('/finance')) {
+    title = 'Finance';
+    description = '';
+  } else if (pathname.startsWith('/inventory-management')) {
+    title = 'Inventory Management';
+    description = '';
+  } else if (pathname.startsWith('/project-management')) {
+    title = 'Project Management';
+    description = '';
+  } else if (pathname.startsWith('/chatbot-events')) {
+    title = 'Chatbot & Events';
+    description = '';
+  } else if (pathname.startsWith('/blogs-news')) {
+    title = 'Blogs & News';
+    description = '';
+  } else if (pathname.startsWith('/ai-insights')) {
+    title = 'AI Insights';
+    description = '';
+  } else if (pathname.startsWith('/archive')) {
+    title = 'Archive';
+    description = 'View deactivated and deleted user accounts.';
   }
 
   return { breadcrumb, title, description };
