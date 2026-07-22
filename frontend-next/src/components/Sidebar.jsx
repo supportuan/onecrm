@@ -142,7 +142,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
       return {
         ...item,
         displayLabel: item.agentDisplayLabel || item.displayLabel || item.label,
-        path: item.accessKey === "Agency CRM" ? "/agency-crm/dashboard" : item.path,
+        path: item.accessKey === "Agency CRM" ? "/agency-crm/agency-leads" : item.path,
         subItems: item.subItems?.map((sub) => ({
           ...sub,
           label: sub.agentLabel || sub.label,
@@ -295,8 +295,8 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
           </svg>
         </div>
         <div
-          className={`flex flex-none border-b border-neutral-100/80 ${
-            sidebarOpen ? "flex-col gap-1.5 px-3 py-3" : "h-20 items-center justify-center"
+          className={`flex h-20 flex-none border-b border-neutral-100/80 ${
+            sidebarOpen ? "flex-col justify-center gap-1.5 px-3" : "items-center justify-center"
           }`}
         >
           {sidebarOpen ? (
@@ -481,10 +481,10 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
         {sidebarOpen ? (
           <div className="relative z-[1] flex-none border-t border-neutral-100/80 px-3 py-3">
             <p className="text-[10px] font-semibold leading-snug text-neutral-500">
-              AUNTech (v.3.3.1)
+              AUNTech (V 3.3.1)
             </p>
             <p className="mt-0.5 text-[10px] font-medium leading-snug text-neutral-400">
-              Optimized services &amp; performance enhancements
+              Optimized services &amp; performance enhancements.
             </p>
           </div>
         ) : null}

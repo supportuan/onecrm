@@ -49,11 +49,6 @@ export default function UniversityDirectory() {
 
   return (
     <div className="ui-container space-y-6">
-      <div>
-        <h1 className="ui-text-h2">University directory</h1>
-        <p className="ui-text-body mt-1">Browse universities and point-of-contact details for application queries.</p>
-      </div>
-
       <form onSubmit={onSearch} className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />

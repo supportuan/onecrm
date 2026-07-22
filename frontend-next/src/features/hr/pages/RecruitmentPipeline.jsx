@@ -12,7 +12,6 @@ const TABS = [
     key: 'pipeline',
     label: 'Jobs & pipeline',
     short: 'Pipeline',
-    description: 'Postings, applicants, and stage progression.',
     icon: Briefcase,
     component: JobPostings,
   },
@@ -20,7 +19,6 @@ const TABS = [
     key: 'interviews',
     label: 'Interviews',
     short: 'Interviews',
-    description: 'Schedules and feedback for candidate conversations.',
     icon: Calendar,
     component: InterviewScheduling,
   },
@@ -28,7 +26,6 @@ const TABS = [
     key: 'offers',
     label: 'Offer letters',
     short: 'Offers',
-    description: 'Draft, send, and track offer responses.',
     icon: FileText,
     component: OfferLetters,
   },
@@ -36,7 +33,6 @@ const TABS = [
     key: 'onboarding',
     label: 'Onboarding',
     short: 'Onboarding',
-    description: 'Checklists for new joiners getting up to speed.',
     icon: ClipboardList,
     component: OnboardingChecklist,
   },
@@ -56,13 +52,6 @@ export default function RecruitmentPipeline() {
 
   return (
     <div className="ui-page max-w-full min-h-full">
-      <div className="mb-6">
-        <h1 className="ui-text-h1 text-brand">Recruitment tracker</h1>
-        <p className="ui-text-body mt-1">
-          Hire end-to-end — postings, pipeline, interviews, offers, and onboarding.
-        </p>
-      </div>
-
       <div className="sticky top-0 z-20 -mx-1 mb-6 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg)] p-1.5 shadow-sm backdrop-blur-md">
         <nav
           role="tablist"
@@ -92,7 +81,6 @@ export default function RecruitmentPipeline() {
             );
           })}
         </nav>
-        <p className="ui-text-meta px-3 pb-2 pt-2.5">{activeTab.description}</p>
       </div>
 
       <Active />

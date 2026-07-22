@@ -18,15 +18,15 @@ export default function Performance() {
 
   return (
     <div className="ui-container">
-      <div className="flex items-center gap-1 border-b border-[var(--ui-border)] pb-4">
+      <div className="flex items-center gap-1 w-full border-b border-[var(--ui-border)]">
         {TABS.map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => router.push(`/hr/performance-reviews?tab=${t.key}`)}
-            className={`px-4 py-2 text-[13px] transition border-b-2 -mb-[17px] ${
+            className={`px-5 py-2.5 text-[13px] transition border-b-2 -mb-px ${
               active === t.key
-                ? 'border-[var(--ui-text)] font-medium text-[var(--ui-text)]'
+                ? 'border-[var(--ui-text)] font-semibold text-[var(--ui-text)]'
                 : 'border-transparent text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]'
             }`}
           >

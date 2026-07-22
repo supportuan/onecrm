@@ -185,17 +185,26 @@ export default function AgencyLeads() {
     partners.find((p) => String(p.id) === String(assignAgencyId))?.agencyName || '';
 
   return (
-    <div className="ui-page">
-      <div className="ui-container space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="ui-text-h2">{isAgent ? 'My referrals' : 'Students & referrals'}</h1>
-            <p className="ui-text-body mt-1 max-w-2xl">
-              {isAgent
-                ? 'People who joined through your link appear here as Lead or Student. Open a student to track applications and fees.'
-                : 'See which students belong to each agency, or assign an existing student in a few clicks.'}
-            </p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {stats && (
+          <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+            {[
+              { label: 'Referrals', value: stats.totalReferrals },
+              { label: 'Students', value: stats.activeStudents },
+              { label: 'Applications', value: stats.totalApplications },
+              { label: 'Enrolled', value: stats.enrolledStudents },
+            ].map((c) => (
+              <div key={c.label} className="ui-panel px-3 py-1.5 min-w-[88px]">
+                <p className="text-[10px] font-medium text-neutral-500">{c.label}</p>
+                <p className="text-sm font-semibold text-brand tabular-nums leading-tight">
+                  {c.value ?? 0}
+                </p>
+              </div>
+            ))}
           </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
           {canAssign && (
             <button
               type="button"
@@ -203,7 +212,7 @@ export default function AgencyLeads() {
                 setShowAssign((v) => !v);
                 setAssignMsg('');
               }}
-              className="ui-btn-primary inline-flex items-center gap-2 text-sm"
+              className="ui-btn-primary inline-flex items-center gap-2 text-sm !py-1.5"
             >
               <UserPlus className="h-4 w-4" />
               {showAssign ? 'Close assign' : 'Assign student'}
@@ -212,14 +221,16 @@ export default function AgencyLeads() {
           {isAgent && (
             <Link
               href={canShare ? AGENT_REFERRAL_PATH : AGENT_ONBOARDING_PATH}
-              className="ui-btn-secondary inline-flex items-center gap-2 text-sm"
+              className="ui-btn-secondary inline-flex items-center gap-2 text-sm !py-1.5"
             >
               <Link2 className="h-4 w-4" />
               {canShare ? 'Get referral link' : 'Finish setup to share'}
             </Link>
           )}
         </div>
+      </div>
 
+      <div className="space-y-4">
         {isAgent && (
           <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
             <p className="font-medium text-neutral-900">How referrals appear</p>
@@ -379,22 +390,6 @@ export default function AgencyLeads() {
               </p>
             )}
           </section>
-        )}
-
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { label: 'Referrals', value: stats.totalReferrals },
-              { label: 'Students', value: stats.activeStudents },
-              { label: 'Applications', value: stats.totalApplications },
-              { label: 'Enrolled', value: stats.enrolledStudents },
-            ].map((c) => (
-              <div key={c.label} className="ui-panel p-4">
-                <p className="ui-text-meta">{c.label}</p>
-                <p className="text-xl font-semibold text-brand mt-1">{c.value ?? 0}</p>
-              </div>
-            ))}
-          </div>
         )}
 
         <div className="flex flex-wrap gap-3 items-center">

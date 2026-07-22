@@ -315,19 +315,34 @@ export default function ApplicationsList() {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p className="ui-text-meta">
-          Follow {allApps.length} application{allApps.length === 1 ? '' : 's'} across{' '}
-          {students.length} student{students.length === 1 ? '' : 's'}, from preparation to
-          enrolment.
-        </p>
-        <div className="flex items-center gap-2 flex-wrap">
+      {/* Toolbar: compact stats + actions on one row */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {stats && (
+          <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+            {[
+              ['Students', stats.totalStudents],
+              ['Enrolled', stats.enrolled],
+              [
+                'Active apps',
+                allApps.filter((a) => !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage)).length,
+              ],
+              ['Visa', stageCounts.VISA_PROCESS || 0],
+            ].map(([label, value]) => (
+              <div key={label} className="ui-surface px-3 py-1.5 min-w-[88px]">
+                <p className="text-[10px] font-medium text-neutral-500">{label}</p>
+                <p className="text-sm font-semibold text-brand tabular-nums leading-tight">
+                  {value ?? '—'}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-2 flex-wrap ml-auto">
           {canManage && visibleLeads.length > 0 && (
             <button
               type="button"
               onClick={handlePromoteAll}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl ui-text-strong bg-amber-50 border border-amber-100 text-amber-800 hover:bg-amber-100 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg ui-text-strong bg-amber-50 border border-amber-100 text-amber-800 hover:bg-amber-100 transition-all"
             >
               Import all leads
               <span className="px-1.5 py-px rounded-full bg-amber-200/70 text-amber-900 text-[10px] font-semibold">
@@ -338,7 +353,7 @@ export default function ApplicationsList() {
           {canManage && (
             <button
               onClick={() => setShowNewStudent(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl ui-text-strong text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg ui-text-strong text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-all"
             >
               <GraduationCap size={13} /> New student
             </button>
@@ -349,7 +364,7 @@ export default function ApplicationsList() {
                 setPickedStudent(null);
                 setShowPickStudent(true);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl ui-text-strong !text-white bg-brand hover:bg-brand-hover transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg ui-text-strong !text-white bg-brand hover:bg-brand-hover transition-all"
             >
               <Plus size={13} /> New application
             </button>
@@ -357,29 +372,13 @@ export default function ApplicationsList() {
         </div>
       </div>
 
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-          {[
-            ['Students', stats.totalStudents],
-            ['Enrolled', stats.enrolled],
-            ['Active applications', allApps.filter((a) => !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage)).length],
-            ['Visa processing', stageCounts.VISA_PROCESS || 0],
-          ].map(([label, value]) => (
-            <div key={label} className="ui-surface px-4 py-3">
-              <p className="ui-text-meta">{label}</p>
-              <p className="text-xl font-semibold text-brand mt-0.5">{value ?? '—'}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Promotable leads — collapsible */}
       {canManage && visibleLeads.length > 0 && (
-        <div className="ui-surface mb-5 overflow-hidden">
+        <div className="ui-surface mb-4 overflow-hidden">
           <button
             type="button"
             onClick={() => setPromotableExpanded((v) => !v)}
-            className="w-full px-6 py-4 flex items-center justify-between gap-4 hover:bg-neutral-50/60 transition-all"
+            className="w-full px-4 py-3 flex items-center justify-between gap-4 hover:bg-neutral-50/60 transition-all"
           >
             <div className="text-left">
               <h2 className="ui-text-h3">Leads ready for applications</h2>
@@ -423,7 +422,7 @@ export default function ApplicationsList() {
       )}
 
       {/* Filter bar */}
-      <div className="ui-surface mb-5 px-5 py-4 space-y-4">
+      <div className="ui-surface mb-4 px-4 py-3 space-y-3">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -431,7 +430,7 @@ export default function ApplicationsList() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by code, student, university, course or country"
-              className="w-full pl-10 pr-3.5 py-2.5 bg-neutral-50/80 border border-neutral-200 rounded-xl text-[13px] text-brand placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
+              className="w-full pl-10 pr-3.5 py-2 bg-neutral-50/80 border border-neutral-200 rounded-lg text-[13px] text-brand placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
             />
           </div>
           {studentFilterId && (

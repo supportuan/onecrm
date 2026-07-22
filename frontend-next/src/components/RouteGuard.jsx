@@ -30,7 +30,6 @@ const ROUTE_PERMISSION_MAP = [
   { path: '/student-crm', module: 'Student CRM', option: null },
 
   // Agency CRM
-  { path: '/agency-crm/dashboard', module: 'Agency CRM', option: 'Dashboard' },
   { path: '/agency-crm/agency-management', module: 'Agency CRM', option: 'Agency Management', adminOnly: true },
   { path: '/agency-crm/agency-leads', module: 'Agency CRM', option: 'Agency Leads' },
   { path: '/agency-crm/universities', module: 'Agency CRM', option: 'University Directory' },

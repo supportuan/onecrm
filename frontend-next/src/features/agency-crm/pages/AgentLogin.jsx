@@ -56,7 +56,7 @@ export default function AgentLogin() {
         setError('This portal is for agency agents only. Use staff or student login instead.');
         return;
       }
-      const target = '/agency-crm/dashboard';
+      const target = '/agency-crm/agency-leads';
       if (data.isFirstLogin || data.mustChangePassword) {
         localStorage.setItem('postPasswordChangeRedirect', target);
         router.push('/change-password');

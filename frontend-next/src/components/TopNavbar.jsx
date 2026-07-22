@@ -29,8 +29,10 @@ const TopNavbar = ({ onToggleSidebar }) => {
         <header className="flex h-20 items-center justify-between gap-4 bg-white px-4 sm:px-6 lg:px-8">
             {/* Left */}
             <div className="flex min-w-0 items-center gap-6">
-                <div className="flex min-w-0 flex-col">
-                    <p className="text-xs font-semibold text-slate-400">{breadcrumb}</p>
+                <div className="flex min-w-0 flex-col justify-center gap-0.5">
+                    {breadcrumb ? (
+                      <p className="text-[11px] font-semibold text-slate-400 leading-none">{breadcrumb}</p>
+                    ) : null}
                     <h1 className="app-title-gradient truncate text-[24px] font-semibold leading-tight">
                         {title}
                     </h1>

@@ -227,22 +227,43 @@ export default function EmployeeDirectory() {
 
   return (
     <div className="ui-page text-neutral-800 font-sans">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="ui-text-h1 text-brand">Employee directory</h1>
-          <p className="ui-text-body mt-1">
-            Maintain employee profiles, update access roles, and bulk-import personnel from a spreadsheet.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
+      <div className="mb-6 flex flex-col lg:flex-row lg:items-center gap-3">
+        {!showBulkPanel && (
+          <>
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search name, email, dept, or id…"
+                className="w-full pl-10 pr-3 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-800 placeholder:text-neutral-400 focus:border-brand outline-none transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 shrink-0"
+            >
+              <option value="ALL">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="ON_LEAVE">On leave</option>
+              <option value="RESIGNED">Resigned</option>
+              <option value="TERMINATED">Terminated</option>
+            </select>
+            <div className="px-3 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-600 shrink-0">
+              {employees.length} personnel
+            </div>
+          </>
+        )}
+        <div className="flex items-center gap-2 shrink-0 lg:ml-auto">
           {!showBulkPanel && (
             <button
               onClick={() => {
                 setCreateFeedback(null);
                 setShowCreateModal(true);
               }}
-              className="flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-medium bg-brand text-white shadow-md  hover:bg-brand-hover transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-brand text-white shadow-md hover:bg-brand-hover transition-all"
             >
               <Plus size={14} /> Add employee
             </button>
@@ -254,7 +275,7 @@ export default function EmployeeDirectory() {
               setParsedRows([]);
               setImportSummary(null);
             }}
-            className="flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-medium transition-all bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-brand"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-brand"
           >
             {showBulkPanel ? <Users size={14} /> : <Upload size={14} />}
             {showBulkPanel ? 'View directory' : 'Bulk import'}
@@ -265,34 +286,6 @@ export default function EmployeeDirectory() {
       <div>
         {!showBulkPanel ? (
           <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Search + count */}
-            <div className="ui-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="filter by name, email, department, or id..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-800 placeholder:text-neutral-400 focus:border-brand outline-none transition-all text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 shrink-0"
-              >
-                <option value="ALL">All statuses</option>
-                <option value="ACTIVE">Active</option>
-                <option value="ON_LEAVE">On leave</option>
-                <option value="RESIGNED">Resigned</option>
-                <option value="TERMINATED">Terminated</option>
-              </select>
-              <div className="px-5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-600 shrink-0">
-                {employees.length} personnel
-              </div>
-            </div>
-
             {/* Directory table */}
             <div className="ui-panel overflow-hidden">
               <div className="overflow-x-auto">

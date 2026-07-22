@@ -17,7 +17,6 @@ import {
 const services = [
   {
     title: 'ApplyUniNow',
-    category: 'Admissions',
     description:
       'Explore destinations and universities, manage applications, and receive end-to-end study-abroad support.',
     url: 'https://applyuninow.com',
@@ -25,7 +24,6 @@ const services = [
   },
   {
     title: 'ApplyUniLoans',
-    category: 'Education finance',
     description:
       'Future-ready financing that makes education funding and study expenses simpler to plan.',
     url: 'https://applyuniloans.com',
@@ -33,7 +31,6 @@ const services = [
   },
   {
     title: 'ApplyUniHomes',
-    category: 'Accommodation',
     description:
       'Find student-friendly housing and simplify accommodation planning before arrival.',
     url: 'https://applyunihomes.com',
@@ -41,7 +38,6 @@ const services = [
   },
   {
     title: 'ApplyUniJobs',
-    category: 'Careers',
     description:
       'Discover part-time opportunities, graduate roles, and support for long-term employability.',
     url: 'https://applyunijobs.com',
@@ -49,7 +45,6 @@ const services = [
   },
   {
     title: 'AUN Tech Consulting',
-    category: 'Technology roadmap',
     description:
       'Future-ready ERP, CRM, and digital transformation consulting—planned and delivered simply.',
     status: 'Coming soon',
@@ -57,7 +52,6 @@ const services = [
   },
   {
     title: 'AdminConnects',
-    category: 'Partner operations',
     description:
       'Future-ready guidance connecting education administrators, partners, and operations.',
     url: 'https://adminconnects.com',
@@ -65,7 +59,6 @@ const services = [
   },
   {
     title: 'UniFeatures',
-    category: 'University explorer',
     description:
       'Student resources, the latest opportunities, and smarter admissions information in one place.',
     url: 'https://unifeatures.com',
@@ -73,7 +66,6 @@ const services = [
   },
   {
     title: 'InternationalStudentVisas',
-    category: 'Visa guidance',
     description:
       'Stay informed, organise documentation, and follow each step of the student visa journey.',
     url: 'https://internationalstudentvisas.com',
@@ -81,7 +73,6 @@ const services = [
   },
   {
     title: 'AustraliaSkills',
-    category: 'Skills and migration',
     description:
       'Connect your skills with global opportunities through Australian assessment and migration guidance.',
     url: 'https://australiaskills.com',
@@ -89,7 +80,6 @@ const services = [
   },
   {
     title: 'CanadaAdmits',
-    category: 'Canada admissions',
     description:
       'Connect students with Canadian universities and simplify admissions, documents, and study choices.',
     url: 'https://canadaadmits.com',
@@ -97,7 +87,6 @@ const services = [
   },
   {
     title: 'PikoPop',
-    category: 'University services',
     description:
       'A digital platform for university services, online engagement, and student recruitment support.',
     url: 'https://pikopop.com',
@@ -105,7 +94,6 @@ const services = [
   },
   {
     title: 'DeFaComCon',
-    category: 'Community',
     description:
       'Build meaningful connections between students, institutions, and destination communities.',
     url: 'https://defacomcon.com',
@@ -115,24 +103,19 @@ const services = [
 
 export default function AlliedServices() {
   return (
-    <div className="relative min-h-screen overflow-hidden rounded-2xl text-[var(--ui-text)]">
+    <div className="relative overflow-hidden rounded-2xl text-[var(--ui-text)]">
       <div
         aria-hidden="true"
         className="app-ambient-accent pointer-events-none absolute inset-0"
       />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10">
-        <section className="mx-auto max-w-4xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand">
-            ApplyUniNow ecosystem
-          </p>
-          <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
-            One Platform,{' '}
-            <span className="app-title-gradient inline-block">Multiple Services</span>
-          </h1>
-        </section>
-
-        <section className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="relative z-10 mx-auto max-w-7xl pt-4">
+        <div className="mb-5 flex justify-center">
+          <h2 className="app-title-gradient text-3xl font-semibold tracking-tight sm:text-4xl">
+            One Platform, Multiple Services
+          </h2>
+        </div>
+        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => {
             const Icon = service.icon;
             const card = (
@@ -149,15 +132,11 @@ export default function AlliedServices() {
                     <ArrowUpRight className="absolute right-0 h-4 w-4 text-[var(--ui-text-muted)] transition group-hover:text-brand" />
                   )}
                 </div>
-                <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ui-text-muted)]">
-                  {service.category}
-                </p>
-                <h2 className="app-title-gradient mt-1.5 text-base font-semibold">
+                <h2 className="app-title-gradient mt-3 text-xl font-semibold tracking-tight sm:text-2xl">
                   {service.title}
                 </h2>
-                <p className="mt-2 text-xs leading-5 text-[var(--ui-text-secondary)]">{service.description}</p>
-                <p className="mt-auto pt-4 text-[11px] font-semibold text-brand">
-                  {service.status || 'Visit service'}
+                <p className="mt-1.5 text-xs leading-5 text-[var(--ui-text-secondary)]">
+                  {service.description}
                 </p>
               </>
             );
@@ -168,14 +147,14 @@ export default function AlliedServices() {
                 href={service.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="app-glass-card group flex min-h-[210px] flex-col items-center rounded-2xl p-5 text-center transition duration-300 hover:-translate-y-1 hover:border-brand/30"
+                className="app-glass-card group flex flex-col items-center rounded-2xl p-4 text-center transition duration-300 hover:-translate-y-1 hover:border-brand/30"
               >
                 {card}
               </a>
             ) : (
               <div
                 key={service.title}
-                className="app-glass-card group flex min-h-[210px] flex-col items-center rounded-2xl p-5 text-center"
+                className="app-glass-card group flex flex-col items-center rounded-2xl p-4 text-center"
               >
                 {card}
               </div>

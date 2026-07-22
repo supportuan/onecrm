@@ -23,7 +23,7 @@ export function getStaffPageMeta(pathname = '') {
     description = 'Create, manage and assign permissions to users.';
   } else if (pathname === '/admin-settings/roles-permissions') {
     title = 'Roles & Permissions';
-    description = 'Create and manage roles and permissions.';
+    description = 'Manage role responsibilities, member assignments, and access permissions.';
   } else if (pathname.startsWith('/marketing')) {
     title = 'Performance Console';
     description = 'Clean, focused insight into lead movement, sources, and actions that need attention.';
@@ -34,84 +34,80 @@ export function getStaffPageMeta(pathname = '') {
     title = 'Profile';
     description = 'Your account details and profile photo';
   } else if (pathname.startsWith('/hr/me')) {
-    title = 'My Details';
-    description = 'Manage your HR activities';
+    title = 'My HR';
+    description = 'Attendance, leave, and payslips in one place.';
   } else if (pathname.startsWith('/hr/employee-directory')) {
     title = 'Employee Directory';
-    description = 'Manage your HR activities';
+    description = 'Maintain employee profiles, update access roles, and bulk-import personnel from a spreadsheet.';
   } else if (pathname.startsWith('/hr/recruitment-tracker')) {
-    title = 'Recruitment Tracker';
-    description = 'Track your recruitment process';
+    title = 'Recruitment';
+    description = 'Hire end-to-end — postings, pipeline, interviews, offers, and onboarding.';
   } else if (pathname.startsWith('/hr/attendance')) {
     title = 'Attendance';
-    description = 'Manage your attendance';
+    description = 'Clock in, review history, and manage team attendance.';
   } else if (pathname.startsWith('/hr/leave-management')) {
-    title = 'Leave Management';
-    description = 'Manage your leave management';
+    title = 'Leave';
+    description = 'Requests, approvals, policies, and holiday calendars.';
   } else if (pathname.startsWith('/hr/performance-reviews')) {
-    title = 'Performance Reviews';
-    description = 'Manage your performance reviews';
+    title = 'Performance';
+    description = 'Counsellor reviews from live CRM data — leads, conversions, enrollments, and revenue.';
   } else if (pathname.startsWith('/hr/payroll')) {
     title = 'Payroll';
-    description = 'Manage your payroll';
+    description = 'Salary structures, payroll execution, payslips, and deductions.';
   } else if (pathname.startsWith('/hr')) {
-    title = 'Overview';
-    description = 'Manage your HR activities';
+    title = 'Human Resource';
+    description = 'Employee directory, recruitment, attendance, leave, performance, and payroll.';
   } else if (pathname.startsWith('/student-crm/student-management')) {
     title = 'Student Information Hub';
-    description =
-      'Application tracking system for applicant milestones and nurturing.';
+    description = '';
   } else if (pathname.startsWith('/student-crm/applications')) {
     title = 'Application Tracking System';
-    description = 'Track every application from preparation through enrolment.';
+    description = '';
   } else if (pathname.startsWith('/student-crm/visa-management')) {
     title = 'Visa Management';
-    description = 'Manage student visa workflows';
+    description = '';
   } else if (pathname.startsWith('/student-crm/settings')) {
     title = 'CRM Settings';
-    description = 'Configure Student Hub settings';
+    description = '';
   } else if (pathname.startsWith('/student-crm')) {
     title = 'Student Hub';
-    description = 'Manage student relationships, applications, and milestones';
-  } else if (pathname.startsWith('/agency-crm/dashboard')) {
-    title = 'Dashboard';
-    description = 'Agent portal overview';
+    description = '';
   } else if (pathname.startsWith('/agency-crm/agency-management')) {
     title = 'Agency Management';
-    description = 'Manage agency partners, status, and onboarding approvals';
+    description = '';
   } else if (pathname.startsWith('/agency-crm/agency-leads')) {
     title = 'Students & Referrals';
-    description = 'Assign students to agencies and track referrals';
+    description = '';
   } else if (pathname.startsWith('/agency-crm/universities')) {
     title = 'University Directory';
-    description = 'Browse partner universities and programs';
+    description = '';
   } else if (pathname.startsWith('/agency-crm/onboarding')) {
     title = 'Onboarding';
-    description = 'Agent registration, documents, and agreement';
+    description = '';
   } else if (pathname.startsWith('/agency-crm/communications')) {
     title = 'Communications';
-    description = 'Agency activity and announcements';
+    description = '';
   } else if (pathname.startsWith('/agency-crm/co-branding-tools')) {
     title = 'Co-branding Tools';
-    description = 'Referral links and branded assets';
+    description = '';
   } else if (pathname.startsWith('/agency-crm/commission-management')) {
-    title = 'Commission Management';
-    description = 'Commission rules, accrual, and statements';
+    title = 'Payout Console';
+    description = 'Verify earnings, queue batches, and track paid volume.';
   } else if (pathname.startsWith('/agency-crm/students')) {
     title = 'Student';
-    description = 'Assigned student workspace';
+    description = '';
   } else if (pathname.startsWith('/agency-crm')) {
     title = 'Agent Hub';
-    description = 'Agency partner operations';
+    description = '';
   } else if (pathname.startsWith('/resources/manage')) {
     title = 'Manage Knowledge';
-    description = 'Upload files and track acknowledgements';
+    description = 'Upload files and track acknowledgements.';
   } else if (pathname.startsWith('/resources')) {
     title = 'Knowledge Hub';
-    description = 'Curated knowledge for in-house teams, academics, and agents';
+    description = 'Curated knowledge for in-house teams, academics, and agents.';
   } else if (pathname.startsWith('/allied-services')) {
     title = 'Allied Services';
-    description = 'One connected ecosystem for every stage of the international education journey.';
+    description = '';
   }
 
   return { breadcrumb, title, description };

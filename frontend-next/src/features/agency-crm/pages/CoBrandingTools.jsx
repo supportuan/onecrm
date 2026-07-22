@@ -118,15 +118,6 @@ export default function CoBrandingTools() {
   return (
     <div className="ui-page">
       <div className="ui-container space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-brand">
-            {isAgent ? 'Referral & branding' : 'Co-branding tools'}
-          </h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            Referral links and branded assets for {partner.agencyName}.
-          </p>
-        </div>
-
         {msg && <p className="text-sm text-neutral-700">{msg}</p>}
 
         {!isAgent && partners.length > 1 && (

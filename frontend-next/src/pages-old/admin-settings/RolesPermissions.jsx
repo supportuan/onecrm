@@ -42,6 +42,8 @@ export default function RolesPermissions() {
   );
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [memberFilter, setMemberFilter] = useState('ALL');
+  const [permFilter, setPermFilter] = useState('ALL');
   const [draft, setDraft] = useState({});
   const [dirtyRoles, setDirtyRoles] = useState(new Set());
   const [savingRole, setSavingRole] = useState('');
@@ -96,7 +98,7 @@ export default function RolesPermissions() {
 
   if (user && !canView) {
     return (
-      <div className="ui-page text-neutral-800 font-sans flex items-center justify-center">
+      <div className="ui-page text-neutral-800 font-sans flex items-center justify-center min-h-[40vh]">
         <div className="ui-card w-auto text-center space-y-3">
           <ShieldAlert size={36} className="text-rose-500 mx-auto" />
           <h2 className="text-base font-semibold text-brand">Access denied</h2>
@@ -111,7 +113,24 @@ export default function RolesPermissions() {
 
   const filteredRoles = roles.filter((r) => {
     const q = searchQuery.toLowerCase();
-    return r.toLowerCase().includes(q) || titleCaseRole(r).toLowerCase().includes(q);
+    const nameMatch =
+      !q ||
+      r.toLowerCase().includes(q) ||
+      titleCaseRole(r).toLowerCase().includes(q) ||
+      (ROLE_DESCRIPTIONS[r] || '').toLowerCase().includes(q);
+
+    if (!nameMatch) return false;
+
+    const memberCount = users.filter((u) => u.role === r && u.isActive !== false).length;
+    if (memberFilter === 'WITH_MEMBERS' && memberCount === 0) return false;
+    if (memberFilter === 'EMPTY' && memberCount > 0) return false;
+
+    const permCount = (draft[r] || permissionMap[r] || []).length;
+    if (permFilter === 'HAS_PERMS' && permCount === 0) return false;
+    if (permFilter === 'NO_PERMS' && permCount > 0) return false;
+    if (permFilter === 'UNSAVED' && !dirtyRoles.has(r)) return false;
+
+    return true;
   });
 
   const togglePerm = (role, permKey) => {
@@ -199,23 +218,56 @@ export default function RolesPermissions() {
   };
 
   return (
-    <div className="ui-page text-neutral-800 font-sans">
+    <div className="text-neutral-800 font-sans space-y-4">
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 bg-brand text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 text-sm font-medium">
           <CheckCircle2 size={16} /> {toast}
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-brand tracking-tight">Roles & Permissions</h1>
-          <p className="text-neutral-500 text-sm mt-1">
-            Manage role responsibilities, member assignments, and access permissions.
-            {!canEdit && ' Read-only view.'}
-          </p>
+      {/* Search + filters (Users-style toolbar) */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="relative w-full md:max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
+          <input
+            type="text"
+            placeholder="Search roles, responsibilities..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-sm border border-neutral-200 rounded-md text-neutral-800 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-700"
+          />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <select
+            value={memberFilter}
+            onChange={(e) => setMemberFilter(e.target.value)}
+            className="rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-700 bg-white"
+          >
+            <option value="ALL">All members</option>
+            <option value="WITH_MEMBERS">Has members</option>
+            <option value="EMPTY">No members</option>
+          </select>
+          <select
+            value={permFilter}
+            onChange={(e) => setPermFilter(e.target.value)}
+            className="rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-700 bg-white"
+          >
+            <option value="ALL">All permissions</option>
+            <option value="HAS_PERMS">Has permissions</option>
+            <option value="NO_PERMS">No permissions</option>
+            <option value="UNSAVED">Unsaved changes</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery('');
+              setMemberFilter('ALL');
+              setPermFilter('ALL');
+            }}
+            className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm font-medium text-brand hover:bg-neutral-100"
+          >
+            Clear filters
+          </button>
           {loading && <Loader2 size={18} className="text-neutral-500 animate-spin" />}
           {canEdit && (
             <button
@@ -228,37 +280,28 @@ export default function RolesPermissions() {
               Reset all
             </button>
           )}
+          {!canEdit && (
+            <span className="text-xs text-neutral-500">Read-only view</span>
+          )}
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-4 max-w-sm relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
-        <input
-          type="text"
-          placeholder="Search roles..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-neutral-200 rounded-md text-neutral-800 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-700"
-        />
-      </div>
-
       {/* Table */}
-      <div className="border border-neutral-200 rounded-lg overflow-hidden bg-white">
+      <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] border-collapse">
             <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50/80">
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-neutral-500 tracking-wide w-[22%]">
+              <tr className="border-b border-neutral-200 bg-neutral-50">
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 w-[22%]">
                   Role Level
                 </th>
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-neutral-500 tracking-wide w-[28%]">
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 w-[28%]">
                   Responsibilities
                 </th>
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-neutral-500 tracking-wide w-[32%]">
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 w-[32%]">
                   Assigned Members
                 </th>
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-neutral-500 tracking-wide w-[18%]">
+                <th className="text-left px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 w-[18%]">
                   Assignment
                 </th>
               </tr>
@@ -266,7 +309,7 @@ export default function RolesPermissions() {
             <tbody>
               {filteredRoles.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-neutral-500">
+                  <td colSpan={4} className="px-5 py-12 text-center text-sm text-neutral-500">
                     No roles match your search.
                   </td>
                 </tr>
@@ -282,7 +325,7 @@ export default function RolesPermissions() {
                     <Fragment key={role}>
                       <tr className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors">
                         {/* Role Level */}
-                        <td className="px-6 py-5 align-top">
+                        <td className="px-5 py-4 align-top">
                           <button
                             type="button"
                             onClick={() => setExpandedRole(isExpanded ? null : role)}
@@ -304,7 +347,7 @@ export default function RolesPermissions() {
                         </td>
 
                         {/* Responsibilities */}
-                        <td className="px-6 py-5 align-top">
+                        <td className="px-5 py-4 align-top">
                           <p className="text-sm text-neutral-600 leading-relaxed">
                             {ROLE_DESCRIPTIONS[role] || 'Custom role with configurable permissions.'}
                           </p>
@@ -314,7 +357,7 @@ export default function RolesPermissions() {
                         </td>
 
                         {/* Assigned Members */}
-                        <td className="px-6 py-5 align-top">
+                        <td className="px-5 py-4 align-top">
                           {usersLoading ? (
                             <span className="text-sm text-neutral-500">Loading...</span>
                           ) : members.length === 0 ? (
@@ -368,7 +411,7 @@ export default function RolesPermissions() {
                         </td>
 
                         {/* Assignment */}
-                        <td className="px-6 py-5 align-top">
+                        <td className="px-5 py-4 align-top">
                           {canEdit ? (
                             <div className="relative" ref={isAssignOpen ? assignRef : null}>
                               <button
@@ -434,7 +477,7 @@ export default function RolesPermissions() {
                       {/* Expandable permissions panel */}
                       {isExpanded && (
                         <tr className="bg-neutral-50/60 border-b border-neutral-200">
-                          <td colSpan={4} className="px-6 py-5">
+                          <td colSpan={4} className="px-5 py-4">
                             <div className="flex items-center justify-between gap-4 mb-4">
                               <div>
                                 <h3 className="text-sm font-semibold text-brand">

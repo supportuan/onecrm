@@ -165,7 +165,7 @@ export default function LoginPage() {
       else if (role === 'HR') targetRoute = getDefaultHrRoute(role) || '/hr';
       else if (role === 'COUNSELLOR') targetRoute = '/marketing';
       else if (role === 'AGENT' || role === 'AGENCY_FREELANCER') {
-        targetRoute = '/agency-crm/dashboard';
+        targetRoute = '/agency-crm/agency-leads';
       } else if (role === 'STUDENT') {
         targetRoute =
           data.showPolicyModal || !data.user?.policyAcceptedAt
@@ -346,7 +346,7 @@ export default function LoginPage() {
                 <PrivacyInfoButton onClick={() => setPrivacyOpen(true)} />
               </div>
 
-              <h1 className="text-[1.2rem] font-semibold leading-snug tracking-tight text-slate-900 sm:text-[1.3rem]">
+              <h1 className="app-title-gradient text-[1.2rem] font-semibold leading-snug tracking-tight sm:text-[1.3rem]">
                 Your journey starts with a quick login
               </h1>
 

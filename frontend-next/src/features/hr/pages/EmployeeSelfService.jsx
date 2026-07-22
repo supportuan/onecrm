@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { useAuth } from '@/lib/auth/AuthContext';
 import { getHrMe, submitRemoteClockIn } from '@/services/hrApi';
 import { sentenceCase } from '@/lib/text';
 import { LeaveAnalyticsStats, LeaveBalanceCards } from '../components/LeaveBalanceSummary';
@@ -21,7 +20,6 @@ import { LeaveAnalyticsStats, LeaveBalanceCards } from '../components/LeaveBalan
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function EmployeeSelfService() {
-  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [clockBusy, setClockBusy] = useState(false);
@@ -87,8 +85,6 @@ export default function EmployeeSelfService() {
     );
   }
 
-  const emp = data?.employee;
-
   return (
     <div className="ui-page text-neutral-800 font-sans">
       {toast && (
@@ -98,10 +94,6 @@ export default function EmployeeSelfService() {
       )}
 
       <div className="ui-container">
-        <p className="text-[13px] text-neutral-500 tracking-tight">
-          Hello, {emp?.name || user?.fullName || user?.name || 'there'} — attendance, leave, and payslips in one place.
-        </p>
-
         {/* Analytics */}
         <LeaveAnalyticsStats
           leaveSummary={data?.leaveSummary}
