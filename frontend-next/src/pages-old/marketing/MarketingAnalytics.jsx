@@ -329,12 +329,6 @@ export default function MarketingAnalytics() {
 
   return (
     <div className="space-y-6 text-[13px] [&_th]:text-xs [&_th]:font-medium [&_td]:text-xs [&_td]:font-normal">
-      <section className="rounded-xl border border-slate-200 bg-white px-5 py-4">
-        <h2 className="text-base font-semibold text-slate-900">Revenue Intelligence</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Connect marketing investment, campaign efficiency, and attributable revenue.
-        </p>
-      </section>
       {/* <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <button
           onClick={fetchAnalytics}
@@ -353,16 +347,16 @@ export default function MarketingAnalytics() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-        <KpiCard title="Total Campaigns" value={formatNumber(analytics.totalCampaigns)} subtitle={`${analytics.activeCampaigns} active campaigns`} icon={<BarChart3 className="h-5 w-5" />} />
-        <KpiCard title="Budget Allocated" value={formatCurrency(analytics.totalBudget)} subtitle="Total paid campaign budget" icon={<IndianRupee className="h-5 w-5" />} />
-        <KpiCard title="Amount Spent" value={formatCurrency(analytics.totalSpent)} subtitle={`${formatPercent(analytics.budgetUsage)} budget used`} icon={<TrendingUp className="h-5 w-5" />} />
-        <KpiCard title="Revenue Generated" value={formatCurrency(analytics.totalRevenue)} subtitle="Confirmed campaign-attributed revenue" icon={<IndianRupee className="h-5 w-5" />} />
-        <KpiCard title="Marketing ROI" value={formatPercent(analytics.marketingRoi)} subtitle="(Revenue - spend) / spend" icon={<TrendingUp className="h-5 w-5" />} />
-        <KpiCard title="Total Leads" value={formatNumber(analytics.totalLeads)} subtitle={`${analytics.contactedLeads} contacted leads`} icon={<Users className="h-5 w-5" />} />
-        <KpiCard title="Cost Per Lead" value={formatCurrency(analytics.costPerLead)} subtitle="Spent amount / leads" icon={<Target className="h-5 w-5" />} />
-        <KpiCard title="Lead Conversion" value={formatPercent(analytics.conversionRate)} subtitle={`${analytics.convertedLeads} converted students`} icon={<Zap className="h-5 w-5" />} />
-        <KpiCard title="Campaign Efficiency" value={analytics.leadsPerThousand.toFixed(1)} subtitle="Leads per ₹1000 spent" icon={<Activity className="h-5 w-5" />} />
-        <KpiCard title="Lead Response Time" value={analytics.avgResponseTime} subtitle="Average contactedAt - createdAt" icon={<Clock className="h-5 w-5" />} />
+        <KpiCard title="Total Campaigns" value={formatNumber(analytics.totalCampaigns)} subtitle={`${analytics.activeCampaigns} active campaigns`} icon={<BarChart3 className="h-5 w-5" />} iconClass="bg-sky-50 text-sky-600" />
+        <KpiCard title="Budget Allocated" value={formatCurrency(analytics.totalBudget)} subtitle="Total paid campaign budget" icon={<IndianRupee className="h-5 w-5" />} iconClass="bg-violet-50 text-violet-600" />
+        <KpiCard title="Amount Spent" value={formatCurrency(analytics.totalSpent)} subtitle={`${formatPercent(analytics.budgetUsage)} budget used`} icon={<TrendingUp className="h-5 w-5" />} iconClass="bg-amber-50 text-amber-600" />
+        <KpiCard title="Revenue Generated" value={formatCurrency(analytics.totalRevenue)} subtitle="Confirmed campaign-attributed revenue" icon={<IndianRupee className="h-5 w-5" />} iconClass="bg-emerald-50 text-emerald-600" />
+        <KpiCard title="Marketing ROI" value={formatPercent(analytics.marketingRoi)} subtitle="(Revenue - spend) / spend" icon={<TrendingUp className="h-5 w-5" />} iconClass="bg-rose-50 text-rose-600" />
+        <KpiCard title="Total Leads" value={formatNumber(analytics.totalLeads)} subtitle={`${analytics.contactedLeads} contacted leads`} icon={<Users className="h-5 w-5" />} iconClass="bg-blue-50 text-blue-600" />
+        <KpiCard title="Cost Per Lead" value={formatCurrency(analytics.costPerLead)} subtitle="Spent amount / leads" icon={<Target className="h-5 w-5" />} iconClass="bg-orange-50 text-orange-600" />
+        <KpiCard title="Lead Conversion" value={formatPercent(analytics.conversionRate)} subtitle={`${analytics.convertedLeads} converted students`} icon={<Zap className="h-5 w-5" />} iconClass="bg-fuchsia-50 text-fuchsia-600" />
+        <KpiCard title="Campaign Efficiency" value={analytics.leadsPerThousand.toFixed(1)} subtitle="Leads per ₹1000 spent" icon={<Activity className="h-5 w-5" />} iconClass="bg-teal-50 text-teal-600" />
+        <KpiCard title="Lead Response Time" value={analytics.avgResponseTime} subtitle="Average contactedAt - createdAt" icon={<Clock className="h-5 w-5" />} iconClass="bg-indigo-50 text-indigo-600" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
@@ -537,7 +531,7 @@ export default function MarketingAnalytics() {
   );
 }
 
-function KpiCard({ title, value, subtitle, icon }) {
+function KpiCard({ title, value, subtitle, icon, iconClass = 'bg-brand-soft text-brand' }) {
   return (
     <div className="app-glass-card rounded-2xl p-5 transition hover:-translate-y-0.5">
       <div className="flex items-start justify-between gap-4">
@@ -546,7 +540,7 @@ function KpiCard({ title, value, subtitle, icon }) {
           <h2 className="text-2xl font-semibold text-slate-900 mt-2">{value}</h2>
           <p className="text-[11px] font-normal text-slate-400 mt-2">{subtitle}</p>
         </div>
-        <div className="app-gradient-icon">
+        <div className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconClass}`}>
           {icon}
         </div>
       </div>

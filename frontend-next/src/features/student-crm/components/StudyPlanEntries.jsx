@@ -75,7 +75,7 @@ function StudyPlanCard({
           country: nextCatalog.country || null,
           universityId: nextCatalog.universityId ? Number(nextCatalog.universityId) : null,
           university: nextCatalog.university || null,
-          courseId: nextCatalog.courseId ? Number(nextCatalog.courseId) : null,
+          courseId: null,
           course: nextCatalog.course || null,
           intake: nextCatalog.intake || null,
         });
@@ -107,7 +107,7 @@ function StudyPlanCard({
   };
 
   const removePlan = async () => {
-    if (!window.confirm('Remove this option from Study Explorer?')) return;
+    if (!window.confirm('Remove this option from Explore?')) return;
     setRemoving(true);
     try {
       await removeStudentStudyPlan(studentId, plan.id);
@@ -136,10 +136,10 @@ function StudyPlanCard({
               selected ? 'border-[var(--ui-brand)] bg-[var(--ui-brand)]' : 'border-neutral-300 bg-white'
             }`}
             title="Use for new application"
-            aria-label={`Select study option ${index + 1}`}
+            aria-label={`Select explore option ${index + 1}`}
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-neutral-800">Study option {index + 1}</p>
+            <p className="text-sm font-semibold text-neutral-800">Explore option {index + 1}</p>
             {selected && (
               <p className="text-[11px] text-brand">Prefills New application</p>
             )}
@@ -174,7 +174,8 @@ function StudyPlanCard({
               compact
               countryLabel="Destination"
               universityLabel="University"
-              courseLabel="Course"
+              courseLabel="Course *"
+              courseFreeText
             />
           </div>
           <div>
@@ -282,10 +283,10 @@ export default function StudyPlanEntries({
     <div className="md:col-span-2 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-neutral-800">Universities</h3>
+          <h3 className="text-sm font-semibold text-neutral-800">Explore options</h3>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Save multiple destination, university, course, and intake combinations. Select one to
-            prefill New application.
+            Add multiple destination, university, and course combinations. Course is free text
+            (e.g. MBA). Select one to prefill New application.
           </p>
         </div>
         {canManage && !disabled && plans.length > 0 && (
@@ -296,14 +297,14 @@ export default function StudyPlanEntries({
             className="text-xs font-medium text-neutral-700 hover:text-brand inline-flex items-center gap-1"
           >
             <Plus size={14} />
-            {adding ? 'Adding…' : 'Add study option'}
+            {adding ? 'Adding…' : 'Add explore option'}
           </button>
         )}
       </div>
 
       {!plans.length ? (
         <div className="ui-panel border-dashed p-8 text-center">
-          <p className="text-sm text-neutral-500">No universities added yet.</p>
+          <p className="text-sm text-neutral-500">No explore options added yet.</p>
           {canManage && !disabled && (
             <button
               type="button"
@@ -312,7 +313,7 @@ export default function StudyPlanEntries({
               className="ui-btn-primary text-xs mt-4 inline-flex items-center gap-1"
             >
               <Plus size={12} />
-              {adding ? 'Adding…' : 'Add study option'}
+              {adding ? 'Adding…' : 'Add explore option'}
             </button>
           )}
         </div>
@@ -343,7 +344,7 @@ export default function StudyPlanEntries({
               className="w-full rounded-[var(--ui-radius)] border border-dashed border-neutral-300 bg-white py-3 text-sm font-medium text-neutral-600 hover:border-neutral-400 hover:text-neutral-800 inline-flex items-center justify-center gap-2"
             >
               <Plus size={16} />
-              {adding ? 'Adding study option…' : 'Add study option'}
+              {adding ? 'Adding explore option…' : 'Add explore option'}
             </button>
           )}
         </div>

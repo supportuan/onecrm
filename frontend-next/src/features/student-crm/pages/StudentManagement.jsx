@@ -27,14 +27,14 @@ import {
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import {
-  resolveStudyCascades,
   studyIdsFromProfile,
   toNumOrNull,
   toSelectId,
 } from '../studyFormOptions';
 import CatalogCourseFields from '../components/CatalogCourseFields';
-import StudyPlanEntries from '../components/StudyPlanEntries';
+import StudyExploreFlow from '../components/StudyExploreFlow';
 import { resolveCatalogCountryId, pickCatalogCountry } from '../catalogCountry';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import { getStageLabel, stageBadgeClass } from '../constants';
 
@@ -79,8 +79,14 @@ const PROCESS_STAGE_LABELS = {
 
 export default function StudentManagement() {
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const { can } = usePermissions();
   const canManage = can('MANAGE_STUDENT_CRM');
+  const isCounsellorFlow =
+    user?.role === 'COUNSELLOR' ||
+    user?.role === 'GLOBAL_ADMIN' ||
+    user?.role === 'SUPER_ADMIN' ||
+    canManage;
 
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState('');
@@ -156,12 +162,6 @@ export default function StudentManagement() {
   }, []);
 
   const [form, setForm] = useState(null);
-
-  const { subIndustries: programLevels } = resolveStudyCascades(
-    formOptions.industries,
-    form?.industryId,
-    form?.subIndustryId
-  );
 
   useEffect(() => {
     if (!profile) {
@@ -262,7 +262,7 @@ export default function StudentManagement() {
   );
 
   const saveProfile = async () => {
-    if (!form || !selectedId) return;
+    if (!form || !selectedId) return false;
     setSaving(true);
     try {
       const payload = {
@@ -305,8 +305,10 @@ export default function StudentManagement() {
       flash('Profile saved');
       await loadProfile();
       await loadStudents();
+      return true;
     } catch (e) {
       flash(e?.message || 'Save failed', false);
+      return false;
     } finally {
       setSaving(false);
     }
@@ -334,7 +336,7 @@ export default function StudentManagement() {
 
   const tabs = [
     { id: 'personal', label: 'Personal', icon: User },
-    { id: 'study', label: 'Study Explorer', icon: Globe },
+    { id: 'study', label: 'Explore', icon: Globe },
     { id: 'education', label: 'Education', icon: BookOpen },
     { id: 'tests', label: 'Exams', icon: GraduationCap },
     { id: 'process', label: 'Checklist', icon: CheckCircle2 },
@@ -349,11 +351,8 @@ export default function StudentManagement() {
         </div>
       )}
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <p className="ui-text-body max-w-xl">
-            One connected hub for applicant profiles, milestones, study choices, and applications.
-          </p>
-          {canManage && (
+        {canManage ? (
+          <div className="flex justify-end">
             <button
               type="button"
               onClick={() => setShowNew(true)}
@@ -361,8 +360,8 @@ export default function StudentManagement() {
             >
               <Plus size={16} /> New student
             </button>
-          )}
-        </div>
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:h-[calc(100vh-11rem)] lg:min-h-0">
           <div className="lg:col-span-3 ui-panel flex flex-col min-h-0 lg:h-full overflow-hidden">
@@ -491,14 +490,24 @@ export default function StudentManagement() {
                   })}
                 </div>
 
-                {tab === 'study' && (
-                  <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3">
-                    <p className="text-sm font-semibold text-blue-950">Study Explorer</p>
-                    <p className="mt-1 text-xs leading-relaxed text-blue-800">
-                      Explore the course and university catalogue, save multiple study options,
-                      and use a selected plan to prefill a new application.
-                    </p>
-                  </div>
+                {tab === 'study' && isCounsellorFlow && form && (
+                  <StudyExploreFlow
+                    studentId={selectedId}
+                    profile={profile}
+                    form={form}
+                    setForm={setForm}
+                    formOptions={formOptions}
+                    canManage={canManage}
+                    disabled={profile.isEnrolled}
+                    onSavePreferences={saveProfile}
+                    onRefresh={loadProfile}
+                    onCreateApplication={(plan) => {
+                      setAppModalContext(prefillFromStudyPlan(plan) || plan);
+                      setShowNewApp(true);
+                    }}
+                    onError={(msg) => flash(msg, false)}
+                    onFlash={(msg) => flash(msg)}
+                  />
                 )}
 
                 {tab === 'personal' && (
@@ -584,132 +593,10 @@ export default function StudentManagement() {
                   </div>
                 )}
 
-                {tab === 'study' && (
-                  <div className="ui-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Study level">
-                      <select
-                        className={SELECT}
-                        style={SELECT_BG}
-                        value={form.level}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, level: e.target.value })}
-                      >
-                        <option value="">Select</option>
-                        {['UG', 'PG', 'PhD', 'Diploma'].map((l) => (
-                          <option key={l} value={l}>
-                            {l}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Field of study">
-                      <select
-                        className={SELECT}
-                        style={SELECT_BG}
-                        value={form.industryId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            industryId: e.target.value,
-                            subIndustryId: '',
-                            studyAreaId: '',
-                          })
-                        }
-                      >
-                        <option value="">Select field of study</option>
-                        {(formOptions.industries || []).map((i) => (
-                          <option key={i.id} value={String(i.id)}>
-                            {i.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Program level">
-                      <select
-                        className={SELECT}
-                        style={SELECT_BG}
-                        value={form.subIndustryId}
-                        disabled={!canManage || profile.isEnrolled || !form.industryId}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            subIndustryId: e.target.value,
-                            studyAreaId: '',
-                          })
-                        }
-                      >
-                        <option value="">
-                          {form.industryId ? 'Select program level' : 'Select field of study first'}
-                        </option>
-                        {programLevels.map((s) => (
-                          <option key={s.id} value={String(s.id)}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <StudyPlanEntries
-                      studentId={selectedId}
-                      plans={profile.studyPlans || []}
-                      countries={formOptions.countries}
-                      allApplications={profile.applications || []}
-                      disabled={profile.isEnrolled}
-                      canManage={canManage}
-                      selectedPlanId={selectedStudyPlanId}
-                      onSelectPlan={(plan) => setSelectedStudyPlanId(plan?.id || null)}
-                      onRefresh={loadProfile}
-                      onError={(msg) => flash(msg, false)}
-                    />
-                    <Field label="Intake month">
-                      <input
-                        className={INPUT}
-                        value={form.intakeMonth}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, intakeMonth: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Intake year">
-                      <input
-                        className={INPUT}
-                        value={form.intakeYear}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, intakeYear: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Study mode">
-                      <input
-                        className={INPUT}
-                        value={form.studyMode}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, studyMode: e.target.value })}
-                        placeholder="On-campus / Online"
-                      />
-                    </Field>
-                    <Field label="Duration">
-                      <input
-                        className={INPUT}
-                        value={form.studyDuration}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, studyDuration: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Budget">
-                      <input
-                        className={INPUT}
-                        value={form.studyBudget}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, studyBudget: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Work experience">
-                      <input
-                        className={INPUT}
-                        value={form.workExperience}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, workExperience: e.target.value })}
-                      />
-                    </Field>
+                {tab === 'study' && !isCounsellorFlow && form && (
+                  <div className="ui-panel p-6 text-sm text-neutral-600">
+                    Explore is available for counselling roles. Switch to a counsellor
+                    account, or ask an admin to enable student CRM manage access.
                   </div>
                 )}
 
@@ -965,7 +852,7 @@ export default function StudentManagement() {
                   <div className="ui-panel p-6 space-y-3">
                     <h3 className="text-sm font-semibold text-neutral-800">Application checklist</h3>
                     {!profile.checklists?.length ? (
-                      <p className="text-sm text-neutral-500">Select a destination country in Study plan to load checklist items.</p>
+                      <p className="text-sm text-neutral-500">Select a destination country in Explore to load checklist items.</p>
                     ) : (
                       profile.checklists.map((item) => (
                         <label

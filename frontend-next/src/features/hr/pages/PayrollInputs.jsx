@@ -11,7 +11,6 @@ import {
   AlertTriangle, 
   Search, 
   TrendingUp, 
-  DollarSign, 
   TrendingDown, 
   Users, 
   Download, 

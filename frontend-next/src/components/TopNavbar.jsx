@@ -35,7 +35,7 @@ const TopNavbar = ({ onToggleSidebar }) => {
                         {title}
                     </h1>
                     {description && (
-                        <p className="truncate text-xs font-medium text-slate-500">
+                        <p className="max-w-xl text-xs font-medium leading-snug text-slate-500 line-clamp-2">
                             {description}
                         </p>
                     )}

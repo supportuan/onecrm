@@ -14,6 +14,7 @@ import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
 import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
 import { SIDEBAR_COLLAPSED, SIDEBAR_OPEN } from "@/lib/layout-shell";
+import { BRAND_LOGO_SRC, BRAND_NAME, BRAND_TAGLINE } from "@/components/AppBrand";
 
 const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Users") return "User Management";
@@ -25,11 +26,15 @@ const getPermissionOptionName = (subLabel) => {
   if (subLabel === "Leave") return "Leave Management";
   if (subLabel === "Performance") return "Performance Reviews";
   if (subLabel === "Payroll") return "Payroll Inputs";
-  if (subLabel === "Overview") return "Employee Directory";
+  if (subLabel === "Overview") return "Overview";
   if (subLabel === "Student Management") return "Student Management";
   if (subLabel === "Student Information Hub") return "Student Management";
   if (subLabel === "Student Alliance") return "Student Management";
+  if (subLabel === "Student Information Hub") return "Student Management";
   if (subLabel === "Application Tracking") return "Applications";
+  if (subLabel === "Application Tracking System") return "Applications";
+  if (subLabel === "Opportunity Tracking") return "Lead Management";
+  if (subLabel === "Campaign Mission") return "Campaigns";
   if (subLabel === "Revenue Intelligence") return "Marketing Analytics";
   if (subLabel === "Knowledge Library") return "Resource Library";
   if (subLabel === "Manage Knowledge") return "Manage Resources";
@@ -168,16 +173,17 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
         let moduleAccessSubItems = filterSubItemsByModuleAccess(item, access)
           .filter(audienceAllows);
 
-        // Knowledge Hub is role/audience driven. Existing users may predate the
-        // Resources moduleAccess entry, so do not hide permitted library/upload links.
-        if (item.accessKey === "Resources") {
-          const permittedResourceItems = item.subItems.filter(subVisible);
-          moduleAccessSubItems = [
-            ...moduleAccessSubItems,
-            ...permittedResourceItems.filter(
-              (sub) => !moduleAccessSubItems.some((current) => current.path === sub.path)
-            ),
-          ];
+        // Knowledge Hub / HR are permission-driven for staff. Existing users may
+        // predate moduleAccess entries, so merge any permitted sidebar links.
+        // Keep navMenu order (e.g. My HR between Employee Directory and Recruitment).
+        if (item.accessKey === "Resources" || item.accessKey === "HR") {
+          const allowedPaths = new Set([
+            ...moduleAccessSubItems.map((sub) => sub.path),
+            ...item.subItems.filter(subVisible).map((sub) => sub.path),
+          ]);
+          moduleAccessSubItems = item.subItems.filter((sub) =>
+            allowedPaths.has(sub.path)
+          );
         }
 
         if (moduleAccessSubItems.length === 0) return null;
@@ -289,52 +295,55 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
           </svg>
         </div>
         <div
-          className={`flex h-20 flex-none items-center border-b border-neutral-100/80 ${
-            sidebarOpen ? "justify-between gap-1 px-2" : "justify-center"
+          className={`flex flex-none border-b border-neutral-100/80 ${
+            sidebarOpen ? "flex-col gap-1.5 px-3 py-3" : "h-20 items-center justify-center"
           }`}
         >
           {sidebarOpen ? (
-            <div className="flex min-w-0 items-center gap-1.5">
-              <Image
-                src="/images/applyUniNow.png"
-                alt="ApplyUniNow"
-                width={60}
-                height={60}
-                className="h-14 w-14 shrink-0 object-contain"
-              />
-              <div className="min-w-0 leading-tight">
-                <p className="app-title-gradient truncate text-[18px] font-semibold tracking-tight">
-                  ONECRM
-                </p>
-                <p className="truncate text-[10px] font-medium tracking-tight text-neutral-500">
-                  Intelligence Connecting Seamlessly
-                </p>
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Image
+                    src={BRAND_LOGO_SRC}
+                    alt=""
+                    width={22}
+                    height={22}
+                    className="h-[22px] w-[22px] shrink-0 object-contain"
+                  />
+                  <p className="app-title-gradient truncate text-[24px] font-semibold leading-none tracking-tight">
+                    {BRAND_NAME}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onToggleSidebar}
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+                  aria-label="Collapse sidebar"
+                >
+                  <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
+                </button>
               </div>
-            </div>
-          ) : null}
-          <button
-            type="button"
-            onClick={onToggleSidebar}
-            className={`inline-flex shrink-0 items-center justify-center rounded-xl transition hover:bg-neutral-100 ${
-              sidebarOpen
-                ? "h-6 w-6 text-neutral-400 hover:text-neutral-700"
-                : "h-10 w-10"
-            }`}
-            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-            title={!sidebarOpen ? "Expand sidebar" : undefined}
-          >
-            {sidebarOpen ? (
-              <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
-            ) : (
+              <p className="text-[11px] font-medium leading-snug text-neutral-500">
+                {BRAND_TAGLINE}
+              </p>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-neutral-100"
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+            >
               <Image
-                src="/images/applyUniNow.png"
-                alt="ApplyUniNow"
-                width={32}
-                height={32}
-                className="h-8 w-8 object-contain"
+                src={BRAND_LOGO_SRC}
+                alt={BRAND_NAME}
+                width={28}
+                height={28}
+                className="h-7 w-7 object-contain"
               />
-            )}
-          </button>
+            </button>
+          )}
         </div>
 
         <nav
@@ -469,6 +478,16 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
           </div>
         </nav>
 
+        {sidebarOpen ? (
+          <div className="relative z-[1] flex-none border-t border-neutral-100/80 px-3 py-3">
+            <p className="text-[10px] font-semibold leading-snug text-neutral-500">
+              AUNTech (v.3.3.1)
+            </p>
+            <p className="mt-0.5 text-[10px] font-medium leading-snug text-neutral-400">
+              Optimized services &amp; performance enhancements
+            </p>
+          </div>
+        ) : null}
       </aside>
 
       {flyoutMenu && !sidebarOpen && (

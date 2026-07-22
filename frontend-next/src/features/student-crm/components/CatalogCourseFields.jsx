@@ -21,6 +21,9 @@ const str = (v) => (v == null || v === '' ? '' : String(v));
  * Country → university → course.
  * University and course show catalog suggestions but always allow typing a new name
  * (persisted via find-or-create). These are form fields, not catalog filters.
+ *
+ * When `courseFreeText` is true, Course is a mandatory free-text field only
+ * (not loaded from / saved to the course catalog DB).
  */
 export default function CatalogCourseFields({
   countries = [],
@@ -35,6 +38,7 @@ export default function CatalogCourseFields({
   countryLabel = 'Country *',
   universityLabel = 'University *',
   courseLabel = 'Course *',
+  courseFreeText = false,
 }) {
   const safeValue = value ?? {};
   const [universities, setUniversities] = useState([]);
@@ -90,7 +94,7 @@ export default function CatalogCourseFields({
   }, [countryId]);
 
   useEffect(() => {
-    if (!universityId) {
+    if (courseFreeText || !universityId) {
       setCourses([]);
       return;
     }
@@ -109,7 +113,7 @@ export default function CatalogCourseFields({
     return () => {
       cancelled = true;
     };
-  }, [universityId]);
+  }, [universityId, courseFreeText]);
 
   const uniSuggestions = useMemo(() => {
     const q = universityQuery.trim().toLowerCase();
@@ -239,6 +243,12 @@ export default function CatalogCourseFields({
     const name = (rawName ?? courseQuery).trim();
     if (!name) {
       patch({ courseId: '', course: '' });
+      return;
+    }
+
+    if (courseFreeText) {
+      patch({ courseId: '', course: name });
+      setCourseQuery(name);
       return;
     }
 
@@ -402,21 +412,23 @@ export default function CatalogCourseFields({
       </Field>
 
       <Field label={courseLabel}>
-        {loadingCourses ? (
+        {loadingCourses && !courseFreeText ? (
           <input disabled value="" className={inputClass} placeholder="Loading courses…" />
         ) : (
           <div className="relative space-y-2">
             <input
               required
-              disabled={disabled || !universityId}
+              disabled={disabled || (!courseFreeText && !universityId)}
               value={courseQuery}
               onChange={(e) => {
                 const next = e.target.value;
                 setCourseQuery(next);
                 patch({ course: next, courseId: '' });
-                setShowSuggestions(true);
+                if (!courseFreeText) setShowSuggestions(true);
               }}
-              onFocus={() => setShowSuggestions(true)}
+              onFocus={() => {
+                if (!courseFreeText) setShowSuggestions(true);
+              }}
               onBlur={() => {
                 if (blurTimer.current) clearTimeout(blurTimer.current);
                 blurTimer.current = setTimeout(() => {
@@ -433,14 +445,19 @@ export default function CatalogCourseFields({
               }}
               className={inputClass}
               placeholder={
-                universityId
-                  ? 'Type to search or enter a new course name'
-                  : 'Select or enter university first'
+                courseFreeText
+                  ? 'Enter course name (e.g. MBA)'
+                  : universityId
+                    ? 'Type to search or enter a new course name'
+                    : 'Select or enter university first'
               }
               autoComplete="off"
             />
 
-            {showSuggestions && universityId && (suggestions.length > 0 || courseQuery.trim()) && (
+            {!courseFreeText &&
+              showSuggestions &&
+              universityId &&
+              (suggestions.length > 0 || courseQuery.trim()) && (
               <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
                 {suggestions.map((c) => (
                   <li key={c.id}>
@@ -477,13 +494,15 @@ export default function CatalogCourseFields({
 
             {!compact && (
               <p className="text-xs text-brand-muted">
-                {savingCourse
-                  ? 'Saving course to catalog…'
-                  : courseId
-                    ? `Linked to catalog (#${courseId})`
-                    : courseQuery.trim()
-                      ? 'New course names are saved for this university'
-                      : 'Pick a suggestion or type a new course name'}
+                {courseFreeText
+                  ? 'Mandatory free-text course name (not linked to catalog)'
+                  : savingCourse
+                    ? 'Saving course to catalog…'
+                    : courseId
+                      ? `Linked to catalog (#${courseId})`
+                      : courseQuery.trim()
+                        ? 'New course names are saved for this university'
+                        : 'Pick a suggestion or type a new course name'}
               </p>
             )}
           </div>

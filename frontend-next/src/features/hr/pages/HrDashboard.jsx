@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { isHrSelfServiceOnly } from '@/features/hr/routing';
 import {
   Fingerprint,
@@ -16,7 +15,7 @@ import {
   CalendarCheck,
   Search,
   Star,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   MapPin,
   Wifi,
@@ -27,32 +26,24 @@ import { hasPermission } from '@/lib/auth/rbac';
 import {
   getMyAttendance,
   submitRemoteClockIn,
-  getAttendanceEvents,
   getHrDashboardSummary,
 } from '@/services/hrApi';
 
 const QUICK_LINKS = [
+  { label: 'Employee directory', path: '/hr/employee-directory', icon: Users, perm: 'VIEW_ALL_EMPLOYEES' },
   { label: 'My HR', path: '/hr/me', icon: Fingerprint, perm: 'VIEW_HR', selfServiceOnly: true },
   { label: 'Recruitment', path: '/hr/recruitment-tracker', icon: Search, perm: 'MANAGE_EMPLOYEES' },
-  { label: 'Employee directory', path: '/hr/employee-directory', icon: Users, perm: 'VIEW_ALL_EMPLOYEES' },
   { label: 'Attendance', path: '/hr/attendance', icon: Clock, perm: 'VIEW_ATTENDANCE' },
   { label: 'Leave', path: '/hr/leave-management', icon: CalendarCheck, perm: 'VIEW_LEAVE' },
   { label: 'Performance', path: '/hr/performance-reviews', icon: Star, perm: 'VIEW_REPORTS' },
-  { label: 'Payroll', path: '/hr/payroll', icon: DollarSign, perm: 'MANAGE_PAYROLL' },
+  { label: 'Payroll', path: '/hr/payroll', icon: IndianRupee, perm: 'MANAGE_PAYROLL' },
 ];
 
 export default function HrDashboard() {
-  const router = useRouter();
   const { user } = useAuth();
   const role = user?.role;
 
   const can = (perm) => hasPermission(role, perm);
-
-  useEffect(() => {
-    if (role && isHrSelfServiceOnly(role)) {
-      router.replace('/hr/me');
-    }
-  }, [role, router]);
 
   const [clockState, setClockState] = useState({ status: 'unknown', lastEvent: null });
   const [clockBusy, setClockBusy] = useState(false);
@@ -162,8 +153,9 @@ export default function HrDashboard() {
   const operator = !isHrSelfServiceOnly(role);
   const allowedLinks = QUICK_LINKS.filter((l) => {
     if (!can(l.perm)) return false;
+    // My HR is for staff self-service; other links show for anyone with the permission.
     if (l.selfServiceOnly) return !operator;
-    return operator;
+    return true;
   });
 
   const showKpiRow = can('VIEW_HR');

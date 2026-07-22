@@ -67,7 +67,7 @@ describe('Sidebar Component', () => {
     render(<Sidebar sidebarOpen={true} onClose={jest.fn()} onToggleSidebar={jest.fn()} />);
     
     // Brand name shows when open
-    expect(screen.getByText('ONECRM')).toBeInTheDocument();
+    expect(screen.getByText('OneCRM')).toBeInTheDocument();
 
     // Profile details live in the top navigation, not the sidebar footer.
     expect(screen.queryByText('ADMIN')).not.toBeInTheDocument();
@@ -77,17 +77,17 @@ describe('Sidebar Component', () => {
     render(<Sidebar sidebarOpen={false} onClose={jest.fn()} onToggleSidebar={jest.fn()} />);
     
     // Brand name is hidden when closed
-    expect(screen.queryByText('ONECRM')).not.toBeInTheDocument();
+    expect(screen.queryByText('OneCRM')).not.toBeInTheDocument();
     
     expect(screen.queryByText('ADMIN')).not.toBeInTheDocument();
   });
 
 
 
-  it('renders the ApplyUniNow slogan when open', () => {
+  it('renders the OneCRM slogan when open', () => {
     render(<Sidebar sidebarOpen={true} onClose={jest.fn()} onToggleSidebar={jest.fn()} />);
 
-    expect(screen.getByText('Intelligence Connecting Seamlessly')).toBeInTheDocument();
+    expect(screen.getByText('Intelligence Connecting Seamlessly!')).toBeInTheDocument();
   });
 
   it('shows renamed marketing pages for legacy module-access keys', () => {

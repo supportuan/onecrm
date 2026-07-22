@@ -1,9 +1,10 @@
 'use client';
 
 import Image from 'next/image';
+import { BRAND_LOGO_SRC } from '@/components/AppBrand';
 
 /**
- * Branded lazy-load indicator using the ApplyUniNow logo mark.
+ * Branded lazy-load indicator using the ONECRM logo mark.
  * - fullscreen: covers the viewport (auth / route transitions)
  * - inline/compact: for section/table loading states
  */
@@ -32,7 +33,7 @@ export default function LogoLoader({
           className={`logo-loader-mark absolute inset-0 m-auto flex ${dims.box} items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-brand/10`}
         >
           <Image
-            src="/images/applyUniNow-mark.png"
+            src={BRAND_LOGO_SRC}
             alt=""
             width={dims.img}
             height={dims.img}
