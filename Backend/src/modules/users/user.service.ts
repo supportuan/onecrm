@@ -135,13 +135,7 @@ export const getDefaultModuleAccessByRole = (role: string) => {
     giveModuleActions("Marketing", ["VIEW"]);
     giveModuleActions("Student CRM", ["VIEW"]);
     giveModuleActions("Resources", ["VIEW"]);
-  } else if (role === "GLOBAL_ADMIN") {
-    giveModuleActions("Marketing", ["VIEW", "EDIT"]);
-    giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
-    giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
-    giveModuleActions("Resources", ["VIEW", "EDIT"]);
-    giveModuleActions("Admin & Settings", ["VIEW", "EDIT"]);
-  } else if (role === "SUPER_ADMIN") {
+  } else if (role === "GLOBAL_ADMIN" || role === "SUPER_ADMIN") {
     giveModuleActions("Marketing", ["VIEW", "EDIT"]);
     giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
     giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);

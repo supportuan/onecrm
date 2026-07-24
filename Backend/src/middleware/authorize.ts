@@ -33,8 +33,8 @@ export const authorizePermission = (moduleName: string, optionName: string, requ
 
         const { id, role } = req.user;
 
-        // SUPER_ADMIN bypasses all permission checks
-        if (role === 'SUPER_ADMIN') {
+        // SUPER_ADMIN & GLOBAL_ADMIN bypass all permission checks
+        if (role === 'SUPER_ADMIN' || role === 'GLOBAL_ADMIN') {
             return next();
         }
 
@@ -66,7 +66,7 @@ export const authorizePermission = (moduleName: string, optionName: string, requ
             }
 
             let access = user.moduleAccess as Record<string, Record<string, string[]>> | null;
-            if (!access) {
+            if (!access || Object.keys(access).length === 0) {
                 // Dynamic import to avoid circular dependency
                 const { getDefaultModuleAccessByRole } = await import('../modules/users/user.service.js');
                 access = getDefaultModuleAccessByRole(role);
