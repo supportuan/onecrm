@@ -24,9 +24,14 @@ export function StaffPageHeader({ title, description }) {
 
   return (
     <header className="mb-4 space-y-1">
-      <h1 className="text-xl font-semibold tracking-tight text-brand">{title}</h1>
+      <h1
+        className="text-2xl font-semibold tracking-tight text-brand"
+        style={{ fontSize: 'var(--type-page-title)' }}
+      >
+        {title}
+      </h1>
       {description && (
-        <p className="max-w-2xl text-sm leading-snug text-neutral-500">{description}</p>
+        <p className="max-w-2xl text-xs leading-snug text-neutral-500" style={{ fontSize: '12px' }}>{description}</p>
       )}
     </header>
   );
