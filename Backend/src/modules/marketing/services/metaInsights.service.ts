@@ -66,9 +66,9 @@ export const syncMetaCampaignInsights = async (campaignId: number) => {
       },
     });
   } catch (error: any) {
-    console.error(
-      "[Meta Insights] Sync failed:",
-      error.response?.data || error.message
+    console.warn(
+      "[Meta Insights] Meta ad insight note:",
+      error.response?.data?.error?.message || error.message
     );
 
     return campaign;
