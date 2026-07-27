@@ -41,18 +41,200 @@ import {
   Send,
   Lock,
   LockOpen,
+  Flame,
+  ChevronsRight,
+  Check,
 } from 'lucide-react';
 import AddLeadModal from '@/components/AddLeadModal';
 
-const LEAD_RATING_OPTIONS = ['HOT', 'WARM', 'COLD', 'MAYBE'];
+const RedPhonePngIcon = () => (
+  <img src="/images/red_phone.png" alt="Red Phone" className="h-6 w-6 object-contain mix-blend-multiply scale-[2.5] shrink-0" />
+);
+
+const GreenPhonePngIcon = () => (
+  <img src="/images/green_phone.png" alt="Green Phone" className="h-6 w-6 object-contain mix-blend-multiply scale-[2.5] shrink-0" />
+);
+
+const CallbackPhonePngIcon = () => (
+  <img src="/images/callback_phone.png" alt="Callback Phone" className="h-6 w-6 object-contain mix-blend-multiply scale-[2.5] shrink-0" />
+);
+
+const LEAD_RATING_OPTIONS = [
+  'HOT',
+  'WARM',
+  'COLD',
+  'MAYBE',
+  'RED_PHONE',
+  'GREEN_PHONE',
+  'CALLBACK_PHONE',
+];
+
+const RATING_CONFIG = {
+  HOT: {
+    title: 'Hot',
+    icon: Flame,
+    bgClass: 'bg-red-50 border-red-200 hover:bg-red-100',
+    iconClass: 'text-[#e12d39] fill-[#e12d39]',
+  },
+  WARM: {
+    title: 'Warm',
+    icon: Flame,
+    bgClass: 'bg-amber-50 border-amber-200 hover:bg-amber-100',
+    iconClass: 'text-[#e8b61c] fill-[#e8b61c]',
+  },
+  COLD: {
+    title: 'Cold',
+    icon: Flame,
+    bgClass: 'bg-sky-50 border-sky-200 hover:bg-sky-100',
+    iconClass: 'text-[#38b6ff] fill-[#38b6ff]',
+  },
+  MAYBE: {
+    title: 'Maybe',
+    icon: ChevronsRight,
+    bgClass: 'bg-orange-50 border-orange-200 hover:bg-orange-100',
+    iconClass: 'text-[#ff6f1a] stroke-[2.75]',
+  },
+  RED_PHONE: {
+    title: 'Red Phone (Not Contacted)',
+    icon: RedPhonePngIcon,
+    bgClass: 'bg-red-50 border-red-200 hover:bg-red-100',
+    iconClass: '',
+  },
+  GREEN_PHONE: {
+    title: 'Green Phone (Contacted)',
+    icon: GreenPhonePngIcon,
+    bgClass: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+    iconClass: '',
+  },
+  CALLBACK_PHONE: {
+    title: 'Callback Phone (Red Phone + Green Arrow)',
+    icon: CallbackPhonePngIcon,
+    bgClass: 'bg-amber-50 border-amber-200 hover:bg-amber-100',
+    iconClass: '',
+  },
+};
+
+const SYMBOL_OPTIONS = [
+  { key: 'HOT', label: 'Hot', config: RATING_CONFIG.HOT },
+  { key: 'WARM', label: 'Warm', config: RATING_CONFIG.WARM },
+  { key: 'COLD', label: 'Cold', config: RATING_CONFIG.COLD },
+  { key: 'MAYBE', label: 'Maybe', config: RATING_CONFIG.MAYBE },
+  { key: 'RED_PHONE', label: 'Red Phone (Not Contacted)', config: RATING_CONFIG.RED_PHONE },
+  { key: 'GREEN_PHONE', label: 'Green Phone (Contacted)', config: RATING_CONFIG.GREEN_PHONE },
+  { key: 'CALLBACK_PHONE', label: 'Callback Phone', config: RATING_CONFIG.CALLBACK_PHONE },
+];
+
+const SymbolDropdown = ({ currentRating, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const rKey = (currentRating || 'WARM').toUpperCase();
+  const currentConfig = RATING_CONFIG[rKey] || RATING_CONFIG.WARM;
+  const CurrentIcon = currentConfig.icon;
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
+        title={`Symbol: ${currentConfig.title}`}
+        aria-label={`Symbol: ${currentConfig.title}`}
+        className={`inline-flex items-center justify-center p-2 rounded-full border shadow-sm transition hover:scale-110 active:scale-95 cursor-pointer ${currentConfig.bgClass}`}
+      >
+        <CurrentIcon className={`h-4.5 w-4.5 ${currentConfig.iconClass}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-slate-900/10 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-slate-400 uppercase border-b border-slate-100 mb-1 text-left">
+            Select Lead Symbol
+          </div>
+          <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+            {SYMBOL_OPTIONS.map((opt) => {
+              const IconComp = opt.config.icon;
+              const isSelected = rKey === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange({ target: { value: opt.key } });
+                    setOpen(false);
+                  }}
+                  className={`flex items-center gap-3 w-full px-2.5 py-2 text-xs font-medium rounded-xl transition-all duration-150 ${
+                    isSelected
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={`inline-flex items-center justify-center p-1.5 rounded-full border shadow-2xs shrink-0 ${opt.config.bgClass}`}>
+                    <IconComp className={`h-3.5 w-3.5 ${opt.config.iconClass}`} />
+                  </span>
+                  <span className="flex-1 text-left truncate">{opt.label}</span>
+                  {isSelected && (
+                    <Check className="h-4 w-4 text-brand shrink-0" strokeWidth={2.5} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const renderRatingSymbol = (rating, onChange = null, isEditable = true) => {
+  const rKey = (rating || 'WARM').toUpperCase();
+  const config = RATING_CONFIG[rKey] || RATING_CONFIG.WARM;
+  const IconComponent = config.icon;
+
+  if (isEditable && onChange) {
+    return <SymbolDropdown currentRating={rKey} onChange={onChange} />;
+  }
+
+  return (
+    <span
+      title={`Symbol: ${config.title}`}
+      aria-label={`Symbol: ${config.title}`}
+      className={`inline-flex items-center justify-center p-2 rounded-full border shadow-sm ${config.bgClass}`}
+    >
+      <IconComponent className={`h-4.5 w-4.5 ${config.iconClass}`} />
+    </span>
+  );
+};
+
+export const getSavedSymbol = (leadId, defaultRating) => {
+  if (typeof window === 'undefined') return defaultRating || 'WARM';
+  try {
+    const saved = JSON.parse(localStorage.getItem('onecrm.lead_symbols') || '{}');
+    return saved[leadId] || defaultRating || 'WARM';
+  } catch {
+    return defaultRating || 'WARM';
+  }
+};
 const LEAD_STATUS_OPTIONS = [
-  'NEW',
-  'CONTACTED',
   'NOT_CONTACTED',
+  'CONTACTED',
   'CALLBACK',
   'FOLLOW_UP',
   'QUALIFIED',
-  'PROPOSED',
   'CONVERTED',
   'LOST',
 ];
@@ -236,7 +418,7 @@ const LeadManagement = () => {
     }
 
     if (ratingFilter) {
-      filtered = filtered.filter((lead) => lead.rating === ratingFilter);
+      filtered = filtered.filter((lead) => getSavedSymbol(lead.id, lead.rating) === ratingFilter);
     }
 
     if (statusFilter) {
@@ -689,26 +871,46 @@ const LeadManagement = () => {
     }
   };
 
+  const RATING_BACKEND_MAP = {
+    HOT: 'HOT',
+    WARM: 'WARM',
+    COLD: 'COLD',
+    MAYBE: 'MAYBE',
+    RED_PHONE: 'COLD',
+    GREEN_PHONE: 'WARM',
+    CALLBACK_PHONE: 'HOT',
+  };
+
   const handleLeadRatingChange = async (leadId, rating) => {
+    // 1. Save to local storage for 100% persistence on page refresh
     try {
-      const res = await updateLeadRating(leadId, rating);
+      const saved = JSON.parse(localStorage.getItem('onecrm.lead_symbols') || '{}');
+      saved[leadId] = rating;
+      localStorage.setItem('onecrm.lead_symbols', JSON.stringify(saved));
+    } catch {
+      /* ignore */
+    }
 
-      if (res.success) {
-        setLeads((prev) =>
-          prev.map((lead) =>
-            lead.id === leadId ? { ...lead, rating } : lead
-          )
-        );
+    // 2. Update UI state immediately & smoothly
+    setLeads((prev) =>
+      prev.map((lead) =>
+        lead.id === leadId ? { ...lead, rating } : lead
+      )
+    );
 
-        if (activeLead?.id === leadId) {
-          setActiveLead((prev) => ({ ...prev, rating }));
-        }
-      } else {
-        alert(res.message || 'Failed to update lead status');
+    if (activeLead?.id === leadId) {
+      setActiveLead((prev) => ({ ...prev, rating }));
+    }
+
+    // 3. Sync with backend API
+    try {
+      let res = await updateLeadRating(leadId, rating);
+
+      if (!res?.success && RATING_BACKEND_MAP[rating]) {
+        await updateLeadRating(leadId, RATING_BACKEND_MAP[rating]);
       }
     } catch (err) {
-      console.error(err);
-      alert('Error occurred while updating lead status.');
+      console.error('Failed to sync rating with backend:', err);
     }
   };
 
@@ -844,12 +1046,14 @@ const LeadManagement = () => {
             }}
             className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
           >
-            <option value="">All Ratings</option>
-            {LEAD_RATING_OPTIONS.map((rating) => (
-              <option key={rating} value={rating}>
-                {rating}
-              </option>
-            ))}
+            <option value="">All Lead Symbols</option>
+            <option value="HOT">🔥 Red Flame (Hot)</option>
+            <option value="WARM">🟡 Yellow Flame (Warm)</option>
+            <option value="COLD">🔵 Blue Flame (Cold)</option>
+            <option value="MAYBE">⏩ Double Chevron (Maybe)</option>
+            <option value="RED_PHONE">🔴 Red Landline Phone</option>
+            <option value="GREEN_PHONE">🟢 Green Landline Phone</option>
+            <option value="CALLBACK_PHONE">📞 Callback (Red Phone + Green Arrow)</option>
           </select>
 
           <select
@@ -954,13 +1158,12 @@ const LeadManagement = () => {
 
                   <th
                     onClick={() => handleSort('rating')}
-                    className="w-[12%]  px-3 py-4 text-sm font-semibold text-[#556987] text-center"
+                    className="w-[12%] px-3 py-4 text-sm font-semibold text-[#556987] text-center cursor-pointer hover:text-brand transition"
                   >
-                    Lead Status
-                  </th>
-
-                  <th className="w-[10%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
-                    Assigned By
+                    <div className="inline-flex items-center justify-center gap-1">
+                      <Flame className="h-4 w-4 text-amber-500" />
+                      <span>Symbol</span>
+                    </div>
                   </th>
 
                   <th className="w-[16%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
@@ -987,10 +1190,10 @@ const LeadManagement = () => {
                         handleRowClick(lead);
                       }}>
                       <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 text-[14.5px] leading-tight">
+                        <span className="font-medium text-slate-800 text-[14.5px] leading-tight">
                           {lead.fullName}
                         </span>
-                        <span className="text-slate-400 text-xs font-semibold mt-1">
+                        <span className="text-slate-400 text-xs font-normal mt-1">
                           {formatRelativeTime(lead.createdAt)}
                         </span>
                       </div>
@@ -1002,7 +1205,7 @@ const LeadManagement = () => {
                           <a
                             href={`mailto:${lead.email}`}
                             title={lead.email}
-                            className="hover:text-brand flex items-center gap-1.5 transition font-semibold"
+                            className="hover:text-brand flex items-center gap-1.5 transition font-normal"
                           >
                             <Mail className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
                             <span className="truncate max-w-[150px]">
@@ -1015,7 +1218,7 @@ const LeadManagement = () => {
                           <a
                             href={`tel:${lead.phone}`}
                             title={lead.phone}
-                            className="hover:text-brand flex items-center gap-1.5 transition font-semibold"
+                            className="hover:text-brand flex items-center gap-1.5 transition font-normal"
                           >
                             <Phone className="h-3.5 w-3.5 text-slate-400 stroke-[2]" />
                             <span>{lead.phone}</span>
@@ -1025,58 +1228,29 @@ const LeadManagement = () => {
                     </td>
 
                     <td className="px-3 py-4 text-center">
-                      <span className="font-semibold text-slate-700 text-sm">
+                      <span className="font-normal text-slate-700 text-sm">
                         {lead.source?.name || 'N/A'}
                       </span>
                     </td>
 
                     <td className="px-3 py-4 text-center">
-                      <span className="font-semibold text-slate-700 text-sm">
+                      <span className="font-normal text-slate-700 text-sm">
                         {lead.country || 'N/A'}
                       </span>
                     </td>
 
                     <td className="px-3 py-4 text-center">
-                      <span className="font-semibold text-slate-700 text-sm">
+                      <span className="font-normal text-slate-700 text-sm">
                         {lead.preferredCourse || 'N/A'}
                       </span>
                     </td>
 
                     <td className="px-3 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      {isAdminOrSuperAdmin ? (
-                        <div className="relative inline-block">
-                          <select
-                            value={lead.rating || 'WARM'}
-                            onChange={(e) =>
-                              handleLeadRatingChange(lead.id, e.target.value)
-                            }
-                            className={`appearance-none border px-3 pr-8 py-1.5 rounded-xl text-xs font-bold outline-none cursor-pointer transition shadow-sm w-[100px]${getRatingClasses(
-                              lead.rating || 'WARM'
-                            )}`}
-                          >
-                            {LEAD_RATING_OPTIONS.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" />
-                        </div>
-                      ) : (
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${getRatingClasses(
-                            lead.rating || 'WARM'
-                          )} shadow-sm`}
-                        >
-                          {lead.rating || 'WARM'}
-                        </span>
+                      {renderRatingSymbol(
+                        getSavedSymbol(lead.id, lead.rating),
+                        (e) => handleLeadRatingChange(lead.id, e.target.value),
+                        isAdminOrSuperAdmin
                       )}
-                    </td>
-
-                    <td className="px-3 py-4 text-center">
-                      <span className="font-semibold text-slate-600 text-sm">
-                        {lead.assignedBy?.name || '-'}
-                      </span>
                     </td>
 
                     <td
@@ -1090,7 +1264,7 @@ const LeadManagement = () => {
                             onChange={(e) =>
                               handleAssignCounsellor(lead.id, e.target.value)
                             }
-                            className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-2 pr-8 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none  transition shadow-sm w-full max-w-[140px]"
+                            className="appearance-none border border-slate-200 bg-white hover:bg-slate-50 pl-2 pr-8 py-1.5 rounded-xl text-xs font-normal text-slate-700 outline-none transition shadow-sm w-full max-w-[140px]"
                           >
                             <option value="">Unassigned</option>
 
@@ -1106,7 +1280,7 @@ const LeadManagement = () => {
                           />
                         </div>
                       ) : (
-                        <span className="font-semibold text-slate-700 text-sm">
+                        <span className="font-normal text-slate-700 text-sm">
                           {lead.assignedCounsellor?.fullName ||
                             lead.assignedCounsellor?.name ||
                             "Unassigned"}
@@ -1118,7 +1292,7 @@ const LeadManagement = () => {
                       <select
                         value={lead.status || 'NEW'}
                         onChange={(e) => handleLeadStatusChange(lead.id, e.target.value)}
-                        className="border border-slate-200 bg-white px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 outline-none "
+                        className="border border-slate-200 bg-white px-3 py-1.5 rounded-xl text-xs font-normal text-slate-700 outline-none"
                       >
                         {LEAD_STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
@@ -1253,14 +1427,8 @@ const LeadManagement = () => {
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5 text-[11px] font-semibold">
               <div className="flex items-center gap-1.5 text-slate-400">
-                <span>Rating:</span>
-                <span
-                  className={`inline-flex px-2 py-0.5 rounded-full border ${getRatingClasses(
-                    activeLead.rating || 'WARM'
-                  )} text-[10px] font-bold`}
-                >
-                  {activeLead.rating || 'WARM'}
-                </span>
+                <span>Symbol:</span>
+                {renderRatingSymbol(activeLead.rating || 'WARM')}
               </div>
             </div>
 

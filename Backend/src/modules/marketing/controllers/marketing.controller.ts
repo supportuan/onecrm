@@ -124,7 +124,15 @@ export const updateLeadRating = async (req: Request, res: Response) => {
     const leadId = Number(req.params.leadId);
     const { rating } = req.body;
 
-    const allowedRatings = ['HOT', 'WARM', 'COLD', 'MAYBE'];
+    const allowedRatings = [
+      'HOT',
+      'WARM',
+      'COLD',
+      'MAYBE',
+      'RED_PHONE',
+      'GREEN_PHONE',
+      'CALLBACK_PHONE',
+    ];
 
     if (!leadId || Number.isNaN(leadId)) {
       return res.status(400).json({

@@ -7,13 +7,13 @@ export const BRAND_NAME = 'OneCRM';
 export const BRAND_TAGLINE = 'Intelligence Connecting Seamlessly!';
 export const BRAND_LOGO_SRC = '/images/applyUniNow.png';
 
-export function AppLogo({ className = 'h-9 w-9', priority = false }) {
+export function AppLogo({ className = 'h-10 w-10', priority = false }) {
   return (
     <Image
       src={BRAND_LOGO_SRC}
       alt={BRAND_NAME}
-      width={48}
-      height={48}
+      width={56}
+      height={56}
       priority={priority}
       className={`shrink-0 object-contain ${className}`}
     />
@@ -26,8 +26,8 @@ export function AppBrand({
   compact = false,
   href = null,
   logoClassName,
-  titleClassName = 'text-sm font-bold tracking-tight text-brand truncate',
-  subtitleClassName = 'text-[10px] text-brand-muted truncate leading-snug',
+  titleClassName = 'text-lg font-bold tracking-tight text-brand truncate',
+  subtitleClassName = 'text-[11px] text-brand-muted truncate leading-snug',
 }) {
   const inner = (
     <>

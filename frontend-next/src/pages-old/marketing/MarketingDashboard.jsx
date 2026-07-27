@@ -146,13 +146,11 @@ const MarketingDashboard = () => {
         }),
       ]);
 
-      if (!leadRes?.success || !campaignRes?.success) {
-        setError('Failed to load marketing dashboard.');
-        return;
-      }
+      const leadsList = leadRes?.data?.items || (Array.isArray(leadRes?.data) ? leadRes.data : []);
+      const campaignsList = campaignRes?.data?.items || (Array.isArray(campaignRes?.data) ? campaignRes.data : []);
 
-      setLeads(leadRes.data?.items || []);
-      setCampaigns(campaignRes.data?.items || []);
+      setLeads(leadsList);
+      setCampaigns(campaignsList);
     } catch (err) {
       console.error(err);
       setError('Connection error while loading marketing dashboard.');

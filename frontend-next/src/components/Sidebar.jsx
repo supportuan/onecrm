@@ -303,15 +303,18 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
           {sidebarOpen ? (
             <>
               <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
                   <Image
                     src={BRAND_LOGO_SRC}
                     alt=""
-                    width={22}
-                    height={22}
-                    className="h-[22px] w-[22px] shrink-0 object-contain"
+                    width={32}
+                    height={32}
+                    className="h-[30px] w-[30px] shrink-0 object-contain"
                   />
-                  <p className="app-title-gradient truncate text-[var(--type-display)] font-semibold leading-none tracking-tight">
+                  <p
+                    className="app-title-gradient truncate text-2xl font-bold leading-none tracking-tight"
+                    style={{ fontSize: '28px' }}
+                  >
                     {BRAND_NAME}
                   </p>
                 </div>
@@ -339,9 +342,9 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
               <Image
                 src={BRAND_LOGO_SRC}
                 alt={BRAND_NAME}
-                width={28}
-                height={28}
-                className="h-7 w-7 object-contain"
+                width={34}
+                height={34}
+                className="h-[30px] w-[30px] object-contain"
               />
             </button>
           )}

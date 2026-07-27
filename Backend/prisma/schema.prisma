@@ -27,6 +27,9 @@ enum LeadRating {
   WARM
   COLD
   MAYBE
+  RED_PHONE
+  GREEN_PHONE
+  CALLBACK_PHONE
 }
 
 enum ResourceCategory {

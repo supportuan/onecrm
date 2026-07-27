@@ -41,7 +41,10 @@ export default function StudentPortalTopBar({ sidebarOpen, onToggleSidebar }) {
           <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
 
-        <h1 className="app-title-gradient min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight">
+        <h1
+          className="app-title-gradient min-w-0 flex-1 truncate text-2xl font-semibold tracking-tight"
+          style={{ fontSize: 'var(--type-page-title)' }}
+        >
           {meta.title}
         </h1>
       </div>

@@ -33,11 +33,17 @@ const TopNavbar = ({ onToggleSidebar }) => {
                     {breadcrumb ? (
                       <p className="text-[11px] font-semibold text-slate-400 leading-none">{breadcrumb}</p>
                     ) : null}
-                    <h1 className="app-title-gradient truncate text-[var(--type-page-title)] font-semibold leading-tight">
+                    <h1
+                        className="app-title-gradient truncate text-2xl font-semibold leading-tight"
+                        style={{ fontSize: 'var(--type-page-title)' }}
+                    >
                         {title}
                     </h1>
                     {description && (
-                        <p className="max-w-xl text-[var(--type-body-sm)] font-medium leading-snug text-slate-500 line-clamp-2">
+                        <p
+                            className="max-w-xl text-xs font-medium leading-snug text-slate-500 line-clamp-2"
+                            style={{ fontSize: '12px' }}
+                        >
                             {description}
                         </p>
                     )}

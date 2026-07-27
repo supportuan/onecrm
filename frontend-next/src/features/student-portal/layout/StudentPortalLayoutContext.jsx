@@ -23,8 +23,13 @@ export function StudentPageHeader({ title, description }) {
 
   return (
     <header className="mb-6 space-y-2">
-      <h1 className="text-[1.65rem] font-semibold tracking-tight text-brand">{title}</h1>
-      {description && <p className={`${sp.body} w-full`}>{description}</p>}
+      <h1
+        className="text-2xl font-semibold tracking-tight text-brand"
+        style={{ fontSize: 'var(--type-page-title)' }}
+      >
+        {title}
+      </h1>
+      {description && <p className={`${sp.body} w-full text-xs`} style={{ fontSize: '12px' }}>{description}</p>}
     </header>
   );
 }
