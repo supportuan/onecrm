@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation BACKEND_INTERNAL_URL=http://127.0.0.1:4000 node server.dev.mjs",
+    "dev:next": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -15,6 +16,7 @@
     "@react-three/postprocessing": "^3.0.4",
     "@tailwindcss/postcss": "^4.3.0",
     "@whatisjery/react-fluid-distortion": "^1.6.3",
+    "http-proxy": "^1.18.1",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "postcss": "^8.5.15",

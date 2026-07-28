@@ -14,6 +14,7 @@ export const MODULE_PERMISSIONS = [
   'MANAGE_AGENCY_CRM',
   'VIEW_RESOURCES',
   'MANAGE_RESOURCES',
+  'VIEW_STUDENT_PORTAL',
   'VIEW_HR',
   'VIEW_ADMIN',
 ] as const;
@@ -82,15 +83,13 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'VIEW_STUDENT_CRM',
     'VIEW_RESOURCES',
   ],
-  STUDENT: [],
+  STUDENT: ['VIEW_STUDENT_PORTAL', 'VIEW_RESOURCES'],
 };
 
 /**
  * Roles that should be hidden from the Admin > Roles & Permissions editor UI.
- * They still exist and can be assigned via /admin-settings/users, but admins
- * don't need to manage their permissions interactively.
  */
-export const HIDDEN_ROLES = new Set(['STUDENT']);
+export const HIDDEN_ROLES = new Set<string>([]);
 
 // ---------------------------------------------------------------------------
 // Module catalog. Each module owns a set of permissions; if a tenant has the

@@ -12,6 +12,8 @@ export const CRIMSON_MODULE_PATHS = [
   '/chatbot-events',
   '/blogs-news',
   '/ai-insights',
+  '/connector',
+  '/communication',
   '/archive',
 ];
 

@@ -19,12 +19,15 @@ import agencyCrmPublicRouter from './modules/agency-crm/agency-crm.public.routes
 import resourcesRouter from './modules/resources/resources.routes.js';
 import superAdminRouter from './modules/super-admin/super-admin.routes.js';
 import path from 'path';
+import http from 'http';
 import { ensureDefaultTenantSeeded } from './modules/rbac/rbac.service.js';
 import { backfillHrSeedsForExistingTenants, backfillStaffEmployees } from './modules/super-admin/hr-seed-backfill.js';
 import { startNotificationScheduler } from './modules/notifications/scheduler.js';
 import { startHrPerformanceReviewScheduler } from './modules/hr/hr-performance.scheduler.js';
 import { startStudentCrmScheduler } from './modules/student-crm/student-crm.scheduler.js';
 import { warmIndustryCache } from './modules/crm-settings/crm-settings.service.js';
+import communicationRouter from './modules/communication/communication.routes.js';
+import { attachCommunicationWebSocket } from './modules/communication/communication.ws.js';
 import countryRoutes from './modules/countries/country.routes.js';
 import { authenticateTokenOrCookie } from './middleware/authenticate.js';
 import { getJwtAccessSecret, getJwtRefreshSecret } from './utils/jwt.js';
@@ -60,6 +63,7 @@ app.use('/api/marketing', marketingRouter);
 app.use('/api/hr', hrRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/student-crm', studentCrmRouter);
+app.use('/api/communication', communicationRouter);
 app.use('/api/crm-settings', crmSettingsRouter);
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/agency-crm/public', agencyCrmPublicRouter);
@@ -72,9 +76,12 @@ app.use('/api/countries', countryRoutes);
 // Mount global error handling middleware
 app.use(errorHandler);
 
-app.listen(port, async () => {
-  console.log(`[ApplyUniNow] Backend server listening on http://localhost:${port}`);
-  console.log(`[ApplyUniNow] Swagger UI available at http://localhost:${port}/api-docs`);
+const server = http.createServer(app);
+attachCommunicationWebSocket(server);
+
+server.listen(Number(port), '0.0.0.0', async () => {
+  console.log(`[ApplyUniNow] Backend server listening on http://127.0.0.1:${port}`);
+  console.log(`[ApplyUniNow] Swagger UI available at http://127.0.0.1:${port}/api-docs`);
   console.log('[ApplyUniNow] Multi-tenant: ON (HR root models auto-scoped via ALS + Prisma extension)');
   try {
     await ensureDefaultTenantSeeded();

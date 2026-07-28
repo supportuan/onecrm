@@ -6,6 +6,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const JUNK_COUNTRY_KEYS = new Set(['home', 'uae']);
+
 export const normalizeCountryName = (name: string) =>
   name
     .trim()
@@ -24,11 +26,31 @@ async function main() {
   const groups = new Map<string, typeof countries>();
   for (const c of countries) {
     const key = c.name.trim().toLowerCase();
+    if (JUNK_COUNTRY_KEYS.has(key)) continue;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(c);
   }
 
   let merged = 0;
+  let junkRemoved = 0;
+
+  const junkCountries = countries.filter((c) => JUNK_COUNTRY_KEYS.has(c.name.trim().toLowerCase()));
+  for (const junk of junkCountries) {
+    await prisma.studentStudyPlan.updateMany({
+      where: { countryId: junk.id },
+      data: { countryId: null },
+    });
+    await prisma.student.updateMany({
+      where: { countryId: junk.id },
+      data: { countryId: null },
+    });
+    await prisma.country.update({
+      where: { id: junk.id },
+      data: { deletedAt: new Date() },
+    });
+    junkRemoved += 1;
+    console.log(`Removed junk country "${junk.name}" (id ${junk.id})`);
+  }
 
   for (const [, list] of groups) {
     if (list.length < 2) {
@@ -84,6 +106,11 @@ async function main() {
         data: { countryId: canonical.id },
       });
 
+      await prisma.studentStudyPlan.updateMany({
+        where: { countryId: dup.id },
+        data: { countryId: canonical.id },
+      });
+
       await prisma.faq.updateMany({
         where: { countryId: dup.id },
         data: { countryId: canonical.id },
@@ -121,7 +148,7 @@ async function main() {
   }
 
   const total = await prisma.country.count({ where: { deletedAt: null } });
-  console.log(`✅ Done. Merged ${merged} duplicate(s). Active countries: ${total}`);
+  console.log(`✅ Done. Removed ${junkRemoved} junk, merged ${merged} duplicate(s). Active countries: ${total}`);
 }
 
 main()

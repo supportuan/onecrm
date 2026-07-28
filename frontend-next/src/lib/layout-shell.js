@@ -2,6 +2,9 @@
 export const SIDEBAR_OPEN = 232;
 export const SIDEBAR_COLLAPSED = 68;
 
+/** Header row height — sidebar brand strip and top navbar share one border line */
+export const STAFF_SHELL_HEADER_HEIGHT = 56;
+
 export const STAFF_SIDEBAR_STORAGE_KEY = 'staffSidebarOpen_v2';
 export const STUDENT_SIDEBAR_STORAGE_KEY = 'studentPortalSidebarOpen';
 

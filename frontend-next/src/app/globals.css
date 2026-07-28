@@ -26,7 +26,7 @@
   --type-h3: 15px;
   --type-h2: 18px;
   --type-h1: 20px;
-  --type-page-title: 24px;
+  --type-page-title: 26px;
   --type-display: 24px;
 
   /* Crimson accent for newer ops modules (RGB 194, 32, 50) */
@@ -55,6 +55,7 @@
   --ui-sidebar-open: 240px;
   --ui-sidebar-collapsed: 56px;
   --ui-header-height: 56px;
+  --ui-shell-header-height: 56px;
 }
 
 @theme inline {
@@ -205,6 +206,10 @@ textarea {
   .ui-text-caption {
     @apply font-normal uppercase tracking-[0.12em] text-[var(--ui-text-muted)] leading-none;
     font-size: var(--type-caption);
+  }
+
+  .app-shell-tagline {
+    @apply text-[11px] font-medium leading-snug text-neutral-500;
   }
 
   .ui-text-meta {
@@ -1182,6 +1187,13 @@ button {
 .app-main-content {
   font-size: var(--type-body);
   line-height: 1.5;
+}
+
+.app-shell-sidebar-header {
+  height: var(--ui-shell-header-height);
+  min-height: var(--ui-shell-header-height);
+  max-height: var(--ui-shell-header-height);
+  box-sizing: border-box;
 }
 
 @media print {

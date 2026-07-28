@@ -33,7 +33,10 @@ import {
   Wallet,
   BrainCircuit,
   Clock,
+  Plug,
 } from "lucide-react";
+
+import LinkedInIcon from "@/components/icons/LinkedInIcon";
 
 
 
@@ -235,6 +238,26 @@ export const navMenu = [
     path: "/ai-insights",
     icon: BrainCircuit,
     navTheme: "crimson",
+  },
+  {
+    label: "Communication",
+    path: "/communication",
+    icon: MessageSquare,
+    accessKey: "Student Hub",
+    navTheme: "crimson",
+  },
+  {
+    label: "Connector",
+    path: "/connector",
+    icon: Plug,
+    navTheme: "crimson",
+    subItems: [
+      {
+        label: "LinkedIn Plugin",
+        path: "/connector/linkedin-plugin",
+        icon: LinkedInIcon,
+      },
+    ],
   },
   {
     label: "Archive",

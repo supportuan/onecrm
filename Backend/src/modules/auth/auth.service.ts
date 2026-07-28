@@ -6,6 +6,7 @@ import { adminAgentNotification, adminStudentNotification, sendCampaignEmail } f
 import { safeNotify } from '../notifications/recipients.js';
 import { getDefaultTenantId, resolveTenantForUser } from '../../utils/tenant-default.js';
 import { deleteStoredFile, resolveFileRef } from '../../lib/file-storage.js';
+import { getLoginUrl } from '../../utils/frontend-url.js';
 
 interface RegisterData {
   fullName: string;
@@ -305,7 +306,7 @@ export const register = async (data: RegisterData) => {
                       <div style="text-align:center;margin-top:35px;">
 
                         <a
-                          href="https://crm.applyuninow.com/login"
+                          href="${getLoginUrl()}"
                           style="
                             display:inline-block;
                             padding:14px 32px;

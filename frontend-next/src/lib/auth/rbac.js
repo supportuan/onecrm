@@ -87,6 +87,17 @@ export const PERMISSION_CATEGORIES = [
     ],
   },
   {
+    title: 'Student Portal',
+    key: 'student_portal',
+    permissions: [
+      {
+        key: 'VIEW_STUDENT_PORTAL',
+        name: 'view student portal',
+        desc: 'access the applicant portal — own profile, applications, payments, and resources.',
+      },
+    ],
+  },
+  {
     title: 'Administration',
     key: 'admin',
     permissions: [
@@ -114,7 +125,7 @@ export const ROLE_DESCRIPTIONS = {
 };
 
 /** Roles hidden from the Admin > Roles & Permissions editor UI. */
-export const HIDDEN_ROLES = new Set(['STUDENT']);
+export const HIDDEN_ROLES = new Set([]);
 
 // Maps a top-level module (by sidebar label) to the permission(s) that grant it.
 export const MODULE_PERMISSION_MAP = {
@@ -190,7 +201,7 @@ export const ROLE_PERMISSIONS = {
     'VIEW_STUDENT_CRM',
     'VIEW_RESOURCES',
   ],
-  STUDENT: ['VIEW_RESOURCES'],
+  STUDENT: ['VIEW_STUDENT_PORTAL', 'VIEW_RESOURCES'],
 };
 
 const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_');
