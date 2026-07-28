@@ -386,7 +386,7 @@ const MarketingDashboard = () => {
               </p>
 
               <div className="mt-6 grid grid-cols-3 gap-3">
-                
+
 
                 <QuickButton
                   title="Leads"

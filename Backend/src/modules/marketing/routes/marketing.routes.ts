@@ -99,6 +99,41 @@ router.post('/landing-pages/:slug/submit', controller.submitLandingPageForm);
 // Every non-public marketing route is authenticated and executes inside the
 // request tenant context. Route-level permission checks below remain in place.
 router.use(authenticateToken, tenantContextMiddleware);
+/**
+ * @swagger
+ * /api/marketing/public/website-leads:
+ *   get:
+ *     summary: Get website leads
+ *     description: Public API to fetch website leads without authentication.
+ *     tags: [Marketing]
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Website leads fetched successfully
+ */
+router.get(
+  '/public/website-leads',
+  marketingController.getWebsiteLeads
+);
+
+
 
 router.post(
   '/social-media/upload-media',
