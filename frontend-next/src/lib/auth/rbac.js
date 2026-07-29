@@ -127,6 +127,19 @@ export const ROLE_DESCRIPTIONS = {
 /** Roles hidden from the Admin > Roles & Permissions editor UI. */
 export const HIDDEN_ROLES = new Set([]);
 
+/** Built-in roles that cannot be deleted from the admin UI. */
+export const SYSTEM_ROLES = new Set([
+  'SUPER_ADMIN',
+  'GLOBAL_ADMIN',
+  'HR',
+  'COUNSELLOR',
+  'MARKETING_MANAGER',
+  'TELECALLER',
+  'AGENCY_FREELANCER',
+  'AGENT',
+  'STUDENT',
+]);
+
 // Maps a top-level module (by sidebar label) to the permission(s) that grant it.
 export const MODULE_PERMISSION_MAP = {
   Marketing: ['VIEW_MARKETING', 'MANAGE_MARKETING'],

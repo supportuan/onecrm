@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Clock, Download, Search } from 'lucide-react';
 import { listMyPayments } from '@/services/studentCrmApi';
-import { StudentPageHeader } from '../layout/StudentPortalLayoutContext';
 import {
   sp,
   StudentPortalPage,
@@ -92,11 +91,6 @@ export default function StudentPaymentsPage() {
 
   return (
     <StudentPortalPage>
-      <StudentPageHeader
-        title="Payments"
-        description="Fee status, upcoming dues, and downloadable receipts for portal payments."
-      />
-
       <div className="grid gap-3 sm:grid-cols-3">
         <StudentPortalPanel className={`${sp.panelPad} space-y-1`}>
           <p className={sp.sectionEyebrow}>Paid</p>

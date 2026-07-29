@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Loader2, MessageSquare, Search, Send } from 'lucide-react';
+import { Loader2, MessageSquare, Search } from 'lucide-react';
 import {
   getStudentThread,
   listConversations,
@@ -10,44 +10,18 @@ import {
 } from '@/services/communicationApi';
 import { useCommunicationSocket } from '@/lib/communicationSocket';
 import { useAuth } from '@/lib/auth/AuthContext';
-
-const formatWhen = (value) => {
-  if (!value) return '';
-  const date = new Date(value);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  return sameDay
-    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-};
-
-function MessageBubble({ message }) {
-  return (
-    <div className={`flex ${message.isMine ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm border ${
-          message.isMine
-            ? 'bg-brand border-brand text-white rounded-br-md'
-            : 'bg-white border-slate-200 text-slate-700 rounded-bl-md'
-        }`}
-      >
-        <div className="mb-1 flex items-center justify-between gap-3">
-          <span
-            className={`text-[10px] font-extrabold uppercase tracking-wide ${
-              message.isMine ? 'text-white/90' : 'text-brand'
-            }`}
-          >
-            {message.isMine ? 'You' : message.authorName}
-          </span>
-          <span className={`text-[10px] font-semibold ${message.isMine ? 'text-white/70' : 'text-slate-400'}`}>
-            {formatWhen(message.createdAt)}
-          </span>
-        </div>
-        <p className="text-xs font-semibold leading-relaxed whitespace-pre-wrap break-words">{message.message}</p>
-      </div>
-    </div>
-  );
-}
+import {
+  CHAT_VIEWPORT_CLASS,
+  ChatAvatar,
+  ChatComposer,
+  ChatEmptyState,
+  ChatMessageArea,
+  ChatPanel,
+  ChatThreadHeader,
+  LiveBadge,
+  UnreadBadge,
+  formatListTime,
+} from '../components/ChatUi';
 
 export default function CommunicationCenter() {
   const { user } = useAuth();
@@ -66,6 +40,7 @@ export default function CommunicationCenter() {
   const [error, setError] = useState('');
   const [live, setLive] = useState(false);
   const endRef = useRef(null);
+  const composerRef = useRef(null);
   const selectedIdRef = useRef(selectedId);
   const userIdRef = useRef(user?.id);
 
@@ -223,13 +198,19 @@ export default function CommunicationCenter() {
     );
   }, [conversations, search]);
 
+  const unreadTotal = useMemo(
+    () => conversations.reduce((sum, row) => sum + (row.unreadCount || 0), 0),
+    [conversations]
+  );
+
   const handleSend = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!selectedId || !draft.trim() || sending) return;
     setSending(true);
     try {
       await sendStudentMessage(selectedId, draft.trim());
       setDraft('');
+      composerRef.current?.focus();
     } catch (err) {
       setError(err.message || 'Failed to send message');
     } finally {
@@ -237,138 +218,121 @@ export default function CommunicationCenter() {
     }
   };
 
+  const student = thread?.student;
+
   return (
     <div className="ui-page-shell">
-      <div className="ui-panel overflow-hidden">
-        <div className="grid min-h-[70vh] lg:grid-cols-[320px_1fr]">
-          <aside className="border-b border-slate-100 lg:border-b-0 lg:border-r">
-            <div className="border-b border-slate-100 p-4">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-brand" strokeWidth={1.75} />
-                <h2 className="ui-text-h3">Students</h2>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                    live ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {live ? 'Live' : 'Connecting…'}
-                </span>
+      <div className={`grid grid-cols-1 gap-4 lg:grid-cols-12 ${CHAT_VIEWPORT_CLASS}`}>
+        <ChatPanel className="min-h-[320px] lg:col-span-4 lg:h-full xl:col-span-3">
+          <div className="space-y-2.5 border-b border-[var(--ui-border)] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <h2 className="ui-text-strong">Inbox</h2>
+                <span className="ui-text-meta">{conversations.length}</span>
+                <UnreadBadge count={unreadTotal} />
               </div>
-              <div className="relative mt-3">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search students..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-xs font-semibold outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-                />
-              </div>
+              <LiveBadge live={live} />
             </div>
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name or email…"
+                className="ui-field pl-9"
+              />
+            </div>
+          </div>
 
-            <div className="max-h-[60vh] overflow-y-auto p-2">
-              {loadingList ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin text-brand" />
-                </div>
-              ) : filtered.length === 0 ? (
-                <p className="px-3 py-8 text-center text-xs font-semibold text-slate-400">
-                  No students assigned yet.
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {loadingList ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-brand" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="px-4 py-10 text-center">
+                <MessageSquare className="mx-auto mb-2 h-8 w-8 text-neutral-300" strokeWidth={1.5} />
+                <p className="ui-text-meta">
+                  {search.trim() ? 'No matching students.' : 'No students assigned yet.'}
                 </p>
-              ) : (
-                filtered.map((row) => (
+              </div>
+            ) : (
+              filtered.map((row) => {
+                const active = selectedId === row.studentId;
+                return (
                   <button
                     key={row.studentId}
                     type="button"
                     onClick={() => setSelectedId(row.studentId)}
-                    className={`mb-1 w-full rounded-xl px-3 py-3 text-left transition ${
-                      selectedId === row.studentId
-                        ? 'bg-brand-soft text-brand'
-                        : 'hover:bg-slate-50 text-slate-700'
+                    className={`flex w-full items-start gap-3 border-b border-[var(--ui-border)] px-3 py-3 text-left transition hover:bg-[var(--ui-bg-page)] ${
+                      active ? 'bg-[var(--ui-bg-page)]' : ''
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">{row.fullName}</p>
-                        <p className="truncate text-[11px] text-slate-400">{row.email || row.phone || 'No contact'}</p>
-                        {row.lastMessage && (
-                          <p className="mt-1 truncate text-[11px] font-medium text-slate-500">{row.lastMessage}</p>
-                        )}
-                      </div>
-                      {row.unreadCount > 0 && (
-                        <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-white">
-                          {row.unreadCount}
+                    <ChatAvatar name={row.fullName} email={row.email} active={active} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p
+                          className={`truncate text-[13px] ${
+                            active
+                              ? 'font-medium text-[var(--ui-text)]'
+                              : 'text-[var(--ui-text-secondary)]'
+                          }`}
+                        >
+                          {row.fullName}
+                        </p>
+                        <span className="shrink-0 text-[10px] text-[var(--ui-text-muted)]">
+                          {formatListTime(row.lastMessageAt)}
                         </span>
-                      )}
+                      </div>
+                      <p className="mt-0.5 truncate text-[11px] text-[var(--ui-text-muted)]">
+                        {row.lastMessage || row.email || row.phone || 'No messages yet'}
+                      </p>
                     </div>
+                    <UnreadBadge count={row.unreadCount} />
                   </button>
-                ))
-              )}
-            </div>
-          </aside>
-
-          <section className="flex min-h-[60vh] flex-col">
-            {!selectedId ? (
-              <div className="flex flex-1 items-center justify-center p-8 text-sm font-semibold text-slate-400">
-                Select a student to start messaging.
-              </div>
-            ) : (
-              <>
-                <div className="border-b border-slate-100 px-5 py-4">
-                  <h3 className="text-base font-semibold text-slate-800">{thread?.student?.fullName || 'Student'}</h3>
-                  <p className="text-xs font-medium text-slate-400">
-                    {thread?.student?.email || '—'}
-                    {thread?.student?.counsellor?.fullName
-                      ? ` · Counsellor: ${thread.student.counsellor.fullName}`
-                      : ''}
-                  </p>
-                </div>
-
-                <div className="flex-1 overflow-y-auto bg-slate-50/50 px-5 py-5 space-y-3">
-                  {error && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
-                      {error}
-                    </div>
-                  )}
-                  {loadingThread ? (
-                    <div className="flex justify-center py-16">
-                      <Loader2 className="h-6 w-6 animate-spin text-brand" />
-                    </div>
-                  ) : thread?.messages?.length ? (
-                    thread.messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
-                  ) : (
-                    <p className="py-16 text-center text-xs font-semibold text-slate-400">
-                      No messages yet. Send the first note to this student.
-                    </p>
-                  )}
-                  <div ref={endRef} />
-                </div>
-
-                <form onSubmit={handleSend} className="border-t border-slate-100 bg-white p-4">
-                  <div className="flex items-end gap-2">
-                    <textarea
-                      rows={2}
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      placeholder="Write a message to the student..."
-                      className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!draft.trim() || sending}
-                      className="rounded-xl bg-brand p-2.5 text-white shadow-sm transition hover:bg-brand-hover disabled:bg-slate-100 disabled:text-slate-400"
-                    >
-                      {sending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4 stroke-[2.5]" />
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </>
+                );
+              })
             )}
-          </section>
-        </div>
+          </div>
+        </ChatPanel>
+
+        <ChatPanel className="min-h-[420px] lg:col-span-8 lg:h-full xl:col-span-9">
+          {!selectedId ? (
+            <ChatEmptyState
+              title="Select a conversation"
+              description="Choose a student from the inbox to view history and send a message."
+            />
+          ) : (
+            <>
+              <ChatThreadHeader
+                title={student?.fullName || 'Student'}
+                name={student?.fullName}
+                email={student?.email}
+                subtitle={[
+                  student?.email || '—',
+                  student?.counsellor?.fullName
+                    ? `Counsellor: ${student.counsellor.fullName}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              />
+              <ChatMessageArea
+                loading={loadingThread}
+                error={error}
+                messages={thread?.messages}
+                endRef={endRef}
+              />
+              <ChatComposer
+                ref={composerRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onSubmit={handleSend}
+                sending={sending}
+              />
+            </>
+          )}
+        </ChatPanel>
       </div>
     </div>
   );

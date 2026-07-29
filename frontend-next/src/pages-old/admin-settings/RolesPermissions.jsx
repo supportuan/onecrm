@@ -13,11 +13,14 @@ import {
   RotateCcw,
   Save,
   Lock,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import {
   PERMISSION_CATEGORIES,
   ROLE_DESCRIPTIONS,
   HIDDEN_ROLES,
+  SYSTEM_ROLES as STATIC_SYSTEM_ROLES,
 } from '../../lib/auth/rbac';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { usePermissions } from '../../lib/auth/PermissionsContext';
@@ -29,12 +32,25 @@ const titleCaseRole = (role) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
+/** Effective RBAC key for a user (custom permissionRole wins). */
+const userRoleKey = (u) => u?.permissionRole || u?.role;
+
 export default function RolesPermissions() {
   const { user } = useAuth();
-  const { permissionMap, can, updateRole, reset, loading } = usePermissions();
+  const {
+    permissionMap,
+    systemRoles,
+    can,
+    updateRole,
+    createRole,
+    deleteRole,
+    reset,
+    loading,
+  } = usePermissions();
 
   const canView = can(['VIEW_ADMIN', 'MANAGE_SYSTEM', 'MANAGE_ADMINS']);
   const canEdit = can('MANAGE_ADMINS');
+  const builtInRoles = systemRoles?.size ? systemRoles : STATIC_SYSTEM_ROLES;
 
   const roles = useMemo(
     () => Object.keys(permissionMap || {}).filter((r) => !HIDDEN_ROLES.has(r)),
@@ -52,6 +68,11 @@ export default function RolesPermissions() {
   const [openAssignRole, setOpenAssignRole] = useState(null);
   const [assignSearch, setAssignSearch] = useState('');
   const [movingUser, setMovingUser] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [cloneFrom, setCloneFrom] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [deletingRole, setDeletingRole] = useState('');
 
   const assignRef = useRef(null);
   const [users, setUsers] = useState([]);
@@ -121,7 +142,7 @@ export default function RolesPermissions() {
 
     if (!nameMatch) return false;
 
-    const memberCount = users.filter((u) => u.role === r && u.isActive !== false).length;
+    const memberCount = users.filter((u) => userRoleKey(u) === r && u.isActive !== false).length;
     if (memberFilter === 'WITH_MEMBERS' && memberCount === 0) return false;
     if (memberFilter === 'EMPTY' && memberCount > 0) return false;
 
@@ -169,7 +190,7 @@ export default function RolesPermissions() {
     try {
       await reset();
       setDirtyRoles(new Set());
-      flash('All roles reverted to defaults.');
+      flash('All system roles reverted to defaults. Custom roles were kept.');
     } catch (err) {
       flash(err?.message || 'Failed to reset.');
     } finally {
@@ -177,10 +198,77 @@ export default function RolesPermissions() {
     }
   };
 
+  const usersForRole = (role) =>
+    users.filter((u) => userRoleKey(u) === role && u.isActive !== false);
+
+  const handleCreateRole = async (e) => {
+    e?.preventDefault?.();
+    if (!canEdit || !newRoleName.trim() || creating) return;
+    setCreating(true);
+    try {
+      const seed = cloneFrom ? draft[cloneFrom] || permissionMap[cloneFrom] || [] : [];
+      const data = await createRole(newRoleName.trim(), seed);
+      setShowCreate(false);
+      setNewRoleName('');
+      setCloneFrom('');
+      if (data?.role) setExpandedRole(data.role);
+      flash(`Role “${titleCaseRole(data?.role || newRoleName)}” created.`);
+      fetchUsers();
+    } catch (err) {
+      flash(err?.message || 'Failed to create role.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteRole = async (role) => {
+    if (!canEdit || builtInRoles.has(role)) return;
+    const members = usersForRole(role);
+    const fallback = roles.find((r) => r !== role && builtInRoles.has(r) && r === 'COUNSELLOR')
+      || roles.find((r) => r !== role && builtInRoles.has(r) && r !== 'SUPER_ADMIN' && r !== 'STUDENT')
+      || 'COUNSELLOR';
+
+    const message =
+      members.length > 0
+        ? `Delete custom role “${titleCaseRole(role)}”?\n\n${members.length} member${
+            members.length === 1 ? '' : 's'
+          } will be moved to ${titleCaseRole(fallback)}.`
+        : `Delete custom role “${titleCaseRole(role)}”? This cannot be undone.`;
+
+    if (!window.confirm(message)) return;
+
+    setDeletingRole(role);
+    try {
+      const data = await deleteRole(
+        role,
+        members.length > 0 ? { reassignTo: fallback } : {}
+      );
+      setExpandedRole((cur) => (cur === role ? null : cur));
+      setDirtyRoles((prev) => {
+        const next = new Set(prev);
+        next.delete(role);
+        return next;
+      });
+      const moved = data?.reassigned || 0;
+      flash(
+        moved > 0
+          ? `Role deleted. ${moved} member${moved === 1 ? '' : 's'} moved to ${titleCaseRole(
+              data?.reassignTo || fallback
+            )}.`
+          : `Role “${titleCaseRole(role)}” deleted.`
+      );
+      fetchUsers();
+    } catch (err) {
+      flash(err?.message || 'Failed to delete role.');
+    } finally {
+      setDeletingRole('');
+    }
+  };
+
   const handleAssignUser = async (role, userId) => {
     if (!canEdit) return;
     try {
-      await updateUser(userId, { role });
+      await updateUser(userId, { roleName: titleCaseRole(role) });
       flash(`User assigned to ${titleCaseRole(role)}.`);
       setOpenAssignRole(null);
       setAssignSearch('');
@@ -193,7 +281,7 @@ export default function RolesPermissions() {
   const handleReassignUser = async (userId, newRole) => {
     if (!canEdit || !newRole) return;
     try {
-      await updateUser(userId, { role: newRole });
+      await updateUser(userId, { roleName: titleCaseRole(newRole) });
       flash('User role updated.');
       setMovingUser(null);
       fetchUsers();
@@ -202,12 +290,10 @@ export default function RolesPermissions() {
     }
   };
 
-  const usersForRole = (role) => users.filter((u) => u.role === role && u.isActive !== false);
-
   const assignCandidates = (role) => {
     const q = assignSearch.toLowerCase();
     return users
-      .filter((u) => u.isActive !== false && u.role !== role)
+      .filter((u) => u.isActive !== false && userRoleKey(u) !== role)
       .filter((u) => {
         if (!q) return true;
         return (
@@ -272,6 +358,16 @@ export default function RolesPermissions() {
           {canEdit && (
             <button
               type="button"
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-brand rounded-md hover:bg-brand-hover transition"
+            >
+              <Plus size={14} />
+              Create role
+            </button>
+          )}
+          {canEdit && (
+            <button
+              type="button"
               onClick={handleResetAll}
               disabled={savingRole === '__all__'}
               className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-700 border border-neutral-200 rounded-md hover:bg-neutral-50 transition disabled:opacity-50"
@@ -285,6 +381,87 @@ export default function RolesPermissions() {
           )}
         </div>
       </div>
+
+      {showCreate && canEdit && (
+        <form
+          onSubmit={handleCreateRole}
+          className="border border-neutral-200 rounded-xl bg-white p-4 shadow-sm space-y-3"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-brand">Create custom role</h3>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Name the role, optionally copy permissions from an existing one, then toggle access after create.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreate(false);
+                setNewRoleName('');
+                setCloneFrom('');
+              }}
+              className="p-1 rounded text-neutral-500 hover:bg-neutral-100"
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">Role name</label>
+              <input
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                placeholder="e.g. Senior Counsellor"
+                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-700"
+                autoFocus
+                required
+                minLength={2}
+                maxLength={80}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">
+                Copy permissions from (optional)
+              </label>
+              <select
+                value={cloneFrom}
+                onChange={(e) => setCloneFrom(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-md bg-white"
+              >
+                <option value="">Start empty</option>
+                {roles.map((r) => (
+                  <option key={r} value={r}>
+                    {titleCaseRole(r)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="submit"
+              disabled={!newRoleName.trim() || creating}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-brand rounded-md hover:bg-brand-hover transition disabled:opacity-40"
+            >
+              {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              Create role
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreate(false);
+                setNewRoleName('');
+                setCloneFrom('');
+              }}
+              className="px-3 py-2 text-sm font-medium text-neutral-600 border border-neutral-200 rounded-md hover:bg-neutral-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Table */}
       <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm">
@@ -320,30 +497,56 @@ export default function RolesPermissions() {
                   const isDirty = dirtyRoles.has(role);
                   const activePerms = draft[role] || [];
                   const isAssignOpen = openAssignRole === role;
+                  const isCustom = !builtInRoles.has(role);
 
                   return (
                     <Fragment key={role}>
                       <tr className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors">
                         {/* Role Level */}
                         <td className="px-5 py-4 align-top">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedRole(isExpanded ? null : role)}
-                            className="flex items-start gap-2 text-left group"
-                          >
-                            <span className="mt-0.5 text-neutral-500 group-hover:text-neutral-600">
-                              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </span>
-                            <div>
-                              <p className="text-sm font-semibold text-brand">{titleCaseRole(role)}</p>
-                              <p className="text-xs text-neutral-500 font-mono mt-0.5 tracking-wide">{role}</p>
-                              {isDirty && (
-                                <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                                  unsaved
-                                </span>
-                              )}
-                            </div>
-                          </button>
+                          <div className="flex items-start gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedRole(isExpanded ? null : role)}
+                              className="flex min-w-0 flex-1 items-start gap-2 text-left group"
+                            >
+                              <span className="mt-0.5 text-neutral-500 group-hover:text-neutral-600">
+                                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-sm font-semibold text-brand">{titleCaseRole(role)}</p>
+                                  {isCustom && (
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-brand bg-brand-soft px-1.5 py-0.5 rounded">
+                                      Custom
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-neutral-500 font-mono mt-0.5 tracking-wide">{role}</p>
+                                {isDirty && (
+                                  <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                                    unsaved
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                            {isCustom && canEdit && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteRole(role)}
+                                disabled={deletingRole === role}
+                                className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md border border-rose-200 px-2 py-1 text-[11px] font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                title="Delete custom role"
+                              >
+                                {deletingRole === role ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={12} />
+                                )}
+                                Delete
+                              </button>
+                            )}
+                          </div>
                         </td>
 
                         {/* Responsibilities */}
@@ -413,57 +616,75 @@ export default function RolesPermissions() {
                         {/* Assignment */}
                         <td className="px-5 py-4 align-top">
                           {canEdit ? (
-                            <div className="relative" ref={isAssignOpen ? assignRef : null}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenAssignRole(isAssignOpen ? null : role);
-                                  setAssignSearch('');
-                                }}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-700 border border-neutral-200 rounded-md hover:bg-neutral-50 transition min-w-[110px] justify-between"
-                              >
-                                <span>+ Assign</span>
-                                <ChevronDown size={14} className="text-neutral-500" />
-                              </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="relative" ref={isAssignOpen ? assignRef : null}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenAssignRole(isAssignOpen ? null : role);
+                                    setAssignSearch('');
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-700 border border-neutral-200 rounded-md hover:bg-neutral-50 transition min-w-[110px] justify-between"
+                                >
+                                  <span>+ Assign</span>
+                                  <ChevronDown size={14} className="text-neutral-500" />
+                                </button>
 
-                              {isAssignOpen && (
-                                <div className="absolute left-0 top-full mt-1 z-30 w-72 bg-white border border-neutral-200 rounded-lg shadow-lg overflow-hidden">
-                                  <div className="p-2 border-b border-neutral-100">
-                                    <div className="relative">
-                                      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                      <input
-                                        type="text"
-                                        value={assignSearch}
-                                        onChange={(e) => setAssignSearch(e.target.value)}
-                                        placeholder="Search employees..."
-                                        className="w-full pl-8 pr-3 py-1.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:border-neutral-700"
-                                        autoFocus
-                                      />
+                                {isAssignOpen && (
+                                  <div className="absolute left-0 top-full mt-1 z-30 w-72 bg-white border border-neutral-200 rounded-lg shadow-lg overflow-hidden">
+                                    <div className="p-2 border-b border-neutral-100">
+                                      <div className="relative">
+                                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                        <input
+                                          type="text"
+                                          value={assignSearch}
+                                          onChange={(e) => setAssignSearch(e.target.value)}
+                                          placeholder="Search employees..."
+                                          className="w-full pl-8 pr-3 py-1.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:border-neutral-700"
+                                          autoFocus
+                                        />
+                                      </div>
                                     </div>
-                                  </div>
-                                  <ul className="max-h-52 overflow-y-auto">
-                                    {assignCandidates(role).length === 0 ? (
-                                      <li className="px-3 py-4 text-xs text-neutral-500 text-center">
-                                        No employees available
-                                      </li>
-                                    ) : (
-                                      assignCandidates(role).map((u) => (
-                                        <li key={u.id}>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleAssignUser(role, u.id)}
-                                            className="w-full text-left px-3 py-2.5 hover:bg-neutral-50 transition flex flex-col"
-                                          >
-                                            <span className="text-sm font-medium text-neutral-800 truncate">
-                                              {u.fullName || '—'}
-                                            </span>
-                                            <span className="text-xs text-neutral-500 truncate">{u.email}</span>
-                                          </button>
+                                    <ul className="max-h-52 overflow-y-auto">
+                                      {assignCandidates(role).length === 0 ? (
+                                        <li className="px-3 py-4 text-xs text-neutral-500 text-center">
+                                          No employees available
                                         </li>
-                                      ))
-                                    )}
-                                  </ul>
-                                </div>
+                                      ) : (
+                                        assignCandidates(role).map((u) => (
+                                          <li key={u.id}>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleAssignUser(role, u.id)}
+                                              className="w-full text-left px-3 py-2.5 hover:bg-neutral-50 transition flex flex-col"
+                                            >
+                                              <span className="text-sm font-medium text-neutral-800 truncate">
+                                                {u.fullName || '—'}
+                                              </span>
+                                              <span className="text-xs text-neutral-500 truncate">{u.email}</span>
+                                            </button>
+                                          </li>
+                                        ))
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                              {isCustom && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteRole(role)}
+                                  disabled={deletingRole === role}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-sm font-medium text-rose-600 border border-rose-200 rounded-md hover:bg-rose-50 transition disabled:opacity-50"
+                                  title="Delete custom role"
+                                >
+                                  {deletingRole === role ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                  ) : (
+                                    <Trash2 size={14} />
+                                  )}
+                                  Delete
+                                </button>
                               )}
                             </div>
                           ) : (

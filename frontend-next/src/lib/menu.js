@@ -150,6 +150,12 @@ export const navMenu = [
       },
     ],
   },
+  {
+    label: "Communication",
+    path: "/communication",
+    icon: MessageSquare,
+    accessKey: "Student Hub",
+  },
 
   {
     label: "Human Resource",
@@ -237,13 +243,6 @@ export const navMenu = [
     label: "AI Insights",
     path: "/ai-insights",
     icon: BrainCircuit,
-    navTheme: "crimson",
-  },
-  {
-    label: "Communication",
-    path: "/communication",
-    icon: MessageSquare,
-    accessKey: "Student Hub",
     navTheme: "crimson",
   },
   {

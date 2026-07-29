@@ -5,6 +5,8 @@ import {
   getPermissions,
   updatePermissions,
   resetPermissions,
+  createRole,
+  deleteRole,
 } from './rbac.controller.js';
 
 const router = Router();
@@ -15,6 +17,8 @@ router.use(authenticateToken);
 router.get('/permissions', getPermissions);
 
 // Only roles with MANAGE_ADMINS (Super Admin by default) can change them.
+router.post('/roles', requirePermission('MANAGE_ADMINS'), createRole);
+router.delete('/roles/:role', requirePermission('MANAGE_ADMINS'), deleteRole);
 router.put('/permissions/:role', requirePermission('MANAGE_ADMINS'), updatePermissions);
 router.post('/permissions/reset', requirePermission('MANAGE_ADMINS'), resetPermissions);
 

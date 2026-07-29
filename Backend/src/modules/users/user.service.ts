@@ -565,6 +565,10 @@ export const updateUser = async (
     patch.role = inferSystemRole(trimmedRoleName);
     patch.roleLabel = trimmedRoleName;
     patch.permissionRole = slugifyRoleName(trimmedRoleName);
+  } else if (data.role) {
+    // Assigning a system enum role clears any previous custom permission key.
+    patch.roleLabel = null;
+    patch.permissionRole = null;
   }
 
   const updated = await prisma.$transaction(async (tx) => {

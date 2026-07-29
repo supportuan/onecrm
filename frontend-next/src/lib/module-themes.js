@@ -13,7 +13,6 @@ export const CRIMSON_MODULE_PATHS = [
   '/blogs-news',
   '/ai-insights',
   '/connector',
-  '/communication',
   '/archive',
 ];
 

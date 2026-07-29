@@ -91,6 +91,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
  */
 export const HIDDEN_ROLES = new Set<string>([]);
 
+/** Built-in roles seeded per tenant — cannot be deleted from the admin UI. */
+export const SYSTEM_ROLES = new Set<string>(Object.keys(DEFAULT_ROLE_PERMISSIONS));
+
 // ---------------------------------------------------------------------------
 // Module catalog. Each module owns a set of permissions; if a tenant has the
 // module disabled, requirePermission returns 403 for any permission in its set.

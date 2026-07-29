@@ -82,12 +82,7 @@ export default function ResourceLibrary() {
   return (
     <div className="ui-container space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="ui-text-h2">Knowledge Hub</h1>
-          <p className="ui-text-body mt-1">
-            Access knowledge available to your role and selected country.
-          </p>
-        </div>
+        <div />
         {canManage && (
           <Link href="/resources/manage" className="ui-btn-primary inline-flex items-center gap-2">
             <Upload className="h-4 w-4" />
