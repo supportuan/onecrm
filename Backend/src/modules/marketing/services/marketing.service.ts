@@ -2110,6 +2110,7 @@ export const createWebsiteLead = async (
       assignedCounsellorId: null,
 
       assignedById: null,
+      tenantId :1
     },
 
     include: {
@@ -2121,3 +2122,68 @@ export const createWebsiteLead = async (
 
   return lead;
 };
+
+export const getWebsiteLeads = async (filters: {
+  search?: string;
+  status?: LeadStatus;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+} = {}) => {
+  const page = filters.page ? Number(filters.page) : 1;
+  const limit = filters.limit ? Number(filters.limit) : 10;
+  const skip = (page - 1) * limit;
+  const sortBy = filters.sortBy || 'createdAt';
+  const sortOrder = filters.sortOrder || 'desc';
+
+  const whereClause: any = {
+    deletedAt: null,
+    OR: [
+      { platform: 'WEBSITE' },
+      { source: { name: { equals: 'Website Form', mode: 'insensitive' } } },
+    ],
+  };
+
+  if (filters.status) {
+    whereClause.status = filters.status;
+  }
+
+  if (filters.search) {
+    whereClause.AND = [
+      {
+        OR: [
+          { fullName: { contains: filters.search, mode: 'insensitive' } },
+          { email: { contains: filters.search, mode: 'insensitive' } },
+          { phone: { contains: filters.search, mode: 'insensitive' } },
+          { country: { contains: filters.search, mode: 'insensitive' } },
+          { preferredCountry: { contains: filters.search, mode: 'insensitive' } },
+          { preferredCourse: { contains: filters.search, mode: 'insensitive' } },
+        ],
+      },
+    ];
+  }
+
+  const orderBy: any = {};
+  orderBy[sortBy] = sortOrder;
+
+  const [leads, total] = await prisma.$transaction([
+    prisma.lead.findMany({
+      where: whereClause,
+      include: { source: true, assignedCounsellor: true, assignedBy: true },
+      orderBy,
+      skip,
+      take: limit,
+    }),
+    prisma.lead.count({ where: whereClause }),
+  ]);
+
+  return {
+    items: leads,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+

@@ -40,18 +40,19 @@ npm run build --prefix "$ROOT/frontend-next"
 STANDALONE_DIR="$ROOT/frontend-next/.next/standalone"
 [[ -f "$STANDALONE_DIR/server.js" ]] || die "Frontend standalone build missing at $STANDALONE_DIR/server.js"
 
-# Standalone bundle needs static assets co-located (Dockerfile does this via COPY).
 mkdir -p "$STANDALONE_DIR/.next/static"
 cp -r "$ROOT/frontend-next/.next/static/." "$STANDALONE_DIR/.next/static/"
 cp -r "$ROOT/frontend-next/public" "$STANDALONE_DIR/public"
 
 BACKEND_PID=""
-FRONTEND_PID=""
+NEXT_PID=""
+EDGE_PID=""
 
 shutdown() {
   log "Shutting down..."
   [[ -n "$BACKEND_PID" ]] && kill -TERM "$BACKEND_PID" 2>/dev/null || true
-  [[ -n "$FRONTEND_PID" ]] && kill -TERM "$FRONTEND_PID" 2>/dev/null || true
+  [[ -n "$NEXT_PID" ]] && kill -TERM "$NEXT_PID" 2>/dev/null || true
+  [[ -n "$EDGE_PID" ]] && kill -TERM "$EDGE_PID" 2>/dev/null || true
   wait 2>/dev/null || true
 }
 trap shutdown TERM INT EXIT
@@ -60,14 +61,22 @@ log "Starting backend on :${BACKEND_PORT}..."
 PORT="$BACKEND_PORT" node "$ROOT/Backend/dist/index.js" &
 BACKEND_PID=$!
 
-log "Starting frontend on :${FRONTEND_PORT}..."
+NEXT_INTERNAL_PORT="${NEXT_INTERNAL_PORT:-3001}"
+
+log "Starting Next.js on internal :${NEXT_INTERNAL_PORT}..."
 cd "$STANDALONE_DIR"
-PORT="$FRONTEND_PORT" HOSTNAME="0.0.0.0" node server.js &
-FRONTEND_PID=$!
+PORT="$NEXT_INTERNAL_PORT" HOSTNAME="127.0.0.1" node server.js &
+NEXT_PID=$!
+
+log "Starting edge proxy on :${FRONTEND_PORT} (WS /ws/* → backend)..."
+export NEXT_INTERNAL_URL="http://127.0.0.1:${NEXT_INTERNAL_PORT}"
+export BACKEND_INTERNAL_URL="http://127.0.0.1:${BACKEND_PORT}"
+PORT="$FRONTEND_PORT" node "$ROOT/frontend-next/edge-proxy.mjs" &
+EDGE_PID=$!
 
 log "One CRM is running"
 log "  App: http://0.0.0.0:${FRONTEND_PORT}"
-log "  API: http://0.0.0.0:${BACKEND_PORT}/api"
+log "  API: proxied via Next → http://127.0.0.1:${BACKEND_PORT}/api"
 
-wait -n "$BACKEND_PID" "$FRONTEND_PID"
+wait -n "$BACKEND_PID" "$NEXT_PID" "$EDGE_PID"
 die "A service exited unexpectedly."

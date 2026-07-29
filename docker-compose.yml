@@ -19,6 +19,7 @@ services:
       BACKEND_PORT: ${BACKEND_PORT:-4000}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
     ports:
-      # Public app port only; API is proxied inside the container.
+      # Public app port; /api proxied inside container. Backend exposed for host nginx /ws/.
       - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
+      - "${BACKEND_PORT:-4000}:${BACKEND_PORT:-4000}"
     restart: unless-stopped

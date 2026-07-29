@@ -7,15 +7,16 @@ import {
   CreditCard,
   UserRound,
   Library,
-  PanelLeftClose,
+  MessageSquare,
 } from 'lucide-react';
-import { StudentPortalBrand, StudentPortalLogo } from './StudentPortalBrand';
+import { SidebarBrandHeader } from '@/components/AppBrand';
 import { SIDEBAR_OPEN, SIDEBAR_COLLAPSED } from '@/lib/layout-shell';
 
 export { SIDEBAR_OPEN, SIDEBAR_COLLAPSED };
 
 const NAV = [
   { label: 'Applications', href: '/applicant/applications', icon: FileText },
+  { label: 'Messages', href: '/applicant/messages', icon: MessageSquare },
   { label: 'Knowledge Hub', href: '/applicant/resources', icon: Library },
   { label: 'Payments', href: '/applicant/payments', icon: CreditCard },
   { label: 'Profile', href: '/applicant/profile/view', icon: UserRound },
@@ -24,7 +25,6 @@ const NAV = [
 export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
   const pathname = usePathname();
   const width = sidebarOpen ? SIDEBAR_OPEN : SIDEBAR_COLLAPSED;
-
 
   return (
     <aside
@@ -43,35 +43,12 @@ export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
           />
         </svg>
       </div>
-      <div
-        className={`flex-none flex items-center border-b border-neutral-100/80 ${
-          sidebarOpen ? 'justify-between gap-2 px-4 h-14' : 'justify-center h-14'
-        }`}
-      >
-        {sidebarOpen ? (
-          <>
-            <StudentPortalBrand />
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
-              aria-label="Collapse sidebar"
-            >
-              <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={onToggleSidebar}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-neutral-100"
-            aria-label="Expand sidebar"
-            title="Expand sidebar"
-          >
-            <StudentPortalLogo className="h-8 w-8" />
-          </button>
-        )}
-      </div>
+
+      <SidebarBrandHeader
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={onToggleSidebar}
+        homeHref="/applicant/applications"
+      />
 
       <nav className={`flex-1 overflow-y-auto sidebar-scrollbar py-3 ${sidebarOpen ? 'px-3' : 'px-2'}`}>
         <ul className="space-y-1">
@@ -104,6 +81,17 @@ export default function StudentPortalSidebar({ sidebarOpen, onToggleSidebar }) {
           })}
         </ul>
       </nav>
+
+      {sidebarOpen ? (
+        <div className="relative z-[1] flex-none border-t border-neutral-100/80 px-3 py-3">
+          <p className="text-[10px] font-semibold leading-snug text-neutral-500">
+            © AUNTech (V 3.3.1)
+          </p>
+          <p className="mt-0.5 text-[10px] font-medium leading-snug text-neutral-400">
+            Optimized services &amp; performance enhancements.
+          </p>
+        </div>
+      ) : null}
     </aside>
   );
 }

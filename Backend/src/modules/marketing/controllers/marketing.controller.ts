@@ -124,15 +124,7 @@ export const updateLeadRating = async (req: Request, res: Response) => {
     const leadId = Number(req.params.leadId);
     const { rating } = req.body;
 
-    const allowedRatings = [
-      'HOT',
-      'WARM',
-      'COLD',
-      'MAYBE',
-      'RED_PHONE',
-      'GREEN_PHONE',
-      'CALLBACK_PHONE',
-    ];
+    const allowedRatings = ['HOT', 'WARM', 'COLD', 'MAYBE'];
 
     if (!leadId || Number.isNaN(leadId)) {
       return res.status(400).json({
@@ -1043,3 +1035,32 @@ export const createWebsiteLead = async (
     next(error);
   }
 };
+
+export const getWebsiteLeads = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const search = req.query.search as string;
+    const status = req.query.status as LeadStatus;
+    const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+    const sortBy = req.query.sortBy as string;
+    const sortOrder = req.query.sortOrder as 'asc' | 'desc';
+
+    const data = await marketingService.getWebsiteLeads({
+      search,
+      status,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    return sendSuccess(res, 'Website leads fetched successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+

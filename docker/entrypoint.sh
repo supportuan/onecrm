@@ -20,18 +20,24 @@ echo "[entrypoint] backend :${BACKEND_PORT}"
 PORT="${BACKEND_PORT}" node /app/Backend/dist/index.js &
 BACKEND_PID=$!
 
-echo "[entrypoint] frontend :${FRONTEND_PORT}"
+NEXT_INTERNAL_PORT="${NEXT_INTERNAL_PORT:-3001}"
+echo "[entrypoint] next internal :${NEXT_INTERNAL_PORT}, public edge :${FRONTEND_PORT}"
 cd /app/frontend-next
-PORT="${FRONTEND_PORT}" HOSTNAME="0.0.0.0" node /app/frontend-next/server.js &
-FRONTEND_PID=$!
+PORT="${NEXT_INTERNAL_PORT}" HOSTNAME="127.0.0.1" node /app/frontend-next/server.js &
+NEXT_PID=$!
+
+export NEXT_INTERNAL_URL="http://127.0.0.1:${NEXT_INTERNAL_PORT}"
+export BACKEND_INTERNAL_URL="http://127.0.0.1:${BACKEND_PORT}"
+PORT="${FRONTEND_PORT}" node /app/frontend-next/edge-proxy.mjs &
+EDGE_PID=$!
 
 shutdown() {
-  kill -TERM "${BACKEND_PID}" "${FRONTEND_PID}" 2>/dev/null || true
+  kill -TERM "${BACKEND_PID}" "${NEXT_PID}" "${EDGE_PID}" 2>/dev/null || true
   wait || true
 }
 trap shutdown TERM INT
 
-wait -n "${BACKEND_PID}" "${FRONTEND_PID}"
+wait -n "${BACKEND_PID}" "${NEXT_PID}" "${EDGE_PID}"
 echo "[entrypoint] a service exited; stopping." >&2
 shutdown
 exit 1

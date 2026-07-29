@@ -30,7 +30,6 @@ import {
 import { getStageLabel } from '@/features/student-crm/constants';
 import StudentPaymentPanel from '../components/StudentPaymentPanel';
 import StudentWorkflowGuide, { resolveStudentWorkflow } from '../components/StudentWorkflowGuide';
-import { StudentPageHeader } from '../layout/StudentPortalLayoutContext';
 import {
   sp,
   StudentPortalPage,
@@ -184,10 +183,10 @@ export default function StudentApplicationDetail({ applicationId }) {
         >
           <ArrowLeft size={14} /> Back to applications
         </Link>
-        <StudentPageHeader
-          title={app.university}
-          description={`${app.applicationCode} · ${app.course}`}
-        />
+        <div>
+          <h2 className="text-[15px] font-semibold tracking-tight text-brand">{app.university}</h2>
+          <p className="text-[12px] text-slate-400">{app.applicationCode} · {app.course}</p>
+        </div>
       </div>
 
       <StudentPortalPanel className={`${sp.panelPad} space-y-5`}>

@@ -47,10 +47,12 @@ COPY Backend/package.json ./Backend/package.json
 COPY --from=frontend-build /app/frontend-next/.next/standalone ./frontend-next/
 COPY --from=frontend-build /app/frontend-next/.next/static     ./frontend-next/.next/static
 COPY --from=frontend-build /app/frontend-next/public           ./frontend-next/public
+COPY frontend-next/edge-proxy.mjs                              ./frontend-next/edge-proxy.mjs
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh \
     && groupadd --system app && useradd --system --gid app --home /app app \
+    && cd /app/frontend-next && npm install --no-save http-proxy@1.18.1 \
     && chown -R app:app /app
 USER app
 

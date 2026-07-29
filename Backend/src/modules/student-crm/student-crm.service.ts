@@ -7,6 +7,7 @@ import { getDefaultChecklist, type ChecklistItem } from './checklists.js';
 import { getDefaultVisaChecklist } from './visa-checklists.js';
 import { safeNotify } from '../notifications/recipients.js';
 import { getDefaultTenantId } from '../../utils/tenant-default.js';
+import { getLoginUrl } from '../../utils/frontend-url.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
 import { resolveApplicationScopeWhere, resolveStudentScopeWhere } from './scoping.js';
 import { computeProcessProgress, getStagesForCountry } from './stage-engine.js';
@@ -57,14 +58,29 @@ const STUDENT_INCLUDE = {
 };
 
 /** Generate a human-readable application code like APP-2026-0007. */
-const generateApplicationCode = async (): Promise<string> => {
+const generateApplicationCode = async (attemptOffset = 0): Promise<string> => {
   const year = new Date().getFullYear();
-  const count = await prisma.application.count({
-    where: {
-      applicationCode: { startsWith: `APP-${year}-` },
-    },
-  });
-  return `APP-${year}-${String(count + 1).padStart(4, '0')}`;
+  const prefix = `APP-${year}-`;
+
+  // SPLIT_PART avoids PostgreSQL bigint/int mismatch from parameterized SUBSTRING positions.
+  const rows = await prisma.$queryRaw<Array<{ max_suffix: number | null }>>`
+    SELECT MAX(CAST(NULLIF(SPLIT_PART("applicationCode", '-', 3), '') AS INTEGER)) AS max_suffix
+    FROM "Application"
+    WHERE "applicationCode" LIKE ${`${prefix}%`}
+  `;
+
+  const maxSeq = Number(rows[0]?.max_suffix) || 0;
+  return `${prefix}${String(maxSeq + 1 + attemptOffset).padStart(4, '0')}`;
+};
+
+const isApplicationCodeConflict = (err: unknown) => {
+  if (typeof err !== 'object' || err === null || !('code' in err)) return false;
+  if ((err as { code?: string }).code !== 'P2002') return false;
+  const message = String((err as { message?: string }).message || '');
+  if (message.includes('applicationCode')) return true;
+  const target = (err as { meta?: { target?: string[] | string } }).meta?.target;
+  if (Array.isArray(target)) return target.includes('applicationCode');
+  return String(target || '').includes('applicationCode');
 };
 
 // -------------------- Students --------------------
@@ -770,22 +786,35 @@ export const createApplication = async (data: {
   deadline?: string;
   notes?: string;
 }) => {
-  const code = await generateApplicationCode();
-  const app = await prisma.application.create({
-    data: {
-      applicationCode: code,
-      studentId: data.studentId,
-      studyPlanId: data.studyPlanId ?? null,
-      country: data.country,
-      university: data.university,
-      course: data.course,
-      intake: data.intake || null,
-      assignedToId: data.assignedToId || null,
-      deadline: data.deadline ? new Date(data.deadline) : null,
-      notes: data.notes || null,
-      stage: 'DOCUMENTS_PENDING',
-    },
-  });
+  const MAX_ATTEMPTS = 5;
+  let app: Awaited<ReturnType<typeof prisma.application.create>> | null = null;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    const code = await generateApplicationCode(attempt);
+    try {
+      app = await prisma.application.create({
+        data: {
+          applicationCode: code,
+          studentId: data.studentId,
+          studyPlanId: data.studyPlanId ?? null,
+          country: data.country,
+          university: data.university,
+          course: data.course,
+          intake: data.intake || null,
+          assignedToId: data.assignedToId || null,
+          deadline: data.deadline ? new Date(data.deadline) : null,
+          notes: data.notes || null,
+          stage: 'DOCUMENTS_PENDING',
+        },
+      });
+      break;
+    } catch (err) {
+      if (isApplicationCodeConflict(err) && attempt < MAX_ATTEMPTS - 1) continue;
+      throw err;
+    }
+  }
+
+  if (!app) throw new Error('failed to allocate application code');
   await prisma.applicationStageEvent.create({
     data: {
       applicationId: app.id,
@@ -1761,7 +1790,7 @@ export const promoteLeadToStudent = async (
 
     // Only send welcome email if we just created the user (tempPassword set).
     if (tempPassword) {
-      const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/student-login`;
+      const loginUrl = getLoginUrl();
       sendCampaignEmail({
         to: lead.email,
         subject: 'Your ApplyUniNow student account',

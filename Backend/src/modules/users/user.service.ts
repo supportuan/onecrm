@@ -12,6 +12,7 @@ import {
   slugifyRoleName,
 } from '../../utils/role-permissions.js';
 import { hrAccessRoleDefaults, userRoleToHrAccessRole } from '../hr/hr-access-role.js';
+import { getLoginUrl } from '../../utils/frontend-url.js';
 
 const allowedRoles = [
   UserRole.GLOBAL_ADMIN,
@@ -74,6 +75,10 @@ const MODULE_ACCESS_OPTIONS = [
     module: "Resources",
     options: ["Resource Library", "Manage Resources"],
   },
+  {
+    module: "Student Portal",
+    options: ["Applications", "Profile", "Payments", "Resources"],
+  },
 ];
 
 export const createEmptyModuleAccess = () => {
@@ -105,7 +110,8 @@ export const getDefaultModuleAccessByRole = (role: string) => {
     giveModuleActions("HR", ["VIEW", "EDIT"]);
     giveModuleActions("Resources", ["VIEW"]);
   } else if (role === "STUDENT") {
-    // Students use the applicant portal only — no staff CRM sidebar access.
+    giveModuleActions("Student Portal", ["VIEW"]);
+    giveModuleActions("Resources", ["VIEW"]);
   } else if (role === "AGENT" || role === "AGENCY_FREELANCER") {
     // Portal-scoped VIEW only — no Agency Management / MANAGE_AGENCY_CRM.
     // Fine-grained partner actions use AgencyPartner.capabilities.
@@ -420,7 +426,7 @@ export const createUser = async (data: {
 
                         <!-- Login Button -->
                         <div style="text-align:center;margin:35px 0;">
-                          <a href="https://your-domain.com/login"
+                          <a href="${getLoginUrl()}"
                             style="background:#4F46E5;
                                   color:#ffffff;
                                   text-decoration:none;
@@ -559,6 +565,10 @@ export const updateUser = async (
     patch.role = inferSystemRole(trimmedRoleName);
     patch.roleLabel = trimmedRoleName;
     patch.permissionRole = slugifyRoleName(trimmedRoleName);
+  } else if (data.role) {
+    // Assigning a system enum role clears any previous custom permission key.
+    patch.roleLabel = null;
+    patch.permissionRole = null;
   }
 
   const updated = await prisma.$transaction(async (tx) => {

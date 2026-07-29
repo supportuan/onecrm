@@ -6,6 +6,8 @@
  * `build(vars)` function that renders the title, body, optional html, and
  * optional click-through link from the variables supplied at dispatch time.
  */
+import { getDashboardUrl, getLoginUrl } from '../../utils/frontend-url.js';
+
 export type NotificationChannelKey = 'EMAIL' | 'SMS' | 'WHATSAPP' | 'IN_APP';
 
 export type RenderedNotification = {
@@ -376,7 +378,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
                     </div>
 
                     <div style="text-align:center;margin:34px 0;">
-                      <a href="https://crm.applyuninow.com/" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;">
+                      <a href="${getDashboardUrl()}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;">
                         Open Dashboard
                       </a>
                     </div>
@@ -408,7 +410,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
         title,
         body,
         html,
-        link: '/',
+        link: getLoginUrl(),
       };
     },
   },

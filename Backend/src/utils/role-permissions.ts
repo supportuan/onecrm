@@ -46,6 +46,9 @@ export const moduleAccessToPermissions = (
   if (Object.values(resources).some(hasView)) perms.add('VIEW_RESOURCES');
   if (Object.values(resources).some(hasEdit)) perms.add('MANAGE_RESOURCES');
 
+  const studentPortal = moduleOpts('Student Portal');
+  if (Object.values(studentPortal).some(hasView)) perms.add('VIEW_STUDENT_PORTAL');
+
   const hr = moduleOpts('HR');
   const hrHasView = Object.values(hr).some(hasView);
   const hrHasEdit = Object.values(hr).some(hasEdit);

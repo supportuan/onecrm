@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
+import StaffAutoPageHeading from './StaffPageHeading';
 import {
   SIDEBAR_COLLAPSED,
   SIDEBAR_OPEN,
@@ -101,10 +102,11 @@ const Layout = ({ children }) => {
         className="fixed inset-y-0 right-0 flex flex-col transition-[left] duration-200 ease-out"
         style={{ left: sidebarWidth }}
       >
-        <div className="z-20 flex-none border-b border-[var(--ui-border)] bg-[var(--ui-bg)]">
+        <div className="z-20 flex-none bg-[var(--ui-bg)]">
           <TopNavbar />
         </div>
         <main className="app-main-content min-h-0 flex-1 w-full overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 lg:px-8">
+          <StaffAutoPageHeading />
           {children}
         </main>
       </div>

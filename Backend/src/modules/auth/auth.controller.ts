@@ -6,6 +6,7 @@ import { getEnabledModules } from '../rbac/tenant-modules.service.js';
 import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
 import crypto from 'crypto';
 import { createEmailTransporter, getEmailFrom } from '../../lib/email-transport.js';
+import { getFrontendBaseUrl } from '../../utils/frontend-url.js';
 
 
 
@@ -243,31 +244,7 @@ export const acceptPolicy = async (req: Request, res: Response, next: NextFuncti
 //     console.info(`Password reset link for ${email}: ${resetUrl}`);
 // };
 
-const resolveFrontendBaseUrl = (req?: Request): string => {
-    const fromEnv = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
-    if (fromEnv) return fromEnv;
-
-    const origin = typeof req?.headers?.origin === 'string' ? req.headers.origin.trim() : '';
-    if (origin && /^https?:\/\//i.test(origin) && !/localhost|127\.0\.0\.1/i.test(origin)) {
-        return origin.replace(/\/$/, '');
-    }
-
-    const referer = typeof req?.headers?.referer === 'string' ? req.headers.referer.trim() : '';
-    if (referer) {
-        try {
-            const u = new URL(referer);
-            if (u.protocol === 'http:' || u.protocol === 'https:') {
-                if (!/localhost|127\.0\.0\.1/i.test(u.hostname)) {
-                    return `${u.protocol}//${u.host}`;
-                }
-            }
-        } catch {
-            /* ignore bad referer */
-        }
-    }
-
-    return 'http://localhost:3000';
-};
+const resolveFrontendBaseUrl = getFrontendBaseUrl;
 
 export const sendResetEmail = async (email: string, token: string, req?: Request) => {
     const frontendUrl = resolveFrontendBaseUrl(req);
