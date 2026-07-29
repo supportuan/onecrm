@@ -41,6 +41,7 @@ export BACKEND_INTERNAL_URL="http://127.0.0.1:${BACKEND_PORT}"
 log "Starting One CRM (backend :${BACKEND_PORT}, frontend :${FRONTEND_PORT})"
 log "  App:     http://localhost:${FRONTEND_PORT}"
 log "  API:     http://localhost:${BACKEND_PORT}/api"
+log "  WS:      ws://localhost:${FRONTEND_PORT}/ws/communication (proxied to backend)"
 log "  Swagger: http://localhost:${BACKEND_PORT}/api-docs"
 log "Press Ctrl+C to stop both services."
 

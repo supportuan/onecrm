@@ -19,7 +19,6 @@ import { getStageLabel } from '@/features/student-crm/constants';
 import { STAGE_LABELS } from '../constants';
 import StudentWorkflowGuide, { resolveStudentWorkflow } from '../components/StudentWorkflowGuide';
 import StudentOverallJourney from '../components/StudentOverallJourney';
-import { StudentPageHeader } from '../layout/StudentPortalLayoutContext';
 import {
   sp,
   StudentPortalPage,
@@ -225,20 +224,15 @@ export default function ApplicationsPage() {
 
   return (
     <StudentPortalPage>
-      <StudentPageHeader
-        title="Applications"
-        description="Upload documents, pay fees, then your counsellor handles university submission."
-      />
-
       {/* Welcome + overall progress */}
-      <StudentPortalPanel className={`${sp.panelPad} space-y-5`}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <StudentPortalPanel className={`${sp.panelPad} space-y-3`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className={sp.sectionEyebrow}>Welcome back</p>
-            <h2 className="mt-1 text-xl font-semibold tracking-tight text-brand sm:text-2xl">
+            <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-brand">
               Hi, {firstName(profile?.fullName)}
             </h2>
-            <p className={`${sp.body} mt-1.5 w-full`}>
+            <p className={`${sp.body} mt-1 w-full`}>
               Here is an overview of your study abroad journey
               {profile?.country?.name || profile?.preferredCountry
                 ? ` for ${profile?.country?.name || profile?.preferredCountry}`
@@ -246,9 +240,9 @@ export default function ApplicationsPage() {
               .
             </p>
           </div>
-          <div className="min-w-[160px] text-right">
-            <p className="text-3xl font-semibold tracking-tight text-brand">{overallProgress}%</p>
-            <p className="text-xs text-slate-400">Overall progress</p>
+          <div className="min-w-[120px] text-right">
+            <p className="text-2xl font-semibold tracking-tight text-brand">{overallProgress}%</p>
+            <p className="text-[11px] text-slate-400">Overall progress</p>
           </div>
         </div>
         <ProgressBar value={overallProgress} />
@@ -275,11 +269,10 @@ export default function ApplicationsPage() {
         {counsellor?.email ? (
           <a
             href={`mailto:${counsellor.email}?subject=Student enquiry`}
-            className={`${sp.panel} ${sp.panelPad} flex flex-col items-start gap-2 transition hover:border-brand/30 hover:shadow-sm`}
+            className={`${sp.panel} px-3 py-3 flex items-center gap-2.5 transition hover:border-brand/30 hover:shadow-sm`}
           >
             <Mail className="h-4 w-4 text-brand" strokeWidth={1.75} />
-            <span className="text-sm font-medium text-brand">Contact counsellor</span>
-            <span className="text-[11px] text-slate-400 truncate w-full">{counsellor.fullName}</span>
+            <span className="text-[13px] font-medium text-brand">Contact counsellor</span>
           </a>
         ) : (
           <QuickAction href="/applicant/profile/view" icon={UserRound} label="View profile" />
@@ -287,15 +280,15 @@ export default function ApplicationsPage() {
       </div>
 
       {/* Next task + pending docs + visa + deadlines */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         {primaryApp && primaryWorkflow?.nextAction && (
           <StudentPortalPanel className={`${sp.panelPad} border-l-[3px] border-l-brand`}>
             <p className={sp.sectionEyebrow}>Next upcoming task</p>
-            <p className="mt-2 text-base font-semibold tracking-tight text-brand">
+            <p className="mt-1.5 text-[14px] font-semibold tracking-tight text-brand">
               {primaryWorkflow.nextAction.title}
             </p>
-            <p className={`${sp.body} mt-1.5`}>{primaryWorkflow.nextAction.detail}</p>
-            <Link href={`/applicant/applications/${primaryApp.id}`} className={`${sp.btnPrimary} mt-5`}>
+            <p className={`${sp.body} mt-1`}>{primaryWorkflow.nextAction.detail}</p>
+            <Link href={`/applicant/applications/${primaryApp.id}`} className={`${sp.btnPrimary} mt-3`}>
               Continue application <ChevronRight size={14} />
             </Link>
           </StudentPortalPanel>
@@ -383,13 +376,13 @@ export default function ApplicationsPage() {
 
       <StudentOverallJourney profile={profile} stageList={stageList} />
 
-      <section id="applications-list" className="scroll-mt-24 space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <section id="applications-list" className="scroll-mt-20 space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className={sp.sectionEyebrow}>Your universities</p>
-            <h2 className={`${sp.sectionTitle} mt-1`}>Application list</h2>
+            <h2 className={`${sp.sectionTitle} mt-0.5`}>Application list</h2>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-[11px] text-slate-400">
             {filteredApps.length} of {apps.length} shown
           </p>
         </div>
@@ -527,21 +520,21 @@ export default function ApplicationsPage() {
 }
 
 function QuickAction({ href, icon: Icon, label, disabled }) {
-  const className = `${sp.panel} ${sp.panelPad} flex flex-col items-start gap-2 transition ${
+  const className = `${sp.panel} px-3 py-3 flex items-center gap-2.5 transition ${
     disabled ? 'pointer-events-none opacity-50' : 'hover:border-brand/30 hover:shadow-sm'
   }`;
   if (disabled) {
     return (
       <div className={className} aria-disabled>
         <Icon className="h-4 w-4 text-brand" strokeWidth={1.75} />
-        <span className="text-sm font-medium text-brand">{label}</span>
+        <span className="text-[13px] font-medium text-brand">{label}</span>
       </div>
     );
   }
   return (
     <Link href={href} className={className}>
       <Icon className="h-4 w-4 text-brand" strokeWidth={1.75} />
-      <span className="text-sm font-medium text-brand">{label}</span>
+      <span className="text-[13px] font-medium text-brand">{label}</span>
     </Link>
   );
 }

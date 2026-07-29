@@ -6,7 +6,6 @@ import { getMyStudent, uploadMyProfilePhoto } from '@/services/studentCrmApi';
 import { initials } from '@/lib/layout-shell';
 import { STAGE_LABELS } from '../constants';
 import { notifyProfilePhotoUpdated } from '../components/StudentAvatarLink';
-import { StudentPageHeader } from '../layout/StudentPortalLayoutContext';
 import {
   sp,
   StudentPortalPage,
@@ -122,11 +121,6 @@ export default function ProfileViewPage() {
 
   return (
     <StudentPortalPage>
-      <StudentPageHeader
-        title="Profile"
-        description="Upload your photo anytime. Other details are managed by your counsellor — contact them to request changes."
-      />
-
       <StudentPortalPanel className={`${sp.panelPad} flex flex-col gap-5 sm:flex-row sm:items-center`}>
         <div className="relative shrink-0">
           <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-brand-soft text-xl font-semibold text-brand">

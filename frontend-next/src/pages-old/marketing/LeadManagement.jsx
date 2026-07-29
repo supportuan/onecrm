@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useMemo } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   getLeads,
@@ -18,6 +19,7 @@ import {
   updateLeadRating,
   updateLeadStatus,
 } from '../../services/marketingApi';
+import { listStudents } from '@/services/studentCrmApi';
 import { getCounsellors } from '../../services/userApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useLeadBulkUpload } from '../../hooks/useLeadBulkUpload';
@@ -44,6 +46,8 @@ import {
   Flame,
   ChevronsRight,
   Check,
+  ExternalLink,
+  Copy,
 } from 'lucide-react';
 import AddLeadModal from '@/components/AddLeadModal';
 
@@ -59,15 +63,11 @@ const CallbackPhonePngIcon = () => (
   <img src="/images/callback_phone.png" alt="Callback Phone" className="h-6 w-6 object-contain mix-blend-multiply scale-[2.5] shrink-0" />
 );
 
-const LEAD_RATING_OPTIONS = [
-  'HOT',
-  'WARM',
-  'COLD',
-  'MAYBE',
-  'RED_PHONE',
-  'GREEN_PHONE',
-  'CALLBACK_PHONE',
-];
+const ConvertedPngIcon = () => (
+  <img src="/images/converted.png" alt="Converted" className="h-6 w-6 object-contain scale-[2.2] shrink-0" />
+);
+
+const LEAD_RATING_OPTIONS = ['HOT', 'WARM', 'COLD', 'MAYBE'];
 
 const RATING_CONFIG = {
   HOT: {
@@ -94,37 +94,82 @@ const RATING_CONFIG = {
     bgClass: 'bg-orange-50 border-orange-200 hover:bg-orange-100',
     iconClass: 'text-[#ff6f1a] stroke-[2.75]',
   },
-  RED_PHONE: {
-    title: 'Red Phone (Not Contacted)',
-    icon: RedPhonePngIcon,
-    bgClass: 'bg-red-50 border-red-200 hover:bg-red-100',
-    iconClass: '',
-  },
-  GREEN_PHONE: {
-    title: 'Green Phone (Contacted)',
-    icon: GreenPhonePngIcon,
-    bgClass: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
-    iconClass: '',
-  },
-  CALLBACK_PHONE: {
-    title: 'Callback Phone (Red Phone + Green Arrow)',
-    icon: CallbackPhonePngIcon,
-    bgClass: 'bg-amber-50 border-amber-200 hover:bg-amber-100',
-    iconClass: '',
-  },
 };
 
-const SYMBOL_OPTIONS = [
+const STATUS_OPTIONS = [
   { key: 'HOT', label: 'Hot', config: RATING_CONFIG.HOT },
   { key: 'WARM', label: 'Warm', config: RATING_CONFIG.WARM },
   { key: 'COLD', label: 'Cold', config: RATING_CONFIG.COLD },
   { key: 'MAYBE', label: 'Maybe', config: RATING_CONFIG.MAYBE },
-  { key: 'RED_PHONE', label: 'Red Phone (Not Contacted)', config: RATING_CONFIG.RED_PHONE },
-  { key: 'GREEN_PHONE', label: 'Green Phone (Contacted)', config: RATING_CONFIG.GREEN_PHONE },
-  { key: 'CALLBACK_PHONE', label: 'Callback Phone', config: RATING_CONFIG.CALLBACK_PHONE },
 ];
 
-const SymbolDropdown = ({ currentRating, onChange }) => {
+const STAGE_CONFIG = {
+  NOT_CONTACTED: {
+    title: 'Not Contacted',
+    icon: RedPhonePngIcon,
+    bgClass: 'bg-red-50 border-red-200 hover:bg-red-100',
+    iconClass: '',
+  },
+  CONTACTED: {
+    title: 'Contacted',
+    icon: GreenPhonePngIcon,
+    bgClass: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+    iconClass: '',
+  },
+  CALLBACK: {
+    title: 'Callback',
+    icon: CallbackPhonePngIcon,
+    bgClass: 'bg-amber-50 border-amber-200 hover:bg-amber-100',
+    iconClass: '',
+  },
+  CONVERTED: {
+    title: 'Converted',
+    icon: ConvertedPngIcon,
+    bgClass: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+    iconClass: '',
+  },
+};
+
+const LEAD_STATUS_OPTIONS = ['NOT_CONTACTED', 'CONTACTED', 'CALLBACK', 'CONVERTED'];
+
+const LEGACY_STAGE_MAP = {
+  FOLLOW_UP: 'CALLBACK',
+  QUALIFIED: 'CONVERTED',
+  LOST: 'NOT_CONTACTED',
+  PROPOSED: 'CONVERTED',
+};
+
+const formatLeadStatus = (status) =>
+  String(status || 'NEW')
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const STAGE_OPTIONS = LEAD_STATUS_OPTIONS.map((key) => ({
+  key,
+  label: STAGE_CONFIG[key]?.title || formatLeadStatus(key),
+  config: STAGE_CONFIG[key] || STAGE_CONFIG.NOT_CONTACTED,
+}));
+
+const PHONE_RATING_KEYS = new Set(['RED_PHONE', 'GREEN_PHONE', 'CALLBACK_PHONE']);
+const PHONE_RATING_TO_STAGE = {
+  RED_PHONE: 'NOT_CONTACTED',
+  GREEN_PHONE: 'CONTACTED',
+  CALLBACK_PHONE: 'CALLBACK',
+};
+
+const resolveLeadStage = (lead) => {
+  const rating = String(lead?.rating || '').toUpperCase();
+  if (PHONE_RATING_KEYS.has(rating) && (!lead?.status || lead.status === 'NEW')) {
+    return PHONE_RATING_TO_STAGE[rating];
+  }
+  if (lead?.status && lead.status !== 'NEW') {
+    return LEGACY_STAGE_MAP[lead.status] || lead.status;
+  }
+  return 'NOT_CONTACTED';
+};
+
+const StatusDropdown = ({ currentRating, onChange }) => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -152,8 +197,8 @@ const SymbolDropdown = ({ currentRating, onChange }) => {
           e.stopPropagation();
           setOpen(!open);
         }}
-        title={`Symbol: ${currentConfig.title}`}
-        aria-label={`Symbol: ${currentConfig.title}`}
+        title={`Status: ${currentConfig.title}`}
+        aria-label={`Status: ${currentConfig.title}`}
         className={`inline-flex items-center justify-center p-2 rounded-full border shadow-sm transition hover:scale-110 active:scale-95 cursor-pointer ${currentConfig.bgClass}`}
       >
         <CurrentIcon className={`h-4.5 w-4.5 ${currentConfig.iconClass}`} />
@@ -162,10 +207,10 @@ const SymbolDropdown = ({ currentRating, onChange }) => {
       {open && (
         <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-slate-900/10 z-50 animate-in fade-in zoom-in-95 duration-150">
           <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-slate-400 uppercase border-b border-slate-100 mb-1 text-left">
-            Select Lead Symbol
+            Select Lead Status
           </div>
           <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
-            {SYMBOL_OPTIONS.map((opt) => {
+            {STATUS_OPTIONS.map((opt) => {
               const IconComp = opt.config.icon;
               const isSelected = rKey === opt.key;
               return (
@@ -200,19 +245,20 @@ const SymbolDropdown = ({ currentRating, onChange }) => {
   );
 };
 
-const renderRatingSymbol = (rating, onChange = null, isEditable = true) => {
-  const rKey = (rating || 'WARM').toUpperCase();
+const renderLeadStatus = (rating, onChange = null, isEditable = true) => {
+  const rawKey = (rating || 'WARM').toUpperCase();
+  const rKey = PHONE_RATING_KEYS.has(rawKey) ? 'WARM' : rawKey;
   const config = RATING_CONFIG[rKey] || RATING_CONFIG.WARM;
   const IconComponent = config.icon;
 
   if (isEditable && onChange) {
-    return <SymbolDropdown currentRating={rKey} onChange={onChange} />;
+    return <StatusDropdown currentRating={rKey} onChange={onChange} />;
   }
 
   return (
     <span
-      title={`Symbol: ${config.title}`}
-      aria-label={`Symbol: ${config.title}`}
+      title={`Status: ${config.title}`}
+      aria-label={`Status: ${config.title}`}
       className={`inline-flex items-center justify-center p-2 rounded-full border shadow-sm ${config.bgClass}`}
     >
       <IconComponent className={`h-4.5 w-4.5 ${config.iconClass}`} />
@@ -220,29 +266,113 @@ const renderRatingSymbol = (rating, onChange = null, isEditable = true) => {
   );
 };
 
-export const getSavedSymbol = (leadId, defaultRating) => {
+const StageDropdown = ({ currentStatus, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const sKey = (currentStatus || 'NOT_CONTACTED').toUpperCase();
+  const currentConfig = STAGE_CONFIG[sKey] || STAGE_CONFIG.NOT_CONTACTED;
+  const CurrentIcon = currentConfig.icon;
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
+        title={`Stage: ${currentConfig.title}`}
+        aria-label={`Stage: ${currentConfig.title}`}
+        className={`inline-flex items-center justify-center p-2 rounded-full border shadow-sm transition hover:scale-110 active:scale-95 cursor-pointer ${currentConfig.bgClass}`}
+      >
+        <CurrentIcon className={`h-4.5 w-4.5 ${currentConfig.iconClass}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-slate-900/10 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-slate-400 uppercase border-b border-slate-100 mb-1 text-left">
+            Select Lead Stage
+          </div>
+          <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+            {STAGE_OPTIONS.map((opt) => {
+              const IconComp = opt.config.icon;
+              const isSelected = sKey === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange({ target: { value: opt.key } });
+                    setOpen(false);
+                  }}
+                  className={`flex items-center gap-3 w-full px-2.5 py-2 text-xs font-medium rounded-xl transition-all duration-150 ${
+                    isSelected
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={`inline-flex items-center justify-center p-1.5 rounded-full border shadow-2xs shrink-0 ${opt.config.bgClass}`}>
+                    <IconComp className={`h-3.5 w-3.5 ${opt.config.iconClass}`} />
+                  </span>
+                  <span className="flex-1 text-left truncate">{opt.label}</span>
+                  {isSelected && (
+                    <Check className="h-4 w-4 text-brand shrink-0" strokeWidth={2.5} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const renderLeadStage = (status, onChange = null, isEditable = true) => {
+  const sKey = (status || 'NOT_CONTACTED').toUpperCase();
+  const config = STAGE_CONFIG[sKey] || STAGE_CONFIG.NOT_CONTACTED;
+  const IconComponent = config.icon;
+
+  if (isEditable && onChange) {
+    return <StageDropdown currentStatus={sKey} onChange={onChange} />;
+  }
+
+  return (
+    <span
+      title={`Stage: ${config.title}`}
+      aria-label={`Stage: ${config.title}`}
+      className={`inline-flex items-center justify-center p-2 rounded-full border shadow-sm ${config.bgClass}`}
+    >
+      <IconComponent className={`h-4.5 w-4.5 ${config.iconClass}`} />
+    </span>
+  );
+};
+
+export const getSavedStatus = (leadId, defaultRating) => {
   if (typeof window === 'undefined') return defaultRating || 'WARM';
   try {
     const saved = JSON.parse(localStorage.getItem('onecrm.lead_symbols') || '{}');
-    return saved[leadId] || defaultRating || 'WARM';
+    const value = saved[leadId] || defaultRating || 'WARM';
+    return PHONE_RATING_KEYS.has(String(value).toUpperCase()) ? (defaultRating || 'WARM') : value;
   } catch {
     return defaultRating || 'WARM';
   }
 };
-const LEAD_STATUS_OPTIONS = [
-  'NOT_CONTACTED',
-  'CONTACTED',
-  'CALLBACK',
-  'FOLLOW_UP',
-  'QUALIFIED',
-  'CONVERTED',
-  'LOST',
-];
-const formatLeadStatus = (status) =>
-  String(status || 'NEW')
-    .toLowerCase()
-    .replaceAll('_', ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+export const getSavedSymbol = getSavedStatus;
 
 const DATE_FILTER_OPTIONS = [
   { label: 'All Time', value: 'all' },
@@ -418,11 +548,11 @@ const LeadManagement = () => {
     }
 
     if (ratingFilter) {
-      filtered = filtered.filter((lead) => getSavedSymbol(lead.id, lead.rating) === ratingFilter);
+      filtered = filtered.filter((lead) => getSavedStatus(lead.id, lead.rating) === ratingFilter);
     }
 
     if (statusFilter) {
-      filtered = filtered.filter((lead) => lead.status === statusFilter);
+      filtered = filtered.filter((lead) => resolveLeadStage(lead) === statusFilter);
     }
 
     if (counsellorFilter) {
@@ -462,6 +592,99 @@ const LeadManagement = () => {
     activityType: 'NOTE',
     comment: ''
   });
+
+  const [communicationDraft, setCommunicationDraft] = useState({
+    subject: '',
+    message: '',
+    meetingDate: '',
+    meetingLink: '',
+  });
+
+  const [studentLoginMeta, setStudentLoginMeta] = useState(null);
+
+  const getStudentLoginUrl = () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/login`;
+    }
+    return '/login';
+  };
+
+  const buildStudentLoginMessages = (lead, tempPassword) => {
+    const loginUrl = getStudentLoginUrl();
+    const passwordLine = tempPassword
+      ? `Temporary password: ${tempPassword}`
+      : 'If you forgot your password, use "Forgot password" on the login page.';
+
+    const longMessage = `Hi ${lead.fullName},
+
+Your student account is ready.
+
+Login page: ${loginUrl}
+Email: ${lead.email || '—'}
+${passwordLine}
+
+You will be asked to set a new password on first login.
+
+Regards,
+ApplyUniNow`;
+
+    const shortMessage = `Hi ${lead.fullName}, your ApplyUniNow student login is ready: ${loginUrl} | Email: ${lead.email || '—'}${tempPassword ? ` | Temp password: ${tempPassword}` : ''}`;
+
+    return {
+      subject: 'Your ApplyUniNow student login',
+      emailMessage: longMessage,
+      smsMessage: shortMessage,
+      whatsAppMessage: shortMessage,
+      loginUrl,
+    };
+  };
+
+  const openStudentLoginCommunication = (channel) => {
+    if (!activeLead) return;
+
+    const templates = buildStudentLoginMessages(
+      activeLead,
+      studentLoginMeta?.tempPassword
+    );
+
+    if (channel === 'EMAIL') {
+      setCommunicationDraft({
+        subject: templates.subject,
+        message: templates.emailMessage,
+        meetingDate: '',
+        meetingLink: '',
+      });
+      setActivityForm((p) => ({ ...p, activityType: 'EMAIL', comment: '' }));
+      return;
+    }
+
+    if (channel === 'SMS' || channel === 'WHATSAPP') {
+      setCommunicationDraft({
+        subject: '',
+        message: channel === 'SMS' ? templates.smsMessage : templates.whatsAppMessage,
+        meetingDate: '',
+        meetingLink: '',
+      });
+      setActivityForm((p) => ({ ...p, activityType: channel, comment: '' }));
+    }
+  };
+
+  const copyStudentLoginLink = async () => {
+    const loginUrl = getStudentLoginUrl();
+    try {
+      await navigator.clipboard.writeText(loginUrl);
+      alert('Student login link copied.');
+    } catch {
+      alert(loginUrl);
+    }
+  };
+
+  const defaultMeetingDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(10, 0, 0, 0);
+    return d.toISOString().slice(0, 16);
+  };
 
   const fileInputRef = useRef(null);
   // const [uploadingLeads, setUploadingLeads] = useState(false);
@@ -585,13 +808,26 @@ const LeadManagement = () => {
 
     if (type === 'MEETING') {
       return {
-        meetingDate: new Date().toISOString(),
-        meetingLink: 'Meeting link will be shared soon',
-        message: `Hi ${lead.fullName}, your counselling meeting will be scheduled shortly.`
+        meetingDate: defaultMeetingDate(),
+        meetingLink: '',
+        message: `Hi ${lead.fullName}, your counselling meeting will be scheduled shortly.`,
       };
     }
 
     return {};
+  };
+
+  const applyActivityType = (type) => {
+    setActivityForm((prev) => ({ ...prev, activityType: type, comment: '' }));
+    if (!activeLead || type === 'NOTE' || type === 'CALL') return;
+
+    const defaults = buildLeadMessage(type, activeLead);
+    setCommunicationDraft({
+      subject: defaults.subject || '',
+      message: defaults.message || '',
+      meetingDate: defaults.meetingDate || defaultMeetingDate(),
+      meetingLink: defaults.meetingLink || '',
+    });
   };
 
   const refreshActivities = async () => {
@@ -604,13 +840,12 @@ const LeadManagement = () => {
     }
   };
 
-  const handleLeadQuickAction = async (type) => {
-    if (!activeLead) return;
+  const handleLeadQuickAction = async (type, payload) => {
+    if (!activeLead) return false;
 
     setSendingAction(true);
 
     try {
-      const payload = buildLeadMessage(type, activeLead);
       let response;
 
       if (type === 'EMAIL') response = await sendLeadEmail(activeLead.id, payload);
@@ -619,16 +854,95 @@ const LeadManagement = () => {
       if (type === 'MEETING') response = await scheduleLeadMeeting(activeLead.id, payload);
 
       if (response?.success) {
-        alert(`${type} completed successfully`);
         await refreshActivities();
-      } else {
-        alert(response?.message || `${type} failed`);
+        return true;
       }
+
+      alert(response?.message || `${type} failed`);
+      return false;
     } catch (error) {
       console.error(error);
-      alert(`${type} failed`);
+      alert(error?.message || `${type} failed`);
+      return false;
     } finally {
       setSendingAction(false);
+    }
+  };
+
+  const handleCommunicationSubmit = async (e) => {
+    e.preventDefault();
+    if (!activeLead || sendingAction) return;
+
+    const type = activityForm.activityType;
+
+    if (type === 'NOTE' || type === 'CALL') {
+      if (!activityForm.comment.trim()) return;
+
+      try {
+        const response = await logLeadActivity(activeLead.id, {
+          activityType: type,
+          comment: activityForm.comment.trim(),
+        });
+
+        if (response.success) {
+          setActivityForm((p) => ({ ...p, comment: '' }));
+          await refreshActivities();
+        } else {
+          alert(response.message || 'Failed to log activity');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Failed to log activity');
+      }
+      return;
+    }
+
+    if (type === 'EMAIL') {
+      if (!activeLead.email?.trim()) {
+        alert('This lead has no email address.');
+        return;
+      }
+      if (!communicationDraft.message.trim()) {
+        alert('Enter an email message.');
+        return;
+      }
+      const ok = await handleLeadQuickAction('EMAIL', {
+        subject: communicationDraft.subject.trim(),
+        message: communicationDraft.message.trim(),
+      });
+      if (ok) alert('Email sent successfully');
+      return;
+    }
+
+    if (type === 'SMS' || type === 'WHATSAPP') {
+      if (!activeLead.phone?.trim()) {
+        alert('This lead has no phone number.');
+        return;
+      }
+      if (!communicationDraft.message.trim()) {
+        alert('Enter a message.');
+        return;
+      }
+      const ok = await handleLeadQuickAction(type, {
+        message: communicationDraft.message.trim(),
+      });
+      if (ok) alert(`${type} sent successfully`);
+      return;
+    }
+
+    if (type === 'MEETING') {
+      if (!communicationDraft.message.trim()) {
+        alert('Enter meeting details for the lead.');
+        return;
+      }
+      const ok = await handleLeadQuickAction('MEETING', {
+        meetingDate: communicationDraft.meetingDate
+          ? new Date(communicationDraft.meetingDate).toISOString()
+          : undefined,
+        meetingLink: communicationDraft.meetingLink.trim(),
+        message: communicationDraft.message.trim(),
+      });
+      if (ok) alert('Meeting scheduled successfully');
     }
   };
 
@@ -660,10 +974,16 @@ const LeadManagement = () => {
         fetchLeadsList();
 
         if (activeLead && activeLead.id === leadId) {
+          setStudentLoginMeta({
+            tempPassword: response.data?.tempPassword || null,
+            studentId: response.data?.studentId || null,
+            loginUrl: getStudentLoginUrl(),
+          });
           setActiveLead((prev) => ({
             ...prev,
             isStudentLoginCreated: true,
-            studentUserId: response.data.id
+            studentUserId: response.data.id,
+            studentId: response.data?.studentId || prev.studentId,
           }));
         }
       } else {
@@ -813,34 +1133,35 @@ const LeadManagement = () => {
   const handleRowClick = async (lead) => {
     setActiveLead(lead);
     setIsActivityOpen(true);
+    setActivityForm({ activityType: 'NOTE', comment: '' });
+    setCommunicationDraft({ subject: '', message: '', meetingDate: '', meetingLink: '' });
+    setStudentLoginMeta(null);
     setLoadingActivities(true);
 
     try {
       const res = await getLeadActivities(lead.id);
       if (res.success) setActivities(res.data || []);
+
+      if (lead.isStudentLoginCreated && lead.email) {
+        try {
+          const studentRes = await listStudents({ search: lead.email, limit: 10 });
+          const items = Array.isArray(studentRes?.data)
+            ? studentRes.data
+            : studentRes?.data?.items || [];
+          const match = items.find(
+            (s) => String(s.email || '').toLowerCase() === String(lead.email).toLowerCase()
+          );
+          if (match?.id) {
+            setActiveLead((prev) => (prev ? { ...prev, studentId: match.id } : prev));
+          }
+        } catch {
+          /* optional lookup */
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoadingActivities(false);
-    }
-  };
-
-  const handleActivitySubmit = async (e) => {
-    e.preventDefault();
-
-    if (!activityForm.comment.trim()) return;
-
-    try {
-      const response = await logLeadActivity(activeLead.id, activityForm);
-
-      if (response.success) {
-        setActivityForm((p) => ({ ...p, comment: '' }));
-
-        const res = await getLeadActivities(activeLead.id);
-        if (res.success) setActivities(res.data || []);
-      }
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -871,18 +1192,10 @@ const LeadManagement = () => {
     }
   };
 
-  const RATING_BACKEND_MAP = {
-    HOT: 'HOT',
-    WARM: 'WARM',
-    COLD: 'COLD',
-    MAYBE: 'MAYBE',
-    RED_PHONE: 'COLD',
-    GREEN_PHONE: 'WARM',
-    CALLBACK_PHONE: 'HOT',
-  };
-
   const handleLeadRatingChange = async (leadId, rating) => {
-    // 1. Save to local storage for 100% persistence on page refresh
+    if (PHONE_RATING_KEYS.has(String(rating).toUpperCase())) return;
+
+    // 1. Save to local storage for persistence on page refresh
     try {
       const saved = JSON.parse(localStorage.getItem('onecrm.lead_symbols') || '{}');
       saved[leadId] = rating;
@@ -904,11 +1217,7 @@ const LeadManagement = () => {
 
     // 3. Sync with backend API
     try {
-      let res = await updateLeadRating(leadId, rating);
-
-      if (!res?.success && RATING_BACKEND_MAP[rating]) {
-        await updateLeadRating(leadId, RATING_BACKEND_MAP[rating]);
-      }
+      await updateLeadRating(leadId, rating);
     } catch (err) {
       console.error('Failed to sync rating with backend:', err);
     }
@@ -1046,14 +1355,11 @@ const LeadManagement = () => {
             }}
             className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
           >
-            <option value="">All Lead Symbols</option>
-            <option value="HOT">🔥 Red Flame (Hot)</option>
-            <option value="WARM">🟡 Yellow Flame (Warm)</option>
-            <option value="COLD">🔵 Blue Flame (Cold)</option>
-            <option value="MAYBE">⏩ Double Chevron (Maybe)</option>
-            <option value="RED_PHONE">🔴 Red Landline Phone</option>
-            <option value="GREEN_PHONE">🟢 Green Landline Phone</option>
-            <option value="CALLBACK_PHONE">📞 Callback (Red Phone + Green Arrow)</option>
+            <option value="">All Statuses</option>
+            <option value="HOT">Hot</option>
+            <option value="WARM">🟡 Warm</option>
+            <option value="COLD">🔵 Cold</option>
+            <option value="MAYBE">⏩ Maybe</option>
           </select>
 
           <select
@@ -1160,10 +1466,7 @@ const LeadManagement = () => {
                     onClick={() => handleSort('rating')}
                     className="w-[12%] px-3 py-4 text-sm font-semibold text-[#556987] text-center cursor-pointer hover:text-brand transition"
                   >
-                    <div className="inline-flex items-center justify-center gap-1">
-                      <Flame className="h-4 w-4 text-amber-500" />
-                      <span>Symbol</span>
-                    </div>
+                    Status
                   </th>
 
                   <th className="w-[16%] px-3 py-4 text-sm font-semibold text-[#556987] text-center">
@@ -1246,8 +1549,8 @@ const LeadManagement = () => {
                     </td>
 
                     <td className="px-3 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      {renderRatingSymbol(
-                        getSavedSymbol(lead.id, lead.rating),
+                      {renderLeadStatus(
+                        getSavedStatus(lead.id, lead.rating),
                         (e) => handleLeadRatingChange(lead.id, e.target.value),
                         isAdminOrSuperAdmin
                       )}
@@ -1289,17 +1592,10 @@ const LeadManagement = () => {
                     </td>
 
                     <td className="px-3 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={lead.status || 'NEW'}
-                        onChange={(e) => handleLeadStatusChange(lead.id, e.target.value)}
-                        className="border border-slate-200 bg-white px-3 py-1.5 rounded-xl text-xs font-normal text-slate-700 outline-none"
-                      >
-                        {LEAD_STATUS_OPTIONS.map((status) => (
-                          <option key={status} value={status}>
-                            {formatLeadStatus(status)}
-                          </option>
-                        ))}
-                      </select>
+                      {renderLeadStage(
+                        resolveLeadStage(lead),
+                        (e) => handleLeadStatusChange(lead.id, e.target.value)
+                      )}
                     </td>
                     <td className="px-4 py-5 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
@@ -1388,7 +1684,7 @@ const LeadManagement = () => {
 
       {isActivityOpen && activeLead && (
         <div
-          className="fixed right-0 top-[75px] bottom-0 z-50 w-[420px] max-w-full bg-white border-l
+          className="fixed right-0 top-[var(--ui-shell-header-height)] bottom-0 z-50 w-[420px] max-w-full bg-white border-l
                   border-slate-200
                   shadow-2xl
                   flex
@@ -1427,8 +1723,8 @@ const LeadManagement = () => {
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5 text-[11px] font-semibold">
               <div className="flex items-center gap-1.5 text-slate-400">
-                <span>Symbol:</span>
-                {renderRatingSymbol(activeLead.rating || 'WARM')}
+                <span>Status:</span>
+                {renderLeadStatus(getSavedStatus(activeLead.id, activeLead.rating))}
               </div>
             </div>
 
@@ -1479,6 +1775,74 @@ const LeadManagement = () => {
                 </button>
               )}
             </div>
+
+            {activeLead.isStudentLoginCreated && (
+              <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">
+                  Send login details
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openStudentLoginCommunication('EMAIL')}
+                    disabled={!activeLead.email?.trim()}
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+                  >
+                    <Mail className="h-3 w-3" />
+                    Email login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openStudentLoginCommunication('SMS')}
+                    disabled={!activeLead.phone?.trim()}
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+                  >
+                    <Phone className="h-3 w-3" />
+                    SMS login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openStudentLoginCommunication('WHATSAPP')}
+                    disabled={!activeLead.phone?.trim()}
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+                  >
+                    <MessageSquare className="h-3 w-3" />
+                    WhatsApp login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copyStudentLoginLink}
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100"
+                  >
+                    <Copy className="h-3 w-3" />
+                    Copy link
+                  </button>
+                  <a
+                    href={getStudentLoginUrl()}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Login page
+                  </a>
+                  {activeLead.studentId && (
+                    <Link
+                      href={`/student-crm/student-management?student=${activeLead.studentId}`}
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Student profile
+                    </Link>
+                  )}
+                </div>
+                {studentLoginMeta?.tempPassword && (
+                  <p className="mt-2 text-[10px] font-semibold text-emerald-800">
+                    Temp password: {studentLoginMeta.tempPassword}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-6 bg-slate-50/50 space-y-4">
@@ -1581,56 +1945,187 @@ const LeadManagement = () => {
           </div>
 
           <form
-            onSubmit={handleActivitySubmit}
-            className="p-4 border-t border-slate-100 bg-white"
+            onSubmit={handleCommunicationSubmit}
+            className="flex-none border-t border-slate-100 bg-white p-4"
           >
-            <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
-              {['NOTE', 'CALL', 'EMAIL', 'SMS', 'WHATSAPP', 'MEETING'].map(
-                (type) => (
+            <div className="mb-3 flex flex-wrap items-center gap-1.5">
+              {['NOTE', 'CALL', 'EMAIL', 'SMS', 'WHATSAPP', 'MEETING'].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  disabled={sendingAction}
+                  onClick={() => applyActivityType(type)}
+                  className={`rounded-full border px-3 py-1 text-[10px] font-bold transition ${
+                    activityForm.activityType === type
+                      ? 'border-slate-900 bg-slate-900 text-white shadow-md'
+                      : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+
+            {(activityForm.activityType === 'NOTE' || activityForm.activityType === 'CALL') && (
+              <>
+                {activityForm.activityType === 'CALL' && (
+                  <div className="mb-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        Lead phone
+                      </p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {activeLead.phone || 'No phone on file'}
+                      </p>
+                    </div>
+                    {activeLead.phone && (
+                      <a
+                        href={`tel:${activeLead.phone}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-brand-hover"
+                      >
+                        <Phone className="h-3.5 w-3.5" />
+                        Call now
+                      </a>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-end gap-2">
+                  <textarea
+                    rows={activityForm.activityType === 'CALL' ? 3 : 2}
+                    placeholder={
+                      activityForm.activityType === 'CALL'
+                        ? 'Log call outcome, duration, and next steps...'
+                        : 'Log activity details or counsellor notes...'
+                    }
+                    value={activityForm.comment}
+                    onChange={(e) =>
+                      setActivityForm((p) => ({ ...p, comment: e.target.value }))
+                    }
+                    className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                  />
                   <button
-                    key={type}
-                    type="button"
-                    disabled={sendingAction}
-                    onClick={() => {
-                      if (type === 'NOTE' || type === 'CALL') {
-                        setActivityForm((p) => ({ ...p, activityType: type }));
-                      } else {
-                        handleLeadQuickAction(type);
-                      }
-                    }}
-                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition  ${activityForm.activityType === type
-                      ? 'bg-slate-900 border-slate-900 text-white shadow-md'
-                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                      }`}
+                    type="submit"
+                    disabled={!activityForm.comment.trim() || sendingAction}
+                    className="flex-shrink-0 rounded-xl bg-brand p-2.5 text-white shadow-sm transition hover:bg-brand-hover disabled:bg-slate-100 disabled:text-slate-400"
                   >
-                    {sendingAction &&
-                      ['EMAIL', 'SMS', 'WHATSAPP', 'MEETING'].includes(type)
-                      ? 'Sending...'
-                      : type}
+                    <Send className="h-4 w-4 stroke-[2.5]" />
                   </button>
-                )
-              )}
-            </div>
+                </div>
+              </>
+            )}
 
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Log activity details or counselor notes..."
-                value={activityForm.comment}
-                onChange={(e) =>
-                  setActivityForm((p) => ({ ...p, comment: e.target.value }))
-                }
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none transition bg-slate-50"
-              />
+            {activityForm.activityType === 'EMAIL' && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                  To: {activeLead.email || 'No email on file'}
+                </p>
+                <input
+                  type="text"
+                  placeholder="Email subject"
+                  value={communicationDraft.subject}
+                  onChange={(e) =>
+                    setCommunicationDraft((p) => ({ ...p, subject: e.target.value }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                />
+                <textarea
+                  rows={5}
+                  placeholder="Email message..."
+                  value={communicationDraft.message}
+                  onChange={(e) =>
+                    setCommunicationDraft((p) => ({ ...p, message: e.target.value }))
+                  }
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                />
+                <button
+                  type="submit"
+                  disabled={sendingAction || !activeLead.email?.trim() || !communicationDraft.message.trim()}
+                  className="w-full rounded-xl bg-brand py-2.5 text-xs font-bold text-white transition hover:bg-brand-hover disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  {sendingAction ? 'Sending email…' : 'Send email'}
+                </button>
+              </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={!activityForm.comment.trim()}
-                className="rounded-xl bg-brand hover:bg-brand-hover disabled:bg-slate-100 disabled:text-slate-400 text-white p-2.5 shadow-sm transition flex-shrink-0 "
-              >
-                <Send className="h-4 w-4 stroke-[2.5]" />
-              </button>
-            </div>
+            {(activityForm.activityType === 'SMS' || activityForm.activityType === 'WHATSAPP') && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                  To: {activeLead.phone || 'No phone on file'}
+                </p>
+                <textarea
+                  rows={4}
+                  placeholder={`${activityForm.activityType} message...`}
+                  value={communicationDraft.message}
+                  onChange={(e) =>
+                    setCommunicationDraft((p) => ({ ...p, message: e.target.value }))
+                  }
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                />
+                <div className="flex gap-2">
+                  {activityForm.activityType === 'WHATSAPP' && activeLead.phone && (
+                    <a
+                      href={`https://wa.me/${activeLead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(communicationDraft.message)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                    >
+                      Open WhatsApp
+                    </a>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={
+                      sendingAction ||
+                      !activeLead.phone?.trim() ||
+                      !communicationDraft.message.trim()
+                    }
+                    className="inline-flex flex-1 items-center justify-center rounded-xl bg-brand py-2.5 text-xs font-bold text-white transition hover:bg-brand-hover disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    {sendingAction
+                      ? `Sending ${activityForm.activityType.toLowerCase()}…`
+                      : `Send ${activityForm.activityType.toLowerCase()}`}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activityForm.activityType === 'MEETING' && (
+              <div className="space-y-2">
+                <input
+                  type="datetime-local"
+                  value={communicationDraft.meetingDate}
+                  onChange={(e) =>
+                    setCommunicationDraft((p) => ({ ...p, meetingDate: e.target.value }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                />
+                <input
+                  type="url"
+                  placeholder="Meeting link (Zoom, Google Meet, etc.)"
+                  value={communicationDraft.meetingLink}
+                  onChange={(e) =>
+                    setCommunicationDraft((p) => ({ ...p, meetingLink: e.target.value }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                />
+                <textarea
+                  rows={4}
+                  placeholder="Meeting invite message for the lead..."
+                  value={communicationDraft.message}
+                  onChange={(e) =>
+                    setCommunicationDraft((p) => ({ ...p, message: e.target.value }))
+                  }
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                />
+                <button
+                  type="submit"
+                  disabled={sendingAction || !communicationDraft.message.trim()}
+                  className="w-full rounded-xl bg-brand py-2.5 text-xs font-bold text-white transition hover:bg-brand-hover disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  {sendingAction ? 'Scheduling…' : 'Schedule meeting'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       )}

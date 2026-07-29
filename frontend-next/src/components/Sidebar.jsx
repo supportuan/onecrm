@@ -4,9 +4,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, PanelLeftClose } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import MenuItem from "./MenuItem";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -14,7 +13,7 @@ import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
 import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
 import { SIDEBAR_COLLAPSED, SIDEBAR_OPEN } from "@/lib/layout-shell";
-import { BRAND_LOGO_SRC, BRAND_NAME, BRAND_TAGLINE } from "@/components/AppBrand";
+import { SidebarBrandHeader } from "@/components/AppBrand";
 import { MODULE_CRIMSON } from "@/lib/module-themes";
 
 const getPermissionOptionName = (subLabel) => {
@@ -187,6 +186,10 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
           );
         }
 
+        if (item.label === "Connector") {
+          moduleAccessSubItems = item.subItems.filter(subVisible);
+        }
+
         if (moduleAccessSubItems.length === 0) return null;
 
         return withAgentLabels({
@@ -280,7 +283,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
   return (
     <>
       <aside
-        className="app-sidebar-with-waves fixed inset-y-0 left-0 z-30 flex h-screen flex-col overflow-hidden border-r border-neutral-200/70 bg-white text-neutral-800 transition-[width] duration-200 ease-out"
+        className="app-sidebar-with-waves fixed inset-y-0 left-0 z-30 flex h-screen flex-col overflow-hidden bg-white text-neutral-800 transition-[width] duration-200 ease-out"
         style={{ width: sidebarOpen ? SIDEBAR_OPEN : SIDEBAR_COLLAPSED }}
       >
         <div className="app-sidebar-wave-blobs" aria-hidden="true">
@@ -295,60 +298,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
             />
           </svg>
         </div>
-        <div
-          className={`flex h-20 flex-none border-b border-neutral-100/80 ${
-            sidebarOpen ? "flex-col justify-center gap-1.5 px-3" : "items-center justify-center"
-          }`}
-        >
-          {sidebarOpen ? (
-            <>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <Image
-                    src={BRAND_LOGO_SRC}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="h-[30px] w-[30px] shrink-0 object-contain"
-                  />
-                  <p
-                    className="app-title-gradient truncate text-2xl font-bold leading-none tracking-tight"
-                    style={{ fontSize: '28px' }}
-                  >
-                    {BRAND_NAME}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onToggleSidebar}
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
-                  aria-label="Collapse sidebar"
-                >
-                  <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
-                </button>
-              </div>
-              <p className="text-[11px] font-medium leading-snug text-neutral-500">
-                {BRAND_TAGLINE}
-              </p>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-neutral-100"
-              aria-label="Expand sidebar"
-              title="Expand sidebar"
-            >
-              <Image
-                src={BRAND_LOGO_SRC}
-                alt={BRAND_NAME}
-                width={34}
-                height={34}
-                className="h-[30px] w-[30px] object-contain"
-              />
-            </button>
-          )}
-        </div>
+        <SidebarBrandHeader sidebarOpen={sidebarOpen} onToggleSidebar={onToggleSidebar} />
 
         <nav
           className={`flex-1 overflow-y-auto sidebar-scrollbar py-3 ${

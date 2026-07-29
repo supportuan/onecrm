@@ -129,6 +129,15 @@ export function getStaffPageMeta(pathname = '') {
   } else if (pathname.startsWith('/ai-insights')) {
     title = 'AI Insights';
     description = '';
+  } else if (pathname.startsWith('/connector/linkedin-plugin')) {
+    title = 'LinkedIn Plugin';
+    description = 'Connect LinkedIn to sync leads, enrich profiles, and launch campaigns.';
+  } else if (pathname.startsWith('/connector')) {
+    title = 'Connector';
+    description = 'Install and manage external platform integrations.';
+  } else if (pathname.startsWith('/communication')) {
+    title = 'Communication';
+    description = 'Message students assigned to you and track conversation history.';
   } else if (pathname.startsWith('/archive')) {
     title = 'Archive';
     description = 'View deactivated and deleted user accounts.';

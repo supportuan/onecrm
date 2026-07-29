@@ -91,6 +91,7 @@ export const listCountries = async () => {
   for (const row of rows) {
     if (hideIds.has(row.id)) continue;
     const key = row.name.trim().toLowerCase();
+    if (key === 'home' || key === 'uae') continue;
     const enriched = {
       ...row,
       name: normalizeCountryName(row.name),

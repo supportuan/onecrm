@@ -14,6 +14,7 @@ import {
   ExternalLink,
   CheckCircle2,
   Globe,
+  MessageSquare,
 } from 'lucide-react';
 import {
   listStudents,
@@ -435,6 +436,15 @@ export default function StudentManagement() {
                     )}
                   </div>
                   <div className="flex gap-2 flex-wrap">
+                    {selectedId && (
+                      <Link
+                        href={`/communication?studentId=${selectedId}`}
+                        className="ui-btn-secondary inline-flex items-center gap-2 text-xs"
+                      >
+                        <MessageSquare size={14} />
+                        Messages
+                      </Link>
+                    )}
                     {canManage && !profile.isEnrolled && (
                       <button type="button" onClick={() => markEnrolled(true)} className="ui-btn-secondary text-xs">
                         Mark enrolled

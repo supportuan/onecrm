@@ -1,17 +1,3 @@
-import { prisma } from '../../prisma.js';
-export const getAvailableCountries = async () => {
-  return prisma.country.findMany({
-    where: {
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-      name: true,
-      symbol: true,
-      currency: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-};
+import { listCountries as listCatalogCountries } from '../crm-settings/crm-settings.service.js';
+
+export const getAvailableCountries = async () => listCatalogCountries();

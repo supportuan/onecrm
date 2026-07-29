@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import TopNavbar from '@/components/TopNavbar';
+import StaffAutoPageHeading from '@/components/StaffPageHeading';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -49,25 +50,32 @@ describe('TopNavbar Component', () => {
     });
   });
 
-  it('renders default title when on home route', () => {
+  it('renders default title in page heading when on home route', () => {
     usePathname.mockReturnValue('/');
-    render(<TopNavbar onToggleSidebar={jest.fn()} />);
-    
+    render(<StaffAutoPageHeading />);
+
     expect(screen.getByText('Welcome back!')).toBeInTheDocument();
     expect(screen.getByText("Here's what's happening today.")).toBeInTheDocument();
   });
 
-  it('renders specific title for marketing lead-management route', () => {
+  it('renders specific title for marketing lead-management route in page heading', () => {
     usePathname.mockReturnValue('/marketing/lead-management');
-    render(<TopNavbar onToggleSidebar={jest.fn()} />);
-    
+    render(<StaffAutoPageHeading />);
+
     expect(screen.getByText('Opportunity Tracking')).toBeInTheDocument();
     expect(screen.getByText('Organizing and control over incoming prospects')).toBeInTheDocument();
   });
 
+  it('does not render page title in the top navbar', () => {
+    usePathname.mockReturnValue('/marketing/lead-management');
+    render(<TopNavbar />);
+    
+    expect(screen.queryByText('Opportunity Tracking')).not.toBeInTheDocument();
+  });
+
   it('calls logout function when logout button is clicked', () => {
     usePathname.mockReturnValue('/');
-    render(<TopNavbar onToggleSidebar={jest.fn()} />);
+    render(<TopNavbar />);
     
     const logoutBtn = screen.getByTitle('Log out');
     fireEvent.click(logoutBtn);
@@ -77,14 +85,14 @@ describe('TopNavbar Component', () => {
 
   it('shows the profile avatar in the top navigation', () => {
     usePathname.mockReturnValue('/');
-    render(<TopNavbar onToggleSidebar={jest.fn()} />);
+    render(<TopNavbar />);
 
     expect(screen.getByTitle('View profile')).toBeInTheDocument();
   });
 
   it('opens and closes Add Lead modal', () => {
     usePathname.mockReturnValue('/');
-    render(<TopNavbar onToggleSidebar={jest.fn()} />);
+    render(<TopNavbar />);
     
     // Modal is initially closed
     expect(screen.queryByTestId('add-lead-modal')).not.toBeInTheDocument();

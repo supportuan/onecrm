@@ -21,6 +21,7 @@ const creatableRoles = ["ADMIN", "COUNSELLOR", "HR", "STUDENT", "AGENT"];
 const DEFAULT_SELECTED_ACTIONS = ["VIEW", "EDIT"];
 const MODULE_DISPLAY_NAMES = {
   "Student CRM": "Student Hub",
+  "Student Portal": "Student Portal",
   "Agency CRM": "Agent Hub",
   HR: "Human Resource",
   Resources: "Knowledge Hub",
@@ -89,6 +90,10 @@ const MODULE_ACCESS_OPTIONS = [
     module: "Resources",
     options: ["Resource Library", "Manage Resources"],
   },
+  {
+    module: "Student Portal",
+    options: ["Applications", "Profile", "Payments", "Resources"],
+  },
 ];
 
 const createEmptyModuleAccess = () => {
@@ -132,7 +137,7 @@ const getDefaultModuleAccessByRole = (role) => {
 
   if (role === "HR") giveModuleAccess("HR");
   if (role === "HR") giveModuleAccess("Resources");
-  if (role === "STUDENT") giveModuleAccess("Student CRM");
+  if (role === "STUDENT") giveModuleAccess("Student Portal");
   if (role === "STUDENT") giveModuleAccess("Resources");
   if (role === "AGENT") giveModuleAccess("Agency CRM");
   if (role === "AGENT") giveModuleAccess("Resources");
