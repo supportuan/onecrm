@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2, X } from 'lucide-react';
+import { Eye, EyeOff, Info, Loader2, Lock, Mail, X } from 'lucide-react';
 import { Poppins } from 'next/font/google';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getDefaultHrRoute } from '@/features/hr/routing';
@@ -13,6 +13,10 @@ import { useAppearanceStore } from '@/lib/stores/appearanceStore';
 import { BRAND_NAME, BRAND_TAGLINE } from '@/components/AppBrand';
 
 const LuminaFluidBackground = dynamic(() => import('@/components/LuminaFluidBackground'), {
+  ssr: false,
+});
+
+const ParticleGlobe = dynamic(() => import('@/components/ParticleGlobe'), {
   ssr: false,
 });
 
@@ -33,9 +37,22 @@ const loginFont = Poppins({
 const PRIVACY_COPY = `${BRAND_NAME} uses your information to provide and personalize our services. We protect your data and do not share it with third parties for marketing without your consent. Please review our Privacy and Cookie Policies for more information.`;
 
 const fieldClass =
-  'w-full rounded-xl border border-white/80 bg-white/65 px-3 py-2.5 text-[13px] text-slate-900 shadow-sm outline-none backdrop-blur-md transition duration-200 placeholder:text-slate-400 hover:bg-white/80 focus:border-brand focus:bg-white/90 focus:ring-2 focus:ring-brand/15';
+  'w-full rounded-md border border-white/15 bg-black py-1.5 pl-8 pr-3 text-[12px] text-white outline-none transition placeholder:text-white/35 hover:border-white/30 focus:border-white/45';
 
-function PrivacyInfoButton({ onClick, light = false }) {
+function PrivacyInfoButton({ onClick, light = false, size = 'md' }) {
+  const small = size === 'sm';
+  if (small) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Privacy and data use"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-black text-white ring-1 ring-white/30 transition hover:bg-neutral-900 hover:ring-white/50 active:scale-95"
+      >
+        <Info className="h-3.5 w-3.5" strokeWidth={2.25} />
+      </button>
+    );
+  }
   return (
     <button
       type="button"
@@ -59,33 +76,37 @@ function PrivacyInfoButton({ onClick, light = false }) {
   );
 }
 
-function LoginBrandMark({ theme, light = false }) {
+function LoginBrandMark({ theme, light = false, onDark = false, centered = false }) {
   return (
-    <div className="flex items-center gap-2.5">
+    <div className={`flex items-center gap-2 ${centered ? 'justify-center' : ''}`}>
       <div
-        className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-950 ${
+        className={`relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-950 ${
           light ? 'shadow-sm ring-1 ring-black/10' : 'ring-1 ring-white/15'
         }`}
       >
         <Image
           src="/images/favicon-star-gold.png"
           alt={BRAND_NAME}
-          width={36}
-          height={36}
+          width={32}
+          height={32}
           className="h-[78%] w-[78%] object-contain"
           priority
           unoptimized
         />
       </div>
-      <div className="min-w-0 leading-tight">
+      <div className={`min-w-0 leading-tight ${centered ? 'text-left' : ''}`}>
         <p
-          className={`truncate font-semibold tracking-tight text-slate-900 ${
-            light ? 'text-[13px]' : 'text-[14px]'
+          className={`truncate font-semibold tracking-tight ${
+            onDark
+              ? 'text-[13px] text-white'
+              : light
+                ? 'text-[13px] text-slate-900'
+                : 'text-[14px] text-slate-900'
           }`}
         >
           {BRAND_NAME}
         </p>
-        <p className="text-[10px] text-slate-500">{BRAND_TAGLINE}</p>
+        <p className={`text-[9px] ${onDark ? 'text-white/70' : 'text-slate-500'}`}>{BRAND_TAGLINE}</p>
       </div>
     </div>
   );
@@ -239,7 +260,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   inputMode="email"
                   maxLength={150}
-                  placeholder="you@company.com"
+                  placeholder="Enter your email id"
                   className="login-mobile-field login-mobile-field-light"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -318,7 +339,7 @@ export default function LoginPage() {
           </div>
         </div>
       ) : (
-        <div className="relative flex min-h-screen w-full items-center justify-center px-6 py-12">
+        <div className="relative flex min-h-screen w-full items-center justify-center bg-black px-6 py-12">
           {enableFluid ? (
             <LuminaFluidBackground fluidColor={theme.fluidColor} rainbow />
           ) : (
@@ -333,105 +354,120 @@ export default function LoginPage() {
               }`}
             />
           )}
+          <ParticleGlobe />
+
+          <div className="absolute right-5 top-5 z-20 sm:right-6 sm:top-6">
+            <PrivacyInfoButton onClick={() => setPrivacyOpen(true)} size="sm" />
+          </div>
 
           <div
-            className={`relative z-10 mx-auto w-full max-w-[380px] transition duration-700 ease-out ${
+            className={`relative z-10 mx-auto w-full max-w-[420px] transition duration-700 ease-out ${
               mounted ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0'
             }`}
           >
-            <div className="app-glass-card w-full rounded-[20px] p-6 ring-1 ring-white/50 backdrop-saturate-150 transition-shadow duration-500 sm:p-7">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <LoginBrandMark theme={theme} />
+            <div className="mb-4 flex w-full justify-center">
+              <LoginBrandMark theme={theme} onDark centered />
+            </div>
 
-                <PrivacyInfoButton onClick={() => setPrivacyOpen(true)} />
-              </div>
+            <h1 className="whitespace-nowrap text-center text-[1rem] font-semibold leading-tight tracking-tight text-white sm:text-[1.1rem]">
+              Your journey starts with a quick login
+            </h1>
 
-              <h1 className="app-title-gradient text-[1.2rem] font-semibold leading-snug tracking-tight sm:text-[1.3rem]">
-                Your journey starts with a quick login
-              </h1>
-
-              <form className="mt-5 space-y-3.5" onSubmit={handleSubmit} noValidate>
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-medium text-slate-600">Email</span>
+            <form className="mx-auto mt-5 w-full max-w-[300px] space-y-3 text-left" onSubmit={handleSubmit} noValidate>
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.16em] text-white/80">
+                  Email
+                </span>
+                <div className="relative">
+                  <Mail
+                    className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/55"
+                    strokeWidth={1.75}
+                  />
                   <input
                     type="email"
                     name="email"
                     autoComplete="email"
                     inputMode="email"
                     maxLength={150}
-                    placeholder="you@company.com"
+                    placeholder="Enter your email address"
                     className={fieldClass}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     aria-invalid={Boolean(error)}
                   />
-                </label>
+                </div>
+              </label>
 
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-medium text-slate-600">Password</span>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      autoComplete="current-password"
-                      minLength={8}
-                      maxLength={64}
-                      placeholder="••••••••"
-                      className={`${fieldClass} pr-11`}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-brand-soft hover:text-brand"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" strokeWidth={1.75} />
-                      ) : (
-                        <Eye className="h-4 w-4" strokeWidth={1.75} />
-                      )}
-                    </button>
-                  </div>
-                </label>
-
-                {error && (
-                  <p
-                    role="alert"
-                    className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] leading-snug text-red-700"
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.16em] text-white/80">
+                  Password
+                </span>
+                <div className="relative">
+                  <Lock
+                    className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/55"
+                    strokeWidth={1.75}
+                  />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    autoComplete="current-password"
+                    minLength={8}
+                    maxLength={64}
+                    placeholder="Enter your password"
+                    className={`${fieldClass} pr-10`}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-1.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center text-white/55 transition hover:text-white"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {error}
-                  </p>
-                )}
+                    {showPassword ? (
+                      <EyeOff className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    )}
+                  </button>
+                </div>
+              </label>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="app-gradient-action mt-0.5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+              <div className="pt-0.5 text-center">
+                <Link
+                  href="/forgot-password"
+                  className="text-[12px] font-medium text-white/85 underline-offset-4 transition hover:text-white hover:underline"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
-                      Signing in…
-                    </>
-                  ) : (
-                    'Sign in'
-                  )}
-                </button>
+                  Forgot password?
+                </Link>
+              </div>
 
-                <p className="pt-0.5 text-center">
-                  <Link
-                    href="/forgot-password"
-                    className="text-[13px] font-medium text-brand underline-offset-4 transition hover:text-brand-hover hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
+              {error && (
+                <p
+                  role="alert"
+                  className="rounded-md border border-red-400/35 bg-red-500/15 px-3 py-2 text-[12px] leading-snug text-white"
+                >
+                  {error}
                 </p>
-              </form>
-            </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="mx-auto mt-0.5 flex w-auto min-w-[7.5rem] items-center justify-center gap-2 bg-white px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-black transition hover:bg-white/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
+                    Signing in…
+                  </>
+                ) : (
+                  'Sign in'
+                )}
+              </button>
+            </form>
           </div>
         </div>
       )}
