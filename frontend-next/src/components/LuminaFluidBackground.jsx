@@ -35,15 +35,15 @@ export default function LuminaFluidBackground({
             fluidColor={fluidColor}
             rainbow={rainbow}
             blend={1}
-            intensity={1.25}
-            force={1.0}
-            radius={0.29}
-            curl={1.3}
-            swirl={2.45}
-            pressure={0.825}
-            densityDissipation={0.97}
-            velocityDissipation={0.98}
-            distortion={0.39}
+            intensity={1.6}
+            force={1.3}
+            radius={0.4}
+            curl={1.7}
+            swirl={3.5}
+            pressure={0.8}
+            densityDissipation={0.98}
+            velocityDissipation={1}
+            distortion={0.5}
           />
         </EffectComposer>
       </Canvas>
