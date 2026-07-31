@@ -24,7 +24,7 @@ const TopNavbar = () => {
         <button
           type="button"
           onClick={() => setIsAddLeadOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[var(--ui-text-muted)] transition hover:bg-brand-soft hover:text-brand active:scale-95"
+          className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-[var(--ui-text-muted)] transition hover:bg-brand-soft hover:text-brand active:scale-95"
           title="Add lead"
           aria-label="Add lead"
         >

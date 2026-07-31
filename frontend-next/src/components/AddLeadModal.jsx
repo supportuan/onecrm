@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, X } from 'lucide-react';
 
 import { createLead, getSources } from '@/services/marketingApi';
@@ -35,6 +36,11 @@ const AddLeadModal = ({
   const [sources, setSources] = useState([]);
   const [counsellors, setCounsellors] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -75,8 +81,24 @@ const AddLeadModal = ({
   useEffect(() => {
     if (!open) {
       setForm(createEmptyForm());
+      return undefined;
     }
-  }, [open]);
+
+    // Safari: fixed modals inside overflow-hidden shells clip/mis-size;
+    // lock body scroll while open and escape via Escape.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape' && !submitting) onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, onClose, submitting]);
 
   const updateField = (field, value) => {
     setForm((previous) => ({
@@ -132,14 +154,30 @@ const AddLeadModal = ({
     }
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[75vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h3 className="text-xl font-semibold text-slate-900">
+  const modal = (
+    <div
+      className="fixed inset-0 z-[9999] flex items-end justify-center bg-slate-900/60 p-0 sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-lead-title"
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !submitting) onClose();
+      }}
+    >
+      <div
+        className="flex h-[min(100dvh,100%)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-100 bg-white shadow-2xl sm:h-auto sm:max-h-[min(85dvh,820px)] sm:rounded-3xl"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-6">
+          <div className="min-w-0 pr-3">
+            <h3
+              id="add-lead-title"
+              className="text-lg font-semibold text-slate-900 sm:text-xl"
+            >
               Add New Lead
             </h3>
 
@@ -151,7 +189,7 @@ const AddLeadModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
             aria-label="Close Add Lead popup"
           >
             <X className="h-5 w-5" />
@@ -162,7 +200,10 @@ const AddLeadModal = ({
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field label="Full Name *">
                 <input
@@ -199,6 +240,7 @@ const AddLeadModal = ({
               <Field label="Phone Number">
                 <input
                   type="text"
+                  inputMode="numeric"
                   placeholder="9876543210"
                   value={form.phone}
                   maxLength={10}
@@ -355,12 +397,12 @@ const AddLeadModal = ({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+          <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 sm:py-2.5"
             >
               Cancel
             </button>
@@ -368,7 +410,7 @@ const AddLeadModal = ({
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center gap-2 rounded-xl bg-[#0084ff] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#0070d9] disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#0084ff] px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#0070d9] disabled:opacity-50 sm:py-2.5"
             >
               {submitting && (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -383,6 +425,8 @@ const AddLeadModal = ({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 };
 
 const Field = ({ label, children }) => (
