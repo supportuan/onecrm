@@ -287,6 +287,13 @@ router.get('/analytics', authenticateToken, controller.getAnalytics);
  */
 router.get('/leads', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'VIEW'), controller.getLeads);
 
+router.get(
+  '/leads/archived',
+  authenticateToken,
+  authorizePermission('Marketing', 'Lead Management', 'VIEW'),
+  controller.getArchivedLeads
+);
+
 /**
  * @swagger
  * /api/marketing/sources:
@@ -399,6 +406,12 @@ router.put('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Le
  *         description: Lead successfully soft-deleted
  */
 router.delete('/leads/:id', authenticateToken, authorizePermission('Marketing', 'Lead Management', 'EDIT'), controller.deleteLead);
+router.post(
+  '/leads/:id/restore',
+  authenticateToken,
+  authorizePermission('Marketing', 'Lead Management', 'EDIT'),
+  controller.restoreLead
+);
 router.patch(
   '/leads/:leadId/rating',
   authenticateToken,

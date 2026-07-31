@@ -10,6 +10,7 @@ import {
 } from '@/services/resourcesApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
+import { withUploadAuth } from '@/lib/auth/session';
 
 const AUDIENCE_LABELS = {
   ALL: 'All users',
@@ -165,7 +166,7 @@ export default function ResourceLibrary() {
                 <div className="flex items-center gap-2 shrink-0">
                   {resource.url && (
                     <a
-                      href={resource.url}
+                      href={withUploadAuth(resource.url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ui-btn-secondary inline-flex items-center gap-2"

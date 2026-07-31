@@ -99,6 +99,23 @@ export const deleteLead = async (id) => {
   return res.json();
 };
 
+export const getArchivedLeads = async (params = {}) => {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set('search', params.search);
+  if (params.page) qs.set('page', String(params.page));
+  if (params.limit) qs.set('limit', String(params.limit));
+  const query = qs.toString();
+  const res = await authFetch(`${API_URL}/leads/archived${query ? `?${query}` : ''}`);
+  return res.json();
+};
+
+export const restoreLead = async (id) => {
+  const res = await authFetch(`${API_URL}/leads/${id}/restore`, {
+    method: 'POST',
+  });
+  return res.json();
+};
+
 export const assignLeadCounsellor = async (leadId, counsellorId) => {
   const res = await authFetch(`${API_URL}/leads/${leadId}/assign-counsellor`, {
     method: "PATCH",
