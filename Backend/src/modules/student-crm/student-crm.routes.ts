@@ -53,11 +53,16 @@ router.post(
 router.get('/applications/me', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.listMyApplications);
 router.get('/form-options', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getFormOptions);
 router.get('/students', view, controller.listStudents);
+router.get('/students/archived', view, controller.listArchivedStudents);
+router.get('/students/:id/export', view, controller.exportStudent);
 router.get('/students/:id', view, controller.getStudent);
 router.post('/students', manage, controller.createStudent);
 router.put('/students/:id', manage, controller.updateStudent);
 router.patch('/students/:id/status', manage, controller.patchStatus);
 router.patch('/students/:id/enrolled', manage, controller.setEnrolled);
+router.post('/students/:id/restore', manage, controller.restoreStudent);
+router.delete('/students/:id/permanent', manage, controller.permanentlyDeleteStudent);
+router.delete('/students/:id', manage, controller.archiveStudent);
 
 // Student checklists & universities
 router.get('/students/:id/checklists', view, controller.listChecklists);

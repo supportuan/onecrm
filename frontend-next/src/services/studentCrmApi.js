@@ -34,6 +34,45 @@ export const createStudent = async (payload) => handleResponse(await tenantFetch
 export const updateStudent = async (id, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/students/${id}`, putJson(payload)));
 
+export const exportStudent = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${id}/export`));
+
+export const archiveStudent = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${id}`, { method: 'DELETE' }));
+
+export const listArchivedStudents = async ({ search, limit, page } = {}) => {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (limit) params.set('limit', String(limit));
+  if (page) params.set('page', String(page));
+  const qs = params.toString();
+  return handleResponse(await tenantFetch(`${API_URL}/students/archived${qs ? `?${qs}` : ''}`));
+};
+
+export const restoreStudent = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${id}/restore`, { method: 'POST' }));
+
+export const permanentlyDeleteStudent = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/students/${id}/permanent`, { method: 'DELETE' }));
+
+/** Download student export JSON in the browser, then optionally archive. */
+export const downloadStudentExport = async (id, fileNameHint) => {
+  const res = await exportStudent(id);
+  const payload = res?.data ?? res;
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  const safe = String(fileNameHint || `student_${id}`).replace(/[^a-zA-Z0-9._-]+/g, '_');
+  a.href = url;
+  a.download = `${safe}_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return res;
+};
+
 // -------------------- Applications --------------------
 export const listApplications = async ({ studentId, stage, assignedToId, search, limit } = {}) => {
   const params = new URLSearchParams();

@@ -116,6 +116,13 @@ export const restoreLead = async (id) => {
   return res.json();
 };
 
+export const permanentlyDeleteLead = async (id) => {
+  const res = await authFetch(`${API_URL}/leads/${id}/permanent`, {
+    method: 'DELETE',
+  });
+  return res.json();
+};
+
 export const assignLeadCounsellor = async (leadId, counsellorId) => {
   const res = await authFetch(`${API_URL}/leads/${leadId}/assign-counsellor`, {
     method: "PATCH",
