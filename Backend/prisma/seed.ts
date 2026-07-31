@@ -26,7 +26,7 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 
-const defaultPassword = 'Welcome@123';
+const defaultPassword = 'welcome@123';
 
 // Guarantee the "default" tenant exists with baseline modules + RBAC rows so
 // seeded staff/students can actually log in (the auth gate requires an ACTIVE

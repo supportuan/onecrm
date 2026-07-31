@@ -57,11 +57,15 @@ export const backfillStaffEmployees = async (): Promise<void> => {
     for (const u of users) {
       try {
         const existing = await prisma.hrEmployee.findFirst({
-          where: { OR: [{ userId: u.id }, { email: u.email }] },
+          where: { OR: [{ userId: u.id }, { email: { equals: u.email, mode: 'insensitive' } }] },
         });
         if (existing) {
           const patch: Record<string, unknown> = {};
           if (existing.userId == null) patch.userId = u.id;
+          // Clock-in / leave use tenant-scoped HrEmployee reads — null tenantId hides the row.
+          if (existing.tenantId == null || existing.tenantId !== tenantId) {
+            patch.tenantId = tenantId;
+          }
           const accessRole = userRoleToHrAccessRole(u.role);
           if (accessRole !== existing.accessRole) {
             patch.accessRole = accessRole;
@@ -72,6 +76,9 @@ export const backfillStaffEmployees = async (): Promise<void> => {
               where: { id: existing.id },
               data: patch,
             });
+            console.log(
+              `[hr-seed] linked employee #${existing.id} → user ${u.id} (tenant ${tenantId})`,
+            );
           }
           continue;
         }
