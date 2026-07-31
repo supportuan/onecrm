@@ -269,6 +269,20 @@ export const restoreLead = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const permanentlyDeleteLead = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return sendError(res, 'Invalid lead ID', null, 400);
+    const result = await marketingService.permanentlyDeleteLead(id);
+    return sendSuccess(res, 'Lead permanently deleted', result);
+  } catch (error: any) {
+    if (error?.message === 'Archived lead not found') {
+      return sendError(res, error.message, null, 404);
+    }
+    next(error);
+  }
+};
+
 export const assignCounsellor = async (
   req: Request,
   res: Response,

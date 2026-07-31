@@ -1,16 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Archive, Loader2, RotateCcw, Search, UserX } from 'lucide-react';
-import { getArchivedLeads, restoreLead } from '@/services/marketingApi';
+import { Archive, Loader2, RotateCcw, Search, Trash2, UserX } from 'lucide-react';
+import { getArchivedLeads, permanentlyDeleteLead, restoreLead } from '@/services/marketingApi';
 
 export default function ArchiveLeads() {
-  const canRestore = true;
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [restoringId, setRestoringId] = useState(null);
+  const [busyId, setBusyId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,7 +49,7 @@ export default function ArchiveLeads() {
 
   const handleRestore = async (id) => {
     if (!window.confirm('Restore this lead to Lead Management?')) return;
-    setRestoringId(id);
+    setBusyId(`restore-${id}`);
     try {
       const res = await restoreLead(id);
       if (!res?.success) {
@@ -61,7 +60,33 @@ export default function ArchiveLeads() {
     } catch (err) {
       alert(err?.message || 'Failed to restore lead');
     } finally {
-      setRestoringId(null);
+      setBusyId(null);
+    }
+  };
+
+  const handlePermanentDelete = async (lead) => {
+    const name = lead.fullName || lead.email || `#${lead.id}`;
+    if (
+      !window.confirm(
+        `Permanently delete ${name}?\n\nThis cannot be undone. Lead activities and campaign links will be removed.`,
+      )
+    ) {
+      return;
+    }
+    if (!window.confirm('Final confirmation: permanently delete this archived lead?')) return;
+
+    setBusyId(`purge-${lead.id}`);
+    try {
+      const res = await permanentlyDeleteLead(lead.id);
+      if (!res?.success) {
+        alert(res?.message || 'Failed to permanently delete lead');
+        return;
+      }
+      await load();
+    } catch (err) {
+      alert(err?.message || 'Failed to permanently delete lead');
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -120,40 +145,52 @@ export default function ArchiveLeads() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((lead) => (
-                <tr
-                  key={lead.id}
-                  className="border-b border-[var(--ui-border)] last:border-0 hover:bg-brand-soft/60"
-                >
-                  <td className="ui-text-strong px-5 py-3">{lead.fullName || '—'}</td>
-                  <td className="ui-text-body px-5 py-3">{lead.email || '—'}</td>
-                  <td className="ui-text-body px-5 py-3">{lead.source?.name || '—'}</td>
-                  <td className="ui-text-meta px-5 py-3">
-                    {lead.deletedAt ? new Date(lead.deletedAt).toLocaleString() : '—'}
-                  </td>
-                  <td className="px-5 py-3">
-                    {canRestore ? (
-                      <button
-                        type="button"
-                        disabled={restoringId === lead.id}
-                        onClick={() => handleRestore(lead.id)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--ui-border)] px-2.5 py-1.5 text-[12px] font-medium text-brand transition hover:bg-brand-soft disabled:opacity-50"
-                      >
-                        {restoringId === lead.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} />
-                        )}
-                        Restore
-                      </button>
-                    ) : (
-                      <span className="inline-flex rounded-full bg-red-50 px-2.5 py-0.5 text-[12px] font-medium text-red-700">
-                        Archived
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((lead) => {
+                const busy = busyId != null && String(busyId).includes(String(lead.id));
+                return (
+                  <tr
+                    key={lead.id}
+                    className="border-b border-[var(--ui-border)] last:border-0 hover:bg-brand-soft/60"
+                  >
+                    <td className="ui-text-strong px-5 py-3">{lead.fullName || '—'}</td>
+                    <td className="ui-text-body px-5 py-3">{lead.email || '—'}</td>
+                    <td className="ui-text-body px-5 py-3">{lead.source?.name || '—'}</td>
+                    <td className="ui-text-meta px-5 py-3">
+                      {lead.deletedAt ? new Date(lead.deletedAt).toLocaleString() : '—'}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => handleRestore(lead.id)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--ui-border)] px-2.5 py-1.5 text-[12px] font-medium text-brand transition hover:bg-brand-soft disabled:opacity-50"
+                        >
+                          {busyId === `restore-${lead.id}` ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          )}
+                          Restore
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => handlePermanentDelete(lead)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1.5 text-[12px] font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {busyId === `purge-${lead.id}` ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          )}
+                          Delete forever
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

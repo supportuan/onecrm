@@ -94,6 +94,66 @@ export const updateStudent = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+export const exportStudent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const data = await resolveFileRefsDeep(await service.exportStudentData(id, actor(req)));
+    return sendSuccess(res, 'student export', data);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const archiveStudent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const archived = await service.archiveStudent(id, actor(req));
+    return sendSuccess(res, 'student moved to archive', archived);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const listArchivedStudents = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const data = await service.listArchivedStudents({ search, limit, page, actor: actor(req) });
+    return sendSuccess(res, 'archived students', data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const restoreStudent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const restored = await service.restoreStudent(id, actor(req));
+    return sendSuccess(res, 'student restored', restored);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const permanentlyDeleteStudent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const result = await service.permanentlyDeleteStudent(id, actor(req));
+    return sendSuccess(res, 'student permanently deleted', result);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
 export const updateMyStudent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user?.id) return sendError(res, 'unauthorized', null, 401);
