@@ -15,6 +15,9 @@ import {
   CheckCircle2,
   Globe,
   MessageSquare,
+  Archive,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import {
   listStudents,
@@ -25,6 +28,8 @@ import {
   listCounsellors,
   setStudentEnrolled,
   updateChecklistValue,
+  downloadStudentExport,
+  archiveStudent,
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import {
@@ -103,6 +108,7 @@ export default function StudentManagement() {
   const [appModalContext, setAppModalContext] = useState(null);
   const [selectedStudyPlanId, setSelectedStudyPlanId] = useState(null);
   const [toast, setToast] = useState({ kind: '', msg: '' });
+  const [archiving, setArchiving] = useState(false);
 
   const flash = (msg, ok = true) => {
     setToast({ kind: ok ? 'ok' : 'err', msg });
@@ -326,6 +332,35 @@ export default function StudentManagement() {
     }
   };
 
+  const handleArchiveStudent = async () => {
+    if (!selectedId || !profile) return;
+    const name = profile.fullName || profile.email || `student #${selectedId}`;
+    const enrolledNote = profile.isEnrolled
+      ? '\n\nThis student is marked enrolled.'
+      : '';
+    if (
+      !window.confirm(
+        `Download ${name}'s data, then move them to Archive?${enrolledNote}\n\nYou can restore or permanently delete later from Archive → Students.`,
+      )
+    ) {
+      return;
+    }
+
+    setArchiving(true);
+    try {
+      await downloadStudentExport(selectedId, profile.fullName || profile.email || `student_${selectedId}`);
+      await archiveStudent(selectedId);
+      flash('Data downloaded — student moved to Archive');
+      setSelectedId(null);
+      setProfile(null);
+      await loadStudents();
+    } catch (e) {
+      flash(e?.message || 'Failed to archive student', false);
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   const toggleChecklist = async (checkListId, completed) => {
     try {
       await updateChecklistValue(selectedId, checkListId, { completed });
@@ -464,6 +499,25 @@ export default function StudentManagement() {
                       >
                         <Save size={14} />
                         {saving ? 'Saving...' : 'Save profile'}
+                      </button>
+                    )}
+                    {canManage && (
+                      <button
+                        type="button"
+                        onClick={handleArchiveStudent}
+                        disabled={archiving}
+                        className="ui-btn-secondary inline-flex items-center gap-2 text-xs text-red-700 border-red-200 hover:bg-red-50"
+                        title="Download data, then move to Archive"
+                      >
+                        {archiving ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <>
+                            <Download size={14} />
+                            <Archive size={14} />
+                          </>
+                        )}
+                        {archiving ? 'Archiving…' : 'Download & archive'}
                       </button>
                     )}
                     {canManage && (

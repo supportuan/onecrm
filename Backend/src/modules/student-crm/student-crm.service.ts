@@ -320,6 +320,210 @@ export const updateStudent = async (id: number, data: Record<string, any>, actor
   return getStudent(id, actor);
 };
 
+const STUDENT_EXPORT_INCLUDE = {
+  ...STUDENT_INCLUDE,
+  applications: {
+    orderBy: { createdAt: 'desc' as const },
+    include: {
+      documents: true,
+      offerLetter: true,
+      visaTracking: { include: { visaDocuments: true } },
+      fees: true,
+      payments: { orderBy: { createdAt: 'desc' as const } },
+      tasks: true,
+      stageEvents: { orderBy: { createdAt: 'desc' as const } },
+      assignedTo: { select: { id: true, fullName: true, email: true } },
+    },
+  },
+};
+
+/** Active + archived students visible to this actor (ignores deletedAt filter). */
+const studentAccessWhere = async (id: number, actor?: Actor) => {
+  const scope = await resolveStudentScopeWhere(actor);
+  const { deletedAt: _ignored, ...rest } = scope as Record<string, unknown>;
+  return { id, ...rest };
+};
+
+export const exportStudentData = async (id: number, actor?: Actor) => {
+  const student = await prisma.student.findFirst({
+    where: await studentAccessWhere(id, actor),
+    include: STUDENT_EXPORT_INCLUDE,
+  });
+  if (!student) throw new Error('student not found');
+  return {
+    exportedAt: new Date().toISOString(),
+    student,
+  };
+};
+
+/** Soft-delete — moves student into Archive (deletedAt set). */
+export const archiveStudent = async (id: number, actor?: Actor) => {
+  const existing = await prisma.student.findFirst({
+    where: { ...(await studentAccessWhere(id, actor)), deletedAt: null },
+    select: { id: true, userId: true, fullName: true, email: true },
+  });
+  if (!existing) throw new Error('student not found');
+
+  const updated = await prisma.student.update({
+    where: { id: existing.id },
+    data: { deletedAt: new Date() },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      deletedAt: true,
+      userId: true,
+    },
+  });
+
+  if (existing.userId) {
+    await prisma.user.updateMany({
+      where: { id: existing.userId, role: UserRole.STUDENT },
+      data: { isActive: false },
+    });
+  }
+
+  return updated;
+};
+
+export const listArchivedStudents = async (
+  opts: { search?: string; limit?: number; page?: number; actor?: Actor } = {},
+) => {
+  const page = opts.page || 1;
+  const limit = Math.min(opts.limit || 50, 200);
+  const skip = (page - 1) * limit;
+
+  const scope = await resolveStudentScopeWhere(opts.actor);
+  const { deletedAt: _ignored, ...rest } = scope as Record<string, unknown>;
+  const where: Record<string, unknown> = {
+    ...rest,
+    deletedAt: { not: null },
+  };
+
+  if (opts.search) {
+    where.AND = [
+      {
+        OR: [
+          { fullName: { contains: opts.search, mode: 'insensitive' } },
+          { email: { contains: opts.search, mode: 'insensitive' } },
+          { phone: { contains: opts.search, mode: 'insensitive' } },
+        ],
+      },
+    ];
+  }
+
+  const [items, total] = await prisma.$transaction([
+    prisma.student.findMany({
+      where: where as any,
+      orderBy: { deletedAt: 'desc' },
+      skip,
+      take: limit,
+      include: {
+        country: { select: { id: true, name: true } },
+        applications: { select: { id: true, stage: true, university: true, country: true } },
+      },
+    }),
+    prisma.student.count({ where: where as any }),
+  ]);
+
+  return { items, total, page, limit };
+};
+
+export const restoreStudent = async (id: number, actor?: Actor) => {
+  const existing = await prisma.student.findFirst({
+    where: { ...(await studentAccessWhere(id, actor)), deletedAt: { not: null } },
+    select: { id: true, userId: true },
+  });
+  if (!existing) throw new Error('archived student not found');
+
+  const restored = await prisma.student.update({
+    where: { id: existing.id },
+    data: { deletedAt: null },
+    include: {
+      country: { select: { id: true, name: true } },
+      applications: { select: { id: true, stage: true, university: true, country: true } },
+    },
+  });
+
+  if (existing.userId) {
+    await prisma.user.updateMany({
+      where: { id: existing.userId, role: UserRole.STUDENT },
+      data: { isActive: true },
+    });
+  }
+
+  return restored;
+};
+
+const collectStudentFileUrls = (student: {
+  profilePhotoUrl?: string | null;
+  applications?: Array<{
+    documents?: Array<{ fileUrl?: string | null }>;
+    offerLetter?: { fileUrl?: string | null } | null;
+    visaTracking?: {
+      documents?: unknown;
+      visaDocuments?: Array<{ fileUrl?: string | null }>;
+    } | null;
+  }>;
+}): string[] => {
+  const urls: string[] = [];
+  if (student.profilePhotoUrl) urls.push(student.profilePhotoUrl);
+  for (const app of student.applications || []) {
+    for (const doc of app.documents || []) {
+      if (doc.fileUrl) urls.push(doc.fileUrl);
+    }
+    if (app.offerLetter?.fileUrl) urls.push(app.offerLetter.fileUrl);
+    const visa = app.visaTracking;
+    const legacyDocs = Array.isArray(visa?.documents) ? visa!.documents : [];
+    for (const d of legacyDocs as Array<{ fileUrl?: string }>) {
+      if (d?.fileUrl) urls.push(d.fileUrl);
+    }
+    for (const d of visa?.visaDocuments || []) {
+      if (d?.fileUrl) urls.push(d.fileUrl);
+    }
+  }
+  return [...new Set(urls)];
+};
+
+/** Hard-delete an archived student (and cascaded applications). */
+export const permanentlyDeleteStudent = async (id: number, actor?: Actor) => {
+  const existing = await prisma.student.findFirst({
+    where: { ...(await studentAccessWhere(id, actor)), deletedAt: { not: null } },
+    include: {
+      applications: {
+        include: {
+          documents: { select: { fileUrl: true } },
+          offerLetter: { select: { fileUrl: true } },
+          visaTracking: {
+            include: { visaDocuments: { select: { fileUrl: true } } },
+          },
+        },
+      },
+    },
+  });
+  if (!existing) throw new Error('archived student not found');
+
+  for (const url of collectStudentFileUrls(existing)) {
+    try {
+      await deleteStoredFile(url);
+    } catch {
+      /* ignore missing/stale files */
+    }
+  }
+
+  const userId = existing.userId;
+  await prisma.student.delete({ where: { id: existing.id } });
+
+  if (userId) {
+    await prisma.user.updateMany({
+      where: { id: userId, role: UserRole.STUDENT },
+      data: { isActive: false },
+    });
+  }
+
+  return { id: existing.id, deleted: true };
+};
+
 /** Student self-service update — profile is counsellor-managed. */
 export const updateMyStudentProfile = async (_userId: number, _data: Record<string, any>) => {
   throw new Error(

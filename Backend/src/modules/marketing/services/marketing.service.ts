@@ -715,6 +715,24 @@ export const restoreLead = async (id: number) => {
   });
 };
 
+/** Hard-delete an archived lead (activities / campaign links cascade). */
+export const permanentlyDeleteLead = async (id: number) => {
+  const existing = await prisma.lead.findFirst({
+    where: { id, deletedAt: { not: null } },
+    select: { id: true },
+  });
+  if (!existing) throw new Error('Archived lead not found');
+
+  // Student.sourceLeadId has no onDelete: SetNull — clear before hard delete
+  await prisma.student.updateMany({
+    where: { sourceLeadId: existing.id },
+    data: { sourceLeadId: null },
+  });
+
+  await prisma.lead.delete({ where: { id: existing.id } });
+  return { id: existing.id, deleted: true };
+};
+
 export const getLeadActivities = async (leadId: number) => {
   return await prisma.leadActivity.findMany({
     where: { leadId },

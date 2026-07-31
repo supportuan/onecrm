@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import ArchiveUsers from '@/features/archive/pages/ArchiveUsers';
 import ArchiveLeads from '@/features/archive/pages/ArchiveLeads';
+import ArchiveStudents from '@/features/archive/pages/ArchiveStudents';
 
 const TABS = [
   { id: 'leads', label: 'Leads' },
+  { id: 'students', label: 'Students' },
   { id: 'users', label: 'Users' },
 ];
 
@@ -34,7 +36,13 @@ export default function ArchivePage() {
         })}
       </div>
 
-      {tab === 'leads' ? <ArchiveLeads /> : <ArchiveUsers />}
+      {tab === 'leads' ? (
+        <ArchiveLeads />
+      ) : tab === 'students' ? (
+        <ArchiveStudents />
+      ) : (
+        <ArchiveUsers />
+      )}
     </div>
   );
 }

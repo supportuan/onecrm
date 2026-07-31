@@ -412,6 +412,12 @@ router.post(
   authorizePermission('Marketing', 'Lead Management', 'EDIT'),
   controller.restoreLead
 );
+router.delete(
+  '/leads/:id/permanent',
+  authenticateToken,
+  authorizePermission('Marketing', 'Lead Management', 'EDIT'),
+  controller.permanentlyDeleteLead
+);
 router.patch(
   '/leads/:leadId/rating',
   authenticateToken,
