@@ -38,6 +38,47 @@ export function persistAccessTokenCookie(token) {
   document.cookie = `accessToken=${encodeURIComponent(token)}; Path=/; SameSite=Lax`;
 }
 
+/** Append access_token for /uploads links opened in a new tab (no Authorization header). */
+export function withUploadAuth(url) {
+  if (!url || typeof url !== 'string') return url;
+  // Opaque S3 refs / signed object URLs must not be rewritten
+  if (url.startsWith('s3:')) return url;
+
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const u = new URL(url);
+      if (
+        /\.amazonaws\.com$/i.test(u.hostname) ||
+        u.searchParams.has('X-Amz-Algorithm') ||
+        u.searchParams.has('X-Amz-Signature')
+      ) {
+        return url;
+      }
+      if (!u.pathname.includes('/uploads')) return url;
+      const token = getAccessToken();
+      if (!token) return url;
+      u.searchParams.set('access_token', token);
+      return u.toString();
+    } catch {
+      return url;
+    }
+  }
+
+  if (!url.startsWith('/uploads')) return url;
+  const token = getAccessToken();
+  if (!token) return url;
+  try {
+    const base =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+    const u = new URL(url, base);
+    u.searchParams.set('access_token', token);
+    return `${u.pathname}${u.search}${u.hash}`;
+  } catch {
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}access_token=${encodeURIComponent(token)}`;
+  }
+}
+
 export function expireSession() {
   clearStoredSession();
   onSessionExpired?.();

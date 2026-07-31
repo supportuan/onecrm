@@ -43,13 +43,44 @@ export function localUploadPublicRef(relativePath: string): string {
   return base ? `${base}${pathPart}` : pathPart;
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '0.0.0.0';
+}
+
 /**
- * Rewrite legacy absolute local URLs (e.g. http://localhost:4000/uploads/...) to a
+ * Rewrite legacy absolute *local* URLs (e.g. http://localhost:4000/uploads/...) to a
  * browser-safe same-origin path, or UPLOAD_BASE_URL if configured.
+ *
+ * Absolute URLs on real hosts (e.g. https://crm.applyuninow.com/uploads/...) are kept
+ * as-is unless the file also exists on this process's disk — otherwise local/dev
+ * backends rewrite them to /uploads/... and Express 404s (Cannot GET).
  */
 export function toPublicUploadUrl(refOrUrl: string): string {
+  if (refOrUrl.startsWith('s3:')) return refOrUrl;
   const relative = uploadsRelativeFromLocalUrl(refOrUrl);
   if (!relative) return refOrUrl;
+
+  if (refOrUrl.startsWith('/')) {
+    return localUploadPublicRef(relative);
+  }
+
+  if (/^https?:\/\//i.test(refOrUrl)) {
+    try {
+      const u = new URL(refOrUrl);
+      if (isLoopbackHostname(u.hostname)) {
+        return localUploadPublicRef(relative);
+      }
+      const abs = localPathFromUploadsRelative(relative);
+      if (fs.existsSync(abs)) {
+        return localUploadPublicRef(relative);
+      }
+      return refOrUrl;
+    } catch {
+      return refOrUrl;
+    }
+  }
+
   return localUploadPublicRef(relative);
 }
 
@@ -58,6 +89,8 @@ export function localPathFromUploadsRelative(relativePath: string): string {
 }
 
 export function uploadsRelativeFromLocalUrl(url: string): string | null {
+  // s3 keys often contain "/uploads/..." — those are not local disk paths
+  if (url.startsWith('s3:')) return null;
   const match = url.match(/\/uploads\/(.+?)(?:\?.*)?$/);
   if (!match) return null;
   return `uploads/${match[1]}`;

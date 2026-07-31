@@ -949,7 +949,7 @@ ApplyUniNow`;
   const handleDeleteLead = async (e, id) => {
     e.stopPropagation();
 
-    if (!window.confirm('Are you sure you want to soft-delete this lead?')) return;
+    if (!window.confirm('Move this lead to Archive? You can restore it later from Archive.')) return;
 
     try {
       const response = await deleteLead(id);
