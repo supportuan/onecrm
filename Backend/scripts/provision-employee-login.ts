@@ -79,10 +79,10 @@ async function main() {
 
   await prisma.hrEmployee.update({
     where: { id: emp.id },
-    data: { userId: user.id, name },
+    data: { userId: user.id, name, tenantId },
   });
 
-  console.log(`Linked HrEmployee #${emp.id} (${emp.employeeCode}) → User #${user.id}`);
+  console.log(`Linked HrEmployee #${emp.id} (${emp.employeeCode}) → User #${user.id} (tenant ${tenantId})`);
   console.log(`Role: ${role}`);
   console.log(`Temporary password: ${PASSWORD} (must change on first login)`);
 }

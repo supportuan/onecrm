@@ -234,108 +234,110 @@ export default function LoginPage() {
             />
           )}
 
-          <div className="relative z-10 flex min-h-screen flex-col px-6 pb-10 pt-8">
-            <div className="login-mobile-reveal login-mobile-reveal-1 mb-8 flex items-center justify-between">
+          <div className="relative z-10 flex min-h-[100dvh] flex-col px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <div className="login-mobile-reveal login-mobile-reveal-1 flex shrink-0 items-center justify-between">
               <LoginBrandMark theme={theme} light />
               <PrivacyInfoButton onClick={() => setPrivacyOpen(true)} light />
             </div>
 
-            <div className="login-mobile-reveal login-mobile-reveal-2 mb-8">
-              <h1 className="text-[2.35rem] font-semibold leading-[1.1] tracking-tight text-slate-900">
-                Sign in.
-              </h1>
-              <p className="mt-3 max-w-[20rem] text-[14px] leading-relaxed text-slate-600">
-                Ready for the next step? Continue your journey with {BRAND_NAME}.
-              </p>
-            </div>
+            <div className="flex min-h-0 flex-1 flex-col justify-center py-4">
+              <div className="login-mobile-reveal login-mobile-reveal-2">
+                <h1 className="text-[1.85rem] font-semibold leading-[1.15] tracking-tight text-slate-900">
+                  Sign in.
+                </h1>
+                <p className="mt-1.5 max-w-[17.5rem] text-[13px] leading-snug text-slate-600">
+                  Continue your journey with {BRAND_NAME}.
+                </p>
+              </div>
 
-            <form className="mt-auto space-y-7" onSubmit={handleSubmit} noValidate>
-              <label className="login-mobile-reveal login-mobile-reveal-3 block">
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
-                  Email
-                </span>
-                <input
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  inputMode="email"
-                  maxLength={150}
-                  placeholder="Enter your email id"
-                  className="login-mobile-field login-mobile-field-light"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  aria-invalid={Boolean(error)}
-                />
-              </label>
-
-              <label className="login-mobile-reveal login-mobile-reveal-4 block">
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
-                  Password
-                </span>
-                <div className="relative">
+              <form className="mt-6 space-y-3.5" onSubmit={handleSubmit} noValidate>
+                <label className="login-mobile-reveal login-mobile-reveal-3 block">
+                  <span className="mb-0.5 block text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
+                    Email
+                  </span>
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    autoComplete="current-password"
-                    minLength={8}
-                    maxLength={64}
-                    placeholder="••••••••"
-                    className="login-mobile-field login-mobile-field-light pr-11"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    maxLength={150}
+                    placeholder="Enter your email id"
+                    className="login-mobile-field login-mobile-field-light"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
+                    aria-invalid={Boolean(error)}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-0 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-900/5 hover:text-slate-800"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                </label>
+
+                <label className="login-mobile-reveal login-mobile-reveal-4 block">
+                  <span className="mb-0.5 block text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
+                    Password
+                  </span>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      autoComplete="current-password"
+                      minLength={8}
+                      maxLength={64}
+                      placeholder="••••••••"
+                      className="login-mobile-field login-mobile-field-light pr-11"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-0 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-900/5 hover:text-slate-800"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" strokeWidth={1.75} />
+                      ) : (
+                        <Eye className="h-4 w-4" strokeWidth={1.75} />
+                      )}
+                    </button>
+                  </div>
+                </label>
+
+                {error && (
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-red-400/40 bg-red-500/15 px-3.5 py-2 text-[13px] leading-snug text-red-800"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" strokeWidth={1.75} />
+                    {error}
+                  </p>
+                )}
+
+                <div className="login-mobile-reveal login-mobile-reveal-6 space-y-3 pt-2">
+                  <p className="text-center">
+                    <Link
+                      href="/forgot-password"
+                      className="text-[13px] font-medium text-brand underline-offset-4 transition hover:text-brand-hover hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </p>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="app-gradient-action mx-auto flex w-auto min-w-[7.5rem] items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+                        Signing in…
+                      </>
                     ) : (
-                      <Eye className="h-4 w-4" strokeWidth={1.75} />
+                      'Sign in'
                     )}
                   </button>
                 </div>
-              </label>
-
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-xl border border-red-400/40 bg-red-500/15 px-3.5 py-2.5 text-[13px] leading-snug text-red-800"
-                >
-                  {error}
-                </p>
-              )}
-
-              <div className="login-mobile-reveal login-mobile-reveal-6 space-y-4 pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="app-gradient-action flex w-full items-center justify-center gap-2 rounded-full px-4 py-3.5 text-[15px] font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
-                      Signing in…
-                    </>
-                  ) : (
-                    'Sign in'
-                  )}
-                </button>
-
-                <p className="text-center">
-                  <Link
-                    href="/forgot-password"
-                    className="text-[13px] font-medium text-brand underline-offset-4 transition hover:text-brand-hover hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
-                </p>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       ) : (
