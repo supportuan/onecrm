@@ -642,10 +642,76 @@ export const deleteLead = async (id: number) => {
     select: { id: true },
   });
   if (!existing) throw new Error('Lead not found');
-  // Soft delete
+  // Soft delete — moves lead into Archive (deletedAt set)
   return await prisma.lead.update({
     where: { id: existing.id },
     data: { deletedAt: new Date() },
+  });
+};
+
+export const getArchivedLeads = async (filters: {
+  search?: string;
+  page?: number;
+  limit?: number;
+} = {}) => {
+  const page = filters.page || 1;
+  const limit = Math.min(filters.limit || 50, 200);
+  const skip = (page - 1) * limit;
+
+  const whereClause: any = {
+    deletedAt: { not: null },
+  };
+
+  if (filters.search) {
+    whereClause.OR = [
+      { fullName: { contains: filters.search, mode: 'insensitive' } },
+      { email: { contains: filters.search, mode: 'insensitive' } },
+      { phone: { contains: filters.search, mode: 'insensitive' } },
+      { country: { contains: filters.search, mode: 'insensitive' } },
+    ];
+  }
+
+  const [leads, total] = await prisma.$transaction([
+    prisma.lead.findMany({
+      where: whereClause,
+      include: { source: true, assignedCounsellor: true, assignedBy: true },
+      orderBy: { deletedAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.lead.count({ where: whereClause }),
+  ]);
+
+  const items = leads.map((lead: any) => ({
+    id: lead.id,
+    fullName: lead.fullName,
+    country: lead.country,
+    createdAt: lead.createdAt,
+    deletedAt: lead.deletedAt,
+    email: lead.email,
+    phone: lead.phone,
+    source: lead.source ? { id: lead.source.id, name: lead.source.name } : null,
+    preferredCourse: lead.preferredCourse,
+    preferredCountry: lead.preferredCountry,
+    status: lead.status,
+    assignedCounsellor: lead.assignedCounsellor
+      ? { id: lead.assignedCounsellor.id, name: lead.assignedCounsellor.fullName }
+      : null,
+  }));
+
+  return { items, total, page, limit };
+};
+
+export const restoreLead = async (id: number) => {
+  const existing = await prisma.lead.findFirst({
+    where: { id, deletedAt: { not: null } },
+    select: { id: true },
+  });
+  if (!existing) throw new Error('Archived lead not found');
+  return await prisma.lead.update({
+    where: { id: existing.id },
+    data: { deletedAt: null },
+    include: { source: true, assignedCounsellor: true, assignedBy: true },
   });
 };
 

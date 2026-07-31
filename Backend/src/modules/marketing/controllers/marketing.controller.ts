@@ -237,8 +237,34 @@ export const deleteLead = async (req: Request, res: Response, next: NextFunction
     if (isNaN(id)) return sendError(res, 'Invalid lead ID', null, 400);
 
     await marketingService.deleteLead(id);
-    return sendSuccess(res, 'Lead deleted successfully (soft-delete)');
+    return sendSuccess(res, 'Lead moved to Archive');
   } catch (error) {
+    next(error);
+  }
+};
+
+export const getArchivedLeads = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const search = req.query.search as string | undefined;
+    const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+    const data = await marketingService.getArchivedLeads({ search, page, limit });
+    return sendSuccess(res, 'Archived leads fetched successfully', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const restoreLead = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) return sendError(res, 'Invalid lead ID', null, 400);
+    const lead = await marketingService.restoreLead(id);
+    return sendSuccess(res, 'Lead restored successfully', lead);
+  } catch (error: any) {
+    if (error?.message === 'Archived lead not found') {
+      return sendError(res, error.message, null, 404);
+    }
     next(error);
   }
 };
