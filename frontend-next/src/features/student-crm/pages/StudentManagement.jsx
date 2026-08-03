@@ -30,6 +30,11 @@ import {
   updateChecklistValue,
   downloadStudentExport,
   archiveStudent,
+  addDocument,
+  updateDocument,
+  deleteDocument,
+  uploadApplicationDocument,
+  notifyMissingDocs,
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import {
@@ -39,6 +44,7 @@ import {
 } from '../studyFormOptions';
 import CatalogCourseFields from '../components/CatalogCourseFields';
 import StudyExploreFlow from '../components/StudyExploreFlow';
+import { DocumentChecklist } from '../components/ApplicationParts';
 import { resolveCatalogCountryId, pickCatalogCountry } from '../catalogCountry';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
@@ -109,6 +115,8 @@ export default function StudentManagement() {
   const [selectedStudyPlanId, setSelectedStudyPlanId] = useState(null);
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const [archiving, setArchiving] = useState(false);
+  const [docsAppId, setDocsAppId] = useState(null);
+  const [uploadingDocId, setUploadingDocId] = useState(null);
 
   const flash = (msg, ok = true) => {
     setToast({ kind: ok ? 'ok' : 'err', msg });
@@ -138,12 +146,19 @@ export default function StudentManagement() {
   const loadProfile = useCallback(async () => {
     if (!selectedId) {
       setProfile(null);
+      setDocsAppId(null);
       return;
     }
     setLoading(true);
     try {
       const res = await getStudent(selectedId);
-      setProfile(res?.data || null);
+      const next = res?.data || null;
+      setProfile(next);
+      const apps = next?.applications || [];
+      setDocsAppId((prev) => {
+        if (prev && apps.some((a) => a.id === prev)) return prev;
+        return apps[0]?.id ?? null;
+      });
     } catch (e) {
       flash(e?.message || 'Failed to load profile', false);
     } finally {
@@ -370,6 +385,92 @@ export default function StudentManagement() {
     }
   };
 
+  const docsApp =
+    profile?.applications?.find((a) => a.id === docsAppId) || profile?.applications?.[0] || null;
+
+  const refreshDocsApp = async () => {
+    await loadProfile();
+  };
+
+  const handleDocStatus = async (docId, status) => {
+    if (!docsApp) return;
+    try {
+      await updateDocument(docsApp.id, docId, { status });
+      flash('Document status updated');
+      await refreshDocsApp();
+    } catch (e) {
+      flash(e?.message || 'Failed to update document', false);
+    }
+  };
+
+  const handleDocApprove = async (docId) => {
+    if (!docsApp) return;
+    try {
+      await updateDocument(docsApp.id, docId, { status: 'VERIFIED' });
+      flash('Document verified');
+      await refreshDocsApp();
+    } catch (e) {
+      flash(e?.message || 'Failed to approve document', false);
+    }
+  };
+
+  const handleDocReject = async (docId, notes) => {
+    if (!docsApp) return;
+    try {
+      await updateDocument(docsApp.id, docId, { status: 'REJECTED', notes: notes || null });
+      flash('Document rejected');
+      await refreshDocsApp();
+    } catch (e) {
+      flash(e?.message || 'Failed to reject document', false);
+    }
+  };
+
+  const handleDocDelete = async (docId) => {
+    if (!docsApp) return;
+    try {
+      await deleteDocument(docsApp.id, docId);
+      flash('Document removed');
+      await refreshDocsApp();
+    } catch (e) {
+      flash(e?.message || 'Failed to delete document', false);
+    }
+  };
+
+  const handleAddDoc = async (name) => {
+    if (!docsApp || !name) return;
+    try {
+      await addDocument(docsApp.id, { name, required: true });
+      flash('Added to document checklist');
+      await refreshDocsApp();
+    } catch (e) {
+      flash(e?.message || 'Failed to add document', false);
+    }
+  };
+
+  const handleDocUpload = async (docId, file) => {
+    if (!docsApp || !file) return;
+    setUploadingDocId(docId);
+    try {
+      await uploadApplicationDocument(docsApp.id, docId, file);
+      flash('Document uploaded');
+      await refreshDocsApp();
+    } catch (e) {
+      flash(e?.message || 'Upload failed', false);
+    } finally {
+      setUploadingDocId(null);
+    }
+  };
+
+  const handleNotifyMissing = async () => {
+    if (!docsApp) return;
+    try {
+      await notifyMissingDocs(docsApp.id);
+      flash('Missing-document alert sent');
+    } catch (e) {
+      flash(e?.message || 'Failed to send alert', false);
+    }
+  };
+
   const tabs = [
     { id: 'personal', label: 'Personal', icon: User },
     { id: 'study', label: 'Explore', icon: Globe },
@@ -520,7 +621,7 @@ export default function StudentManagement() {
                         {archiving ? 'Archiving…' : 'Download & archive'}
                       </button>
                     )}
-                    {canManage && (
+                    {canManage && false && (
                       <button
                         type="button"
                         onClick={() => {
@@ -912,32 +1013,82 @@ export default function StudentManagement() {
                 )}
 
                 {tab === 'process' && (
-                  <div className="ui-panel p-6 space-y-3">
-                    <h3 className="text-sm font-semibold text-neutral-800">Application checklist</h3>
-                    {!profile.checklists?.length ? (
-                      <p className="text-sm text-neutral-500">Select a destination country in Explore to load checklist items.</p>
-                    ) : (
-                      profile.checklists.map((item) => (
-                        <label
-                          key={item.id}
-                          className="flex items-start gap-3 p-3 rounded-lg border border-neutral-100 hover:bg-neutral-50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={item.completed}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) => toggleChecklist(item.checkListId, e.target.checked)}
-                            className="mt-1"
-                          />
-                          <div>
-                            <p className="text-sm font-medium text-brand">{item.checkList?.name}</p>
-                            <p className="text-xs text-neutral-500">
-                              {PROCESS_STAGE_LABELS[item.checkList?.stage] || item.checkList?.stage}
-                            </p>
-                          </div>
-                        </label>
-                      ))
-                    )}
+                  <div className="space-y-4">
+                    <div className="ui-panel p-6 space-y-3">
+                      <h3 className="text-sm font-semibold text-neutral-800">Process checklist</h3>
+                      {!profile.checklists?.length ? (
+                        <p className="text-sm text-neutral-500">
+                          Select a destination country in Explore to load checklist items.
+                        </p>
+                      ) : (
+                        profile.checklists.map((item) => (
+                          <label
+                            key={item.id}
+                            className="flex items-start gap-3 p-3 rounded-lg border border-neutral-100 hover:bg-neutral-50"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={item.completed}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => toggleChecklist(item.checkListId, e.target.checked)}
+                              className="mt-1"
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-brand">{item.checkList?.name}</p>
+                              <p className="text-xs text-neutral-500">
+                                {PROCESS_STAGE_LABELS[item.checkList?.stage] || item.checkList?.stage}
+                              </p>
+                            </div>
+                          </label>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="ui-panel px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-neutral-800">Document management</h3>
+                          <p className="text-xs text-neutral-500 mt-0.5">
+                            Upload, review, and track application documents from this checklist.
+                          </p>
+                        </div>
+                        {(profile.applications?.length || 0) > 0 && (
+                          <select
+                            className="ui-field max-w-xs text-sm"
+                            value={docsApp?.id || ''}
+                            onChange={(e) => setDocsAppId(Number(e.target.value) || null)}
+                          >
+                            {profile.applications.map((app) => (
+                              <option key={app.id} value={app.id}>
+                                {app.applicationCode || `App #${app.id}`} · {app.university || 'University'}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {!docsApp ? (
+                        <div className="ui-panel p-8 text-center text-sm text-neutral-500">
+                          No applications yet. Create an application from Explore to manage documents here.
+                        </div>
+                      ) : (
+                        <DocumentChecklist
+                          app={docsApp}
+                          canManage={canManage && !profile.isEnrolled}
+                          onStatus={handleDocStatus}
+                          onApprove={handleDocApprove}
+                          onReject={handleDocReject}
+                          onDelete={handleDocDelete}
+                          onAdd={handleAddDoc}
+                          onUpload={handleDocUpload}
+                          uploadingDocId={uploadingDocId}
+                          missingCount={(docsApp.documents || []).filter(
+                            (d) => d.required && d.status === 'PENDING'
+                          ).length}
+                          onNotifyMissing={handleNotifyMissing}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
 

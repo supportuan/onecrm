@@ -48,7 +48,12 @@ const STUDENT_INCLUDE = {
   preferredUniversity: { include: { country: true } },
   preferredCourseRef: true,
   contact: { select: { id: true, fullName: true, email: true, role: true } },
-  applications: { orderBy: { createdAt: 'desc' as const } },
+  applications: {
+    orderBy: { createdAt: 'desc' as const },
+    include: {
+      documents: { orderBy: { id: 'asc' as const } },
+    },
+  },
   universities: { include: { university: { include: { country: true } } } },
   studyPlans: {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],

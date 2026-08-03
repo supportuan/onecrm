@@ -41,7 +41,7 @@ export const getStudent = async (req: Request, res: Response, next: NextFunction
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const item = await service.getStudent(id, actor(req));
+    const item = await resolveFileRefsDeep(await service.getStudent(id, actor(req)));
     if (!item) return sendError(res, 'not found', null, 404);
     return sendSuccess(res, 'student', item);
   } catch (err) {

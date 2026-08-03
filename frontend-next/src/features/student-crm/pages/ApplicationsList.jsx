@@ -358,7 +358,7 @@ export default function ApplicationsList() {
               <GraduationCap size={13} /> New student
             </button>
           )}
-          {canManage && (
+          {canManage && false && (
             <button
               onClick={() => {
                 setPickedStudent(null);
