@@ -96,7 +96,8 @@ export const normalizePhone = (
 export const validateDuplicateLead = async (
   email?: string | null,
   phone?: string | null,
-  excludeLeadId?: number
+  excludeLeadId?: number,
+  tenantId?: number | null,
 ) => {
   const cleanEmail = normalizeEmail(email);
   const cleanPhone = normalizePhone(phone);
@@ -125,7 +126,7 @@ export const validateDuplicateLead = async (
   const duplicate = await prisma.lead.findFirst({
     where: {
       deletedAt: null,
-
+      ...(tenantId != null ? { tenantId } : {}),
       OR: conditions,
 
       ...(excludeLeadId

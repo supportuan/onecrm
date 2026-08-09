@@ -211,7 +211,15 @@ export const getLeadById = async (req: Request, res: Response, next: NextFunctio
 export const createLead = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createLeadSchema.parse(req.body);
-    const newLead = await marketingService.createLead(validatedData);
+    const tenantId =
+      (validatedData as { tenantId?: number }).tenantId ??
+      req.tenantId ??
+      req.user?.tenantId ??
+      null;
+    const newLead = await marketingService.createLead({
+      ...validatedData,
+      ...(tenantId != null ? { tenantId } : {}),
+    });
     return sendSuccess(res, 'Lead created successfully', newLead, 201);
   } catch (error) {
     next(error);
