@@ -59,6 +59,45 @@ const SELECT_BG = {
     "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
 };
 
+/** Normalize API date (ISO string | Date | number) to YYYY-MM-DD for <input type="date">. */
+const toDateInput = (value) => {
+  try {
+    if (value == null || value === '') return '';
+
+    // Already a calendar date string (or ISO datetime).
+    if (typeof value === 'string') {
+      const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (match) return match[1];
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return '';
+      return parsed.toISOString().slice(0, 10);
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return '';
+      return parsed.toISOString().slice(0, 10);
+    }
+
+    // Date instance (or Date-like with getTime).
+    if (
+      value instanceof Date ||
+      (typeof value === 'object' && typeof value.getTime === 'function')
+    ) {
+      const time = value.getTime();
+      if (typeof time !== 'number' || Number.isNaN(time)) return '';
+      return new Date(time).toISOString().slice(0, 10);
+    }
+
+    // Last resort: coerce and pull YYYY-MM-DD if present.
+    const asString = String(value);
+    const match = asString.match(/^(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : '';
+  } catch {
+    return '';
+  }
+};
+
 const emptyAcademic = () => ({ degree: '', institution: '', year: '', grade: '' });
 const emptyEducation = () => ({
   type: 'UG',
@@ -216,7 +255,7 @@ export default function StudentManagement() {
       fullName: profile.fullName || '',
       email: profile.email || '',
       phone: profile.phone || '',
-      dob: profile.dob ? profile.dob.slice(0, 10) : '',
+      dob: toDateInput(profile.dob),
       nationality: profile.nationality || '',
       preferredCountry: catalogCountry?.name || profile.preferredCountry || '',
       level: profile.level || '',

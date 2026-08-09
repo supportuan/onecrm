@@ -1,10 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { BRAND_LOGO_SRC } from '@/components/AppBrand';
+import { BRAND_LOGO_SRC, useTenantBrand } from '@/components/AppBrand';
 
 /**
- * Branded lazy-load indicator using the ONECRM logo mark.
+ * Branded lazy-load indicator using the tenant logo (fallback: ONECRM mark).
  * - fullscreen: covers the viewport (auth / route transitions)
  * - inline/compact: for section/table loading states
  */
@@ -14,11 +14,14 @@ export default function LogoLoader({
   size = 'md',
   className = '',
 }) {
+  const { logoSrc } = useTenantBrand();
   const dims = {
     sm: { box: 'h-10 w-10', img: 28, ring: 'h-12 w-12' },
     md: { box: 'h-14 w-14', img: 40, ring: 'h-16 w-16' },
     lg: { box: 'h-20 w-20', img: 56, ring: 'h-24 w-24' },
   }[size] || { box: 'h-14 w-14', img: 40, ring: 'h-16 w-16' };
+
+  const isLocalStatic = (logoSrc || BRAND_LOGO_SRC).startsWith('/images/');
 
   const content = (
     <div
@@ -32,14 +35,25 @@ export default function LogoLoader({
         <div
           className={`logo-loader-mark absolute inset-0 m-auto flex ${dims.box} items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-brand/10`}
         >
-          <Image
-            src={BRAND_LOGO_SRC}
-            alt=""
-            width={dims.img}
-            height={dims.img}
-            className="object-contain"
-            priority
-          />
+          {isLocalStatic ? (
+            <Image
+              src={logoSrc || BRAND_LOGO_SRC}
+              alt=""
+              width={dims.img}
+              height={dims.img}
+              className="object-contain"
+              priority
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoSrc}
+              alt=""
+              width={dims.img}
+              height={dims.img}
+              className="object-contain"
+            />
+          )}
         </div>
       </div>
       {label ? (

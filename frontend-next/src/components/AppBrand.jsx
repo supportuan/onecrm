@@ -3,39 +3,97 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { PanelLeftClose } from 'lucide-react';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 export const BRAND_NAME = 'OneCRM';
 export const BRAND_TAGLINE = 'Intelligence Connecting Seamlessly!';
 export const BRAND_LOGO_SRC = '/images/applyUniNow.png';
 
-export function AppLogo({ className = 'h-10 w-10', priority = false }) {
+/** Local static marks use next/image; tenant/upload URLs use <img>. */
+function BrandMark({
+  src,
+  alt = '',
+  className = '',
+  width = 24,
+  height = 24,
+  priority = false,
+}) {
+  const resolved = src || BRAND_LOGO_SRC;
+  const isLocalStatic = resolved.startsWith('/images/');
+
+  if (isLocalStatic) {
+    return (
+      <Image
+        src={resolved}
+        alt={alt}
+        width={width}
+        height={height}
+        priority={priority}
+        className={`shrink-0 object-contain ${className}`}
+      />
+    );
+  }
+
   return (
-    <Image
-      src={BRAND_LOGO_SRC}
-      alt={BRAND_NAME}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={resolved}
+      alt={alt}
+      width={width}
+      height={height}
+      className={`shrink-0 object-contain ${className}`}
+    />
+  );
+}
+
+export function useTenantBrand() {
+  const { user } = useAuth();
+  return {
+    logoSrc: user?.tenantLogoUrl || BRAND_LOGO_SRC,
+    name: user?.tenantName || BRAND_NAME,
+    tagline: BRAND_TAGLINE,
+    hasCustomLogo: Boolean(user?.tenantLogoUrl),
+  };
+}
+
+export function AppLogo({ className = 'h-10 w-10', priority = false }) {
+  const { logoSrc, name } = useTenantBrand();
+  return (
+    <BrandMark
+      src={logoSrc}
+      alt={name}
       width={56}
       height={56}
       priority={priority}
-      className={`shrink-0 object-contain ${className}`}
+      className={className}
     />
   );
 }
 
 export function AppBrand({
   subtitle = BRAND_TAGLINE,
-  title = BRAND_NAME,
+  title,
   compact = false,
   href = null,
   logoClassName,
   titleClassName = 'text-lg font-bold tracking-tight text-brand truncate',
   subtitleClassName = 'text-[11px] text-brand-muted truncate leading-snug',
 }) {
+  const brand = useTenantBrand();
+  const resolvedTitle = title ?? brand.name;
+
   const inner = (
     <>
-      <AppLogo className={logoClassName || (compact ? 'h-8 w-8' : 'h-9 w-9')} />
+      <BrandMark
+        src={brand.logoSrc}
+        alt={resolvedTitle}
+        width={36}
+        height={36}
+        className={logoClassName || (compact ? 'h-8 w-8' : 'h-9 w-9')}
+      />
       {!compact && (
         <div className="min-w-0 overflow-hidden">
-          <p className={titleClassName}>{title}</p>
+          <p className={titleClassName}>{resolvedTitle}</p>
           {subtitle && <p className={subtitleClassName}>{subtitle}</p>}
         </div>
       )}
@@ -64,18 +122,20 @@ export function SidebarBrandHeader({
   subtitle = BRAND_TAGLINE,
   homeHref = null,
 }) {
+  const brand = useTenantBrand();
+
   const logoAndTitle = (
     <>
-      <Image
-        src={BRAND_LOGO_SRC}
+      <BrandMark
+        src={brand.logoSrc}
         alt=""
         width={24}
         height={24}
         priority
-        className="h-[22px] w-[22px] shrink-0 object-contain"
+        className="h-[22px] w-[22px]"
       />
       <p className="app-title-gradient truncate text-[17px] font-bold leading-none tracking-tight">
-        {BRAND_NAME}
+        {brand.name}
       </p>
     </>
   );
@@ -122,12 +182,12 @@ export function SidebarBrandHeader({
           aria-label="Expand sidebar"
           title="Expand sidebar"
         >
-          <Image
-            src={BRAND_LOGO_SRC}
-            alt={BRAND_NAME}
+          <BrandMark
+            src={brand.logoSrc}
+            alt={brand.name}
             width={24}
             height={24}
-            className="h-[22px] w-[22px] object-contain"
+            className="h-[22px] w-[22px]"
           />
         </button>
       )}

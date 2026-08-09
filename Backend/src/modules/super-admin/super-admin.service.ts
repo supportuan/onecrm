@@ -9,6 +9,7 @@ import {
   DEFAULT_ROLE_PERMISSIONS,
   ModuleKey,
 } from '../rbac/rbac.constants.js';
+import { deleteStoredFile, resolveFileRef } from '../../lib/file-storage.js';
 
 interface CreateTenantInput {
   name: string;
@@ -153,16 +154,19 @@ export const listTenants = async () => {
     },
   });
   const admins = await Promise.all(tenants.map((t) => findPrimaryAdmin(t.id)));
-  return tenants.map((t, i) => ({
-    id: t.id,
-    name: t.name,
-    slug: t.slug,
-    status: t.status,
-    userCount: t._count.users,
-    enabledModules: t.modules.map((m) => m.moduleKey),
-    primaryAdmin: admins[i],
-    createdAt: t.createdAt,
-  }));
+  return Promise.all(
+    tenants.map(async (t, i) => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      status: t.status,
+      logoUrl: (await resolveFileRef(t.logoUrl)) || null,
+      userCount: t._count.users,
+      enabledModules: t.modules.map((m) => m.moduleKey),
+      primaryAdmin: admins[i],
+      createdAt: t.createdAt,
+    })),
+  );
 };
 
 export const getTenant = async (id: number) => {
@@ -180,6 +184,7 @@ export const getTenant = async (id: number) => {
     name: tenant.name,
     slug: tenant.slug,
     status: tenant.status,
+    logoUrl: (await resolveFileRef(tenant.logoUrl)) || null,
     userCount: tenant._count.users,
     modules: tenant.modules,
     primaryAdmin,
@@ -187,13 +192,36 @@ export const getTenant = async (id: number) => {
   };
 };
 
+export const uploadTenantLogo = async (tenantId: number, fileUrl: string) => {
+  const current = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true, logoUrl: true },
+  });
+  if (!current) throw new Error('Tenant not found');
+
+  if (current.logoUrl) {
+    try {
+      await deleteStoredFile(current.logoUrl);
+    } catch {
+      // ignore cleanup failures; new logo still wins
+    }
+  }
+
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: { logoUrl: fileUrl },
+  });
+
+  return getTenant(tenantId);
+};
+
 export const updateTenant = async (
   id: number,
   data: { name?: string; status?: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED' },
 ) => {
-  const tenant = await prisma.tenant.update({ where: { id }, data });
+  await prisma.tenant.update({ where: { id }, data });
   invalidateTenantCache(id);
-  return tenant;
+  return getTenant(id);
 };
 
 export const updateTenantModules = async (id: number, modules: ModuleKey[]) => {

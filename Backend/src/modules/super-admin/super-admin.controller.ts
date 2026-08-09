@@ -107,3 +107,32 @@ export const setModules = async (req: Request, res: Response, next: NextFunction
     next(err);
   }
 };
+
+export const uploadLogo = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return sendError(res, 'Invalid tenant id', null, 400);
+    const file = req.file;
+    if (!file) {
+      return sendError(res, 'image is required (jpg, jpeg, png, webp, max 5MB)', null, 400);
+    }
+
+    const { safeUploadFilename, storeUploadedFile } = await import('../../lib/file-storage.js');
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/tenants/${id}/logo/${storedName}`;
+    const { ref: fileUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    const tenant = await svc.uploadTenantLogo(id, fileUrl);
+    await audit.logSuperAdminAction(req.user!.id, 'tenant.uploadLogo', id, {
+      logoUrl: fileUrl,
+    });
+    return sendSuccess(res, 'Tenant logo updated', tenant);
+  } catch (err: any) {
+    if (err?.message === 'Tenant not found') return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
