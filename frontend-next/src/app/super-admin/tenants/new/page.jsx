@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import authFetch from '@/lib/api';
 
@@ -16,6 +16,9 @@ export default function NewTenantPage() {
     modules: ['HR', 'ADMIN'],
     admin: { fullName: '', email: '', password: '', phone: '' },
   });
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const logoInputRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -36,6 +39,21 @@ export default function NewTenantPage() {
         : [...f.modules, key],
     }));
 
+  const onLogoPick = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
+
+  const clearLogo = () => {
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -48,7 +66,20 @@ export default function NewTenantPage() {
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.message || 'Failed');
-      router.push(`/super-admin/tenants/${json.data.tenant.id}`);
+      const tenantId = json.data.tenant.id;
+      if (logoFile) {
+        const body = new FormData();
+        body.append('file', logoFile);
+        const logoRes = await authFetch(`/api/super-admin/tenants/${tenantId}/logo`, {
+          method: 'POST',
+          body,
+        });
+        const logoJson = await logoRes.json().catch(() => null);
+        if (!logoRes.ok || !logoJson?.success) {
+          throw new Error(logoJson?.message || 'Tenant created, but logo upload failed');
+        }
+      }
+      router.push(`/super-admin/tenants/${tenantId}`);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -86,6 +117,47 @@ export default function NewTenantPage() {
               hint="lowercase, hyphens, used in URLs/keys"
               required
             />
+          </div>
+          <div>
+            <span className="block text-xs font-medium text-neutral-700 mb-2">Logo (optional)</span>
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 text-xs font-semibold text-brand">
+                {logoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={logoPreview} alt="" className="h-full w-full object-contain p-1" />
+                ) : (
+                  'Logo'
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                  >
+                    {logoFile ? 'Change logo' : 'Choose logo'}
+                  </button>
+                  {logoFile && (
+                    <button
+                      type="button"
+                      onClick={clearLogo}
+                      className="text-xs text-neutral-500 hover:text-neutral-800"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                  className="hidden"
+                  onChange={onLogoPick}
+                />
+                <p className="text-xs text-neutral-500">JPG, PNG or WebP · max 5MB</p>
+              </div>
+            </div>
           </div>
         </section>
 

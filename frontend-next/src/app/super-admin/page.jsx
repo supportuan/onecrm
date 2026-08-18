@@ -80,7 +80,28 @@ export default function SuperAdminTenantsPage() {
               )}
               {tenants.map((t) => (
                 <tr key={t.id}>
-                  <td className="px-4 py-3 font-medium text-brand">{t.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 text-[10px] font-semibold text-brand">
+                        {t.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={t.logoUrl}
+                            alt=""
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          (t.name || '?')
+                            .split(/\s+/)
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map((w) => w[0]?.toUpperCase())
+                            .join('')
+                        )}
+                      </div>
+                      <span className="font-medium text-brand">{t.name}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-neutral-600">{t.slug}</td>
                   <td className="px-4 py-3">
                     <span

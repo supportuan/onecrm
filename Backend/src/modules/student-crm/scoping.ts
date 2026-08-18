@@ -9,7 +9,18 @@ export const hasFullCrmAccess = (role?: string) =>
 
 export const isStudentRole = (role?: string) => role === 'STUDENT';
 
-type ScopeUser = { id?: number; role?: string; email?: string | null };
+type ScopeUser = {
+  id?: number;
+  role?: string;
+  email?: string | null;
+  tenantId?: number | null;
+};
+
+const withTenant = (where: Record<string, unknown>, user?: ScopeUser) => {
+  // SUPER_ADMIN may operate cross-tenant; everyone else is pinned when known.
+  if (user?.role === 'SUPER_ADMIN' || user?.tenantId == null) return where;
+  return { ...where, tenantId: user.tenantId };
+};
 
 /** Match student rows linked by userId or legacy email-only records. */
 export const studentSelfWhere = (user: ScopeUser) => {
@@ -17,30 +28,39 @@ export const studentSelfWhere = (user: ScopeUser) => {
   if (user.email) {
     or.push({ email: { equals: user.email, mode: 'insensitive' }, userId: null });
   }
-  return { deletedAt: null, OR: or };
+  return withTenant({ deletedAt: null, OR: or }, user);
 };
 
 /** Counsellor: assigned records; Student: own profile/applications only */
 export const applicationScopeWhere = (user?: ScopeUser) => {
-  if (!user?.id || hasFullCrmAccess(user.role)) return {};
+  if (!user?.id || hasFullCrmAccess(user.role)) {
+    return withTenant({}, user);
+  }
   if (isStudentRole(user.role)) {
     return { student: studentSelfWhere(user) };
   }
-  return { assignedToId: user.id };
+  return withTenant({ assignedToId: user.id }, user);
 };
 
 export const studentScopeWhere = (user?: ScopeUser) => {
-  if (!user?.id || hasFullCrmAccess(user.role)) return { deletedAt: null };
+  if (!user?.id || hasFullCrmAccess(user.role)) {
+    return withTenant({ deletedAt: null }, user);
+  }
   if (isStudentRole(user.role)) return studentSelfWhere(user);
-  return {
-    deletedAt: null,
-    OR: [{ contactId: user.id }, { applications: { some: { assignedToId: user.id } } }],
-  };
+  return withTenant(
+    {
+      deletedAt: null,
+      OR: [{ contactId: user.id }, { applications: { some: { assignedToId: user.id } } }],
+    },
+    user,
+  );
 };
 
 /** Agency partners only see students referred to them. */
 export const resolveStudentScopeWhere = async (user?: ScopeUser) => {
-  if (!user?.id || hasFullCrmAccess(user.role)) return { deletedAt: null };
+  if (!user?.id || hasFullCrmAccess(user.role)) {
+    return withTenant({ deletedAt: null }, user);
+  }
   if (isStudentRole(user.role)) return studentSelfWhere(user);
   if (isAgencyPartnerUser(user.role)) {
     const partner = await prisma.agencyPartner.findUnique({
@@ -52,13 +72,15 @@ export const resolveStudentScopeWhere = async (user?: ScopeUser) => {
       { agencyReferrals: { some: { agencyPartnerId: partner.id } } },
     ];
     if (partner.agencyCode) or.push({ source: partner.agencyCode });
-    return { deletedAt: null, OR: or };
+    return withTenant({ deletedAt: null, OR: or }, user);
   }
   return studentScopeWhere(user);
 };
 
 export const resolveApplicationScopeWhere = async (user?: ScopeUser) => {
-  if (!user?.id || hasFullCrmAccess(user.role)) return {};
+  if (!user?.id || hasFullCrmAccess(user.role)) {
+    return withTenant({}, user);
+  }
   if (isStudentRole(user.role)) return { student: studentSelfWhere(user) };
   if (isAgencyPartnerUser(user.role)) {
     const studentWhere = await resolveStudentScopeWhere(user);

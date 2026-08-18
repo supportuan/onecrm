@@ -4,7 +4,8 @@ export type SuperAdminAction =
   | 'tenant.create'
   | 'tenant.update'
   | 'tenant.setModules'
-  | 'tenant.resetAdminPassword';
+  | 'tenant.resetAdminPassword'
+  | 'tenant.uploadLogo';
 
 export const logSuperAdminAction = async (
   actorId: number,

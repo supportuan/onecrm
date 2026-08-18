@@ -4,6 +4,7 @@ import { isSuperAdmin } from './super-admin.middleware.js';
 import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
 import { sendSuccess } from '../../utils/response.js';
 import * as ctrl from './super-admin.controller.js';
+import { tenantLogoUpload } from './super-admin.upload.js';
 
 const router = Router();
 
@@ -20,6 +21,11 @@ router.post('/tenants', ctrl.create);
 router.get('/tenants/:id', ctrl.get);
 router.patch('/tenants/:id', ctrl.update);
 router.patch('/tenants/:id/modules', ctrl.setModules);
+router.post(
+  '/tenants/:id/logo',
+  tenantLogoUpload.single('file'),
+  ctrl.uploadLogo,
+);
 router.post('/tenants/:id/admin/reset-password', ctrl.resetAdminPassword);
 router.get('/audit', ctrl.listAudits);
 

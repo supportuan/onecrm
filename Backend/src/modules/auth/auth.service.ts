@@ -547,6 +547,18 @@ export const logout = async (token: string) => {
   await prisma.refreshToken.deleteMany({ where: { token } });
 };
 
+export const resolveTenantBranding = async (
+  tenant?: { id: number; name: string; logoUrl: string | null } | null,
+) => {
+  if (!tenant) {
+    return { tenantName: null as string | null, tenantLogoUrl: null as string | null };
+  }
+  return {
+    tenantName: tenant.name,
+    tenantLogoUrl: (await resolveFileRef(tenant.logoUrl)) || null,
+  };
+};
+
 export const getUserProfile = async (id: number) => {
   const user = await prisma.user.findUnique({
     where: { id },
@@ -567,12 +579,16 @@ export const getUserProfile = async (id: number) => {
       createdAt: true,
       updatedAt: true,
       moduleAccess: true,
+      tenant: { select: { id: true, name: true, logoUrl: true } },
     },
   });
   if (!user) return null;
+  const { tenant, ...rest } = user;
+  const branding = await resolveTenantBranding(tenant);
   return {
-    ...user,
+    ...rest,
     profilePhotoUrl: (await resolveFileRef(user.profilePhotoUrl)) || null,
+    ...branding,
   };
 };
 

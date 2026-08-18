@@ -21,6 +21,7 @@ const FILE_URL_FIELDS = new Set([
   'resumeUrl',
   'attachmentUrl',
   'logo',
+  'logoUrl',
   'url',
   'profilePhotoUrl',
   'offerLetterFileUrl',

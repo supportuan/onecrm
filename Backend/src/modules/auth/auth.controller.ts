@@ -61,6 +61,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
         const { resolveFileRef } = await import('../../lib/file-storage.js');
         const profilePhotoUrl = (await resolveFileRef(user.profilePhotoUrl)) || null;
+        const branding = await authService.resolveTenantBranding(user.tenant ?? null);
 
         return sendSuccess(res, 'Login successful', {
             user: {
@@ -71,6 +72,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
                 roleLabel: user.roleLabel ?? null,
                 permissionRole: user.permissionRole ?? null,
                 tenantId: user.tenantId ?? null,
+                tenantName: branding.tenantName,
+                tenantLogoUrl: branding.tenantLogoUrl,
                 moduleAccess: user.moduleAccess,
                 enabledModules,
                 mustChangePassword,

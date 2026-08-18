@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import authFetch from '@/lib/api';
 
@@ -15,6 +15,13 @@ export default function TenantDetailPage() {
   const [msg, setMsg] = useState(null);
   const [resetResult, setResetResult] = useState(null);
   const [resetting, setResetting] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoError, setLogoError] = useState(null);
+  const [logoMsg, setLogoMsg] = useState(null);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameMsg, setNameMsg] = useState(null);
+  const [nameError, setNameError] = useState(null);
+  const logoInputRef = useRef(null);
 
   const load = async () => {
     setLoading(true);
@@ -26,6 +33,7 @@ export default function TenantDetailPage() {
       const [tJson, cJson] = await Promise.all([tRes.json(), cRes.json()]);
       if (!tRes.ok || !tJson.success) throw new Error(tJson.message || 'Failed to load');
       setTenant(tJson.data);
+      setNameDraft(tJson.data?.name || '');
       if (cJson.success) setCatalog(cJson.data);
       setError(null);
     } catch (e) {
@@ -95,7 +103,7 @@ export default function TenantDetailPage() {
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.message || 'Failed');
-      load();
+      setTenant(json.data);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -103,9 +111,73 @@ export default function TenantDetailPage() {
     }
   };
 
+  const saveName = async (e) => {
+    e?.preventDefault?.();
+    const next = (nameDraft || '').trim();
+    if (next.length < 2) {
+      setNameError('Name must be at least 2 characters');
+      return;
+    }
+    if (next === tenant.name) {
+      setNameMsg('No changes');
+      return;
+    }
+    setSaving(true);
+    setNameError(null);
+    setNameMsg(null);
+    try {
+      const res = await authFetch(`/api/super-admin/tenants/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: next }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || 'Failed');
+      setTenant(json.data);
+      setNameDraft(json.data?.name || next);
+      setNameMsg('Name saved');
+    } catch (err) {
+      setNameError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const uploadLogo = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setLogoError(null);
+    setLogoMsg(null);
+    setUploadingLogo(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await authFetch(`/api/super-admin/tenants/${id}/logo`, {
+        method: 'POST',
+        body: form,
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || 'Upload failed');
+      setTenant(json.data);
+      setLogoMsg('Logo saved');
+    } catch (err) {
+      setLogoError(err.message);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-sm text-neutral-500">Loading…</div>;
-  if (error) return <div className="p-8 text-sm text-red-600">{error}</div>;
+  if (error && !tenant) return <div className="p-8 text-sm text-red-600">{error}</div>;
   if (!tenant) return null;
+
+  const initials = (tenant.name || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('');
 
   return (
     <div className="p-8 max-w-3xl">
@@ -117,11 +189,25 @@ export default function TenantDetailPage() {
       </button>
 
       <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-brand">{tenant.name}</h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            slug: <code>{tenant.slug}</code> · {tenant.userCount} user{tenant.userCount === 1 ? '' : 's'}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 text-sm font-semibold text-brand">
+            {tenant.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={tenant.logoUrl}
+                alt=""
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              initials
+            )}
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-brand">{tenant.name}</h1>
+            <p className="text-sm text-neutral-500 mt-1">
+              slug: <code>{tenant.slug}</code> · {tenant.userCount} user{tenant.userCount === 1 ? '' : 's'}
+            </p>
+          </div>
         </div>
         <select
           value={tenant.status}
@@ -134,6 +220,93 @@ export default function TenantDetailPage() {
           <option value="ARCHIVED">ARCHIVED</option>
         </select>
       </div>
+
+      <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-6 space-y-6">
+        <div>
+          <h2 className="font-medium text-brand mb-1">Organization</h2>
+          <p className="text-xs text-neutral-500">
+            Display name shown in the dashboard sidebar for this tenant&apos;s users. Slug stays fixed.
+          </p>
+        </div>
+
+        <form onSubmit={saveName} className="space-y-2">
+          <label className="block">
+            <span className="block text-xs font-medium text-neutral-700 mb-1">Name</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={nameDraft}
+                onChange={(e) => {
+                  setNameDraft(e.target.value);
+                  setNameMsg(null);
+                  setNameError(null);
+                }}
+                maxLength={120}
+                required
+                className="min-w-[220px] flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+              <button
+                type="submit"
+                disabled={saving || (nameDraft || '').trim() === tenant.name}
+                className="rounded-lg bg-brand px-3 py-2 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+              >
+                {saving ? 'Saving…' : 'Save name'}
+              </button>
+            </div>
+          </label>
+          {tenant.slug === 'default' && (
+            <p className="text-xs text-neutral-500">
+              This is the default tenant (slug <code>default</code>). You can rename the display name; the slug cannot change.
+            </p>
+          )}
+          {nameError && <p className="text-xs text-red-600">{nameError}</p>}
+          {nameMsg && !nameError && <p className="text-xs text-emerald-600">{nameMsg}</p>}
+        </form>
+
+        <div>
+          <h3 className="text-sm font-medium text-brand mb-2">Logo</h3>
+          <p className="text-xs text-neutral-500 mb-4">
+            JPG, PNG or WebP · max 5MB. Shown in the tenant list and dashboard branding.
+          </p>
+          <div className="flex items-center gap-4">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 text-base font-semibold text-brand">
+              {tenant.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={tenant.logoUrl}
+                  alt={`${tenant.name} logo`}
+                  className="h-full w-full object-contain p-1"
+                />
+              ) : (
+                initials
+              )}
+            </div>
+            <div className="space-y-2">
+              <button
+                type="button"
+                disabled={uploadingLogo}
+                onClick={() => logoInputRef.current?.click()}
+                className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {uploadingLogo
+                  ? 'Uploading…'
+                  : tenant.logoUrl
+                    ? 'Replace logo'
+                    : 'Upload logo'}
+              </button>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                className="hidden"
+                onChange={uploadLogo}
+              />
+              {logoError && <p className="text-xs text-red-600">{logoError}</p>}
+              {logoMsg && !logoError && <p className="text-xs text-emerald-600">{logoMsg}</p>}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-6">
         <h2 className="font-medium text-brand mb-3">Primary admin</h2>

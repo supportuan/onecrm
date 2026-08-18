@@ -302,8 +302,6 @@ export const createLead = async (data: any) => {
   const email = normalizeEmail(data.email);
   const phone = normalizePhone(data.phone);
 
-  await validateDuplicateLead(email, phone);
-
   const referralCode =
     data.referralCode ||
     data.agencyRef ||
@@ -316,15 +314,25 @@ export const createLead = async (data: any) => {
     ...leadData
   } = data;
 
-  let tenantId = leadData.tenantId;
+  let tenantId = leadData.tenantId ?? null;
   if (tenantId == null) {
     try {
-      const { getDefaultTenantId } = await import('../../../utils/tenant-default.js');
-      tenantId = await getDefaultTenantId();
+      const { getTenantContext } = await import('../../../middleware/tenant-context.js');
+      const ctx = getTenantContext();
+      if (ctx?.tenantId != null) tenantId = ctx.tenantId;
+    } catch {
+      /* ignore */
+    }
+  }
+  if (tenantId == null) {
+    try {
+      tenantId = await getDefaultTenantId(leadData.assignedCounsellorId ?? null);
     } catch {
       tenantId = undefined;
     }
   }
+
+  await validateDuplicateLead(email, phone, undefined, tenantId ?? null);
 
   const lead = await prisma.lead.create({
     data: {
@@ -2194,7 +2202,7 @@ export const createWebsiteLead = async (
       assignedCounsellorId: null,
 
       assignedById: null,
-      tenantId :1
+      tenantId: (await getDefaultTenantId()) ?? undefined,
     },
 
     include: {
