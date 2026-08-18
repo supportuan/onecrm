@@ -208,6 +208,7 @@ model Tenant {
   campaigns      Campaign[]
   applications   Application[]
   resources      Resource[]
+  workflowTemplates ApplicationWorkflowTemplate[]
 }
 
 // Per-tenant module enablement. If a row is missing, the module is OFF.
@@ -753,6 +754,7 @@ model User {
   applicationPaymentsActed ApplicationPayment[]   @relation("PaymentActor")
   applicationTasksAssigned ApplicationTask[]      @relation("ApplicationTaskAssignee")
   applicationTasksCreated  ApplicationTask[]      @relation("ApplicationTaskCreator")
+  applicationComments      ApplicationComment[]   @relation("ApplicationCommentAuthor")
   agencyPartner           AgencyPartner?
   agencyActivities        AgencyActivity[]        @relation("AgencyActivityActor")
   agencyCommissionsVerified AgencyCommission[]    @relation("CommissionVerifiedBy")
@@ -804,6 +806,7 @@ model Country {
   faqs              Faq[]
   countryChecklists CountryChecklist[]
   studyPlans        StudentStudyPlan[]
+  workflowTemplates ApplicationWorkflowTemplate[]
 }
 
 model StudyIndustry {
@@ -913,6 +916,32 @@ enum ApplicationProcessStage {
   PRE_REQUISITE
 }
 
+enum WorkflowSectionType {
+  STUDENT_INFO
+  DISCUSSIONS
+  APPLICATION_PROCESS
+  UNIVERSITY_APPLICATION
+  SELECTION_OF_UNIVERSITY
+  FINANCE_CALCULATOR
+  PRE_CAS_PROCESS
+  VISA_APPLICATION
+  PRE_DEPARTURE
+  ON_ARRIVAL
+  ENROLMENT_CONFIRMATION
+  LOGS_INFO
+}
+
+enum WorkflowFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  DATE
+  SELECT
+  CHECKBOX
+  URL
+  CURRENCY
+}
+
 model Student {
   id                  Int                     @id @default(autoincrement())
   userId              Int?                    @unique
@@ -995,18 +1024,21 @@ model Student {
 }
 
 model StudentUniversity {
-  id            Int      @id @default(autoincrement())
-  studentId     Int
-  universityId  Int
-  value         String?
-  isSelected    Boolean  @default(false)
-  status        String   @default("Application Processing")
-  appliedIntake String?
-  offerIntake   String?
-  courseLink    String?
-  defer         Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                    Int       @id @default(autoincrement())
+  studentId             Int
+  universityId          Int
+  value                 String?
+  isSelected            Boolean   @default(false)
+  status                String    @default("Application Processing")
+  appliedIntake         String?
+  offerIntake           String?
+  courseLink            String?
+  defer                 Boolean   @default(false)
+  offerLetterFileUrl    String?
+  offerLetterFilename   String?
+  offerLetterReceivedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
@@ -1193,6 +1225,7 @@ model Application {
   applicationCode String           @unique
   studentId       Int
   studyPlanId     Int?
+  workflowTemplateId Int?
   country         String
   university      String
   course          String
@@ -1206,6 +1239,7 @@ model Application {
 
   student           Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
   studyPlan         StudentStudyPlan?         @relation(fields: [studyPlanId], references: [id], onDelete: SetNull)
+  workflowTemplate  ApplicationWorkflowTemplate? @relation(fields: [workflowTemplateId], references: [id], onDelete: SetNull)
   assignedTo        User?                   @relation("ApplicationAssignee", fields: [assignedToId], references: [id])
   stageEvents       ApplicationStageEvent[]
   documents         ApplicationDocument[]
@@ -1214,6 +1248,9 @@ model Application {
   offerLetter       OfferLetter?
   visaTracking      VisaTracking?
   tasks             ApplicationTask[]
+  comments          ApplicationComment[]
+  workflowFieldValues     ApplicationWorkflowFieldValue[]
+  workflowChecklistValues ApplicationWorkflowChecklistValue[]
   agencyReferrals   AgencyReferral[]
   agencyCommissions AgencyCommission[]
   tenantId          Int?
@@ -1223,7 +1260,135 @@ model Application {
   @@index([stage])
   @@index([assignedToId])
   @@index([studyPlanId])
+  @@index([workflowTemplateId])
   @@index([tenantId])
+}
+
+model ApplicationComment {
+  id            Int       @id @default(autoincrement())
+  applicationId Int
+  authorId      Int?
+  body          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  author      User?       @relation("ApplicationCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt])
+}
+
+model ApplicationWorkflowTemplate {
+  id          Int       @id @default(autoincrement())
+  tenantId     Int?
+  countryId    Int?
+  name         String
+  description  String?
+  isActive     Boolean   @default(true)
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant        Tenant?                             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  country       Country?                            @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  stages        ApplicationWorkflowStageTemplate[]
+  applications  Application[]
+
+  @@index([tenantId, countryId, isActive])
+}
+
+model ApplicationWorkflowStageTemplate {
+  id          Int                 @id @default(autoincrement())
+  templateId   Int
+  key          String
+  label        String
+  iconKey      String?
+  sectionType  WorkflowSectionType
+  sortOrder    Int                @default(0)
+  isRequired   Boolean            @default(true)
+  metadata     Json?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  template     ApplicationWorkflowTemplate         @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  fields       ApplicationWorkflowFieldTemplate[]
+  checklists   ApplicationWorkflowChecklistTemplate[]
+
+  @@unique([templateId, key])
+  @@index([templateId, sortOrder])
+}
+
+model ApplicationWorkflowFieldTemplate {
+  id              Int               @id @default(autoincrement())
+  stageTemplateId Int
+  fieldKey        String
+  label           String
+  fieldType       WorkflowFieldType
+  required        Boolean           @default(false)
+  placeholder     String?
+  helpText        String?
+  defaultValue    Json?
+  optionsJson     Json?
+  sortOrder       Int               @default(0)
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  stageTemplate   ApplicationWorkflowStageTemplate @relation(fields: [stageTemplateId], references: [id], onDelete: Cascade)
+  values          ApplicationWorkflowFieldValue[]
+
+  @@unique([stageTemplateId, fieldKey])
+  @@index([stageTemplateId, sortOrder])
+}
+
+model ApplicationWorkflowChecklistTemplate {
+  id              Int               @id @default(autoincrement())
+  stageTemplateId Int
+  itemKey         String
+  label           String
+  required        Boolean           @default(true)
+  sortOrder       Int               @default(0)
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  stageTemplate   ApplicationWorkflowStageTemplate @relation(fields: [stageTemplateId], references: [id], onDelete: Cascade)
+  values          ApplicationWorkflowChecklistValue[]
+
+  @@unique([stageTemplateId, itemKey])
+  @@index([stageTemplateId, sortOrder])
+}
+
+model ApplicationWorkflowFieldValue {
+  id               Int                             @id @default(autoincrement())
+  applicationId    Int
+  fieldTemplateId  Int
+  valueJson        Json?
+  createdAt        DateTime                        @default(now())
+  updatedAt        DateTime                        @updatedAt
+
+  application      Application                     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fieldTemplate    ApplicationWorkflowFieldTemplate @relation(fields: [fieldTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, fieldTemplateId])
+  @@index([applicationId])
+}
+
+model ApplicationWorkflowChecklistValue {
+  id                 Int                                 @id @default(autoincrement())
+  applicationId      Int
+  checklistTemplateId Int
+  completed          Boolean                             @default(false)
+  valueText          String?
+  createdAt          DateTime                            @default(now())
+  updatedAt          DateTime                            @updatedAt
+
+  application        Application                         @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  checklistTemplate  ApplicationWorkflowChecklistTemplate @relation(fields: [checklistTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, checklistTemplateId])
+  @@index([applicationId])
 }
 
 model ApplicationTask {

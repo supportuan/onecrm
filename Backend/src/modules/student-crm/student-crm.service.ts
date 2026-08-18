@@ -18,8 +18,23 @@ import {
 } from './visa-workflows.js';
 import { assertStageAdvanceAllowed } from './application-gates.js';
 import { seedDefaultApplicationFee } from './payments.service.js';
+import { findOrCreateUniversity } from '../crm-settings/crm-settings.service.js';
+import {
+  WORKFLOW_TEMPLATE_INCLUDE,
+  cloneWorkflowTemplate,
+  createWorkflowTemplate,
+  deleteWorkflowTemplate,
+  ensureCountryWorkflowTemplate,
+  getWorkflowTemplateById,
+  initializeWorkflowValues,
+  listWorkflowTemplates,
+  resetWorkflowTemplateToDefault,
+  saveWorkflowChecklistValues,
+  saveWorkflowFieldValues,
+  updateWorkflowTemplate,
+} from './workflow-template.service.js';
 
-type Actor = { id?: number; role?: string };
+type Actor = { id?: number; role?: string; tenantId?: number | null };
 
 const STUDY_PLAN_INCLUDE = {
   countryRef: { select: { id: true, name: true } },
@@ -692,10 +707,30 @@ export const listStudentUniversities = async (studentId: number, actor?: Actor) 
   return student.universities;
 };
 
-export const upsertStudentUniversity = async (
+const studentUniversityInclude = { university: { include: { country: true } } } as const;
+
+const resolveCountryIdForUniversity = (student: { countryId?: number | null }, countryId?: number | null) => {
+  const id = Number(countryId || student.countryId || 0);
+  return id || null;
+};
+
+const resolveUniversityIdForStudent = async (
+  student: { countryId?: number | null },
+  data: { universityId?: number; universityName?: string; countryId?: number }
+) => {
+  if (data.universityId) return Number(data.universityId);
+  const name = String(data.universityName || '').trim();
+  if (!name) throw new Error('universityId or universityName required');
+  const countryId = resolveCountryIdForUniversity(student, data.countryId);
+  if (!countryId) throw new Error('Set a destination country before adding a university');
+  const result = await findOrCreateUniversity({ name, countryId });
+  return result.university.id;
+};
+
+const persistStudentUniversity = async (
   studentId: number,
+  universityId: number,
   data: {
-    universityId: number;
     value?: string;
     isSelected?: boolean;
     status?: string;
@@ -703,6 +738,36 @@ export const upsertStudentUniversity = async (
     offerIntake?: string;
     courseLink?: string;
     defer?: boolean;
+    offerLetterFileUrl?: string | null;
+    offerLetterFilename?: string | null;
+    offerLetterReceivedAt?: Date | null;
+  }
+) =>
+  prisma.studentUniversity.upsert({
+    where: { studentId_universityId: { studentId, universityId } },
+    create: { studentId, universityId, ...data },
+    update: data,
+    include: studentUniversityInclude,
+  });
+
+export const upsertStudentUniversity = async (
+  studentId: number,
+  data: {
+    universityId?: number;
+    universityName?: string;
+    universityIds?: number[];
+    names?: string[];
+    countryId?: number;
+    value?: string;
+    isSelected?: boolean;
+    status?: string;
+    appliedIntake?: string;
+    offerIntake?: string;
+    courseLink?: string;
+    defer?: boolean;
+    offerLetterFileUrl?: string | null;
+    offerLetterFilename?: string | null;
+    offerLetterReceivedAt?: Date | string | null;
   },
   actor?: Actor
 ) => {
@@ -710,12 +775,92 @@ export const upsertStudentUniversity = async (
   if (!student) throw new Error('student not found');
   if (student.isEnrolled) throw new Error('enrolled students are locked');
 
-  return prisma.studentUniversity.upsert({
-    where: { studentId_universityId: { studentId, universityId: data.universityId } },
-    create: { studentId, ...data },
-    update: data,
-    include: { university: { include: { country: true } } },
+  const fieldData = {
+    value: data.value,
+    isSelected: data.isSelected,
+    status: data.status,
+    appliedIntake: data.appliedIntake,
+    offerIntake: data.offerIntake,
+    courseLink: data.courseLink,
+    defer: data.defer,
+    offerLetterFileUrl: data.offerLetterFileUrl,
+    offerLetterFilename: data.offerLetterFilename,
+    offerLetterReceivedAt:
+      data.offerLetterReceivedAt === undefined
+        ? undefined
+        : data.offerLetterReceivedAt
+          ? new Date(data.offerLetterReceivedAt)
+          : null,
+  };
+  Object.keys(fieldData).forEach((key) => {
+    if (fieldData[key as keyof typeof fieldData] === undefined) delete fieldData[key as keyof typeof fieldData];
   });
+
+  const bulkIds = Array.isArray(data.universityIds)
+    ? data.universityIds.map((id) => Number(id)).filter(Boolean)
+    : [];
+  const bulkNames = Array.isArray(data.names)
+    ? data.names.map((name) => String(name || '').trim()).filter(Boolean)
+    : [];
+
+  if (bulkIds.length || bulkNames.length) {
+    const countryId = resolveCountryIdForUniversity(student, data.countryId);
+    const ids = [...bulkIds];
+    for (const name of bulkNames) {
+      if (!countryId) throw new Error('Set a destination country before adding a university');
+      const result = await findOrCreateUniversity({ name, countryId });
+      ids.push(result.university.id);
+    }
+    const uniqueIds = [...new Set(ids)];
+    return Promise.all(uniqueIds.map((universityId) => persistStudentUniversity(studentId, universityId, fieldData)));
+  }
+
+  const universityId = await resolveUniversityIdForStudent(student, data);
+  return persistStudentUniversity(studentId, universityId, fieldData);
+};
+
+export const uploadStudentUniversityOfferLetter = async (
+  studentId: number,
+  universityId: number,
+  data: { fileUrl: string; filename: string; applicationId?: number },
+  actor?: Actor
+) => {
+  const student = await getStudent(studentId, actor);
+  if (!student) throw new Error('student not found');
+  if (student.isEnrolled) throw new Error('enrolled students are locked');
+
+  const existing = await prisma.studentUniversity.findUnique({
+    where: { studentId_universityId: { studentId, universityId } },
+  });
+  if (!existing) throw new Error('university not on shortlist');
+
+  const row = await persistStudentUniversity(studentId, universityId, {
+    offerLetterFileUrl: data.fileUrl,
+    offerLetterFilename: data.filename,
+    offerLetterReceivedAt: new Date(),
+    status: 'Offer Letter Received',
+  });
+
+  if (data.applicationId && existing.isSelected) {
+    try {
+      await upsertOfferLetter(
+        data.applicationId,
+        {
+          fileUrl: data.fileUrl,
+          filename: data.filename,
+          receivedAt: new Date().toISOString().slice(0, 10),
+        },
+        actor?.id
+      );
+    } catch (err) {
+      console.warn(
+        '[student-crm] application offer sync skipped after university upload:',
+        (err as Error)?.message
+      );
+    }
+  }
+
+  return row;
 };
 
 export const removeStudentUniversity = async (studentId: number, universityId: number, actor?: Actor) => {
@@ -896,7 +1041,16 @@ export const removeStudentStudyPlan = async (
 // -------------------- Applications --------------------
 
 const APPLICATION_INCLUDE = {
-  student: true,
+  student: {
+    include: {
+      universities: {
+        select: { universityId: true, status: true, offerLetterFileUrl: true },
+      },
+    },
+  },
+  workflowTemplate: {
+    include: WORKFLOW_TEMPLATE_INCLUDE,
+  },
   assignedTo: { select: { id: true, fullName: true, email: true, role: true } },
   documents: { orderBy: { id: 'asc' as const } },
   fees: { orderBy: { id: 'asc' as const } },
@@ -912,17 +1066,26 @@ const APPLICATION_INCLUDE = {
       createdBy: { select: { id: true, fullName: true } },
     },
   },
+  comments: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'asc' as const },
+    include: { author: { select: { id: true, fullName: true, email: true, role: true } } },
+  },
   stageEvents: {
     orderBy: { createdAt: 'desc' as const },
     take: 50,
     include: { changedBy: { select: { id: true, fullName: true } } },
   },
+  workflowFieldValues: true,
+  workflowChecklistValues: true,
 };
 
 export const listApplications = async (opts: {
   studentId?: number;
   stage?: string;
   assignedToId?: number;
+  countryId?: number;
+  workflowTemplateId?: number;
   search?: string;
   limit?: number;
   actor?: Actor;
@@ -931,6 +1094,7 @@ export const listApplications = async (opts: {
   if (opts.studentId) where.studentId = opts.studentId;
   if (opts.stage) where.stage = opts.stage;
   if (opts.assignedToId) where.assignedToId = opts.assignedToId;
+  if (opts.workflowTemplateId) where.workflowTemplateId = opts.workflowTemplateId;
   if (opts.search) {
     where.OR = [
       { applicationCode: { contains: opts.search, mode: 'insensitive' } },
@@ -946,13 +1110,27 @@ export const listApplications = async (opts: {
     include: {
       student: { select: { id: true, fullName: true, email: true } },
       assignedTo: { select: { id: true, fullName: true } },
+      workflowTemplate: {
+        select: { id: true, name: true, country: { select: { id: true, name: true } } },
+      },
     },
   });
 };
 
 export const getApplication = async (id: number, actor?: Actor) => {
   const scope = await resolveApplicationScopeWhere(actor);
-  return prisma.application.findFirst({ where: { id, ...scope }, include: APPLICATION_INCLUDE });
+  let app = await prisma.application.findFirst({ where: { id, ...scope }, include: APPLICATION_INCLUDE });
+  if (app && !app.workflowTemplateId) {
+    const countryRow = await resolveCountry(app.country);
+    const workflowTemplate = await ensureCountryWorkflowTemplate(app.country, countryRow?.id ?? null, actor);
+    await prisma.application.update({
+      where: { id: app.id },
+      data: { workflowTemplateId: workflowTemplate.id },
+    });
+    await initializeWorkflowValues(app.id, workflowTemplate.id);
+    app = await prisma.application.findFirst({ where: { id, ...scope }, include: APPLICATION_INCLUDE });
+  }
+  return app;
 };
 
 /** Seed the document checklist for a new application using country/university defaults. */
@@ -987,6 +1165,7 @@ const seedChecklistFor = async (applicationId: number, country: string, universi
 export const createApplication = async (data: {
   studentId: number;
   studyPlanId?: number;
+  workflowTemplateId?: number;
   country: string;
   university: string;
   course: string;
@@ -994,9 +1173,22 @@ export const createApplication = async (data: {
   assignedToId?: number;
   deadline?: string;
   notes?: string;
-}) => {
+}, actor?: Actor) => {
   const MAX_ATTEMPTS = 5;
   let app: Awaited<ReturnType<typeof prisma.application.create>> | null = null;
+  let workflowTemplateId = data.workflowTemplateId ?? null;
+  if (!workflowTemplateId) {
+    const student = await prisma.student.findUnique({ where: { id: data.studentId } });
+    const countryRow = student?.countryId
+      ? await prisma.country.findUnique({ where: { id: student.countryId } })
+      : await resolveCountry(data.country);
+    const workflowTemplate = await ensureCountryWorkflowTemplate(
+      countryRow?.name || data.country,
+      countryRow?.id ?? null,
+      actor
+    );
+    workflowTemplateId = workflowTemplate.id;
+  }
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
     const code = await generateApplicationCode(attempt);
@@ -1006,6 +1198,7 @@ export const createApplication = async (data: {
           applicationCode: code,
           studentId: data.studentId,
           studyPlanId: data.studyPlanId ?? null,
+          workflowTemplateId,
           country: data.country,
           university: data.university,
           course: data.course,
@@ -1034,6 +1227,9 @@ export const createApplication = async (data: {
   });
   await seedChecklistFor(app.id, data.country, data.university);
   await seedDefaultApplicationFee(app.id);
+  if (workflowTemplateId) {
+    await initializeWorkflowValues(app.id, workflowTemplateId);
+  }
 
   if (data.assignedToId) {
     const student = await prisma.student.findUnique({ where: { id: data.studentId } });
@@ -1051,8 +1247,8 @@ export const createApplication = async (data: {
   return getApplication(app.id);
 };
 
-export const updateApplication = async (id: number, data: Record<string, any>) => {
-  const allowed = ['country', 'university', 'course', 'intake', 'assignedToId', 'deadline', 'notes'];
+export const updateApplication = async (id: number, data: Record<string, any>, actor?: Actor) => {
+  const allowed = ['country', 'university', 'course', 'intake', 'assignedToId', 'deadline', 'notes', 'workflowTemplateId'];
   const payload: any = {};
   for (const k of allowed) {
     if (k in data) {
@@ -1060,15 +1256,25 @@ export const updateApplication = async (id: number, data: Record<string, any>) =
     }
   }
 
-  const previous =
-    'assignedToId' in data
-      ? await prisma.application.findUnique({
-          where: { id },
-          include: { student: true },
-        })
-      : null;
+  const previous = await prisma.application.findUnique({
+    where: { id },
+    include: { student: true },
+  });
+
+  if (payload.country && previous && payload.country !== previous.country && !payload.workflowTemplateId) {
+    const countryRow = await resolveCountry(payload.country);
+    const workflowTemplate = await ensureCountryWorkflowTemplate(
+      payload.country,
+      countryRow?.id ?? null,
+      actor
+    );
+    payload.workflowTemplateId = workflowTemplate.id;
+  }
 
   await prisma.application.update({ where: { id }, data: payload });
+  if (payload.workflowTemplateId) {
+    await initializeWorkflowValues(id, payload.workflowTemplateId);
+  }
 
   if (
     previous &&
@@ -1223,12 +1429,21 @@ export const setStage = async (
 export const upsertDocument = async (
   applicationId: number,
   docId: number | null,
-  data: Partial<{ name: string; required: boolean; filename: string; fileUrl: string; status: string; notes: string }>
+  data: Partial<{ name: string; required: boolean; filename: string | null; fileUrl: string | null; status: string; notes: string }>
 ) => {
-  let previousStatus: string | undefined;
+  let existing: { status: string; fileUrl: string | null } | null = null;
   if (docId) {
-    const existing = await prisma.applicationDocument.findUnique({ where: { id: docId } });
-    previousStatus = existing?.status;
+    existing = await prisma.applicationDocument.findUnique({ where: { id: docId } });
+  }
+  const previousStatus = existing?.status;
+  const clearingFile = Boolean(docId && Object.prototype.hasOwnProperty.call(data, 'fileUrl') && !data.fileUrl);
+
+  if (clearingFile && existing?.fileUrl) {
+    try {
+      await deleteStoredFile(existing.fileUrl);
+    } catch {
+      // ignore missing storage objects
+    }
   }
 
   let result;
@@ -1238,11 +1453,12 @@ export const upsertDocument = async (
       data: {
         ...(data.name && { name: data.name }),
         ...(typeof data.required === 'boolean' && { required: data.required }),
-        ...(data.filename && { filename: data.filename }),
-        ...(data.fileUrl && { fileUrl: data.fileUrl }),
+        ...(data.filename !== undefined && { filename: data.filename || null }),
+        ...(data.fileUrl !== undefined && { fileUrl: data.fileUrl || null }),
         ...(data.status && { status: data.status as any }),
         ...(data.notes !== undefined && { notes: data.notes }),
-        ...((data.status === 'UPLOADED' || data.fileUrl) && { uploadedAt: new Date() }),
+        ...((data.status === 'UPLOADED' || Boolean(data.fileUrl)) && { uploadedAt: new Date() }),
+        ...(clearingFile && { uploadedAt: null, status: ((data.status as any) || 'PENDING') }),
       },
     });
   } else {
@@ -1418,7 +1634,11 @@ export const upsertOfferLetter = async (
 
   if (hasNewFile || (data.receivedAt && app.stage !== 'OFFER_RECEIVED')) {
     if (!['OFFER_ACCEPTED', 'OFFER_REJECTED', 'ENROLLED'].includes(app.stage)) {
-      await setStage(applicationId, 'OFFER_RECEIVED', changedById, 'offer letter received');
+      try {
+        await setStage(applicationId, 'OFFER_RECEIVED', changedById, 'offer letter received');
+      } catch (err) {
+        console.warn('[student-crm] offer letter saved; stage update skipped:', (err as Error)?.message);
+      }
     }
     if (app.student?.userId) {
       await safeNotify({
@@ -1820,6 +2040,78 @@ export const deleteApplicationTask = async (applicationId: number, taskId: numbe
   if (!existing) throw new Error('task not found');
   await prisma.applicationTask.delete({ where: { id: taskId } });
   return { id: taskId };
+};
+
+const COMMENT_INCLUDE = {
+  author: { select: { id: true, fullName: true, email: true, role: true } },
+};
+
+export const listApplicationComments = async (applicationId: number) =>
+  prisma.applicationComment.findMany({
+    where: { applicationId, deletedAt: null },
+    include: COMMENT_INCLUDE,
+    orderBy: { createdAt: 'asc' },
+  });
+
+export const createApplicationComment = async (
+  applicationId: number,
+  data: { body: string },
+  authorId?: number
+) => {
+  const body = String(data?.body || '').trim();
+  if (!body) throw new Error('comment body is required');
+
+  const app = await prisma.application.findUnique({ where: { id: applicationId } });
+  if (!app) throw new Error('application not found');
+
+  return prisma.applicationComment.create({
+    data: { applicationId, authorId: authorId || null, body },
+    include: COMMENT_INCLUDE,
+  });
+};
+
+export const updateApplicationComment = async (
+  applicationId: number,
+  commentId: number,
+  data: { body: string },
+  actor?: Actor
+) => {
+  const existing = await prisma.applicationComment.findFirst({
+    where: { id: commentId, applicationId, deletedAt: null },
+  });
+  if (!existing) throw new Error('comment not found');
+  if (existing.authorId && actor?.id && existing.authorId !== actor.id) {
+    throw new Error('only the author can edit this comment');
+  }
+
+  const body = String(data?.body || '').trim();
+  if (!body) throw new Error('comment body is required');
+
+  return prisma.applicationComment.update({
+    where: { id: commentId },
+    data: { body },
+    include: COMMENT_INCLUDE,
+  });
+};
+
+export const deleteApplicationComment = async (
+  applicationId: number,
+  commentId: number,
+  actor?: Actor
+) => {
+  const existing = await prisma.applicationComment.findFirst({
+    where: { id: commentId, applicationId, deletedAt: null },
+  });
+  if (!existing) throw new Error('comment not found');
+  if (existing.authorId && actor?.id && existing.authorId !== actor.id) {
+    throw new Error('only the author can delete this comment');
+  }
+
+  await prisma.applicationComment.update({
+    where: { id: commentId },
+    data: { deletedAt: new Date() },
+  });
+  return { id: commentId };
 };
 
 export const createApplicationFromLead = async (
@@ -2245,6 +2537,67 @@ export const resolveChecklistForCountry = async (country: string, university?: s
     if (fallback?.documents) items = Array.isArray(fallback.documents) ? (fallback.documents as any) : null;
   }
   return items || getDefaultChecklist(country);
+};
+
+// -------------------- Workflow templates (admin + applications) --------------------
+
+export const listApplicationWorkflowTemplates = async (opts: { actor?: Actor; countryId?: number } = {}) =>
+  listWorkflowTemplates(opts);
+
+export const getApplicationWorkflowTemplate = async (id: number, actor?: Actor) =>
+  getWorkflowTemplateById(id, actor);
+
+export const createApplicationWorkflowTemplate = async (
+  data: {
+    countryId?: number | null;
+    name: string;
+    description?: string | null;
+    isActive?: boolean;
+    isDefault?: boolean;
+    stages: any[];
+  },
+  actor?: Actor
+) => createWorkflowTemplate(data, actor);
+
+export const updateApplicationWorkflowTemplate = async (
+  id: number,
+  data: Partial<{
+    countryId: number | null;
+    name: string;
+    description: string | null;
+    isActive: boolean;
+    isDefault: boolean;
+    stages: any[];
+  }>,
+  actor?: Actor
+) => updateWorkflowTemplate(id, data, actor);
+
+export const deleteApplicationWorkflowTemplate = async (id: number, actor?: Actor) =>
+  deleteWorkflowTemplate(id, actor);
+
+export const resetApplicationWorkflowTemplate = async (id: number, actor?: Actor) =>
+  resetWorkflowTemplateToDefault(id, actor);
+
+export const cloneApplicationWorkflowTemplate = async (
+  id: number,
+  data: Partial<{ name: string; countryId: number | null; isDefault: boolean }> = {},
+  actor?: Actor
+) => cloneWorkflowTemplate(id, data, actor);
+
+export const saveApplicationWorkflowProgress = async (
+  applicationId: number,
+  data: {
+    fieldValues?: Array<{ fieldTemplateId: number; valueJson: unknown }>;
+    checklistValues?: Array<{ checklistTemplateId: number; completed?: boolean; valueText?: string | null }>;
+  }
+) => {
+  if (Array.isArray(data.fieldValues)) {
+    await saveWorkflowFieldValues(applicationId, data.fieldValues);
+  }
+  if (Array.isArray(data.checklistValues)) {
+    await saveWorkflowChecklistValues(applicationId, data.checklistValues);
+  }
+  return getApplication(applicationId);
 };
 
 // -------------------- Visa management (aggregate) --------------------

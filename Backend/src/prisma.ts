@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { PrismaClient, Prisma } from '@prisma/client';
+
 import { getTenantContext } from './middleware/tenant-context.js';
 
 dotenv.config();

@@ -21,7 +21,6 @@ import {
   MessageSquare,
   Newspaper,
   Percent,
-  Plane,
   Search,
   Settings2,
   ShieldCheck,
@@ -73,23 +72,13 @@ export const navMenu = [
   {
     label: "Student Hub",
     accessKey: "Student CRM",
-    path: "/student-crm/student-management",
+    path: "/student-crm/applications",
     icon: Users,
     subItems: [
-      {
-        label: "Student Information Hub",
-        path: "/student-crm/student-management",
-        icon: GraduationCap,
-      },
       {
         label: "Application Tracking System",
         path: "/student-crm/applications",
         icon: ClipboardList,
-      },
-      {
-        label: "Visa management",
-        path: "/student-crm/visa-management",
-        icon: Plane,
       },
     ],
   },

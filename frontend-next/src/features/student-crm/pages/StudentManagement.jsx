@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -9,11 +9,8 @@ import {
   GraduationCap,
   User,
   BookOpen,
-  FileText,
   Save,
   ExternalLink,
-  CheckCircle2,
-  Globe,
   MessageSquare,
   Archive,
   Download,
@@ -22,6 +19,7 @@ import {
 import {
   listStudents,
   getStudent,
+  getApplication,
   createStudent,
   updateStudent,
   createApplication,
@@ -35,6 +33,8 @@ import {
   deleteDocument,
   uploadApplicationDocument,
   notifyMissingDocs,
+  saveWorkflowProgress,
+  listWorkflowTemplates,
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import {
@@ -43,17 +43,35 @@ import {
   toSelectId,
 } from '../studyFormOptions';
 import CatalogCourseFields from '../components/CatalogCourseFields';
-import StudyExploreFlow from '../components/StudyExploreFlow';
-import { DocumentChecklist } from '../components/ApplicationParts';
+import SimpleWorkflowAccordion from '../components/SimpleWorkflowAccordion';
 import { resolveCatalogCountryId, pickCatalogCountry } from '../catalogCountry';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
-import { getStageLabel, stageBadgeClass } from '../constants';
 
 const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
 const SELECT =
   "w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none appearance-none cursor-pointer bg-[length:16px] bg-[right_12px_center] bg-no-repeat pr-10";
+/** Filled field used by the Edit Student form (label sits inside the box). */
+const FilledField = ({ label, children }) => (
+  <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5">
+    <span className="block text-[11px] font-medium text-neutral-500">{label}</span>
+    <div className="mt-0.5">{children}</div>
+  </div>
+);
+
+const FILLED_INPUT =
+  'w-full bg-transparent text-sm font-medium text-neutral-800 outline-none placeholder:text-neutral-400 disabled:text-neutral-500';
+const FILLED_SELECT = `${FILLED_INPUT} appearance-none cursor-pointer bg-[length:16px] bg-[right_0px_center] bg-no-repeat pr-6`;
+const FILLED_SELECT_BG = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+};
+
+const STUDY_LEVELS = ['Certificate', 'Diploma', 'Bachelor', 'Master', 'PhD'];
+const INTAKE_MONTHS = ['Spring', 'Summer', 'Fall', 'Winter', 'January', 'May', 'September'];
+const INTAKE_YEARS = Array.from({ length: 8 }, (_, index) => String(new Date().getFullYear() + index));
+
 const SELECT_BG = {
   backgroundImage:
     "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
@@ -117,6 +135,7 @@ export default function StudentManagement() {
   const [archiving, setArchiving] = useState(false);
   const [docsAppId, setDocsAppId] = useState(null);
   const [uploadingDocId, setUploadingDocId] = useState(null);
+  const [workflowApp, setWorkflowApp] = useState(null);
 
   const flash = (msg, ok = true) => {
     setToast({ kind: ok ? 'ok' : 'err', msg });
@@ -264,6 +283,13 @@ export default function StudentManagement() {
 
   const selectedStudyPlan = (profile?.studyPlans || []).find((plan) => plan.id === selectedStudyPlanId) || null;
 
+  const subjectOptions = useMemo(() => {
+    const industry = (formOptions.industries || []).find(
+      (item) => String(item.id) === String(form?.industryId || '')
+    );
+    return industry?.subIndustries?.length ? industry.subIndustries : industry?.studyAreas || [];
+  }, [formOptions.industries, form?.industryId]);
+
   const prefillFromStudyPlan = useCallback(
     (plan) => {
       if (!plan) return null;
@@ -392,6 +418,29 @@ export default function StudentManagement() {
     await loadProfile();
   };
 
+  useEffect(() => {
+    if (!docsApp?.id) {
+      setWorkflowApp(null);
+      return;
+    }
+    getApplication(docsApp.id)
+      .then((res) => setWorkflowApp(res?.data || null))
+      .catch(() => setWorkflowApp(null));
+  }, [docsApp?.id]);
+
+  const handleSaveWorkflowProgress = async (payload) => {
+    if (!workflowApp?.id) return;
+    try {
+      await saveWorkflowProgress(workflowApp.id, payload);
+      flash('Workflow step saved');
+      const res = await getApplication(workflowApp.id);
+      setWorkflowApp(res?.data || null);
+      await loadProfile();
+    } catch (e) {
+      flash(e?.message || 'Failed to save workflow step', false);
+    }
+  };
+
   const handleDocStatus = async (docId, status) => {
     if (!docsApp) return;
     try {
@@ -436,15 +485,28 @@ export default function StudentManagement() {
     }
   };
 
+  const handleDocClearFile = async (docId) => {
+    if (!docsApp) return;
+    try {
+      await updateDocument(docsApp.id, docId, { fileUrl: null, filename: null, status: 'PENDING', notes: null });
+      flash('File deleted');
+      await refreshDocsApp();
+    } catch (e) {
+      flash(e?.message || 'Failed to delete file', false);
+    }
+  };
+
   const handleAddDoc = async (name) => {
     if (!docsApp || !name) return;
     try {
-      await addDocument(docsApp.id, { name, required: true });
+      const created = await addDocument(docsApp.id, { name, required: true });
       flash('Added to document checklist');
       await refreshDocsApp();
+      return created?.data || created;
     } catch (e) {
       flash(e?.message || 'Failed to add document', false);
     }
+    return null;
   };
 
   const handleDocUpload = async (docId, file) => {
@@ -473,11 +535,8 @@ export default function StudentManagement() {
 
   const tabs = [
     { id: 'personal', label: 'Personal', icon: User },
-    { id: 'study', label: 'Explore', icon: Globe },
     { id: 'education', label: 'Education', icon: BookOpen },
     { id: 'tests', label: 'Exams', icon: GraduationCap },
-    { id: 'process', label: 'Checklist', icon: CheckCircle2 },
-    { id: 'applications', label: 'Applications', icon: FileText },
   ];
 
   return (
@@ -654,113 +713,198 @@ export default function StudentManagement() {
                   })}
                 </div>
 
-                {tab === 'study' && isCounsellorFlow && form && (
-                  <StudyExploreFlow
-                    studentId={selectedId}
-                    profile={profile}
-                    form={form}
-                    setForm={setForm}
-                    formOptions={formOptions}
-                    canManage={canManage}
-                    disabled={profile.isEnrolled}
-                    onSavePreferences={saveProfile}
-                    onRefresh={loadProfile}
-                    onCreateApplication={(plan) => {
-                      setAppModalContext(prefillFromStudyPlan(plan) || plan);
-                      setShowNewApp(true);
-                    }}
-                    onError={(msg) => flash(msg, false)}
-                    onFlash={(msg) => flash(msg)}
-                  />
-                )}
-
                 {tab === 'personal' && (
-                  <div className="ui-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="First name">
-                      <input
-                        className={INPUT}
-                        value={form.firstName}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Last name">
-                      <input
-                        className={INPUT}
-                        value={form.lastName}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Full name">
-                      <input
-                        className={INPUT}
-                        value={form.fullName}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Email">
-                      <input className={INPUT} value={form.email} disabled />
-                    </Field>
-                    <Field label="Phone">
-                      <input
-                        className={INPUT}
-                        value={form.phone}
-                        disabled={!canManage}
-                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Date of birth">
-                      <input
-                        type="date"
-                        className={INPUT}
-                        value={form.dob}
-                        disabled={!canManage}
-                        onChange={(e) => setForm({ ...form, dob: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Nationality">
-                      <input
-                        className={INPUT}
-                        value={form.nationality}
-                        disabled={!canManage}
-                        onChange={(e) => setForm({ ...form, nationality: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Assigned counsellor">
-                      <select
-                        className={INPUT}
-                        value={form.contactId}
-                        disabled={!canManage || profile.isEnrolled}
-                        onChange={(e) => setForm({ ...form, contactId: e.target.value })}
-                      >
-                        <option value="">Unassigned</option>
-                        {counsellors.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.fullName}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <div className="md:col-span-2">
-                      <Field label="Notes">
-                        <textarea
-                          rows={3}
-                          className={INPUT}
-                          value={form.notes}
-                          disabled={!canManage}
-                          onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                        />
-                      </Field>
+                  <div className="ui-panel space-y-5 p-6">
+                    <div className="rounded-xl bg-neutral-100 px-5 py-3.5 text-sm font-medium text-neutral-600">
+                      Fill up the mandatory details required...
                     </div>
-                  </div>
-                )}
 
-                {tab === 'study' && !isCounsellorFlow && form && (
-                  <div className="ui-panel p-6 text-sm text-neutral-600">
-                    Explore is available for counselling roles. Switch to a counsellor
-                    account, or ask an admin to enable student CRM manage access.
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FilledField label="First Name">
+                            <input
+                              className={FILLED_INPUT}
+                              value={form.firstName}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                            />
+                          </FilledField>
+                          <FilledField label="Last Name">
+                            <input
+                              className={FILLED_INPUT}
+                              value={form.lastName}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                            />
+                          </FilledField>
+                        </div>
+
+                        <FilledField label="Phone Number">
+                          <input
+                            className={FILLED_INPUT}
+                            value={form.phone}
+                            disabled={!canManage}
+                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                          />
+                        </FilledField>
+
+                        <FilledField label="Email">
+                          <input className={FILLED_INPUT} value={form.email} disabled />
+                        </FilledField>
+
+                        <FilledField label="Study Destination">
+                          <select
+                            className={FILLED_SELECT}
+                            style={FILLED_SELECT_BG}
+                            value={form.countryId}
+                            disabled={!canManage || profile.isEnrolled}
+                            onChange={(e) => {
+                              const country = formOptions.countries.find(
+                                (item) => String(item.id) === e.target.value
+                              );
+                              setForm({
+                                ...form,
+                                countryId: e.target.value,
+                                preferredCountry: country?.name || '',
+                              });
+                            }}
+                          >
+                            <option value="">Select destination</option>
+                            {formOptions.countries.map((country) => (
+                              <option key={country.id} value={country.id}>
+                                {country.name}
+                              </option>
+                            ))}
+                          </select>
+                        </FilledField>
+
+                        <FilledField label="Study Level">
+                          <select
+                            className={FILLED_SELECT}
+                            style={FILLED_SELECT_BG}
+                            value={form.level}
+                            disabled={!canManage || profile.isEnrolled}
+                            onChange={(e) => setForm({ ...form, level: e.target.value })}
+                          >
+                            <option value="">Select level</option>
+                            {STUDY_LEVELS.map((level) => (
+                              <option key={level} value={level}>
+                                {level}
+                              </option>
+                            ))}
+                          </select>
+                        </FilledField>
+                      </div>
+
+                      <div className="space-y-4">
+                        <FilledField label="Study Industry">
+                          <select
+                            className={FILLED_SELECT}
+                            style={FILLED_SELECT_BG}
+                            value={form.industryId}
+                            disabled={!canManage || profile.isEnrolled}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                industryId: e.target.value,
+                                subIndustryId: '',
+                                studyAreaId: '',
+                              })
+                            }
+                          >
+                            <option value="">Select industry</option>
+                            {(formOptions.industries || []).map((industry) => (
+                              <option key={industry.id} value={industry.id}>
+                                {industry.name}
+                              </option>
+                            ))}
+                          </select>
+                        </FilledField>
+
+                        <FilledField label="Subject Industry">
+                          <select
+                            className={FILLED_SELECT}
+                            style={FILLED_SELECT_BG}
+                            value={form.subIndustryId || form.studyAreaId || ''}
+                            disabled={!canManage || profile.isEnrolled}
+                            onChange={(e) => setForm({ ...form, subIndustryId: e.target.value })}
+                          >
+                            <option value="">Select subject</option>
+                            {subjectOptions.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </select>
+                        </FilledField>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FilledField label="Intake">
+                            <select
+                              className={FILLED_SELECT}
+                              style={FILLED_SELECT_BG}
+                              value={form.intakeMonth}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => setForm({ ...form, intakeMonth: e.target.value })}
+                            >
+                              <option value="">Select intake</option>
+                              {INTAKE_MONTHS.map((month) => (
+                                <option key={month} value={month}>
+                                  {month}
+                                </option>
+                              ))}
+                            </select>
+                          </FilledField>
+                          <FilledField label="Intake Year">
+                            <select
+                              className={FILLED_SELECT}
+                              style={FILLED_SELECT_BG}
+                              value={form.intakeYear}
+                              disabled={!canManage || profile.isEnrolled}
+                              onChange={(e) => setForm({ ...form, intakeYear: e.target.value })}
+                            >
+                              <option value="">Select year</option>
+                              {INTAKE_YEARS.map((year) => (
+                                <option key={year} value={year}>
+                                  {year}
+                                </option>
+                              ))}
+                            </select>
+                          </FilledField>
+                        </div>
+
+                        <FilledField label="POC">
+                          <select
+                            className={FILLED_SELECT}
+                            style={FILLED_SELECT_BG}
+                            value={form.contactId}
+                            disabled={!canManage || profile.isEnrolled}
+                            onChange={(e) => setForm({ ...form, contactId: e.target.value })}
+                          >
+                            <option value="">Unassigned</option>
+                            {counsellors.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.fullName}
+                              </option>
+                            ))}
+                          </select>
+                        </FilledField>
+                      </div>
+                    </div>
+
+                    {canManage && !profile.isEnrolled && (
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={saveProfile}
+                          disabled={saving}
+                          className="rounded-lg bg-brand px-10 py-2.5 text-sm font-semibold text-white transition-all hover:bg-brand-hover disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Update Details'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1012,134 +1156,6 @@ export default function StudentManagement() {
                   </div>
                 )}
 
-                {tab === 'process' && (
-                  <div className="space-y-4">
-                    <div className="ui-panel p-6 space-y-3">
-                      <h3 className="text-sm font-semibold text-neutral-800">Process checklist</h3>
-                      {!profile.checklists?.length ? (
-                        <p className="text-sm text-neutral-500">
-                          Select a destination country in Explore to load checklist items.
-                        </p>
-                      ) : (
-                        profile.checklists.map((item) => (
-                          <label
-                            key={item.id}
-                            className="flex items-start gap-3 p-3 rounded-lg border border-neutral-100 hover:bg-neutral-50"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={item.completed}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => toggleChecklist(item.checkListId, e.target.checked)}
-                              className="mt-1"
-                            />
-                            <div>
-                              <p className="text-sm font-medium text-brand">{item.checkList?.name}</p>
-                              <p className="text-xs text-neutral-500">
-                                {PROCESS_STAGE_LABELS[item.checkList?.stage] || item.checkList?.stage}
-                              </p>
-                            </div>
-                          </label>
-                        ))
-                      )}
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="ui-panel px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                          <h3 className="text-sm font-semibold text-neutral-800">Document management</h3>
-                          <p className="text-xs text-neutral-500 mt-0.5">
-                            Upload, review, and track application documents from this checklist.
-                          </p>
-                        </div>
-                        {(profile.applications?.length || 0) > 0 && (
-                          <select
-                            className="ui-field max-w-xs text-sm"
-                            value={docsApp?.id || ''}
-                            onChange={(e) => setDocsAppId(Number(e.target.value) || null)}
-                          >
-                            {profile.applications.map((app) => (
-                              <option key={app.id} value={app.id}>
-                                {app.applicationCode || `App #${app.id}`} · {app.university || 'University'}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-
-                      {!docsApp ? (
-                        <div className="ui-panel p-8 text-center text-sm text-neutral-500">
-                          No applications yet. Create an application from Explore to manage documents here.
-                        </div>
-                      ) : (
-                        <DocumentChecklist
-                          app={docsApp}
-                          canManage={canManage && !profile.isEnrolled}
-                          onStatus={handleDocStatus}
-                          onApprove={handleDocApprove}
-                          onReject={handleDocReject}
-                          onDelete={handleDocDelete}
-                          onAdd={handleAddDoc}
-                          onUpload={handleDocUpload}
-                          uploadingDocId={uploadingDocId}
-                          missingCount={(docsApp.documents || []).filter(
-                            (d) => d.required && d.status === 'PENDING'
-                          ).length}
-                          onNotifyMissing={handleNotifyMissing}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {tab === 'applications' && (
-                  <div className="ui-panel overflow-hidden">
-                    <div className="px-5 py-4 border-b border-neutral-200 flex justify-between items-center">
-                      <h3 className="text-sm font-semibold text-neutral-800">
-                        Applications ({profile.applications?.length || 0})
-                      </h3>
-                      <Link
-                        href={`/student-crm/applications?student=${selectedId}`}
-                        className="text-xs font-medium text-neutral-700 hover:text-brand inline-flex items-center gap-1"
-                      >
-                        Open in tracker <ExternalLink size={12} />
-                      </Link>
-                    </div>
-                    {!profile.applications?.length ? (
-                      <p className="p-8 text-center text-sm text-neutral-500">No applications linked yet.</p>
-                    ) : (
-                      <ul className="divide-y divide-neutral-100">
-                        {profile.applications.map((app) => (
-                          <li key={app.id} className="px-5 py-4 flex flex-wrap justify-between gap-3 hover:bg-neutral-50">
-                            <div>
-                              <p className="text-xs font-mono text-neutral-500">{app.applicationCode}</p>
-                              <p className="text-sm font-medium text-brand mt-0.5">
-                                {app.university} · {app.course}
-                              </p>
-                              <p className="text-xs text-neutral-500">
-                                {app.country}
-                                {app.intake ? ` · ${app.intake}` : ''}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`px-2 py-0.5 text-[10px] font-semibold rounded border ${stageBadgeClass(app.stage)}`}
-                              >
-                                {getStageLabel(app.stage)}
-                              </span>
-                              <Link
-                                href={`/student-crm/applications?student=${selectedId}&app=${app.id}`}
-                                className="text-xs font-medium text-neutral-700 hover:underline"
-                              >
-                                Manage
-                              </Link>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -1294,6 +1310,7 @@ function NewAppModal({ student, countries = [], counsellors, prefill, onClose, o
   const [form, setForm] = useState({
     country: prefill?.country || student.preferredCountry || '',
     countryId: initialCountryId,
+    workflowTemplateId: '',
     university: prefill?.university || '',
     universityId: prefill?.universityId ? String(prefill.universityId) : '',
     course: prefill?.course || '',
@@ -1304,6 +1321,26 @@ function NewAppModal({ student, countries = [], counsellors, prefill, onClose, o
     notes: '',
   });
   const [busy, setBusy] = useState(false);
+  const [workflowTemplates, setWorkflowTemplates] = useState([]);
+
+  useEffect(() => {
+    if (!form.countryId) {
+      setWorkflowTemplates([]);
+      setForm((prev) => ({ ...prev, workflowTemplateId: '' }));
+      return;
+    }
+    listWorkflowTemplates({ countryId: Number(form.countryId) })
+      .then((res) => {
+        const rows = Array.isArray(res?.data) ? res.data : [];
+        setWorkflowTemplates(rows);
+        setForm((prev) => {
+          const defaultTemplate = rows.find((item) => item.isDefault) || rows[0] || null;
+          if (rows.some((item) => String(item.id) === String(prev.workflowTemplateId))) return prev;
+          return { ...prev, workflowTemplateId: defaultTemplate ? String(defaultTemplate.id) : '' };
+        });
+      })
+      .catch(() => setWorkflowTemplates([]));
+  }, [form.countryId]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -1313,6 +1350,7 @@ function NewAppModal({ student, countries = [], counsellors, prefill, onClose, o
       await createApplication({
         studentId: student.id,
         studyPlanId: prefill?.studyPlanId || undefined,
+        workflowTemplateId: form.workflowTemplateId ? Number(form.workflowTemplateId) : undefined,
         country: form.country,
         university: form.university,
         course: form.course,
@@ -1343,6 +1381,16 @@ function NewAppModal({ student, countries = [], counsellors, prefill, onClose, o
         </Field>
         <Field label="Deadline">
           <input type="date" className={INPUT} value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
+        </Field>
+        <Field label="Workflow template">
+          <select className={INPUT} value={form.workflowTemplateId} onChange={(e) => setForm({ ...form, workflowTemplateId: e.target.value })}>
+            <option value="">Select template</option>
+            {workflowTemplates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Assign counsellor">
           <select className={INPUT} value={form.assignedToId} onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}>

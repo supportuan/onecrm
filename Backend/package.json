@@ -16,6 +16,7 @@
     "crm:import-courses": "tsx scripts/import-courses-mysql.ts",
     "crm:dedupe-countries": "tsx scripts/dedupe-countries.ts",
     "crm:promote-leads": "tsx scripts/promote-leads.ts",
+    "crm:resync-workflows": "tsx scripts/resync-workflow-templates.ts",
     "db:repair-tenant": "tsx scripts/repair-tenant-migrations.ts",
     "uploads:migrate-s3": "tsx scripts/migrate-uploads-to-s3.ts"
   },

@@ -178,6 +178,20 @@ export const deleteApplicationTask = async (applicationId, taskId) =>
     await tenantFetch(`${API_URL}/applications/${applicationId}/tasks/${taskId}`, { method: 'DELETE' }),
   );
 
+// -------------------- Application discussions --------------------
+export const listApplicationComments = async (applicationId) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/comments`));
+export const createApplicationComment = async (applicationId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/comments`, json(payload)));
+export const updateApplicationComment = async (applicationId, commentId, payload) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/comments/${commentId}`, putJson(payload)),
+  );
+export const deleteApplicationComment = async (applicationId, commentId) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/applications/${applicationId}/comments/${commentId}`, { method: 'DELETE' }),
+  );
+
 export const getChecklist = async (country, university) => {
   const params = new URLSearchParams({ country });
   if (university) params.set('university', university);
@@ -200,6 +214,40 @@ export const updateChecklistTemplate = async (id, payload) =>
 
 export const deleteChecklistTemplate = async (id) =>
   handleResponse(await tenantFetch(`${API_URL}/checklist-templates/${id}`, { method: 'DELETE' }));
+
+export const listWorkflowTemplates = async ({ countryId } = {}) => {
+  const params = new URLSearchParams();
+  if (countryId) params.set('countryId', String(countryId));
+  const qs = params.toString();
+  return handleResponse(await tenantFetch(`${API_URL}/workflow-templates${qs ? `?${qs}` : ''}`));
+};
+
+export const getWorkflowTemplate = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/workflow-templates/${id}`));
+
+export const createWorkflowTemplate = async (payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/workflow-templates`, json(payload)));
+
+export const updateWorkflowTemplate = async (id, payload) =>
+  handleResponse(
+    await tenantFetch(`${API_URL}/workflow-templates/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  );
+
+export const deleteWorkflowTemplate = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/workflow-templates/${id}`, { method: 'DELETE' }));
+
+export const cloneWorkflowTemplate = async (id, payload = {}) =>
+  handleResponse(await tenantFetch(`${API_URL}/workflow-templates/${id}/clone`, json(payload)));
+
+export const resetWorkflowTemplate = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/workflow-templates/${id}/reset`, json({})));
+
+export const saveWorkflowProgress = async (applicationId, payload) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${applicationId}/workflow-progress`, putJson(payload)));
 
 export const listVisaTracking = async () =>
   handleResponse(await tenantFetch(`${API_URL}/visa-tracking`));
@@ -287,6 +335,17 @@ export const upsertStudentUniversity = async (studentId, payload) =>
 
 export const removeStudentUniversity = async (studentId, universityId) =>
   handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/universities/${universityId}`, { method: 'DELETE' }));
+
+export const uploadStudentUniversityOfferLetter = async (studentId, universityId, file, applicationId) => {
+  const form = new FormData();
+  form.append('file', file);
+  if (applicationId) form.append('applicationId', String(applicationId));
+  const res = await tenantFetch(`${API_URL}/students/${studentId}/universities/${universityId}/offer-letter`, {
+    method: 'POST',
+    body: form,
+  });
+  return handleResponse(res);
+};
 
 export const listStudentStudyPlans = async (studentId) =>
   handleResponse(await tenantFetch(`${API_URL}/students/${studentId}/study-plans`));

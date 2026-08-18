@@ -43,7 +43,7 @@ export default function StaffApplicationFees({ app, canManage, onSaved }) {
   return (
     <section className="ui-panel p-5 space-y-4">
       <div>
-        <h3 className="ui-text-h3">Application fees</h3>
+        <h3 className="ui-text-h3">Service fees</h3>
         <p className="ui-text-meta mt-0.5">Students pay these via Razorpay after uploading required documents.</p>
       </div>
 

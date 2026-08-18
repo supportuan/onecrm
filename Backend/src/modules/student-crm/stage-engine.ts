@@ -1,7 +1,18 @@
 import type { ApplicationProcessStage } from '@prisma/client';
 
-/** Country-specific stage order. UK/EU include Pre-CAS; USA skips it. */
+/** Country-specific stage order. Pre-CAS is UK-only. */
 const DEFAULT_STAGES: ApplicationProcessStage[] = [
+  'GATHERING_CHECKLIST',
+  'UNIVERSITY_APPLICATION',
+  'FINANCIAL_EVIDENCE',
+  'AFTER_I20',
+  'VISA_APPLICATION',
+  'PRE_DEPARTURE',
+  'ON_ARRIVAL',
+  'PRE_REQUISITE',
+];
+
+const UK_STAGES: ApplicationProcessStage[] = [
   'GATHERING_CHECKLIST',
   'UNIVERSITY_APPLICATION',
   'FINANCIAL_EVIDENCE',
@@ -13,11 +24,18 @@ const DEFAULT_STAGES: ApplicationProcessStage[] = [
   'PRE_REQUISITE',
 ];
 
-const USA_STAGES: ApplicationProcessStage[] = DEFAULT_STAGES.filter((s) => s !== 'PRE_CAS_PROCESS');
-
 export const getStagesForCountry = (countryName?: string | null): ApplicationProcessStage[] => {
   const key = (countryName || '').toUpperCase();
-  if (key.includes('UNITED STATES') || key === 'US' || key === 'USA') return USA_STAGES;
+  if (
+    key.includes('UNITED KINGDOM') ||
+    key === 'UK' ||
+    key.includes('GREAT BRITAIN') ||
+    key.includes('ENGLAND') ||
+    key.includes('SCOTLAND') ||
+    key.includes('WALES')
+  ) {
+    return UK_STAGES;
+  }
   return DEFAULT_STAGES;
 };
 

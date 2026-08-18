@@ -69,6 +69,12 @@ router.get('/students/:id/checklists', view, controller.listChecklists);
 router.put('/students/:id/checklists/:checkListId', manage, controller.updateChecklistValue);
 router.get('/students/:id/universities', view, controller.listUniversities);
 router.put('/students/:id/universities', manage, controller.upsertUniversity);
+router.post(
+  '/students/:id/universities/:universityId/offer-letter',
+  manage,
+  applicationDocUpload.single('file'),
+  controller.uploadStudentUniversityOfferLetter,
+);
 router.delete('/students/:id/universities/:universityId', manage, controller.removeUniversity);
 
 // Student study plans (destination + university + course groupings)
@@ -130,6 +136,16 @@ router.post('/applications/:id/tasks', manage, controller.createApplicationTask)
 router.put('/applications/:id/tasks/:taskId', manage, controller.updateApplicationTask);
 router.delete('/applications/:id/tasks/:taskId', manage, controller.deleteApplicationTask);
 
+// Application discussions
+router.get(
+  '/applications/:id/comments',
+  studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'),
+  controller.listApplicationComments
+);
+router.post('/applications/:id/comments', manage, controller.createApplicationComment);
+router.put('/applications/:id/comments/:commentId', manage, controller.updateApplicationComment);
+router.delete('/applications/:id/comments/:commentId', manage, controller.deleteApplicationComment);
+
 // Checklist defaults (used by UI before docs exist)
 router.get('/checklist', view, controller.getChecklist);
 router.get('/process-stages', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM'), controller.getProcessStages);
@@ -139,6 +155,18 @@ router.get('/checklist-templates', view, controller.listChecklistTemplates);
 router.post('/checklist-templates', manage, controller.createChecklistTemplate);
 router.put('/checklist-templates/:id', manage, controller.updateChecklistTemplate);
 router.delete('/checklist-templates/:id', manage, controller.deleteChecklistTemplate);
+
+// Workflow template admin
+router.get('/workflow-templates', view, controller.listApplicationWorkflowTemplates);
+router.post('/workflow-templates', manage, controller.createApplicationWorkflowTemplate);
+router.get('/workflow-templates/:id', view, controller.getApplicationWorkflowTemplate);
+router.patch('/workflow-templates/:id', manage, controller.updateApplicationWorkflowTemplate);
+router.delete('/workflow-templates/:id', manage, controller.deleteApplicationWorkflowTemplate);
+router.post('/workflow-templates/:id/clone', manage, controller.cloneApplicationWorkflowTemplate);
+router.post('/workflow-templates/:id/reset', manage, controller.resetApplicationWorkflowTemplate);
+
+// Application workflow progress
+router.put('/applications/:id/workflow-progress', manage, controller.saveApplicationWorkflowProgress);
 
 // Visa aggregate view
 router.get('/visa-tracking', view, controller.listVisaTracking);

@@ -23,6 +23,7 @@ const FILE_URL_FIELDS = new Set([
   'logo',
   'url',
   'profilePhotoUrl',
+  'offerLetterFileUrl',
 ]);
 
 export function safeUploadFilename(original: string): string {

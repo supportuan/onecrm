@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { listWorkflowTemplates } from '@/services/studentCrmApi';
 import {
   Plus,
   Trash2,
@@ -45,7 +46,9 @@ const normalizeVisaDocs = (raw) => {
 export const formatDate = (d) => {
   if (!d) return '—';
   try {
-    return new Date(d).toLocaleDateString();
+    const date = new Date(d);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString();
   } catch {
     return '—';
   }
@@ -54,7 +57,16 @@ export const formatDate = (d) => {
 /** Normalize API DateTime (string, Date, or null) for <input type="date">. */
 export const toDateInputValue = (value) => {
   if (value == null || value === '') return '';
-  if (typeof value === 'string') return value.slice(0, 10);
+  if (typeof value === 'string') {
+    const raw = value.trim();
+    if (!raw || raw === 'Invalid Date') return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    if (raw.includes('T')) {
+      const parsed = new Date(raw);
+      return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+    }
+    return raw.slice(0, 10);
+  }
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return value.toISOString().slice(0, 10);
   }
@@ -1631,7 +1643,7 @@ export const AuditTimeline = ({ app }) => (
               : `Started at ${getStageLabel(e.toStage)}`}
           </p>
           <p className="text-[11px] text-neutral-500 mt-0.5">
-            {new Date(e.createdAt).toLocaleString()}
+            {formatDate(e.createdAt)}
             {e.changedBy?.fullName ? ` · ${e.changedBy.fullName}` : ''}
             {e.notes ? ` · ${e.notes}` : ''}
           </p>
@@ -1703,6 +1715,7 @@ export const NewApplicationModal = ({ onClose, onSave, student, counsellors = []
   const [form, setForm] = useState({
     country: student?.preferredCountry || '',
     countryId: initialCountryId,
+    workflowTemplateId: '',
     university: '',
     universityId: '',
     course: student?.preferredCourse || '',
@@ -1712,6 +1725,26 @@ export const NewApplicationModal = ({ onClose, onSave, student, counsellors = []
     assignedToId: '',
     notes: '',
   });
+  const [workflowTemplates, setWorkflowTemplates] = useState([]);
+
+  useEffect(() => {
+    if (!form.countryId) {
+      setWorkflowTemplates([]);
+      setForm((prev) => ({ ...prev, workflowTemplateId: '' }));
+      return;
+    }
+    listWorkflowTemplates({ countryId: Number(form.countryId) })
+      .then((res) => {
+        const rows = Array.isArray(res?.data) ? res.data : [];
+        setWorkflowTemplates(rows);
+        setForm((prev) => {
+          const defaultTemplate = rows.find((item) => item.isDefault) || rows[0] || null;
+          if (rows.some((item) => String(item.id) === String(prev.workflowTemplateId))) return prev;
+          return { ...prev, workflowTemplateId: defaultTemplate ? String(defaultTemplate.id) : '' };
+        });
+      })
+      .catch(() => setWorkflowTemplates([]));
+  }, [form.countryId]);
 
   return (
     <Modal title={`New application · ${student?.fullName}`} onClose={onClose}>
@@ -1721,6 +1754,7 @@ export const NewApplicationModal = ({ onClose, onSave, student, counsellors = []
           if (!form.country || !form.university || !form.course) return;
           onSave({
             ...form,
+            workflowTemplateId: form.workflowTemplateId ? Number(form.workflowTemplateId) : undefined,
             assignedToId: form.assignedToId ? Number(form.assignedToId) : undefined,
           });
         }}
@@ -1750,6 +1784,20 @@ export const NewApplicationModal = ({ onClose, onSave, student, counsellors = []
             onChange={(e) => setForm({ ...form, deadline: e.target.value })}
             className="ui-field"
           />
+        </Field>
+        <Field label="Country custom module">
+          <select
+            value={form.workflowTemplateId}
+            onChange={(e) => setForm({ ...form, workflowTemplateId: e.target.value })}
+            className="ui-field"
+          >
+            <option value="">Select module</option>
+            {workflowTemplates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Assigned counsellor">
           <select

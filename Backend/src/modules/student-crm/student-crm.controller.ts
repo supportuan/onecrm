@@ -18,6 +18,7 @@ const actor = (req: Request) => ({
   id: req.user?.id,
   role: req.user?.role,
   email: req.user?.email,
+  tenantId: req.tenantId ?? req.user?.tenantId ?? null,
 });
 
 const assertApplicationAccess = async (req: Request, applicationId: number) => {
@@ -245,12 +246,14 @@ export const listApplications = async (req: Request, res: Response, next: NextFu
     const studentId = req.query.studentId ? numId(req.query.studentId) : undefined;
     const stage = typeof req.query.stage === 'string' ? req.query.stage : undefined;
     const assignedToId = req.query.assignedToId ? numId(req.query.assignedToId) : undefined;
+    const workflowTemplateId = req.query.workflowTemplateId ? numId(req.query.workflowTemplateId) : undefined;
     const search = typeof req.query.search === 'string' ? req.query.search : undefined;
     const limit = Math.min(Number(req.query.limit) || 200, 500);
     const items = await service.listApplications({
       studentId: studentId ?? undefined,
       stage,
       assignedToId: assignedToId ?? undefined,
+      workflowTemplateId: workflowTemplateId ?? undefined,
       search,
       limit,
       actor: actor(req),
@@ -304,7 +307,7 @@ export const listUniversities = async (req: Request, res: Response, next: NextFu
     const studentId = numId(req.params.id);
     if (!studentId) return sendError(res, 'invalid student id', null, 400);
     const items = await service.listStudentUniversities(studentId, actor(req));
-    return sendSuccess(res, 'universities', items);
+    return sendSuccess(res, 'universities', await resolveFileRefsDeep(items));
   } catch (err: any) {
     if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     next(err);
@@ -314,12 +317,22 @@ export const listUniversities = async (req: Request, res: Response, next: NextFu
 export const upsertUniversity = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const studentId = numId(req.params.id);
-    if (!studentId || !req.body?.universityId) return sendError(res, 'student id and universityId required', null, 400);
+    const body = req.body || {};
+    const hasSingle = body.universityId || String(body.universityName || '').trim();
+    const hasBulk =
+      (Array.isArray(body.universityIds) && body.universityIds.length) ||
+      (Array.isArray(body.names) && body.names.length);
+    if (!studentId || (!hasSingle && !hasBulk)) {
+      return sendError(res, 'student id and at least one university are required', null, 400);
+    }
     const item = await service.upsertStudentUniversity(studentId, req.body, actor(req));
-    return sendSuccess(res, 'university saved', item);
+    return sendSuccess(res, 'university saved', await resolveFileRefsDeep(item));
   } catch (err: any) {
     if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
     if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
+    if (err?.message?.includes('required') || err?.message?.includes('destination country')) {
+      return sendError(res, err.message, null, 400);
+    }
     next(err);
   }
 };
@@ -333,6 +346,44 @@ export const removeUniversity = async (req: Request, res: Response, next: NextFu
     return sendSuccess(res, 'university removed', { studentId, universityId });
   } catch (err: any) {
     if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const uploadStudentUniversityOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const studentId = numId(req.params.id);
+    const universityId = numId(req.params.universityId);
+    if (!studentId || !universityId) return sendError(res, 'invalid ids', null, 400);
+
+    const file = req.file;
+    if (!file) {
+      return sendError(res, 'file is required (jpg, png, pdf, doc, docx, max 20MB)', null, 400);
+    }
+
+    const storedName = safeUploadFilename(file.originalname);
+    const relativePath = `uploads/student-crm/students/${studentId}/universities/${universityId}/offer/${storedName}`;
+    const { ref: fileUrl } = await storeUploadedFile({
+      relativePath,
+      buffer: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    const applicationId = numId(req.body?.applicationId) || undefined;
+    const item = await resolveFileRefsDeep(
+      await service.uploadStudentUniversityOfferLetter(
+        studentId,
+        universityId,
+        { fileUrl, filename: file.originalname, applicationId },
+        actor(req)
+      )
+    );
+    return sendSuccess(res, 'offer letter uploaded', item, 201);
+  } catch (err: any) {
+    if (err?.message?.includes('not found') || err?.message?.includes('shortlist')) {
+      return sendError(res, err.message, null, 404);
+    }
+    if (err?.message?.includes('locked')) return sendError(res, err.message, null, 403);
     next(err);
   }
 };
@@ -396,7 +447,7 @@ export const createApplication = async (req: Request, res: Response, next: NextF
     if (!studentId || !country || !university || !course) {
       return sendError(res, 'studentId, country, university, course are required', null, 400);
     }
-    const created = await service.createApplication(req.body);
+    const created = await service.createApplication(req.body, actor(req));
     return sendSuccess(res, 'application created', created, 201);
   } catch (err) {
     next(err);
@@ -409,7 +460,7 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
     if (!id) return sendError(res, 'invalid id', null, 400);
     const app = await assertApplicationAccess(req, id);
     if (!app) return sendError(res, 'not found', null, 404);
-    const updated = await service.updateApplication(id, req.body || {});
+    const updated = await service.updateApplication(id, req.body || {}, actor(req));
     return sendSuccess(res, 'application updated', updated);
   } catch (err) {
     next(err);
@@ -792,6 +843,70 @@ export const deleteApplicationTask = async (req: Request, res: Response, next: N
   }
 };
 
+// -------------------- Application discussions --------------------
+
+export const listApplicationComments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId) return sendError(res, 'invalid application id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const items = await service.listApplicationComments(applicationId);
+    return sendSuccess(res, 'comments', items);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createApplicationComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId) return sendError(res, 'invalid application id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const body = String(req.body?.body || '').trim();
+    if (!body) return sendError(res, 'body is required', null, 400);
+    const item = await service.createApplicationComment(applicationId, { body }, req.user?.id);
+    return sendSuccess(res, 'comment added', item, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateApplicationComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    const commentId = numId(req.params.commentId);
+    if (!applicationId || !commentId) return sendError(res, 'invalid id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const body = String(req.body?.body || '').trim();
+    if (!body) return sendError(res, 'body is required', null, 400);
+    const item = await service.updateApplicationComment(applicationId, commentId, { body }, actor(req));
+    return sendSuccess(res, 'comment updated', item);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('only the author')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
+export const deleteApplicationComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    const commentId = numId(req.params.commentId);
+    if (!applicationId || !commentId) return sendError(res, 'invalid id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const item = await service.deleteApplicationComment(applicationId, commentId, actor(req));
+    return sendSuccess(res, 'comment deleted', item);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    if (err?.message?.includes('only the author')) return sendError(res, err.message, null, 403);
+    next(err);
+  }
+};
+
 // -------------------- Checklist defaults --------------------
 
 export const getChecklist = async (req: Request, res: Response, next: NextFunction) => {
@@ -832,6 +947,102 @@ export const createChecklistTemplate = async (req: Request, res: Response, next:
     }
     const created = await service.createChecklistTemplate({ country, university, documents });
     return sendSuccess(res, 'template created', created, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listApplicationWorkflowTemplates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const countryId = req.query.countryId ? numId(req.query.countryId) : undefined;
+    const items = await service.listApplicationWorkflowTemplates({ actor: actor(req), countryId: countryId ?? undefined });
+    return sendSuccess(res, 'workflow templates', items);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getApplicationWorkflowTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const item = await service.getApplicationWorkflowTemplate(id, actor(req));
+    if (!item) return sendError(res, 'workflow template not found', null, 404);
+    return sendSuccess(res, 'workflow template', item);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createApplicationWorkflowTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, stages } = req.body || {};
+    if (!name || !Array.isArray(stages) || stages.length === 0) {
+      return sendError(res, 'name and stages are required', null, 400);
+    }
+    const created = await service.createApplicationWorkflowTemplate(req.body || {}, actor(req));
+    return sendSuccess(res, 'workflow template created', created, 201);
+  } catch (err: any) {
+    next(err);
+  }
+};
+
+export const updateApplicationWorkflowTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const updated = await service.updateApplicationWorkflowTemplate(id, req.body || {}, actor(req));
+    return sendSuccess(res, 'workflow template updated', updated);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const deleteApplicationWorkflowTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    await service.deleteApplicationWorkflowTemplate(id, actor(req));
+    return sendSuccess(res, 'workflow template deleted', { id });
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const resetApplicationWorkflowTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const reset = await service.resetApplicationWorkflowTemplate(id, actor(req));
+    return sendSuccess(res, 'workflow template reset to default', reset);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const cloneApplicationWorkflowTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const cloned = await service.cloneApplicationWorkflowTemplate(id, req.body || {}, actor(req));
+    return sendSuccess(res, 'workflow template cloned', cloned, 201);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
+export const saveApplicationWorkflowProgress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const applicationId = numId(req.params.id);
+    if (!applicationId) return sendError(res, 'invalid application id', null, 400);
+    const app = await assertApplicationAccess(req, applicationId);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const updated = await resolveFileRefsDeep(await service.saveApplicationWorkflowProgress(applicationId, req.body || {}));
+    return sendSuccess(res, 'workflow progress saved', updated);
   } catch (err) {
     next(err);
   }

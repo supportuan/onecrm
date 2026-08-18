@@ -10,6 +10,7 @@ import {
   getChecklist,
 } from '@/services/studentCrmApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
+import WorkflowTemplateAdmin from '@/features/student-crm/components/WorkflowTemplateAdmin';
 
 const INPUT = 'w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg';
 const PAGE_SIZE = 50;
@@ -435,6 +436,8 @@ export default function CrmSettingsPage() {
             </table>
           </div>
         </div>
+
+        <WorkflowTemplateAdmin countries={countries} canManage={canManage} onMessage={setMsg} />
       </div>
     </div>
   );
