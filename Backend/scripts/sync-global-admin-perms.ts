@@ -1,5 +1,5 @@
 /**
- * Bring every tenant's GLOBAL_ADMIN RolePermission row up to the full catalog
+ * Bring the GLOBAL_ADMIN RolePermission row up to the full catalog
  * so the live permission map (GET /api/rbac/permissions) reflects full access.
  * Usage: npx tsx scripts/sync-global-admin-perms.ts
  */
@@ -12,16 +12,12 @@ dotenv.config();
 const prisma = new PrismaClient();
 
 async function main() {
-  const tenants = await prisma.tenant.findMany({ select: { id: true, slug: true } });
-  for (const t of tenants) {
-    await prisma.rolePermission.upsert({
-      where: { tenantId_role: { tenantId: t.id, role: 'GLOBAL_ADMIN' } },
-      update: { permissions: ALL_PERMISSIONS },
-      create: { tenantId: t.id, role: 'GLOBAL_ADMIN', permissions: ALL_PERMISSIONS },
-    });
-    console.log(`tenant ${t.id} (${t.slug}): GLOBAL_ADMIN -> ${ALL_PERMISSIONS.length} permissions`);
-  }
-  console.log('Done. Restart not required; rbac cache reloads per tenant on next change, but a backend restart guarantees a fresh map.');
+  await prisma.rolePermission.upsert({
+    where: { role: 'GLOBAL_ADMIN' },
+    update: { permissions: ALL_PERMISSIONS },
+    create: { role: 'GLOBAL_ADMIN', permissions: ALL_PERMISSIONS },
+  });
+  console.log(`GLOBAL_ADMIN -> ${ALL_PERMISSIONS.length} permissions`);
 }
 
 main()

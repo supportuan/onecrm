@@ -5,7 +5,6 @@
 import dotenv from 'dotenv';
 import { PrismaClient, UserRole, HrJobStatus, HrJobType, HrCandidateStatus } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.js';
-import { getDefaultTenantId } from '../src/utils/tenant-default.js';
 import {
   addCandidate,
   createJobPosting,
@@ -23,7 +22,7 @@ const DEFAULT_PASSWORD = process.env.DEFAULT_STUDENT_PASSWORD || 'Welcome@123';
 
 const prisma = new PrismaClient();
 
-async function ensureCounsellorUser(tenantId: number, employeeId: number) {
+async function ensureCounsellorUser(employeeId: number) {
   const existing = await prisma.user.findUnique({ where: { email: EMAIL } });
   if (existing) {
     await prisma.hrEmployee.update({
@@ -49,7 +48,6 @@ async function ensureCounsellorUser(tenantId: number, employeeId: number) {
       phone: '+910000000001',
       passwordHash,
       role: UserRole.COUNSELLOR,
-      tenantId,
       isActive: true,
       isApproved: true,
     },
@@ -69,14 +67,11 @@ async function ensureCounsellorUser(tenantId: number, employeeId: number) {
 }
 
 async function main() {
-  const tenantId = await getDefaultTenantId();
-  console.log(`Tenant id: ${tenantId}`);
-
   const existingEmp = await prisma.hrEmployee.findFirst({
     where: { email: { equals: EMAIL, mode: 'insensitive' } },
   });
   if (existingEmp) {
-    await ensureCounsellorUser(tenantId, existingEmp.id);
+    await ensureCounsellorUser(existingEmp.id);
     console.log(`Ashish already employed (id ${existingEmp.id}, code ${existingEmp.employeeCode}).`);
     return;
   }
@@ -146,11 +141,11 @@ async function main() {
   if (!offer) throw new Error('Offer letter missing');
 
   if (offer.status !== 'ACCEPTED') {
-    const result = await acceptOfferLetter(String(offer.id), { tenantId });
+    const result = await acceptOfferLetter(String(offer.id));
     console.log(`Offer accepted — employee id ${result.employeeId}, onboarding checklist ${result.checklistId}`);
-    await ensureCounsellorUser(tenantId, Number(result.employeeId));
+    await ensureCounsellorUser(Number(result.employeeId));
   } else if (offer.employeeId) {
-    await ensureCounsellorUser(tenantId, offer.employeeId);
+    await ensureCounsellorUser(offer.employeeId);
     console.log(`Offer was already accepted for employee #${offer.employeeId}`);
   }
 

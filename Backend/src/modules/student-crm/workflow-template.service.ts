@@ -1,8 +1,7 @@
 import { prisma } from '../../prisma.js';
-import { getDefaultTenantId } from '../../utils/tenant-default.js';
 import { buildDefaultWorkflowTemplateSeed } from './workflow-templates.js';
 
-type WorkflowActor = { id?: number; role?: string; tenantId?: number | null };
+type WorkflowActor = { id?: number; role?: string };
 
 const toSlug = (value: string) =>
   String(value || '')
@@ -58,8 +57,6 @@ const normalizeStages = (stages: any[] = []) =>
       : [],
   }));
 
-const tenantIdFor = async (actor?: WorkflowActor) =>
-  actor?.tenantId ?? (await getDefaultTenantId(actor?.id ?? null)) ?? null;
 
 const buildTemplateCreateInput = (
   payload: {
@@ -70,9 +67,7 @@ const buildTemplateCreateInput = (
     isDefault?: boolean;
     stages: any[];
   },
-  tenantId: number | null
 ) => ({
-  tenantId,
   countryId: payload.countryId ?? null,
   name: payload.name,
   description: payload.description ?? null,
@@ -119,10 +114,8 @@ export const ensureCountryWorkflowTemplate = async (
   countryId?: number | null,
   actor?: WorkflowActor
 ) => {
-  const tenantId = await tenantIdFor(actor);
   const existing = await prisma.applicationWorkflowTemplate.findFirst({
     where: {
-      tenantId,
       isActive: true,
       ...(countryId ? { countryId } : {}),
       ...(countryId ? {} : { country: { name: { equals: countryName, mode: 'insensitive' } } }),
@@ -150,17 +143,14 @@ export const ensureCountryWorkflowTemplate = async (
         isDefault: true,
         stages: seed.stages,
       },
-      tenantId
     ),
     include: WORKFLOW_TEMPLATE_INCLUDE,
   });
 };
 
 export const listWorkflowTemplates = async (opts: { actor?: WorkflowActor; countryId?: number } = {}) => {
-  const tenantId = await tenantIdFor(opts.actor);
   let rows = await prisma.applicationWorkflowTemplate.findMany({
     where: {
-      tenantId,
       ...(opts.countryId ? { countryId: opts.countryId } : {}),
     },
     include: WORKFLOW_TEMPLATE_INCLUDE,
@@ -171,7 +161,7 @@ export const listWorkflowTemplates = async (opts: { actor?: WorkflowActor; count
     if (country) {
       await ensureCountryWorkflowTemplate(country.name, country.id, opts.actor);
       rows = await prisma.applicationWorkflowTemplate.findMany({
-        where: { tenantId, countryId: opts.countryId },
+        where: { countryId: opts.countryId },
         include: WORKFLOW_TEMPLATE_INCLUDE,
         orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
       });
@@ -181,9 +171,8 @@ export const listWorkflowTemplates = async (opts: { actor?: WorkflowActor; count
 };
 
 export const getWorkflowTemplateById = async (id: number, actor?: WorkflowActor) => {
-  const tenantId = await tenantIdFor(actor);
   return prisma.applicationWorkflowTemplate.findFirst({
-    where: { id, tenantId },
+    where: { id },
     include: WORKFLOW_TEMPLATE_INCLUDE,
   });
 };
@@ -199,17 +188,16 @@ export const createWorkflowTemplate = async (
   },
   actor?: WorkflowActor
 ) => {
-  const tenantId = await tenantIdFor(actor);
   if (!payload.name?.trim()) throw new Error('name is required');
   if (!Array.isArray(payload.stages) || payload.stages.length === 0) throw new Error('at least one stage is required');
   if (payload.isDefault && payload.countryId) {
     await prisma.applicationWorkflowTemplate.updateMany({
-      where: { tenantId, countryId: payload.countryId, isDefault: true },
+      where: { countryId: payload.countryId, isDefault: true },
       data: { isDefault: false },
     });
   }
   return prisma.applicationWorkflowTemplate.create({
-    data: buildTemplateCreateInput(payload, tenantId),
+    data: buildTemplateCreateInput(payload),
     include: WORKFLOW_TEMPLATE_INCLUDE,
   });
 };
@@ -228,10 +216,9 @@ export const updateWorkflowTemplate = async (
 ) => {
   const existing = await getWorkflowTemplateById(id, actor);
   if (!existing) throw new Error('workflow template not found');
-  const tenantId = existing.tenantId ?? (await tenantIdFor(actor));
   if (payload.isDefault && existing.countryId) {
     await prisma.applicationWorkflowTemplate.updateMany({
-      where: { tenantId, countryId: existing.countryId, isDefault: true, NOT: { id } },
+      where: { countryId: existing.countryId, isDefault: true, NOT: { id } },
       data: { isDefault: false },
     });
   }

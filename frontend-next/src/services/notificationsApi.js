@@ -10,12 +10,7 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-const tenantFetch = async (url, options = {}) => {
-  const tenantId =
-    typeof window !== 'undefined' ? localStorage.getItem('tenantId') || 'default-tenant' : 'default-tenant';
-  const headers = { ...options.headers, 'x-tenant-id': tenantId };
-  return authFetch(url, { ...options, headers });
-};
+const tenantFetch = async (url, options = {}) => authFetch(url, options);
 
 /** List recent in-app notifications for the current user. */
 export const getNotifications = async ({ limit = 50, unreadOnly = false } = {}) => {

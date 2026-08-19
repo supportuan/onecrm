@@ -113,8 +113,8 @@ export const ALL_PERMISSIONS = PERMISSION_CATEGORIES.flatMap((c) =>
 );
 
 export const ROLE_DESCRIPTIONS = {
-  SUPER_ADMIN: 'platform owner. cross-tenant access — onboards tenants and toggles their modules.',
-  GLOBAL_ADMIN: 'tenant administrator. full access inside their own tenant; cannot see other tenants.',
+  SUPER_ADMIN: 'platform owner. full access across ApplyUniNow.',
+  GLOBAL_ADMIN: 'organization administrator. full access inside ApplyUniNow.',
   HR: 'hr operators. full hr module access except admin-level system config.',
   MARKETING_MANAGER: 'marketing manager. owns leads, campaigns, automations and landing pages.',
   COUNSELLOR: 'counsellor / advisor. marketing + student crm management, self-service hr.',
@@ -227,8 +227,8 @@ const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_'
 export function hasPermission(role, permission, permissionMap) {
   if (!role || !permission) return false;
   const normalizedRole = normalizeRole(role);
-  // SUPER_ADMIN (platform) and GLOBAL_ADMIN (tenant administrator) have full
-  // access; never gate them behind individual permission strings.
+  // SUPER_ADMIN and GLOBAL_ADMIN have full access; never gate them behind
+  // individual permission strings.
   if (normalizedRole === 'SUPER_ADMIN' || normalizedRole === 'GLOBAL_ADMIN') return true;
   const source = permissionMap && permissionMap[normalizedRole]
     ? permissionMap[normalizedRole]

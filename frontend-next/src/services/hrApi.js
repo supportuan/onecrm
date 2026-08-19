@@ -11,18 +11,8 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-// Tenant Fetch Helper
-const tenantFetch = async (url, options = {}) => {
-  const tenantId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("tenantId") || "default-tenant"
-      : "default-tenant";
-  const headers = {
-    ...options.headers,
-    "x-tenant-id": tenantId,
-  };
-  return authFetch(url, { ...options, headers });
-};
+// Authenticated fetch helper (org is resolved server-side).
+const tenantFetch = async (url, options = {}) => authFetch(url, options);
 
 // ==========================================
 // 1. Employees & Directory Service

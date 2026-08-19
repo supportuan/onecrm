@@ -14,7 +14,6 @@ import {
 } from "../../../utils/validation.js";
 import { buildCampaignEmailTemplate } from './emailTemplate.service.js';
 import { syncMetaCampaignInsights } from './metaInsights.service.js';
-import { getDefaultTenantId } from '../../../utils/tenant-default.js';
 import type {
   WebsiteLeadInput,
 } from '../schemas/website-lead.schema.js';
@@ -314,32 +313,13 @@ export const createLead = async (data: any) => {
     ...leadData
   } = data;
 
-  let tenantId = leadData.tenantId ?? null;
-  if (tenantId == null) {
-    try {
-      const { getTenantContext } = await import('../../../middleware/tenant-context.js');
-      const ctx = getTenantContext();
-      if (ctx?.tenantId != null) tenantId = ctx.tenantId;
-    } catch {
-      /* ignore */
-    }
-  }
-  if (tenantId == null) {
-    try {
-      tenantId = await getDefaultTenantId(leadData.assignedCounsellorId ?? null);
-    } catch {
-      tenantId = undefined;
-    }
-  }
-
-  await validateDuplicateLead(email, phone, undefined, tenantId ?? null);
+  await validateDuplicateLead(email, phone);
 
   const lead = await prisma.lead.create({
     data: {
       ...leadData,
       email,
       phone,
-      ...(tenantId != null ? { tenantId } : {}),
     },
     include: {
       source: true,
@@ -2202,7 +2182,6 @@ export const createWebsiteLead = async (
       assignedCounsellorId: null,
 
       assignedById: null,
-      tenantId: (await getDefaultTenantId()) ?? undefined,
     },
 
     include: {

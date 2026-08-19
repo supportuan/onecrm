@@ -72,10 +72,10 @@ const validateCreatePayload = (
   return 'Forbidden: insufficient permissions';
 };
 
-// SUPER_ADMIN: cross-tenant (null). Anyone else: locked to their tenantId.
-const scopeFor = (req: Request): number | null => {
-  if (req.user?.role === UserRole.SUPER_ADMIN) return null;
-  return req.user?.tenantId ?? null;
+const omitTenantId = <T>(row: T): T => {
+  if (!row || typeof row !== 'object') return row;
+  const { tenantId: _tenantId, ...rest } = row as T & { tenantId?: unknown };
+  return rest as T;
 };
 
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -85,8 +85,8 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
     }
 
     const role = req.query.role as UserRole | undefined;
-    const data = await userService.getUsers(role, scopeFor(req));
-    return sendSuccess(res, 'Users fetched successfully', data);
+    const data = await userService.getUsers(role);
+    return sendSuccess(res, 'Users fetched successfully', Array.isArray(data) ? data.map(omitTenantId) : data);
   } catch (error) {
     next(error);
   }
@@ -104,11 +104,10 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 
-    const scope = req.user.id === id ? null : scopeFor(req);
-    const user = await userService.getUserById(id, scope);
+    const user = await userService.getUserById(id);
     if (!user) return sendError(res, 'User not found', 404);
 
-    return sendSuccess(res, 'User fetched successfully', user);
+    return sendSuccess(res, 'User fetched successfully', omitTenantId(user));
   } catch (error) {
     next(error);
   }
@@ -137,10 +136,9 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       roleName: data.roleName,
       agencyDetails: data.agencyDetails ?? undefined,
       moduleAccess: data.moduleAccess ?? undefined,
-      tenantId: scopeFor(req),
       linkHrEmployeeId: data.linkHrEmployeeId,
     });
-    return sendSuccess(res, 'User created successfully', user, 201);
+    return sendSuccess(res, 'User created successfully', omitTenantId(user), 201);
   } catch (error) {
     next(error);
   }
@@ -172,10 +170,9 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         phone: data.phone ?? undefined,
         
       },
-      scopeFor(req),
       req.user.id
     );
-    return sendSuccess(res, 'User updated successfully', updated);
+    return sendSuccess(res, 'User updated successfully', omitTenantId(updated));
   } catch (error) {
     next(error);
   }
@@ -192,8 +189,8 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
       return sendError(res, 'Forbidden: insufficient permissions', 403);
     }
 
-    const data = await userService.deactivateUser(id, scopeFor(req));
-    return sendSuccess(res, 'User deactivated successfully', data);
+    const data = await userService.deactivateUser(id);
+    return sendSuccess(res, 'User deactivated successfully', omitTenantId(data));
   } catch (error) {
     next(error);
   }
@@ -201,8 +198,8 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 
 export const getCounsellors = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await userService.getCounsellors(scopeFor(req));
-    return sendSuccess(res, 'Counsellors fetched successfully', data);
+    const data = await userService.getCounsellors();
+    return sendSuccess(res, 'Counsellors fetched successfully', Array.isArray(data) ? data.map(omitTenantId) : data);
   } catch (error) {
     next(error);
   }

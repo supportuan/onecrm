@@ -10,7 +10,7 @@ import MenuItem from "./MenuItem";
 import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { usePermissions } from "@/lib/auth/PermissionsContext";
-import { MODULE_PERMISSION_MAP, MODULE_KEY_MAP } from "@/lib/auth/rbac";
+import { MODULE_PERMISSION_MAP } from "@/lib/auth/rbac";
 import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
 import { SIDEBAR_COLLAPSED, SIDEBAR_OPEN } from "@/lib/layout-shell";
 import { SidebarBrandHeader } from "@/components/AppBrand";
@@ -88,26 +88,10 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
 
   const filteredNavMenu = useMemo(() => {
     if (!user) return [];
-    if (user.role === "SUPER_ADMIN") return [];
 
     const isAgent = isAgencyPartnerRole(user.role);
 
-    const enabledModules = Array.isArray(user.enabledModules)
-      ? new Set(user.enabledModules)
-      : new Set();
-
-    const tenantAllows = (item) => {
-      const moduleKey = MODULE_KEY_MAP[item.accessKey || item.label];
-      if (!moduleKey) return true;
-      // The tenant module is enabled in the database, but older admin sessions
-      // may still carry an enabledModules snapshot from before Knowledge Hub existed.
-      if (moduleKey === "RESOURCES" && user.role === "GLOBAL_ADMIN") return true;
-      return enabledModules.has(moduleKey);
-    };
-
     const moduleVisible = (item) => {
-      if (!tenantAllows(item)) return false;
-
       const accessKey = item.accessKey || item.label;
       const required = MODULE_PERMISSION_MAP[accessKey];
       if (!required) return true;

@@ -13,14 +13,9 @@ type ScopeUser = {
   id?: number;
   role?: string;
   email?: string | null;
-  tenantId?: number | null;
 };
 
-const withTenant = (where: Record<string, unknown>, user?: ScopeUser) => {
-  // SUPER_ADMIN may operate cross-tenant; everyone else is pinned when known.
-  if (user?.role === 'SUPER_ADMIN' || user?.tenantId == null) return where;
-  return { ...where, tenantId: user.tenantId };
-};
+const withTenant = (where: Record<string, unknown>, _user?: ScopeUser) => where;
 
 /** Match student rows linked by userId or legacy email-only records. */
 export const studentSelfWhere = (user: ScopeUser) => {

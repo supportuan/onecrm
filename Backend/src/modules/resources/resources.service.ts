@@ -138,14 +138,12 @@ const mapResourceRow = async (
 export const listResourcesForUser = async (params: {
   userId: number;
   role: UserRole;
-  tenantId: number | null;
 }) => {
   const rows = await prisma.resource.findMany({
     where: {
       deletedAt: null,
       isFolder: false,
       isPublished: true,
-      ...(params.tenantId != null ? { tenantId: params.tenantId } : {}),
     },
     include: {
       uploadedBy: { select: { id: true, fullName: true } },
@@ -169,7 +167,6 @@ export const listResourcesForUser = async (params: {
 export const listPendingAcknowledgements = async (params: {
   userId: number;
   role: UserRole;
-  tenantId: number | null;
 }) => {
   const rows = await listResourcesForUser(params);
   return rows.filter((row) => row.pendingAcknowledgement);
@@ -178,7 +175,6 @@ export const listPendingAcknowledgements = async (params: {
 export const countPendingAcknowledgements = async (params: {
   userId: number;
   role: UserRole;
-  tenantId: number | null;
 }) => {
   const pending = await listPendingAcknowledgements(params);
   return pending.length;
@@ -188,14 +184,12 @@ export const acknowledgeResource = async (params: {
   resourceId: number;
   userId: number;
   role: UserRole;
-  tenantId: number | null;
 }) => {
   const resource = await prisma.resource.findFirst({
     where: {
       id: params.resourceId,
       deletedAt: null,
       isPublished: true,
-      ...(params.tenantId != null ? { tenantId: params.tenantId } : {}),
     },
     include: {
       uploadedBy: { select: { id: true, fullName: true } },
@@ -235,12 +229,11 @@ export const acknowledgeResource = async (params: {
   return mapResourceRow(refreshed, params.userId);
 };
 
-export const listResourcesAdmin = async (tenantId: number | null) => {
+export const listResourcesAdmin = async () => {
   const rows = await prisma.resource.findMany({
     where: {
       deletedAt: null,
       isFolder: false,
-      ...(tenantId != null ? { tenantId } : {}),
     },
     include: {
       uploadedBy: { select: { id: true, fullName: true } },
@@ -261,7 +254,6 @@ export const listResourcesAdmin = async (tenantId: number | null) => {
 };
 
 export const createResource = async (params: {
-  tenantId: number | null;
   uploadedById: number;
   file: Express.Multer.File;
   name: string;
@@ -274,8 +266,7 @@ export const createResource = async (params: {
 }) => {
   const slug = await uniqueSlug(params.name);
   const storedName = safeUploadFilename(params.file.originalname);
-  const tenantPart = params.tenantId ?? 'global';
-  const relativePath = `uploads/resources/${tenantPart}/${storedName}`;
+  const relativePath = `uploads/resources/${storedName}`;
   const { ref: fileUrl } = await storeUploadedFile({
     relativePath,
     buffer: params.file.buffer,
@@ -284,7 +275,6 @@ export const createResource = async (params: {
 
   const created = await prisma.resource.create({
     data: {
-      tenantId: params.tenantId,
       name: params.name.trim(),
       description: params.description?.trim() || null,
       slug,
@@ -314,7 +304,6 @@ export const createResource = async (params: {
 
 export const updateResource = async (
   id: number,
-  tenantId: number | null,
   data: {
     name?: string;
     description?: string | null;
@@ -327,7 +316,7 @@ export const updateResource = async (
   },
 ) => {
   const existing = await prisma.resource.findFirst({
-    where: { id, deletedAt: null, ...(tenantId != null ? { tenantId } : {}) },
+    where: { id, deletedAt: null },
   });
   if (!existing) throw new Error('resource not found');
 
@@ -345,8 +334,7 @@ export const updateResource = async (
       }
     }
     const storedName = safeUploadFilename(data.file.originalname);
-    const tenantPart = tenantId ?? 'global';
-    const relativePath = `uploads/resources/${tenantPart}/${storedName}`;
+    const relativePath = `uploads/resources/${storedName}`;
     const stored = await storeUploadedFile({
       relativePath,
       buffer: data.file.buffer,
@@ -408,9 +396,9 @@ export const updateResource = async (
   return mapResourceRow(updated);
 };
 
-export const deleteResource = async (id: number, tenantId: number | null) => {
+export const deleteResource = async (id: number) => {
   const existing = await prisma.resource.findFirst({
-    where: { id, deletedAt: null, ...(tenantId != null ? { tenantId } : {}) },
+    where: { id, deletedAt: null },
   });
   if (!existing) throw new Error('resource not found');
 
@@ -430,9 +418,9 @@ export const deleteResource = async (id: number, tenantId: number | null) => {
   return { id };
 };
 
-export const listResourceAcknowledgements = async (id: number, tenantId: number | null) => {
+export const listResourceAcknowledgements = async (id: number) => {
   const resource = await prisma.resource.findFirst({
-    where: { id, deletedAt: null, ...(tenantId != null ? { tenantId } : {}) },
+    where: { id, deletedAt: null },
     select: { id: true, name: true },
   });
   if (!resource) throw new Error('resource not found');

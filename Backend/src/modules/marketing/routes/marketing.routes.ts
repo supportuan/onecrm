@@ -5,7 +5,6 @@ import { uploadExcel, uploadMedia } from '../../../middleware/upload.middleware.
 import leadActivityRoutes from './lead-activity.routes.js';
 import leadReplyRoutes from './lead-reply.routes.js';
 import { authenticateToken } from '../../../middleware/authenticate.js';
-import { tenantContextMiddleware } from '../../../middleware/tenant-context.js';
 import { authorizeRole, authorizePermission } from '../../../middleware/authorize.js';
 import { updateLeadStatusController } from "../controllers/marketing.controller.js";
 import * as marketingController from "../controllers/marketing.controller.js";
@@ -16,7 +15,6 @@ const router = Router();
 router.post(
   '/leads/bulk-upload',
   authenticateToken,
-  tenantContextMiddleware,
   authorizePermission('Marketing', 'Lead Management', 'EDIT'),
   uploadExcel.single('file'),
   controller.bulkUploadLeads
@@ -98,7 +96,7 @@ router.post('/landing-pages/:slug/submit', controller.submitLandingPageForm);
 
 // Every non-public marketing route is authenticated and executes inside the
 // request tenant context. Route-level permission checks below remain in place.
-router.use(authenticateToken, tenantContextMiddleware);
+router.use(authenticateToken);
 /**
  * @swagger
  * /api/marketing/public/website-leads:

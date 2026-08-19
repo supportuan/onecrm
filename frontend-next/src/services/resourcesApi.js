@@ -10,12 +10,7 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-const tenantFetch = async (url, options = {}) => {
-  const tenantId =
-    typeof window !== 'undefined' ? localStorage.getItem('tenantId') || 'default-tenant' : 'default-tenant';
-  const headers = { ...options.headers, 'x-tenant-id': tenantId };
-  return authFetch(url, { ...options, headers });
-};
+const tenantFetch = async (url, options = {}) => authFetch(url, options);
 
 export const listResources = async () => handleResponse(await tenantFetch(API_URL));
 

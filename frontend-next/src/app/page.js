@@ -25,9 +25,7 @@ function HomeRedirect() {
     }
 
     const role = user?.role;
-    if (role === "SUPER_ADMIN") {
-      router.push("/super-admin");
-    } else if (role === "GLOBAL_ADMIN") {
+    if (role === "SUPER_ADMIN" || role === "GLOBAL_ADMIN") {
       router.push("/marketing");
     } else if (role === "HR") {
       router.push(getDefaultHrRoute(role) || "/hr");

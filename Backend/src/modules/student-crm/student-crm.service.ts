@@ -9,7 +9,6 @@ import { safeNotify } from '../notifications/recipients.js';
 import { getLoginUrl } from '../../utils/frontend-url.js';
 import { sendCampaignEmail } from '../marketing/services/email.service.js';
 import { resolveApplicationScopeWhere, resolveStudentScopeWhere } from './scoping.js';
-import { resolveCrmTenantId } from './tenant.js';
 import { computeProcessProgress, getStagesForCountry } from './stage-engine.js';
 import {
   appendVisaDocument,
@@ -34,7 +33,7 @@ import {
   updateWorkflowTemplate,
 } from './workflow-template.service.js';
 
-type Actor = { id?: number; role?: string; email?: string | null; tenantId?: number | null };
+type Actor = { id?: number; role?: string; email?: string | null };
 
 const STUDY_PLAN_INCLUDE = {
   countryRef: { select: { id: true, name: true } },
@@ -192,11 +191,6 @@ export const getStudentByUserId = async (userId: number) => {
     ? await resolveCountry(lead.preferredCountry || lead.country || '')
     : null;
 
-  const tenantId = await resolveCrmTenantId(
-    user.tenantId ?? lead?.tenantId ?? null,
-    userId,
-  );
-
   const created = await prisma.student.create({
     data: {
       ...studentDataFromPayload({
@@ -209,7 +203,6 @@ export const getStudentByUserId = async (userId: number) => {
         countryId: countryRow?.id,
       }),
       userId,
-      ...(tenantId != null ? { tenantId } : {}),
     } as any,
     include: STUDENT_INCLUDE,
   });
@@ -311,19 +304,11 @@ const studentDataFromPayload = (data: Record<string, any>) => {
 export const createStudent = async (data: Record<string, any>) => {
   const existing = await prisma.student.findUnique({ where: { email: data.email } });
   if (existing) {
-    if (existing.tenantId == null && data.tenantId != null) {
-      await prisma.student.update({
-        where: { id: existing.id },
-        data: { tenantId: Number(data.tenantId) },
-      });
-    }
     return getStudent(existing.id);
   }
-  const tenantId = await resolveCrmTenantId(data.tenantId ?? null, data.contactId ?? null);
   const created = await prisma.student.create({
     data: {
       ...studentDataFromPayload(data),
-      ...(tenantId != null ? { tenantId } : {}),
     } as any,
   });
   if (created.countryId) await seedStudentChecklists(created.id, created.countryId);
@@ -1201,7 +1186,6 @@ export const createApplication = async (data: {
   assignedToId?: number;
   deadline?: string;
   notes?: string;
-  tenantId?: number | null;
 }, actor?: Actor) => {
   const MAX_ATTEMPTS = 5;
   let app: Awaited<ReturnType<typeof prisma.application.create>> | null = null;
@@ -1221,13 +1205,8 @@ export const createApplication = async (data: {
 
   const studentRow = await prisma.student.findUnique({
     where: { id: data.studentId },
-    select: { id: true, tenantId: true, contactId: true },
+    select: { id: true, contactId: true },
   });
-  const tenantId = await resolveCrmTenantId(
-    data.tenantId ?? studentRow?.tenantId ?? null,
-    data.assignedToId ?? studentRow?.contactId ?? null,
-  );
-
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
     const code = await generateApplicationCode(attempt);
     try {
@@ -1245,7 +1224,6 @@ export const createApplication = async (data: {
           deadline: data.deadline ? new Date(data.deadline) : null,
           notes: data.notes || null,
           stage: 'DOCUMENTS_PENDING',
-          ...(tenantId != null ? { tenantId } : {}),
         },
       });
       break;
@@ -2190,11 +2168,6 @@ export const createApplicationFromLead = async (
   const assignedToId = opts.assignedToId ?? lead.assignedCounsellorId ?? null;
   const countryName = opts.country || lead.preferredCountry || lead.country || 'UNKNOWN';
 
-  const tenantId = await resolveCrmTenantId(
-    lead.tenantId ?? null,
-    assignedToId ?? actingUserId ?? null,
-  );
-
   let student = await prisma.student.findUnique({ where: { email: lead.email } });
   if (!student) {
     student = await prisma.student.create({
@@ -2211,7 +2184,6 @@ export const createApplicationFromLead = async (
         contactId: assignedToId,
         source: lead.source?.name || 'lead_conversion',
         sourceLeadId: lead.id,
-        ...(tenantId != null ? { tenantId } : {}),
       },
     });
   } else {
@@ -2222,7 +2194,6 @@ export const createApplicationFromLead = async (
         source: student.source || lead.source?.name || null,
         contactId: student.contactId || assignedToId,
         level: student.level || (lead as any).level || null,
-        ...(student.tenantId == null && tenantId != null ? { tenantId } : {}),
       },
     });
   }
@@ -2238,7 +2209,6 @@ export const createApplicationFromLead = async (
     assignedToId: assignedToId || undefined,
     deadline: opts.deadline,
     notes: opts.notes,
-    tenantId,
   });
 
   // Mark lead as converted.
@@ -2328,11 +2298,6 @@ export const promoteLeadToStudent = async (
 
   let tempPassword: string | undefined;
 
-  const tenantId = await resolveCrmTenantId(
-    lead.tenantId ?? null,
-    assignedToId ?? actingUserId ?? null,
-  );
-
   if (!user) {
     tempPassword = opts.password || crypto.randomBytes(9).toString('base64').slice(0, 12);
     const passwordHash = await hashPassword(tempPassword);
@@ -2343,7 +2308,6 @@ export const promoteLeadToStudent = async (
         phone: lead.phone,
         passwordHash,
         role: UserRole.STUDENT,
-        tenantId,
         isActive: true,
         isApproved: true,
         mustChangePassword: true,
@@ -2367,8 +2331,8 @@ export const promoteLeadToStudent = async (
         `,
       }).catch((err) => console.error('[Student welcome email]', err));
     }
-  } else if (!user.tenantId && tenantId) {
-    user = await prisma.user.update({ where: { id: user.id }, data: { tenantId } });
+  } else {
+    // existing user
   }
 
   let student = await prisma.student.findUnique({ where: { email: lead.email } });
@@ -2386,7 +2350,6 @@ export const promoteLeadToStudent = async (
         contactId: assignedToId,
         source: lead.source?.name || 'lead_promotion',
         sourceLeadId: lead.id,
-        ...(tenantId != null ? { tenantId } : {}),
       },
     });
   } else {
@@ -2400,7 +2363,6 @@ export const promoteLeadToStudent = async (
         countryId: student.countryId || countryRow?.id || null,
         contactId: student.contactId || assignedToId,
         sourceLeadId: student.sourceLeadId || lead.id,
-        ...(student.tenantId == null && tenantId != null ? { tenantId } : {}),
       },
     });
   }
@@ -2434,12 +2396,6 @@ export const promoteLeadToStudent = async (
       course,
       intake: opts.intake,
       assignedToId: assignedToId || undefined,
-      tenantId,
-    });
-  } else if (application.tenantId == null && tenantId != null) {
-    application = await prisma.application.update({
-      where: { id: application.id },
-      data: { tenantId },
     });
   }
 

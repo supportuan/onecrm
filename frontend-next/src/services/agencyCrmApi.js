@@ -11,12 +11,7 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-const tenantFetch = async (url, options = {}) => {
-  const tenantId =
-    typeof window !== 'undefined' ? localStorage.getItem('tenantId') || 'default-tenant' : 'default-tenant';
-  const headers = { ...options.headers, 'x-tenant-id': tenantId };
-  return authFetch(url, { ...options, headers });
-};
+const tenantFetch = async (url, options = {}) => authFetch(url, options);
 
 const json = (body) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 const putJson = (body) => ({ method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

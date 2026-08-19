@@ -70,7 +70,6 @@ const err = (msg = 'Error') =>
 beforeEach(() => {
   jest.clearAllMocks();
   localStorage.clear();
-  localStorage.setItem('tenantId', 'test-tenant');
 });
 
 // ─── handleResponse ───────────────────────────────────────────

@@ -4,8 +4,6 @@
 //   $env:SUPERADMIN_PASSWORD = 'change-me-now'
 //   $env:SUPERADMIN_NAME = 'Root Admin'
 //   npx tsx scripts/bootstrap-super-admin.ts
-//
-// After running, log in as that user and onboard tenants via /super-admin.
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -26,12 +24,12 @@ async function main() {
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    if (existing.role !== UserRole.SUPER_ADMIN || existing.tenantId !== null) {
+    if (existing.role !== UserRole.SUPER_ADMIN) {
       await prisma.user.update({
         where: { id: existing.id },
-        data: { role: UserRole.SUPER_ADMIN, tenantId: null, isActive: true, isApproved: true },
+        data: { role: UserRole.SUPER_ADMIN, isActive: true, isApproved: true },
       });
-      console.log(`Promoted existing user ${email} to SUPER_ADMIN (tenantId=null).`);
+      console.log(`Promoted existing user ${email} to SUPER_ADMIN.`);
     } else {
       console.log(`User ${email} is already a SUPER_ADMIN. Nothing to do.`);
     }
@@ -41,7 +39,6 @@ async function main() {
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
     data: {
-      tenantId: null,
       fullName,
       email,
       passwordHash,

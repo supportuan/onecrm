@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import * as authService from './auth.service.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
 import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema, acceptPolicySchema } from './auth.schema.js';
-import { getEnabledModules } from '../rbac/tenant-modules.service.js';
 import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
 import crypto from 'crypto';
 import { createEmailTransporter, getEmailFrom } from '../../lib/email-transport.js';
@@ -10,18 +9,10 @@ import { getFrontendBaseUrl } from '../../utils/frontend-url.js';
 
 
 
-// Super admin operates cross-tenant, so they "have" every module.
+// ApplyUniNow is a single organization; every role has the full module catalog.
 const allModuleKeys = () => MODULE_CATALOG.map((m) => m.key);
 
-const resolveEnabledModules = async (
-    role: string,
-    tenantId: number | null,
-): Promise<string[]> => {
-    if (role === 'SUPER_ADMIN') return allModuleKeys();
-    if (tenantId == null) return [];
-    const set = await getEnabledModules(tenantId);
-    return Array.from(set);
-};
+const resolveEnabledModules = async (): Promise<string[]> => allModuleKeys();
 
 const createResetToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -51,17 +42,16 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         const data = loginSchema.parse(req.body);
         const { user, accessToken, refreshToken, isFirstLogin, mustChangePassword, showPolicyModal } =
             await authService.login(data.email, data.password, data.type);
-        const enabledModules = await resolveEnabledModules(user.role, user.tenantId ?? null);
+        const enabledModules = await resolveEnabledModules();
         const { countPendingAcknowledgements } = await import('../resources/resources.service.js');
         const pendingResourceAcknowledgements = await countPendingAcknowledgements({
             userId: user.id,
             role: user.role as any,
-            tenantId: user.tenantId ?? null,
         });
 
         const { resolveFileRef } = await import('../../lib/file-storage.js');
         const profilePhotoUrl = (await resolveFileRef(user.profilePhotoUrl)) || null;
-        const branding = await authService.resolveTenantBranding(user.tenant ?? null);
+        const branding = await authService.resolveTenantBranding();
 
         return sendSuccess(res, 'Login successful', {
             user: {
@@ -71,7 +61,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
                 role: user.role,
                 roleLabel: user.roleLabel ?? null,
                 permissionRole: user.permissionRole ?? null,
-                tenantId: user.tenantId ?? null,
                 tenantName: branding.tenantName,
                 tenantLogoUrl: branding.tenantLogoUrl,
                 moduleAccess: user.moduleAccess,
@@ -148,19 +137,16 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
         let enabledModules: string[] = [];
 
         try {
-            enabledModules = await resolveEnabledModules(
-                authenticatedUser.role,
-                authenticatedUser.tenantId ?? user.tenantId ?? null
-            );
+            enabledModules = await resolveEnabledModules();
         } catch (moduleError) {
             console.error('Failed to resolve enabled modules:', moduleError);
-            enabledModules =
-                authenticatedUser.role === 'SUPER_ADMIN' ? allModuleKeys() : [];
+            enabledModules = allModuleKeys();
         }
 
+        const { tenant: _tenant, ...safeUser } = user as any;
+
         return sendSuccess(res, 'Authenticated user retrieved successfully', {
-            ...user,
-            tenantId: authenticatedUser.tenantId ?? user.tenantId ?? null,
+            ...safeUser,
             enabledModules,
             pendingResourceAcknowledgements: await (async () => {
                 try {
@@ -168,7 +154,6 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
                     return await countPendingAcknowledgements({
                         userId: authenticatedUser.id,
                         role: authenticatedUser.role as any,
-                        tenantId: authenticatedUser.tenantId ?? user.tenantId ?? null,
                     });
                 } catch {
                     return 0;
@@ -200,17 +185,13 @@ export const uploadProfilePhoto = async (req: Request, res: Response, next: Next
         const updated = await authService.uploadProfilePhoto(req.user.id, fileUrl);
         let enabledModules: string[] = [];
         try {
-            enabledModules = await resolveEnabledModules(
-                req.user.role,
-                req.user.tenantId ?? updated?.tenantId ?? null
-            );
+            enabledModules = await resolveEnabledModules();
         } catch {
-            enabledModules = req.user.role === 'SUPER_ADMIN' ? allModuleKeys() : [];
+            enabledModules = allModuleKeys();
         }
 
         return sendSuccess(res, 'profile photo updated', {
             ...updated,
-            tenantId: req.user.tenantId ?? updated?.tenantId ?? null,
             enabledModules,
         });
     } catch (error: any) {

@@ -157,74 +157,15 @@ enum UserRole {
   AGENT
 }
 
-enum TenantStatus {
-  ACTIVE
-  SUSPENDED
-  ARCHIVED
-}
 
 // -----------------------------------------------------------------------------
-// Multi-tenant foundation. Every tenant-scoped row carries `tenantId`.
-// SUPER_ADMIN users have tenantId = null and operate cross-tenant.
+// Single-organization branding (ApplyUniNow). One row, id = 1.
 // -----------------------------------------------------------------------------
-model Tenant {
-  id        Int          @id @default(autoincrement())
-  name      String
-  slug      String       @unique
-  status    TenantStatus @default(ACTIVE)
+model OrgSettings {
+  id        Int      @id @default(1)
+  name      String   @default("ApplyUniNow")
   logoUrl   String?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-
-  users           User[]
-  rolePermissions RolePermission[]
-  modules         TenantModule[]
-  audits          SuperAdminAudit[]
-
-  hrEmployees              HrEmployee[]
-  hrEmployeeDocuments      HrEmployeeDocument[]
-  hrAttendanceDevices      HrAttendanceDevice[]
-  hrAttendanceSetting      HrAttendanceSetting?
-  hrAttendanceRecords      HrAttendanceRecord[]
-  hrRegularizations        HrRegularization[]
-  hrNetworkWhitelists      HrNetworkWhitelist[]
-  hrLeavePlans             HrLeavePlan[]
-  hrLeaveTypes             HrLeaveType[]
-  hrLeaveDefinitions       HrLeaveDefinition[]
-  hrLeavePlanAssignments   HrLeavePlanAssignment[]
-  hrLeaveRequests          HrLeaveRequest[]
-  hrHolidays               HrHoliday[]
-  hrJobPostings            HrJobPosting[]
-  hrKpiDefinitions         HrKpiDefinition[]
-  hrProcessingMetrics      HrProcessingMetric[]
-  hrMarketingPerformances  HrMarketingPerformance[]
-  hrCounsellorPerformances HrCounsellorPerformance[]
-  hrPerformanceReviews     HrPerformanceReview[]
-  hrOnboardingTemplates    HrOnboardingTemplate[]
-  hrOfferLetterTemplates   HrOfferLetterTemplate[]
-
-  students       Student[]
-  agencyPartners AgencyPartner[]
-  leads          Lead[]
-  campaigns      Campaign[]
-  applications   Application[]
-  resources      Resource[]
-  workflowTemplates ApplicationWorkflowTemplate[]
-}
-
-// Per-tenant module enablement. If a row is missing, the module is OFF.
-// Super admin manages these from the tenant detail page.
-model TenantModule {
-  tenantId  Int
-  moduleKey String
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@id([tenantId, moduleKey])
-  @@index([tenantId])
 }
 
 enum AgencyPartnerStatus {
@@ -482,7 +423,6 @@ model Lead {
   updatedAt             DateTime   @updatedAt
   deletedAt             DateTime?
 
-  tenantId              Int?
   externalCampaignId String?
   platform           String?
   launchDetails      Json?
@@ -495,9 +435,7 @@ model Lead {
   campaigns          CampaignLead[]
   convertedStudent   Student?         @relation("LeadConvertedStudent")
   agencyReferrals    AgencyReferral[]
-  tenant             Tenant?          @relation(fields: [tenantId], references: [id])
 
-  @@index([tenantId])
 }
 
 model LeadActivity {
@@ -515,7 +453,6 @@ model LeadActivity {
 
 model Campaign {
   id             Int            @id @default(autoincrement())
-  tenantId       Int?
   name           String
   type           CampaignType
   budget         Float?
@@ -555,9 +492,7 @@ model Campaign {
 
   leads      CampaignLead[]
   launchLogs CampaignLaunchLog[]
-  tenant     Tenant?             @relation(fields: [tenantId], references: [id])
 
-  @@index([tenantId])
 }
 
 model CampaignLead {
@@ -717,7 +652,6 @@ model AgencyFunnelStage {
 
 model User {
   id                 Int       @id @default(autoincrement())
-  tenantId           Int?
   fullName           String
   email              String    @unique
   phone              String?
@@ -737,7 +671,6 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  tenant                  Tenant?                 @relation(fields: [tenantId], references: [id])
   counsellor              User?                   @relation("StudentCounsellor", fields: [counsellorId], references: [id])
   students                User[]                  @relation("StudentCounsellor")
   assignedLeads           Lead[]                  @relation("LeadCounsellor")
@@ -1014,14 +947,11 @@ model Student {
   chats             Chat[]
   agencyReferrals   AgencyReferral[]
   agencyCommissions AgencyCommission[]
-  tenantId          Int?
-  tenant            Tenant?             @relation(fields: [tenantId], references: [id])
 
   @@index([email])
   @@index([contactId])
   @@index([deletedAt])
   @@index([source])
-  @@index([tenantId])
 }
 
 model StudentUniversity {
@@ -1115,7 +1045,6 @@ model StudentChecklist {
 
 model Resource {
   id                      Int       @id @default(autoincrement())
-  tenantId                Int?
   name                    String
   description             String?
   url                     String?
@@ -1139,13 +1068,12 @@ model Resource {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  tenant           Tenant?                   @relation(fields: [tenantId], references: [id])
   uploadedBy       User?                     @relation("ResourceUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
   parent           Resource?                 @relation("ResourceTree", fields: [parentId], references: [id], onDelete: SetNull)
   children         Resource[]                @relation("ResourceTree")
   acknowledgements ResourceAcknowledgement[]
 
-  @@index([tenantId, deletedAt])
+  @@index([deletedAt])
   @@index([isPublished, deletedAt])
   @@index([category, isPublished, deletedAt])
 }
@@ -1254,15 +1182,12 @@ model Application {
   workflowChecklistValues ApplicationWorkflowChecklistValue[]
   agencyReferrals   AgencyReferral[]
   agencyCommissions AgencyCommission[]
-  tenantId          Int?
-  tenant            Tenant?                 @relation(fields: [tenantId], references: [id])
 
   @@index([studentId])
   @@index([stage])
   @@index([assignedToId])
   @@index([studyPlanId])
   @@index([workflowTemplateId])
-  @@index([tenantId])
 }
 
 model ApplicationComment {
@@ -1282,7 +1207,6 @@ model ApplicationComment {
 
 model ApplicationWorkflowTemplate {
   id          Int       @id @default(autoincrement())
-  tenantId     Int?
   countryId    Int?
   name         String
   description  String?
@@ -1291,12 +1215,11 @@ model ApplicationWorkflowTemplate {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  tenant        Tenant?                             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   country       Country?                            @relation(fields: [countryId], references: [id], onDelete: SetNull)
   stages        ApplicationWorkflowStageTemplate[]
   applications  Application[]
 
-  @@index([tenantId, countryId, isActive])
+  @@index([countryId, isActive])
 }
 
 model ApplicationWorkflowStageTemplate {
@@ -1451,12 +1374,9 @@ model AgencyPartner {
   rules       AgencyCommissionRule[]
   agreementAcceptances AgencyAgreementAcceptance[]
   payoutLines CommissionPayoutLine[]
-  tenantId         Int?
-  tenant           Tenant?                @relation(fields: [tenantId], references: [id])
 
   @@index([status])
   @@index([agencyCode])
-  @@index([tenantId])
 }
 
 model AgencyPartnerDocument {
@@ -1833,7 +1753,6 @@ model PasswordResetToken {
 
 model HrEmployee {
   id               Int                @id @default(autoincrement())
-  tenantId         Int?
   name             String
   firstName        String?
   lastName         String?
@@ -1855,7 +1774,6 @@ model HrEmployee {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
-  tenant               Tenant?                 @relation(fields: [tenantId], references: [id])
   user                 User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
   manager              HrEmployee?             @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
   directReports        HrEmployee[]            @relation("EmployeeManager")
@@ -1870,14 +1788,12 @@ model HrEmployee {
   performanceReviews   HrPerformanceReview[]
   documents            HrEmployeeDocument[]
 
-  @@index([tenantId])
   @@index([employmentStatus])
   @@index([managerId])
 }
 
 model HrEmployeeDocument {
   id                  Int                   @id @default(autoincrement())
-  tenantId            Int?
   employeeId          Int
   type                HrEmployeeDocumentType
   fileName            String
@@ -1891,16 +1807,13 @@ model HrEmployeeDocument {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
-  tenant   Tenant?    @relation(fields: [tenantId], references: [id])
   employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId, type])
-  @@index([tenantId])
 }
 
 model HrAttendanceDevice {
   id         Int            @id @default(autoincrement())
-  tenantId   Int?
   deviceId   String
   deviceName String
   deviceIp   String
@@ -1910,38 +1823,30 @@ model HrAttendanceDevice {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
-  tenant            Tenant?              @relation(fields: [tenantId], references: [id])
   attendanceRecords HrAttendanceRecord[]
 
-  @@index([tenantId])
 }
 
 model HrNetworkWhitelist {
   id               Int      @id @default(autoincrement())
-  tenantId         Int?
   ipAddressOrRange String
   label            String
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id])
 
-  @@index([tenantId])
 }
 
 model HrAttendanceSetting {
-  tenantId           Int      @id
+  id                 Int      @id @default(autoincrement())
   attendanceMode     String   @default("biometric")
   enableIpValidation Boolean  @default(true)
   updatedAt          DateTime @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model HrAttendanceRecord {
   id         Int                @id @default(autoincrement())
-  tenantId   Int?
   employeeId Int
   date       String
   checkIn    DateTime?
@@ -1952,17 +1857,14 @@ model HrAttendanceRecord {
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
 
-  tenant   Tenant?             @relation(fields: [tenantId], references: [id])
   employee HrEmployee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   device   HrAttendanceDevice? @relation(fields: [deviceDbId], references: [id], onDelete: SetNull)
 
   @@index([employeeId, date])
-  @@index([tenantId])
 }
 
 model HrRegularization {
   id              Int                    @id @default(autoincrement())
-  tenantId        Int?
   employeeId      Int
   name            String
   date            String
@@ -1974,45 +1876,36 @@ model HrRegularization {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
-  tenant   Tenant?    @relation(fields: [tenantId], references: [id])
   employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  @@index([tenantId])
 }
 
 model HrLeavePlan {
   id          Int      @id @default(autoincrement())
-  tenantId    Int?
   name        String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant      Tenant?                 @relation(fields: [tenantId], references: [id])
   definitions HrLeaveDefinition[]
   assignments HrLeavePlanAssignment[]
 
-  @@index([tenantId])
 }
 
 model HrLeaveType {
   id        Int      @id @default(autoincrement())
-  tenantId  Int?
   name      String
   code      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant      Tenant?             @relation(fields: [tenantId], references: [id])
   definitions HrLeaveDefinition[]
 
-  @@unique([tenantId, code])
-  @@index([tenantId])
+  @@unique([code])
 }
 
 model HrLeaveDefinition {
   id           Int      @id @default(autoincrement())
-  tenantId     Int?
   planId       Int
   leaveTypeId  Int
   name         String
@@ -2025,45 +1918,36 @@ model HrLeaveDefinition {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  tenant    Tenant?     @relation(fields: [tenantId], references: [id])
   plan      HrLeavePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   leaveType HrLeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
 
   @@unique([planId, leaveTypeId])
-  @@index([tenantId])
 }
 
 model HrLeavePlanAssignment {
   id         Int  @id @default(autoincrement())
-  tenantId   Int?
   planId     Int
   employeeId Int
 
-  tenant   Tenant?     @relation(fields: [tenantId], references: [id])
   plan     HrLeavePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   employee HrEmployee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([planId, employeeId])
-  @@index([tenantId])
 }
 
 model HrHoliday {
   id           Int      @id @default(autoincrement())
-  tenantId     Int?
   name         String
   date         String
   isRestricted Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id])
 
-  @@index([tenantId])
 }
 
 model HrLeaveRequest {
   id                   Int                  @id @default(autoincrement())
-  tenantId             Int?
   employeeId           Int
   leaveTypeName        String
   fromDate             String
@@ -2078,12 +1962,10 @@ model HrLeaveRequest {
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
-  tenant   Tenant?    @relation(fields: [tenantId], references: [id])
   employee HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId, status])
   @@index([status, createdAt])
-  @@index([tenantId])
 }
 
 model HrSalaryStructure {
@@ -2170,12 +2052,11 @@ model HrOnboardingItem {
   checklist HrOnboardingChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
 }
 
-// Reusable onboarding playbook. Each tenant can keep several (e.g. "Engineering",
+// Reusable onboarding playbook. Keep several (e.g. "Engineering",
 // "Sales"). On hire, an HrOnboardingChecklist is spawned from the chosen template
 // and per-item dueDate is computed as joiningDate + dueOffsetDays.
 model HrOnboardingTemplate {
   id          Int      @id @default(autoincrement())
-  tenantId    Int?
   name        String
   description String?
   isDefault   Boolean  @default(false)
@@ -2183,10 +2064,8 @@ model HrOnboardingTemplate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant Tenant?                    @relation(fields: [tenantId], references: [id])
   items  HrOnboardingTemplateItem[]
 
-  @@index([tenantId])
 }
 
 model HrOnboardingTemplateItem {
@@ -2205,11 +2084,10 @@ model HrOnboardingTemplateItem {
   @@index([templateId])
 }
 
-// Tenant-configurable offer letter template. bodyHtml may contain {{variable}}
-// placeholders that the render endpoint substitutes from candidate + offer + tenant data.
+// Configurable offer letter template. bodyHtml may contain {{variable}}
+// placeholders that the render endpoint substitutes from candidate + offer + org data.
 model HrOfferLetterTemplate {
   id          Int      @id @default(autoincrement())
-  tenantId    Int?
   name        String
   description String?
   bodyHtml    String
@@ -2217,10 +2095,8 @@ model HrOfferLetterTemplate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant Tenant?         @relation(fields: [tenantId], references: [id])
   offers HrOfferLetter[]
 
-  @@index([tenantId])
 }
 
 // Audit trail of candidate pipeline-stage transitions.
@@ -2241,7 +2117,6 @@ model HrCandidateStageEvent {
 
 model HrJobPosting {
   id            Int         @id @default(autoincrement())
-  tenantId      Int?
   title         String
   department    String
   location      String
@@ -2256,10 +2131,8 @@ model HrJobPosting {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  tenant     Tenant?       @relation(fields: [tenantId], references: [id])
   candidates HrCandidate[]
 
-  @@index([tenantId])
 }
 
 model HrCandidate {
@@ -2327,7 +2200,6 @@ model HrInterview {
 
 model HrProcessingMetric {
   id                    Int      @id @default(autoincrement())
-  tenantId              Int?
   period                String
   totalApplications     Int
   processedApplications Int
@@ -2338,15 +2210,12 @@ model HrProcessingMetric {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id])
 
-  @@unique([tenantId, period])
-  @@index([tenantId])
+  @@unique([period])
 }
 
 model HrKpiDefinition {
   id          Int            @id @default(autoincrement())
-  tenantId    Int?
   role        String
   name        String
   description String?
@@ -2357,10 +2226,8 @@ model HrKpiDefinition {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  tenant  Tenant?       @relation(fields: [tenantId], references: [id])
   metrics HrKpiMetric[]
 
-  @@index([tenantId])
 }
 
 model HrKpiMetric {
@@ -2382,7 +2249,6 @@ model HrKpiMetric {
 
 model HrMarketingPerformance {
   id             Int      @id @default(autoincrement())
-  tenantId       Int?
   period         String
   leadsGenerated Int
   costPerLead    Float
@@ -2392,14 +2258,11 @@ model HrMarketingPerformance {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id])
 
-  @@index([tenantId])
 }
 
 model HrCounsellorPerformance {
   id             Int      @id @default(autoincrement())
-  tenantId       Int?
   counsellorId   String
   counsellorName String
   period         String
@@ -2410,15 +2273,12 @@ model HrCounsellorPerformance {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id])
 
   @@unique([counsellorId, period])
-  @@index([tenantId])
 }
 
 model HrPerformanceReview {
   id             Int             @id @default(autoincrement())
-  tenantId       Int?
   employeeId     Int?
   name           String
   employeeCode   String
@@ -2438,10 +2298,8 @@ model HrPerformanceReview {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  tenant   Tenant?     @relation(fields: [tenantId], references: [id])
   employee HrEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
-  @@index([tenantId])
   @@index([employeeId, cycle])
 }
 
@@ -2450,15 +2308,13 @@ model HrPerformanceReview {
 // -----------------------------------------------------------------------------
 model RolePermission {
   id          Int      @id @default(autoincrement())
-  tenantId    Int?
   role        String
   permissions String[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id])
 
-  @@unique([tenantId, role])
+  @@unique([role])
 }
 
 model Permission {
@@ -2486,23 +2342,3 @@ model CampaignLaunchLog {
   @@index([campaignId])
   @@index([createdAt])
 }
-
-// Append-only log of write actions taken from the Super Admin UI.
-// `actorId` is the super-admin user; `targetTenantId` is the affected tenant.
-// `payload` captures the smallest useful diff (modules array, new email, etc.).
-model SuperAdminAudit {
-  id             Int      @id @default(autoincrement())
-  actorId        Int
-  action         String
-  targetTenantId Int?
-  payload        Json?
-  createdAt      DateTime @default(now())
-
-  tenant Tenant? @relation(fields: [targetTenantId], references: [id], onDelete: SetNull)
-
-  @@index([actorId])
-  @@index([targetTenantId])
-  @@index([action])
-  @@index([createdAt])
-}
-

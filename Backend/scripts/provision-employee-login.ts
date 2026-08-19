@@ -7,7 +7,6 @@
 import dotenv from 'dotenv';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.js';
-import { getDefaultTenantId } from '../src/utils/tenant-default.js';
 
 dotenv.config();
 
@@ -36,7 +35,6 @@ async function main() {
   });
   if (!emp) throw new Error(`No HrEmployee found for ${EMAIL}`);
 
-  const tenantId = emp.tenantId ?? (await getDefaultTenantId());
   const passwordHash = await hashPassword(PASSWORD);
   const name = emp.name?.trim() || emp.firstName || EMAIL.split('@')[0];
 
@@ -53,7 +51,6 @@ async function main() {
         isApproved: true,
         mustChangePassword: true,
         role,
-        tenantId,
         fullName: name,
         phone: emp.phone,
       },
@@ -68,7 +65,6 @@ async function main() {
         passwordHash,
         role,
         roleLabel: emp.designation?.trim() || 'Staff',
-        tenantId,
         isActive: true,
         isApproved: true,
         mustChangePassword: true,
@@ -79,10 +75,10 @@ async function main() {
 
   await prisma.hrEmployee.update({
     where: { id: emp.id },
-    data: { userId: user.id, name, tenantId },
+    data: { userId: user.id, name },
   });
 
-  console.log(`Linked HrEmployee #${emp.id} (${emp.employeeCode}) → User #${user.id} (tenant ${tenantId})`);
+  console.log(`Linked HrEmployee #${emp.id} (${emp.employeeCode}) → User #${user.id}`);
   console.log(`Role: ${role}`);
   console.log(`Temporary password: ${PASSWORD} (must change on first login)`);
 }

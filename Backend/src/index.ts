@@ -82,10 +82,10 @@ attachCommunicationWebSocket(server);
 server.listen(Number(port), '0.0.0.0', async () => {
   console.log(`[ApplyUniNow] Backend server listening on http://127.0.0.1:${port}`);
   console.log(`[ApplyUniNow] Swagger UI available at http://127.0.0.1:${port}/api-docs`);
-  console.log('[ApplyUniNow] Multi-tenant: ON (HR root models auto-scoped via ALS + Prisma extension)');
+  console.log('[ApplyUniNow] Single organization: ApplyUniNow');
   try {
     await ensureDefaultTenantSeeded();
-    console.log('[ApplyUniNow] RBAC seeded for default tenant');
+    console.log('[ApplyUniNow] RBAC seeded for ApplyUniNow');
     await backfillHrSeedsForExistingTenants();
     console.log('[ApplyUniNow] HR defaults backfilled where missing');
     await backfillStaffEmployees();

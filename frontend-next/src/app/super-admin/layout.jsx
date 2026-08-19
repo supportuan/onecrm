@@ -1,12 +1,21 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import RoleGuard from '@/components/RoleGuard';
 
-export default function SuperAdminLayout({ children }) {
+export default function SuperAdminLayout() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/marketing');
+  }, [router]);
+
   return (
     <ProtectedRoute>
-      <RoleGuard allowedRoles={['SUPER_ADMIN']}>{children}</RoleGuard>
+      <div className="flex min-h-screen items-center justify-center text-sm text-neutral-500">
+        Redirecting…
+      </div>
     </ProtectedRoute>
   );
 }

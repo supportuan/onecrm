@@ -197,7 +197,6 @@ export const syncEmployeeLeaveStatus = async (
 const linkOfferLetterToEmployee = async (
   tx: typeof prisma,
   employeeId: number,
-  tenantId: number | null,
   offer: HrOfferLetter,
 ) => {
   const storedName = `offer-letter-${offer.id}.html`;
@@ -219,7 +218,6 @@ const linkOfferLetterToEmployee = async (
 
   return tx.hrEmployeeDocument.create({
     data: {
-      tenantId: tenantId ?? undefined,
       employeeId,
       type: 'OFFER_LETTER',
       fileName: `Offer Letter - ${offer.jobTitle}.html`,
@@ -772,14 +770,12 @@ export const createEmployeeDocument = async (
     fileSize?: number | null;
     expiresAt?: string | null;
     notes?: string | null;
-    tenantId?: number | null;
   },
 ) => {
   const emp = await resolveEmployeeId(employeeId);
   if (!emp) throw new Error('Employee not found');
   const doc = await prisma.hrEmployeeDocument.create({
     data: {
-      tenantId: data.tenantId ?? emp.tenantId ?? undefined,
       employeeId: emp.id,
       type: data.type,
       fileName: data.fileName,
@@ -810,12 +806,10 @@ export const deleteEmployeeDocument = async (employeeId: string, docId: string) 
 // 2. Attendance Settings
 // ---------------------------------------------------------------------------
 
-// HrAttendanceSetting is per-tenant since Priority A. The PK is tenantId.
-// Callers must pass req.tenantId; the controller does that.
-export const getAttendanceSettings = async (tenantId: number) => {
+export const getAttendanceSettings = async () => {
   const settings = await prisma.hrAttendanceSetting.upsert({
-    where: { tenantId },
-    create: { tenantId, attendanceMode: 'biometric', enableIpValidation: true },
+    where: { id: 1 },
+    create: { id: 1, attendanceMode: 'biometric', enableIpValidation: true },
     update: {},
   });
   return {
@@ -825,13 +819,12 @@ export const getAttendanceSettings = async (tenantId: number) => {
 };
 
 export const updateAttendanceSettings = async (
-  tenantId: number,
   data: { attendance_mode?: string; enable_ip_validation?: boolean },
 ) => {
   const settings = await prisma.hrAttendanceSetting.upsert({
-    where: { tenantId },
+    where: { id: 1 },
     create: {
-      tenantId,
+      id: 1,
       attendanceMode: data.attendance_mode ?? 'biometric',
       enableIpValidation: data.enable_ip_validation ?? true,
     },
@@ -1257,39 +1250,33 @@ export const deleteLeavePlan = async (planId: string) => {
   return { success: true };
 };
 
-export const getLeaveTypes = async (tenantId?: number | null) => {
-  const where =
-    tenantId == null
-      ? {}
-      : { OR: [{ tenantId }, { tenantId: null }] };
-  const rows = await prisma.hrLeaveType.findMany({ where, orderBy: { id: 'asc' } });
+export const getLeaveTypes = async () => {
+  const rows = await prisma.hrLeaveType.findMany({ orderBy: { id: 'asc' } });
   return rows.map(mapLeaveType);
 };
 
 export const createLeaveType = async (
-  tenantId: number,
   data: { name: string; code: string },
 ) => {
   const code = data.code.trim().toUpperCase();
   const existing = await prisma.hrLeaveType.findFirst({
-    where: { tenantId, code },
+    where: { code },
   });
   if (existing) throw new Error(`Category code "${code}" already exists`);
   const row = await prisma.hrLeaveType.create({
-    data: { tenantId, name: data.name.trim(), code },
+    data: { name: data.name.trim(), code },
   });
   return mapLeaveType(row);
 };
 
 export const updateLeaveType = async (
-  tenantId: number,
   id: string,
   data: { name?: string; code?: string },
 ) => {
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Leave category not found');
   const existing = await prisma.hrLeaveType.findFirst({
-    where: { id: numericId, tenantId },
+    where: { id: numericId },
   });
   if (!existing) throw new Error('Leave category not found');
   const patch: { name?: string; code?: string } = {};
@@ -1298,7 +1285,7 @@ export const updateLeaveType = async (
     const code = data.code.trim().toUpperCase();
     if (code !== existing.code) {
       const dup = await prisma.hrLeaveType.findFirst({
-        where: { tenantId, code, NOT: { id: numericId } },
+        where: { code, NOT: { id: numericId } },
       });
       if (dup) throw new Error(`Category code "${code}" already exists`);
     }
@@ -1308,11 +1295,11 @@ export const updateLeaveType = async (
   return mapLeaveType(row);
 };
 
-export const deleteLeaveType = async (tenantId: number, id: string) => {
+export const deleteLeaveType = async (id: string) => {
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Leave category not found');
   const existing = await prisma.hrLeaveType.findFirst({
-    where: { id: numericId, tenantId },
+    where: { id: numericId },
   });
   if (!existing) throw new Error('Leave category not found');
   const inUse = await prisma.hrLeaveDefinition.count({
@@ -1636,10 +1623,9 @@ export const createOnboardingChecklist = async (data: {
   employeeName: string;
   startDate: string;
   templateId?: string;
-  tenantId?: number | null;
 }) => {
   if (data.templateId) {
-    return createOnboardingChecklistFromTemplate(data.tenantId ?? null, {
+    return createOnboardingChecklistFromTemplate({
       employeeId: data.employeeId,
       employeeName: data.employeeName,
       startDate: data.startDate,
@@ -1752,7 +1738,7 @@ export const createOfferLetter = async (
     conditional?: boolean;
     templateId?: string;
   },
-  ctx?: { tenantId?: number | null },
+  ctx?: { companyName?: string },
 ) => {
   const candidateId = requireCandidateId(data.candidateId);
   const templateId = data.templateId ? resolveNumericId(data.templateId) : null;
@@ -1774,7 +1760,7 @@ export const createOfferLetter = async (
   });
   if (data.status === 'SENT' || templateId) {
     try {
-      await renderOfferLetterHtml(sid(letter.id), { tenantId: ctx?.tenantId ?? null });
+      await renderOfferLetterHtml(sid(letter.id), {});
     } catch {
       // render is best-effort when no template exists yet
     }
@@ -1800,12 +1786,8 @@ export const updateOfferLetterStatus = async (id: string, status: OfferLetter['s
 // Offer letter templates (tenant-configurable)
 // ---------------------------------------------------------------------------
 
-const offerTemplateScope = (tenantId: number | null) =>
-  tenantId == null ? {} : { OR: [{ tenantId }, { tenantId: null }] };
-
-export const getOfferLetterTemplates = async (tenantId: number | null = null) => {
+export const getOfferLetterTemplates = async () => {
   const rows = await prisma.hrOfferLetterTemplate.findMany({
-    where: offerTemplateScope(tenantId),
     orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
   });
   return rows.map(mapOfferLetterTemplate);
@@ -1819,18 +1801,15 @@ export const getOfferLetterTemplate = async (id: string) => {
 };
 
 export const createOfferLetterTemplate = async (
-  tenantId: number,
   data: { name: string; description?: string; bodyHtml: string; isDefault?: boolean },
 ) => {
   if (data.isDefault) {
     await prisma.hrOfferLetterTemplate.updateMany({
-      where: { tenantId },
       data: { isDefault: false },
     });
   }
   const row = await prisma.hrOfferLetterTemplate.create({
     data: {
-      tenantId,
       name: data.name.trim(),
       description: data.description?.trim() || null,
       bodyHtml: data.bodyHtml,
@@ -1841,19 +1820,18 @@ export const createOfferLetterTemplate = async (
 };
 
 export const updateOfferLetterTemplate = async (
-  tenantId: number,
   id: string,
   data: { name?: string; description?: string | null; bodyHtml?: string; isDefault?: boolean },
 ) => {
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Offer template not found');
   const existing = await prisma.hrOfferLetterTemplate.findFirst({
-    where: { id: numericId, OR: [{ tenantId }, { tenantId: null }] },
+    where: { id: numericId },
   });
   if (!existing) throw new Error('Offer template not found');
   if (data.isDefault) {
     await prisma.hrOfferLetterTemplate.updateMany({
-      where: { tenantId, NOT: { id: numericId } },
+      where: { NOT: { id: numericId } },
       data: { isDefault: false },
     });
   }
@@ -1869,11 +1847,11 @@ export const updateOfferLetterTemplate = async (
   return mapOfferLetterTemplate(row);
 };
 
-export const deleteOfferLetterTemplate = async (tenantId: number, id: string) => {
+export const deleteOfferLetterTemplate = async (id: string) => {
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Offer template not found');
   const existing = await prisma.hrOfferLetterTemplate.findFirst({
-    where: { id: numericId, tenantId },
+    where: { id: numericId },
   });
   if (!existing) throw new Error('Offer template not found or not editable');
   await prisma.hrOfferLetterTemplate.delete({ where: { id: numericId } });
@@ -1893,7 +1871,7 @@ const renderVariables = (body: string, vars: Record<string, string>) =>
 
 export const renderOfferLetterHtml = async (
   offerId: string,
-  ctx: { tenantId?: number | null; companyName?: string } = {},
+  ctx: { companyName?: string } = {},
 ) => {
   const numericId = resolveNumericId(offerId);
   if (numericId === null) throw new Error('Offer letter not found');
@@ -1907,18 +1885,18 @@ export const renderOfferLetterHtml = async (
   let template = offer.template;
   if (!template) {
     template = await prisma.hrOfferLetterTemplate.findFirst({
-      where: { OR: [{ tenantId: ctx.tenantId ?? null }, { tenantId: null }], isDefault: true },
-      orderBy: { tenantId: 'desc' },
+      where: { isDefault: true },
     });
   }
   if (!template) throw new Error('No offer letter template available');
 
   let companyName = ctx.companyName;
-  if (!companyName && ctx.tenantId != null) {
-    const tenant = await prisma.tenant.findUnique({ where: { id: ctx.tenantId }, select: { name: true } });
-    companyName = tenant?.name;
+  if (!companyName) {
+    const { ensureOrgSettings } = await import('../../utils/org-settings.js');
+    const org = await ensureOrgSettings();
+    companyName = org.name;
   }
-  companyName = companyName || 'The Company';
+  companyName = companyName || 'ApplyUniNow';
 
   const variables: Record<string, string> = {
     candidateName: offer.candidateName,
@@ -1949,12 +1927,8 @@ export const renderOfferLetterHtml = async (
 // Onboarding templates
 // ---------------------------------------------------------------------------
 
-const onboardingTemplateScope = (tenantId: number | null) =>
-  tenantId == null ? {} : { OR: [{ tenantId }, { tenantId: null }] };
-
-export const getOnboardingTemplates = async (tenantId: number | null = null) => {
+export const getOnboardingTemplates = async () => {
   const rows = await prisma.hrOnboardingTemplate.findMany({
-    where: onboardingTemplateScope(tenantId),
     include: { items: { orderBy: { sortOrder: 'asc' } } },
     orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
   });
@@ -1962,7 +1936,6 @@ export const getOnboardingTemplates = async (tenantId: number | null = null) => 
 };
 
 export const createOnboardingTemplate = async (
-  tenantId: number,
   data: {
     name: string;
     description?: string;
@@ -1980,13 +1953,11 @@ export const createOnboardingTemplate = async (
 ) => {
   if (data.isDefault) {
     await prisma.hrOnboardingTemplate.updateMany({
-      where: { tenantId },
       data: { isDefault: false },
     });
   }
   const row = await prisma.hrOnboardingTemplate.create({
     data: {
-      tenantId,
       name: data.name.trim(),
       description: data.description?.trim() || null,
       role: data.role?.trim() || null,
@@ -2007,11 +1978,11 @@ export const createOnboardingTemplate = async (
   return mapOnboardingTemplate(row);
 };
 
-export const deleteOnboardingTemplate = async (tenantId: number, id: string) => {
+export const deleteOnboardingTemplate = async (id: string) => {
   const numericId = resolveNumericId(id);
   if (numericId === null) throw new Error('Onboarding template not found');
   const existing = await prisma.hrOnboardingTemplate.findFirst({
-    where: { id: numericId, tenantId },
+    where: { id: numericId },
   });
   if (!existing) throw new Error('Onboarding template not found or not editable');
   await prisma.hrOnboardingTemplate.delete({ where: { id: numericId } });
@@ -2020,7 +1991,7 @@ export const deleteOnboardingTemplate = async (tenantId: number, id: string) => 
 
 const spawnChecklistFromTemplate = async (
   tx: typeof prisma,
-  args: { employeeId: number; employeeName: string; joiningDate: string; templateId?: number | null; tenantId: number | null },
+  args: { employeeId: number; employeeName: string; joiningDate: string; templateId?: number | null },
 ) => {
   let template = args.templateId
     ? await tx.hrOnboardingTemplate.findUnique({
@@ -2030,8 +2001,7 @@ const spawnChecklistFromTemplate = async (
     : null;
   if (!template) {
     template = await tx.hrOnboardingTemplate.findFirst({
-      where: { OR: [{ tenantId: args.tenantId ?? null }, { tenantId: null }], isDefault: true },
-      orderBy: { tenantId: 'desc' },
+      where: { isDefault: true },
       include: { items: { orderBy: { sortOrder: 'asc' } } },
     });
   }
@@ -2070,7 +2040,6 @@ const spawnChecklistFromTemplate = async (
 };
 
 export const createOnboardingChecklistFromTemplate = async (
-  tenantId: number | null,
   data: { employeeId: string; employeeName: string; startDate: string; templateId?: string },
 ) => {
   const emp = await resolveEmployeeId(data.employeeId);
@@ -2081,7 +2050,6 @@ export const createOnboardingChecklistFromTemplate = async (
     employeeName: data.employeeName,
     joiningDate: data.startDate,
     templateId: data.templateId ? resolveNumericId(data.templateId) : null,
-    tenantId,
   });
   return mapOnboardingChecklist(checklist);
 };
@@ -2092,7 +2060,7 @@ export const createOnboardingChecklistFromTemplate = async (
 
 export const acceptOfferLetter = async (
   offerId: string,
-  ctx: { tenantId: number | null; onboardingTemplateId?: string },
+  ctx: { onboardingTemplateId?: string } = {},
 ) => {
   const numericId = resolveNumericId(offerId);
   if (numericId === null) throw new Error('Offer letter not found');
@@ -2114,14 +2082,13 @@ export const acceptOfferLetter = async (
 
     // 1. Ensure HrEmployee row for the candidate (idempotent on email).
     let employee = await tx.hrEmployee.findFirst({
-      where: { tenantId: ctx.tenantId ?? undefined, email: offer.candidateEmail },
+      where: { email: offer.candidateEmail },
     });
     if (!employee) {
       const baseCode = `EMP-${Date.now().toString().slice(-6)}`;
       const { first, last } = splitName(offer.candidateName);
       employee = await tx.hrEmployee.create({
         data: {
-          tenantId: ctx.tenantId ?? undefined,
           name: offer.candidateName,
           firstName: first,
           lastName: last,
@@ -2153,10 +2120,9 @@ export const acceptOfferLetter = async (
       employeeName: offer.candidateName,
       joiningDate: offer.joiningDate,
       templateId,
-      tenantId: ctx.tenantId,
     });
 
-    await linkOfferLetterToEmployee(tx as unknown as typeof prisma, employee.id, ctx.tenantId, offer);
+    await linkOfferLetterToEmployee(tx as unknown as typeof prisma, employee.id, offer);
 
     // 3. Mark offer ACCEPTED, link to employee, set timestamp.
     const updated = await tx.hrOfferLetter.update({
@@ -2506,11 +2472,10 @@ export const getProcessingMetrics = async () => {
 };
 
 export const addProcessingMetric = async (
-  tenantId: number,
   data: Omit<ProcessingMetric, 'id'>,
 ) => {
   const metric = await prisma.hrProcessingMetric.upsert({
-    where: { tenantId_period: { tenantId, period: data.period } },
+    where: { period: data.period },
     create: {
       period: data.period,
       totalApplications: data.totalApplications,

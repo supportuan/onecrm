@@ -4,9 +4,9 @@ import { hashPassword, comparePasswords } from '../../utils/password.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt.js';
 import { adminAgentNotification, adminStudentNotification, sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
-import { getDefaultTenantId, resolveTenantForUser } from '../../utils/tenant-default.js';
 import { deleteStoredFile, resolveFileRef } from '../../lib/file-storage.js';
 import { getLoginUrl } from '../../utils/frontend-url.js';
+import { resolveOrgBranding } from '../../utils/org-settings.js';
 
 interface RegisterData {
   fullName: string;
@@ -38,13 +38,6 @@ export const register = async (data: RegisterData) => {
   // Import default permissions for the role
   const { getDefaultModuleAccessByRole } = await import('../users/user.service.js');
   const moduleAccess = getDefaultModuleAccessByRole(data.role);
-  let tenantId: number | null = null;
-  try {
-    tenantId = await getDefaultTenantId();
-  } catch (e) {
-    // In test environment prisma.tenant may be undefined; default to null
-    tenantId = null;
-  }
 
   const user = await prisma.user.create({
     data: {
@@ -53,7 +46,6 @@ export const register = async (data: RegisterData) => {
       phone: data.phone || null,
       passwordHash,
       role: data.role,
-      tenantId,
       isActive: true,
       isApproved,
       agencyDetails: data.agencyDetails || null,
@@ -435,8 +427,7 @@ export const register = async (data: RegisterData) => {
 export const login = async (email: string, password: string, loginType?: 'student' | 'staff') => {
   const user = await prisma.user.findUnique({
     where: { email },
-    include: { tenant: true },
-  });
+      });
   if (!user || !user.isActive) throw new Error('Invalid credentials');
 
   const isValid = await comparePasswords(password, user.passwordHash);
@@ -453,28 +444,8 @@ export const login = async (email: string, password: string, loginType?: 'studen
     throw new Error('Agent account has not been approved by an administrator yet');
   }
 
-  // Tenant gate: SUPER_ADMIN has no tenant; everyone else must belong to an
-  // ACTIVE tenant. Suspended or archived → login refused with a clear reason.
-  let loginUser = user;
-  if (user.role !== UserRole.SUPER_ADMIN) {
-    if (!loginUser.tenant) {
-      const tenantId = await resolveTenantForUser(loginUser.id, loginUser.role);
-      if (!tenantId) {
-        throw new Error('User is not associated with any tenant');
-      }
-      loginUser = await prisma.user.update({
-        where: { id: loginUser.id },
-        data: { tenantId },
-        include: { tenant: true },
-      });
-    }
-    if (!loginUser.tenant) {
-      throw new Error('User is not associated with any tenant');
-    }
-    if (loginUser.tenant.status !== 'ACTIVE') {
-      throw new Error(`Tenant is ${loginUser.tenant.status.toLowerCase()}; contact your administrator`);
-    }
-  }
+  // ApplyUniNow is a single organization.
+  const loginUser = user;
 
   const isFirstLogin = loginUser.lastLogin === null;
   const mustChangePassword = loginUser.mustChangePassword;
@@ -489,7 +460,6 @@ export const login = async (email: string, password: string, loginType?: 'studen
     id: loginUser.id,
     email: loginUser.email,
     role: loginUser.role,
-    tenantId: loginUser.tenantId ?? null,
     permissionRole: loginUser.permissionRole ?? null,
   };
 
@@ -522,7 +492,6 @@ export const refreshToken = async (token: string) => {
     id: user.id,
     email: user.email,
     role: user.role,
-    tenantId: user.tenantId ?? null,
     permissionRole: user.permissionRole ?? null,
   };
   const accessToken = generateAccessToken(tokenPayload);
@@ -547,17 +516,7 @@ export const logout = async (token: string) => {
   await prisma.refreshToken.deleteMany({ where: { token } });
 };
 
-export const resolveTenantBranding = async (
-  tenant?: { id: number; name: string; logoUrl: string | null } | null,
-) => {
-  if (!tenant) {
-    return { tenantName: null as string | null, tenantLogoUrl: null as string | null };
-  }
-  return {
-    tenantName: tenant.name,
-    tenantLogoUrl: (await resolveFileRef(tenant.logoUrl)) || null,
-  };
-};
+export const resolveTenantBranding = async () => resolveOrgBranding();
 
 export const getUserProfile = async (id: number) => {
   const user = await prisma.user.findUnique({
@@ -571,7 +530,6 @@ export const getUserProfile = async (id: number) => {
       role: true,
       roleLabel: true,
       permissionRole: true,
-      tenantId: true,
       isActive: true,
       mustChangePassword: true,
       policyAcceptedAt: true,
@@ -579,14 +537,12 @@ export const getUserProfile = async (id: number) => {
       createdAt: true,
       updatedAt: true,
       moduleAccess: true,
-      tenant: { select: { id: true, name: true, logoUrl: true } },
     },
   });
   if (!user) return null;
-  const { tenant, ...rest } = user;
-  const branding = await resolveTenantBranding(tenant);
+  const branding = await resolveOrgBranding();
   return {
-    ...rest,
+    ...user,
     profilePhotoUrl: (await resolveFileRef(user.profilePhotoUrl)) || null,
     ...branding,
   };

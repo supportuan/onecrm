@@ -10,12 +10,7 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-const tenantFetch = async (url, options = {}) => {
-  const tenantId =
-    typeof window !== 'undefined' ? localStorage.getItem('tenantId') || 'default-tenant' : 'default-tenant';
-  const headers = { ...options.headers, 'x-tenant-id': tenantId };
-  return authFetch(url, { ...options, headers });
-};
+const tenantFetch = async (url, options = {}) => authFetch(url, options);
 
 const json = (body) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 const putJson = (body) => ({ method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -364,10 +359,8 @@ export const removeStudentStudyPlan = async (studentId, planId) =>
 export const uploadFile = async (file) => {
   const form = new FormData();
   form.append('file', file);
-  const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenantId') || 'default-tenant' : 'default-tenant';
   const res = await authFetch('/api/uploads', {
     method: 'POST',
-    headers: { 'x-tenant-id': tenantId },
     body: form,
   });
   return handleResponse(res);

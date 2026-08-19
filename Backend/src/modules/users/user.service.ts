@@ -164,13 +164,12 @@ export const getDefaultModuleAccessByRole = (role: string) => {
   return clean;
 };
 
-// tenantId === null means "no scoping" (SUPER_ADMIN). A numeric tenantId
-// restricts the result to that tenant only.
-export const getUsers = async (role?: UserRole, tenantId: number | null = null) => {
+// A numeric org id restricts the result to ApplyUniNow; null means unscoped
+// (scripts / tests without request context).
+export const getUsers = async (role?: UserRole) => {
   return prisma.user.findMany({
     where: {
       ...(role ? { role } : {}),
-      ...(tenantId != null ? { tenantId } : {}),
     },
     orderBy: {
       createdAt: 'desc',
@@ -178,11 +177,10 @@ export const getUsers = async (role?: UserRole, tenantId: number | null = null) 
   });
 };
 
-export const getUserById = async (id: number, tenantId: number | null = null) => {
+export const getUserById = async (id: number) => {
   return prisma.user.findFirst({
     where: {
       id,
-      ...(tenantId != null ? { tenantId } : {}),
     },
     select: {
       id: true,
@@ -192,7 +190,6 @@ export const getUserById = async (id: number, tenantId: number | null = null) =>
       role: true,
       roleLabel: true,
       permissionRole: true,
-      tenantId: true,
       isActive: true,
       isApproved: true,
       lastLogin: true,
@@ -213,7 +210,6 @@ export const createUser = async (data: {
   roleName?: string;
   agencyDetails?: any;
   moduleAccess?: any;
-  tenantId?: number | null;
   linkHrEmployeeId?: number;
 }) => {
   try {
@@ -262,7 +258,6 @@ export const createUser = async (data: {
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          tenantId: data.tenantId ?? null,
           fullName: data.fullName,
           email: normalizedEmail,
           phone: data.phone || null,
@@ -303,7 +298,7 @@ export const createUser = async (data: {
           where: { id: data.linkHrEmployeeId },
           data: { userId: user.id },
         });
-      } else if (isStaffRole && data.tenantId != null) {
+      } else if (isStaffRole) {
         const existingEmp = await tx.hrEmployee.findUnique({
           where: { email: normalizedEmail },
         });
@@ -313,11 +308,10 @@ export const createUser = async (data: {
             data: { userId: user.id, name: user.fullName, phone: user.phone },
           });
         } else {
-          const employeeCode = `EMP-T${data.tenantId}-U${user.id}`;
+          const employeeCode = `EMP-U${user.id}`;
           const accessRole = userRoleToHrAccessRole(systemRole);
           await tx.hrEmployee.create({
             data: {
-              tenantId: data.tenantId,
               userId: user.id,
               name: user.fullName,
               email: normalizedEmail,
@@ -333,10 +327,9 @@ export const createUser = async (data: {
       return user;
     });
 
-    if (permissionRole && data.tenantId != null) {
+    if (permissionRole) {
       const perms = moduleAccessToPermissions(moduleAccess);
       await updateRolePermissions(
-        data.tenantId,
         permissionRole,
         perms.length ? perms : moduleAccessToPermissions(getDefaultModuleAccessByRole(systemRole))
       );
@@ -544,15 +537,9 @@ export const updateUser = async (
     counsellorId?: number | null;
     moduleAccess?: any;
   },
-  tenantId: number | null = null,
   updatedById?: number
 
 ) => {
-  if (tenantId != null) {
-    const existing = await prisma.user.findFirst({ where: { id, tenantId } });
-    if (!existing) throw new Error('User not found');
-  }
-
   const existing = data.isApproved !== undefined
     ? await prisma.user.findUnique({ where: { id } })
     : null;
@@ -593,10 +580,10 @@ export const updateUser = async (
     return user;
   });
 
-  if (updated.permissionRole && updated.tenantId != null && data.moduleAccess) {
+  if (updated.permissionRole && data.moduleAccess) {
     const perms = moduleAccessToPermissions(data.moduleAccess);
     if (perms.length) {
-      await updateRolePermissions(updated.tenantId, updated.permissionRole, perms);
+      await updateRolePermissions(updated.permissionRole, perms);
     }
   }
 
@@ -620,11 +607,7 @@ export const updateUser = async (
   return updated;
 };
 
-export const deactivateUser = async (id: number, tenantId: number | null = null) => {
-  if (tenantId != null) {
-    const existing = await prisma.user.findFirst({ where: { id, tenantId } });
-    if (!existing) throw new Error('User not found');
-  }
+export const deactivateUser = async (id: number) => {
   return prisma.user.update({
     where: { id },
     data: {
@@ -633,12 +616,11 @@ export const deactivateUser = async (id: number, tenantId: number | null = null)
   });
 };
 
-export const getCounsellors = async (tenantId: number | null = null) => {
+export const getCounsellors = async () => {
   return prisma.user.findMany({
     where: {
       role: UserRole.COUNSELLOR,
       isActive: true,
-      ...(tenantId != null ? { tenantId } : {}),
     },
     select: {
       id: true,

@@ -7,10 +7,8 @@ declare global {
                 id: number;
                 email: string;
                 role: UserRole;
-                tenantId: number | null;
                 permissionRole?: string | null;
             };
-            tenantId?: number | null;
         }
     }
 }

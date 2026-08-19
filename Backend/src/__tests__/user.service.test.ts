@@ -12,6 +12,12 @@ const mockPrisma = {
         create: jest.fn(),
         updateMany: jest.fn(),
     },
+    hrEmployee: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+    },
     $transaction: jest.fn(),
 };
 
@@ -38,6 +44,10 @@ const { safeNotify } = await import("../modules/notifications/recipients.js");
 
 beforeEach(() => {
     jest.clearAllMocks();
+
+    mockPrisma.hrEmployee.findUnique.mockResolvedValue(null);
+    mockPrisma.hrEmployee.findFirst.mockResolvedValue(null);
+    mockPrisma.hrEmployee.create.mockResolvedValue({ id: 10 });
 
     mockPrisma.$transaction.mockImplementation(async (callback: any) => {
         return callback(mockPrisma);
@@ -131,6 +141,8 @@ describe("user.service - createUser", () => {
     it("should create user when email and phone are unique", async () => {
         mockPrisma.user.findUnique.mockResolvedValue(null);
         mockPrisma.user.findFirst.mockResolvedValue(null);
+        mockPrisma.hrEmployee.findUnique.mockResolvedValue(null);
+        mockPrisma.hrEmployee.create.mockResolvedValue({ id: 10 });
 
         mockPrisma.user.create.mockResolvedValue({
             id: 1,
@@ -426,24 +438,24 @@ describe("user.service - getCounsellors", () => {
 // ═══════════════════════════════════════════════════════════
 
 describe("user.service - getUsers (additional)", () => {
-    it("scopes by tenantId when provided", async () => {
+    it("returns all users when no role filter is provided", async () => {
         mockPrisma.user.findMany.mockResolvedValue([]);
 
-        await userService.getUsers(undefined, 5);
+        await userService.getUsers(undefined);
 
         expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
-            where: { tenantId: 5 },
+            where: {},
             orderBy: { createdAt: "desc" },
         });
     });
 
-    it("filters by both role and tenantId", async () => {
+    it("filters by role", async () => {
         mockPrisma.user.findMany.mockResolvedValue([]);
 
-        await userService.getUsers("COUNSELLOR" as any, 3);
+        await userService.getUsers("COUNSELLOR" as any);
 
         expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
-            where: { role: "COUNSELLOR", tenantId: 3 },
+            where: { role: "COUNSELLOR" },
             orderBy: { createdAt: "desc" },
         });
     });
@@ -464,13 +476,13 @@ describe("user.service - getUserById (additional)", () => {
         expect(result).toBeNull();
     });
 
-    it("scopes by tenantId when provided", async () => {
+    it("finds a user by id", async () => {
         mockPrisma.user.findFirst.mockResolvedValue({ id: 1, email: "user@test.com" });
 
-        await userService.getUserById(1, 7);
+        await userService.getUserById(1);
 
         expect(mockPrisma.user.findFirst).toHaveBeenCalledWith(
-            expect.objectContaining({ where: { id: 1, tenantId: 7 } })
+            expect.objectContaining({ where: { id: 1 } })
         );
     });
 });
@@ -483,16 +495,17 @@ describe("user.service - getDefaultModuleAccessByRole (additional)", () => {
         expect(access["Admin & Settings"]).toBeDefined();
     });
 
-    it("returns Agency CRM access for AGENT", () => {
+    it("returns Agency CRM portal access for AGENT without Agency Management", () => {
         const access = userService.getDefaultModuleAccessByRole("AGENT");
         expect(access["Agency CRM"]).toBeDefined();
-        expect(access["Agency CRM"]["Agency Management"]).toContain("VIEW");
+        expect(access["Agency CRM"]["Dashboard"]).toEqual(["VIEW"]);
+        expect(access["Agency CRM"]["Agency Management"]).toBeUndefined();
     });
 
-    it("returns empty object for STUDENT (no CRM sidebar access)", () => {
+    it("returns Student Portal and Resources VIEW for STUDENT", () => {
         const access = userService.getDefaultModuleAccessByRole("STUDENT");
-        // STUDENT has no staff CRM modules
-        expect(Object.keys(access).length).toBe(0);
+        expect(access["Student Portal"]).toBeDefined();
+        expect(access.Resources["Resource Library"]).toEqual(["VIEW"]);
     });
 
     it("returns HR-only access for HR role", () => {
@@ -507,6 +520,8 @@ describe("user.service - createUser (email normalisation)", () => {
     it("normalises email to lowercase and trims whitespace", async () => {
         mockPrisma.user.findUnique.mockResolvedValue(null);
         mockPrisma.user.findFirst.mockResolvedValue(null);
+        mockPrisma.hrEmployee.findUnique.mockResolvedValue(null);
+        mockPrisma.hrEmployee.create.mockResolvedValue({ id: 11 });
         mockPrisma.user.create.mockResolvedValue({
             id: 99,
             fullName: "Test",

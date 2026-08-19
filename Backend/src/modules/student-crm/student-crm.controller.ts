@@ -18,7 +18,6 @@ const actor = (req: Request) => ({
   id: req.user?.id,
   role: req.user?.role,
   email: req.user?.email,
-  tenantId: req.tenantId ?? req.user?.tenantId ?? null,
 });
 
 const assertApplicationAccess = async (req: Request, applicationId: number) => {
@@ -75,10 +74,9 @@ export const createStudent = async (req: Request, res: Response, next: NextFunct
     if (!req.body?.fullName || !req.body?.email) {
       return sendError(res, 'fullName and email are required', null, 400);
     }
-    const tenantId = req.body?.tenantId ?? req.tenantId ?? req.user?.tenantId ?? null;
+    const { tenantId: _ignored, ...body } = req.body ?? {};
     const created = await service.createStudent({
-      ...req.body,
-      ...(tenantId != null ? { tenantId } : {}),
+      ...body,
     });
     return sendSuccess(res, 'student created', created, 201);
   } catch (err) {

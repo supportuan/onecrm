@@ -11,7 +11,6 @@ jest.mock('@/lib/api', () => ({
 
 const authFetch = require('@/lib/api').default;
 
-// Mock localStorage for tenantFetch
 beforeAll(() => {
   global.localStorage = {
     _store: {},
@@ -70,7 +69,6 @@ const err = (status = 400, message = 'Error') =>
 beforeEach(() => {
   jest.clearAllMocks();
   localStorage.clear();
-  localStorage.setItem('tenantId', 'test-tenant');
 });
 
 // ─── handleResponse ───────────────────────────────────────────

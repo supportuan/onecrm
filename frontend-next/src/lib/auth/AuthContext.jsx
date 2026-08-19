@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // Re-fetch profile when the tab regains focus so super-admin module toggles
+  // Re-fetch profile when the tab regains focus so permission changes
   // take effect without a manual re-login.
   useEffect(() => {
     if (typeof window === 'undefined') return;

@@ -139,7 +139,6 @@ export const uploadEmployeeDocument = async (req: Request, res: Response, next: 
       buffer: file.buffer,
       contentType: file.mimetype,
     });
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
     const data = await resolveFileRefsDeep(await hrService.createEmployeeDocument(id, {
       type: type as any,
       fileName: displayName,
@@ -148,7 +147,6 @@ export const uploadEmployeeDocument = async (req: Request, res: Response, next: 
       fileSize: file.size,
       expiresAt: req.body.expiresAt || null,
       notes: req.body.notes || null,
-      tenantId,
     }));
     return sendSuccess(res, 'Document uploaded successfully', data, 201);
   } catch (error) {
@@ -160,8 +158,7 @@ export const createEmployeeDocument = async (req: Request, res: Response, next: 
   try {
     const id = req.params.id as string;
     const validated = createEmployeeDocumentSchema.parse(req.body);
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
-    const data = await resolveFileRefsDeep(await hrService.createEmployeeDocument(id, { ...validated, tenantId }));
+    const data = await resolveFileRefsDeep(await hrService.createEmployeeDocument(id, { ...validated }));
     return sendSuccess(res, 'Document created successfully', data, 201);
   } catch (error) {
     next(error);
@@ -231,9 +228,7 @@ export const createEmployee = async (req: Request, res: Response, next: NextFunc
 
 export const getAttendanceSettings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
-    const data = await hrService.getAttendanceSettings(tenantId);
+    const data = await hrService.getAttendanceSettings();
     return sendSuccess(res, 'Attendance settings retrieved successfully', data);
   } catch (error) {
     next(error);
@@ -242,10 +237,8 @@ export const getAttendanceSettings = async (req: Request, res: Response, next: N
 
 export const updateAttendanceSettings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const validatedData = updateSettingsSchema.parse(req.body);
-    const data = await hrService.updateAttendanceSettings(tenantId, validatedData);
+    const data = await hrService.updateAttendanceSettings(validatedData);
     return sendSuccess(res, 'Attendance settings updated successfully', data);
   } catch (error) {
     next(error);
@@ -465,8 +458,7 @@ export const deleteLeavePlan = async (req: Request, res: Response, next: NextFun
 
 export const getLeaveTypes = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
-    const data = await hrService.getLeaveTypes(tenantId);
+    const data = await hrService.getLeaveTypes();
     return sendSuccess(res, 'Leave types retrieved successfully', data);
   } catch (error) {
     next(error);
@@ -475,10 +467,8 @@ export const getLeaveTypes = async (req: Request, res: Response, next: NextFunct
 
 export const createLeaveType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const validated = createLeaveTypeSchema.parse(req.body);
-    const data = await hrService.createLeaveType(tenantId, validated);
+    const data = await hrService.createLeaveType(validated);
     return sendSuccess(res, 'Leave category created successfully', data, 201);
   } catch (error: any) {
     if (error?.message?.includes('already exists')) {
@@ -490,10 +480,8 @@ export const createLeaveType = async (req: Request, res: Response, next: NextFun
 
 export const updateLeaveType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const validated = updateLeaveTypeSchema.parse(req.body);
-    const data = await hrService.updateLeaveType(tenantId, req.params.id as string, validated);
+    const data = await hrService.updateLeaveType(req.params.id as string, validated);
     return sendSuccess(res, 'Leave category updated successfully', data);
   } catch (error: any) {
     if (error?.message?.includes('not found')) return sendError(res, error.message, null, 404);
@@ -504,9 +492,7 @@ export const updateLeaveType = async (req: Request, res: Response, next: NextFun
 
 export const deleteLeaveType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
-    const result = await hrService.deleteLeaveType(tenantId, req.params.id as string);
+    const result = await hrService.deleteLeaveType(req.params.id as string);
     return sendSuccess(res, 'Leave category deleted successfully', result);
   } catch (error: any) {
     if (error?.message?.includes('not found')) return sendError(res, error.message, null, 404);
@@ -687,8 +673,7 @@ export const getOnboardingChecklist = async (req: Request, res: Response, next: 
 export const createOnboardingChecklist = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createOnboardingChecklistSchema.parse(req.body);
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
-    const data = await hrService.createOnboardingChecklist({ ...validatedData, tenantId });
+    const data = await hrService.createOnboardingChecklist({ ...validatedData });
     return sendSuccess(res, 'Onboarding checklist created successfully', data, 201);
   } catch (error) {
     next(error);
@@ -697,8 +682,7 @@ export const createOnboardingChecklist = async (req: Request, res: Response, nex
 
 export const getOnboardingTemplates = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
-    const data = await hrService.getOnboardingTemplates(tenantId);
+    const data = await hrService.getOnboardingTemplates();
     return sendSuccess(res, 'Onboarding templates retrieved successfully', data);
   } catch (error) {
     next(error);
@@ -707,10 +691,8 @@ export const getOnboardingTemplates = async (req: Request, res: Response, next: 
 
 export const createOnboardingTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const validatedData = createOnboardingTemplateSchema.parse(req.body);
-    const data = await hrService.createOnboardingTemplate(tenantId, validatedData);
+    const data = await hrService.createOnboardingTemplate(validatedData);
     return sendSuccess(res, 'Onboarding template created successfully', data, 201);
   } catch (error) {
     next(error);
@@ -719,10 +701,8 @@ export const createOnboardingTemplate = async (req: Request, res: Response, next
 
 export const deleteOnboardingTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const id = req.params.id as string;
-    await hrService.deleteOnboardingTemplate(tenantId, id);
+    await hrService.deleteOnboardingTemplate(id);
     return sendSuccess(res, 'Onboarding template deleted successfully', { success: true });
   } catch (error) {
     next(error);
@@ -781,8 +761,7 @@ export const getOfferLetters = async (req: Request, res: Response, next: NextFun
 export const createOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createOfferLetterSchema.parse(req.body);
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
-    const data = await hrService.createOfferLetter(validatedData, { tenantId });
+    const data = await hrService.createOfferLetter(validatedData, {});
     return sendSuccess(res, 'Offer letter created successfully', data, 201);
   } catch (error) {
     next(error);
@@ -803,8 +782,7 @@ export const getOfferLetterById = async (req: Request, res: Response, next: Next
 export const renderOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
-    const data = await hrService.renderOfferLetterHtml(id, { tenantId });
+    const data = await hrService.renderOfferLetterHtml(id, {});
     return sendSuccess(res, 'Offer letter rendered successfully', data);
   } catch (error) {
     next(error);
@@ -813,8 +791,7 @@ export const renderOfferLetter = async (req: Request, res: Response, next: NextF
 
 export const getOfferLetterTemplates = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
-    const data = await hrService.getOfferLetterTemplates(tenantId);
+    const data = await hrService.getOfferLetterTemplates();
     return sendSuccess(res, 'Offer letter templates retrieved successfully', data);
   } catch (error) {
     next(error);
@@ -823,10 +800,8 @@ export const getOfferLetterTemplates = async (req: Request, res: Response, next:
 
 export const createOfferLetterTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const validatedData = createOfferLetterTemplateSchema.parse(req.body);
-    const data = await hrService.createOfferLetterTemplate(tenantId, validatedData);
+    const data = await hrService.createOfferLetterTemplate(validatedData);
     return sendSuccess(res, 'Offer letter template created successfully', data, 201);
   } catch (error) {
     next(error);
@@ -835,11 +810,9 @@ export const createOfferLetterTemplate = async (req: Request, res: Response, nex
 
 export const updateOfferLetterTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const id = req.params.id as string;
     const validatedData = updateOfferLetterTemplateSchema.parse(req.body);
-    const data = await hrService.updateOfferLetterTemplate(tenantId, id, validatedData);
+    const data = await hrService.updateOfferLetterTemplate(id, validatedData);
     return sendSuccess(res, 'Offer letter template updated successfully', data);
   } catch (error) {
     next(error);
@@ -848,10 +821,8 @@ export const updateOfferLetterTemplate = async (req: Request, res: Response, nex
 
 export const deleteOfferLetterTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const id = req.params.id as string;
-    await hrService.deleteOfferLetterTemplate(tenantId, id);
+    await hrService.deleteOfferLetterTemplate(id);
     return sendSuccess(res, 'Offer letter template deleted successfully', { success: true });
   } catch (error) {
     next(error);
@@ -862,12 +833,11 @@ export const updateOfferLetterStatus = async (req: Request, res: Response, next:
   try {
     const id = req.params.id as string;
     const { status } = updateOfferLetterStatusSchema.parse(req.body);
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
     if (status === 'SENT') {
-      await hrService.renderOfferLetterHtml(id, { tenantId });
+      await hrService.renderOfferLetterHtml(id, {});
     }
     if (status === 'ACCEPTED') {
-      const result = await hrService.acceptOfferLetter(id, { tenantId });
+      const result = await hrService.acceptOfferLetter(id, {});
       return sendSuccess(res, 'Offer letter accepted — employee created', result);
     }
     if (status === 'REJECTED') {
@@ -884,9 +854,8 @@ export const updateOfferLetterStatus = async (req: Request, res: Response, next:
 export const acceptOfferLetter = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    const tenantId = req.tenantId ?? req.user?.tenantId ?? null;
     const onboardingTemplateId = req.body?.onboardingTemplateId as string | undefined;
-    const result = await hrService.acceptOfferLetter(id, { tenantId, onboardingTemplateId });
+    const result = await hrService.acceptOfferLetter(id, { onboardingTemplateId });
     return sendSuccess(res, 'Offer letter accepted — employee created', result);
   } catch (error) {
     next(error);
@@ -1138,10 +1107,8 @@ export const getProcessingMetrics = async (req: Request, res: Response, next: Ne
 
 export const addProcessingMetric = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (tenantId == null) return sendError(res, 'No tenant context', null, 403);
     const validatedData = addProcessingMetricSchema.parse(req.body);
-    const data = await hrService.addProcessingMetric(tenantId, validatedData);
+    const data = await hrService.addProcessingMetric(validatedData);
     return sendSuccess(res, 'Processing metric saved successfully', data);
   } catch (error) {
     next(error);
@@ -1369,7 +1336,7 @@ export const getLeaveRequests = async (req: Request, res: Response, next: NextFu
     const queue = req.query.queue === 'true';
     const status = req.query.status as string | undefined;
     const canManageLeave = req.user
-      ? await hasPermission(req.user.role, ['MANAGE_LEAVE'], req.tenantId ?? req.user.tenantId ?? null)
+      ? await hasPermission(req.user.role, ['MANAGE_LEAVE'])
       : false;
     const data = await hrService.getLeaveRequests({
       ...(mine && req.user?.email ? { mineEmail: req.user.email } : {}),
@@ -1426,11 +1393,7 @@ export const processLeaveRequest = async (req: Request, res: Response, next: Nex
     if (!req.user?.id || !req.user?.email) return sendError(res, 'Unauthorized', null, 401);
     const id = req.params.id as string;
     const validated = processLeaveRequestSchema.parse(req.body);
-    const canManageLeave = await hasPermission(
-      req.user.role,
-      ['MANAGE_LEAVE'],
-      req.tenantId ?? req.user.tenantId ?? null,
-    );
+    const canManageLeave = await hasPermission(req.user.role, ['MANAGE_LEAVE']);
     const data = await hrService.processLeaveRequest(id, validated, {
       userId: req.user.id,
       userEmail: req.user.email,

@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import { authenticateToken } from '../../middleware/authenticate.js';
-import { tenantContextMiddleware } from '../../middleware/tenant-context.js';
 import { requirePermission } from '../rbac/rbac.middleware.js';
 import * as controller from './agency-crm.controller.js';
 import { agencyDocUpload } from './agency.upload.js';
 
 const router = Router();
 
-router.use(authenticateToken, tenantContextMiddleware);
+router.use(authenticateToken);
 
 const view = requirePermission('VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM');
 const manage = requirePermission('MANAGE_AGENCY_CRM');

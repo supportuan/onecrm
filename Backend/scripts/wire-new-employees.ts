@@ -2,7 +2,7 @@
  * Wire login accounts for the two new employees previously created via
  * scripts/add-new-employees.ts:
  *
- *   - Nishtha    — Executive       → GLOBAL_ADMIN (full tenant access)
+ *   - Nishtha    — Executive       → GLOBAL_ADMIN
  *   - Sambhavi   — Data Analytics  → GLOBAL_ADMIN base + DATA_ANALYST custom
  *                                    permission role (read-only across modules
  *                                    + reports access; can be widened in Admin
@@ -15,7 +15,6 @@
 import dotenv from 'dotenv';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.js';
-import { getDefaultTenantId } from '../src/utils/tenant-default.js';
 
 dotenv.config();
 
@@ -23,8 +22,6 @@ const prisma = new PrismaClient();
 
 const DEFAULT_PASSWORD = process.env.DEFAULT_STUDENT_PASSWORD || 'Welcome@123';
 
-// Read-only across every module, plus reports + own-payslip. Granular HR write
-// perms left out — analyst can look but not mutate. Easy to widen via UI later.
 const DATA_ANALYST_PERMISSIONS = [
   'VIEW_MARKETING',
   'VIEW_STUDENT_CRM',
@@ -68,22 +65,21 @@ const PEOPLE: Wire[] = [
   },
 ];
 
-async function ensureCustomRole(tenantId: number, role: string, permissions: string[]) {
+async function ensureCustomRole(role: string, permissions: string[]) {
   await prisma.rolePermission.upsert({
-    where: { tenantId_role: { tenantId, role } },
-    create: { tenantId, role, permissions },
+    where: { role },
+    create: { role, permissions },
     update: { permissions },
   });
 }
 
-async function wirePerson(tenantId: number, p: Wire) {
+async function wirePerson(p: Wire) {
   if (p.permissionRole && p.permissions) {
-    await ensureCustomRole(tenantId, p.permissionRole, p.permissions);
+    await ensureCustomRole(p.permissionRole, p.permissions);
   }
 
   const passwordHash = await hashPassword(DEFAULT_PASSWORD);
 
-  // Find existing employee row so we can link userId.
   const emp = await prisma.hrEmployee.findFirst({
     where: { email: { equals: p.email, mode: 'insensitive' } },
   });
@@ -101,13 +97,11 @@ async function wirePerson(tenantId: number, p: Wire) {
         data: {
           fullName: p.name,
           phone: p.phone || existingUser.phone,
-          tenantId,
           role: p.role,
           roleLabel: p.roleLabel ?? null,
           permissionRole: p.permissionRole ?? null,
           isActive: true,
           isApproved: true,
-          // refresh password to a known default so it can be handed over once.
           passwordHash,
           mustChangePassword: true,
         },
@@ -121,7 +115,6 @@ async function wirePerson(tenantId: number, p: Wire) {
           role: p.role,
           roleLabel: p.roleLabel ?? null,
           permissionRole: p.permissionRole ?? null,
-          tenantId,
           isActive: true,
           isApproved: true,
           mustChangePassword: true,
@@ -137,11 +130,8 @@ async function wirePerson(tenantId: number, p: Wire) {
 }
 
 async function main() {
-  const tenantId = await getDefaultTenantId();
-  console.log(`Tenant: ${tenantId}\n`);
-
   for (const p of PEOPLE) {
-    const { user, emp, action } = await wirePerson(tenantId, p);
+    const { user, emp, action } = await wirePerson(p);
     console.log(
       `${action === 'created' ? '✅ Login created' : '🔄 Login refreshed'}  ` +
         `${p.email}  →  role=${p.role}` +

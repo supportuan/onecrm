@@ -184,7 +184,6 @@ export const createPartner = async (data: {
   const existingPartner = await prisma.agencyPartner.findUnique({ where: { userId } });
   if (existingPartner) throw new Error('agency partner already exists for this user');
 
-  const owner = await prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } });
   const partner = await prisma.agencyPartner.create({
     data: {
       userId,
@@ -201,7 +200,6 @@ export const createPartner = async (data: {
       status: data.status ?? AgencyPartnerStatus.PENDING,
       notes: data.notes ?? null,
       capabilities: DEFAULT_AGENT_CAPABILITIES,
-      tenantId: owner?.tenantId ?? null,
     },
     include: PARTNER_INCLUDE,
   });

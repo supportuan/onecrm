@@ -12,7 +12,6 @@ const numId = (raw: unknown) => {
 const actor = (req: Request) => ({
   userId: req.user!.id,
   role: req.user!.role as UserRole,
-  tenantId: req.tenantId ?? req.user?.tenantId ?? null,
 });
 
 const parseTargetRoles = (raw: unknown) => {
@@ -82,8 +81,7 @@ export const acknowledge = async (req: Request, res: Response, next: NextFunctio
 
 export const listAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tenantId } = actor(req);
-    const rows = await service.listResourcesAdmin(tenantId);
+    const rows = await service.listResourcesAdmin();
     return sendSuccess(res, 'resources', rows);
   } catch (err) {
     next(err);
@@ -126,7 +124,6 @@ export const update = async (req: Request, res: Response, next: NextFunction) =>
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const { tenantId } = actor(req);
     const category =
       req.body?.category !== undefined ? parseCategory(req.body.category) : undefined;
     if (category === null) return sendError(res, 'invalid knowledge category', null, 400);
@@ -135,7 +132,7 @@ export const update = async (req: Request, res: Response, next: NextFunction) =>
     if (category === ResourceCategory.ACADEMICS && !targetCountries?.length) {
       return sendError(res, 'an academic country is required', null, 400);
     }
-    const row = await service.updateResource(id, tenantId, {
+    const row = await service.updateResource(id, {
       name: req.body?.name ? String(req.body.name) : undefined,
       description: req.body?.description !== undefined ? String(req.body.description) : undefined,
       requiresAcknowledgement:
@@ -162,8 +159,7 @@ export const remove = async (req: Request, res: Response, next: NextFunction) =>
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const { tenantId } = actor(req);
-    const row = await service.deleteResource(id, tenantId);
+    const row = await service.deleteResource(id);
     return sendSuccess(res, 'resource deleted', row);
   } catch (err: any) {
     if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
@@ -175,8 +171,7 @@ export const listAcknowledgements = async (req: Request, res: Response, next: Ne
   try {
     const id = numId(req.params.id);
     if (!id) return sendError(res, 'invalid id', null, 400);
-    const { tenantId } = actor(req);
-    const rows = await service.listResourceAcknowledgements(id, tenantId);
+    const rows = await service.listResourceAcknowledgements(id);
     return sendSuccess(res, 'resource acknowledgements', rows);
   } catch (err: any) {
     if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);

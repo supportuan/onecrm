@@ -10,15 +10,13 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-const tenantHeaders = () => ({
-  'x-tenant-id': typeof window !== 'undefined' ? localStorage.getItem('tenantId') || 'default-tenant' : 'default-tenant',
-});
+const jsonHeaders = { 'Content-Type': 'application/json' };
 
 export const getFormOptions = async () =>
-  handleResponse(await authFetch(`${API_URL}/form-options`, { headers: tenantHeaders() }));
+  handleResponse(await authFetch(`${API_URL}/form-options`));
 
 export const getCatalogStats = async () =>
-  handleResponse(await authFetch(`${API_URL}/catalog/stats`, { headers: tenantHeaders() }));
+  handleResponse(await authFetch(`${API_URL}/catalog/stats`));
 
 export const listCatalog = async ({ countryId, universityId, page = 1, limit = 50, search } = {}) => {
   const params = new URLSearchParams();
@@ -27,11 +25,11 @@ export const listCatalog = async ({ countryId, universityId, page = 1, limit = 5
   params.set('page', String(page));
   params.set('limit', String(limit));
   if (search) params.set('search', search);
-  return handleResponse(await authFetch(`${API_URL}/catalog?${params.toString()}`, { headers: tenantHeaders() }));
+  return handleResponse(await authFetch(`${API_URL}/catalog?${params.toString()}`));
 };
 
 export const listCountries = async () =>
-  handleResponse(await authFetch(`${API_URL}/countries`, { headers: tenantHeaders() }));
+  handleResponse(await authFetch(`${API_URL}/countries`));
 
 export const listUniversities = async ({ countryId, page = 1, limit = 50, search } = {}) => {
   const params = new URLSearchParams();
@@ -39,14 +37,14 @@ export const listUniversities = async ({ countryId, page = 1, limit = 50, search
   params.set('page', String(page));
   params.set('limit', String(limit));
   if (search) params.set('search', search);
-  return handleResponse(await authFetch(`${API_URL}/universities?${params.toString()}`, { headers: tenantHeaders() }));
+  return handleResponse(await authFetch(`${API_URL}/universities?${params.toString()}`));
 };
 
 export const createUniversity = async (payload) =>
   handleResponse(
     await authFetch(`${API_URL}/universities`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...tenantHeaders() },
+      headers: jsonHeaders,
       body: JSON.stringify(payload),
     })
   );
@@ -57,7 +55,7 @@ export const findOrCreateUniversity = async ({ countryId, name, city } = {}) => 
   return handleResponse(
     await authFetch(`${API_URL}/universities/find-or-create`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...tenantHeaders() },
+      headers: jsonHeaders,
       body: JSON.stringify({ countryId, name: name.trim(), city }),
     })
   );
@@ -70,7 +68,7 @@ export const listCourses = async ({ universityId, page = 1, limit = 50, search }
   params.set('page', String(page));
   params.set('limit', String(limit));
   if (search) params.set('search', search);
-  return handleResponse(await authFetch(`${API_URL}/courses?${params.toString()}`, { headers: tenantHeaders() }));
+  return handleResponse(await authFetch(`${API_URL}/courses?${params.toString()}`));
 };
 
 /** Find existing course under a university or create it when the name is new. */
@@ -79,7 +77,7 @@ export const findOrCreateCourse = async ({ universityId, name, level, duration }
   return handleResponse(
     await authFetch(`${API_URL}/courses`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...tenantHeaders() },
+      headers: jsonHeaders,
       body: JSON.stringify({ universityId, name: name.trim(), level, duration }),
     })
   );
@@ -126,7 +124,6 @@ export const listIndustries = async ({ countryId } = {}) => {
   try {
     return await handleResponse(
       await authFetch(`${API_URL}/industries${qs ? `?${qs}` : ''}`, {
-        headers: tenantHeaders(),
         signal: controller.signal,
       })
     );
@@ -140,8 +137,6 @@ export const listIndustrySubFields = async ({ countryId, industryId }) => {
   params.set('countryId', String(countryId));
   params.set('industryId', String(industryId));
   return handleResponse(
-    await authFetch(`${API_URL}/industries/sub-fields?${params.toString()}`, {
-      headers: tenantHeaders(),
-    })
+    await authFetch(`${API_URL}/industries/sub-fields?${params.toString()}`)
   );
 };

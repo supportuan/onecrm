@@ -34,6 +34,10 @@ const mockPrisma = {
     createMany: jest.fn(),
     upsert: jest.fn(),
   },
+  studentStudyPlan: {
+    count: jest.fn(),
+    create: jest.fn(),
+  },
   $transaction: jest.fn(),
 };
 
@@ -55,10 +59,6 @@ jest.unstable_mockModule('../modules/notifications/recipients.js', () => ({
   safeNotify: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.unstable_mockModule('../utils/tenant-default.js', () => ({
-  getDefaultTenantId: jest.fn().mockResolvedValue(1),
-}));
-
 jest.unstable_mockModule('../modules/marketing/services/email.service.js', () => ({
   sendCampaignEmail: jest.fn().mockResolvedValue(undefined),
 }));
@@ -66,6 +66,8 @@ jest.unstable_mockModule('../modules/marketing/services/email.service.js', () =>
 jest.unstable_mockModule('../modules/student-crm/scoping.js', () => ({
   applicationScopeWhere: jest.fn().mockReturnValue({}),
   studentScopeWhere: jest.fn().mockReturnValue({}),
+  resolveApplicationScopeWhere: jest.fn().mockResolvedValue({}),
+  resolveStudentScopeWhere: jest.fn().mockResolvedValue({}),
 }));
 
 jest.unstable_mockModule('../modules/student-crm/stage-engine.js', () => ({
@@ -128,6 +130,8 @@ beforeEach(() => {
   (mockPrisma.checkList.findMany as jest.Mock).mockResolvedValue([]);
   (mockPrisma.countryChecklist.findMany as jest.Mock).mockResolvedValue([]);
   (mockPrisma.studentChecklist.findMany as jest.Mock).mockResolvedValue([]);
+  (mockPrisma.studentStudyPlan.count as jest.Mock).mockResolvedValue(1);
+  (mockPrisma.studentStudyPlan.create as jest.Mock).mockResolvedValue({});
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -224,6 +228,7 @@ describe('createStudent', () => {
   it('returns existing student when email already exists', async () => {
     const existing = makeStudent({ id: 3 });
     (mockPrisma.student.findUnique as jest.Mock).mockResolvedValueOnce(existing);
+    (mockPrisma.student.findFirst as jest.Mock).mockResolvedValue(existing);
 
     const result = await createStudent({ fullName: 'Jane Doe', email: 'jane@example.com' });
 

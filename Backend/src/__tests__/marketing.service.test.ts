@@ -31,6 +31,10 @@ const mockPrisma = {
   campaignLead: {
     createMany: jest.fn(),
   },
+  agencyPartner: {
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+  },
   $transaction: jest.fn(),
 };
 
@@ -60,10 +64,6 @@ jest.unstable_mockModule('../modules/marketing/services/metaAd.service.js', () =
 
 jest.unstable_mockModule('../modules/notifications/recipients.js', () => ({
   safeNotify: jest.fn().mockResolvedValue(undefined),
-}));
-
-jest.unstable_mockModule('../utils/tenant-default.js', () => ({
-  getDefaultTenantId: jest.fn().mockResolvedValue(1),
 }));
 
 // ──────────────────────────────────────────────

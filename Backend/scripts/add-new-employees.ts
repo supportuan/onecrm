@@ -11,7 +11,6 @@
  */
 import dotenv from 'dotenv';
 import { PrismaClient, HrAccessRole } from '@prisma/client';
-import { getDefaultTenantId } from '../src/utils/tenant-default.js';
 
 dotenv.config();
 
@@ -42,7 +41,7 @@ const HIRES: Hire[] = [
   },
 ];
 
-async function upsertEmployee(tenantId: number, h: Hire) {
+async function upsertEmployee(h: Hire) {
   const existing = await prisma.hrEmployee.findFirst({
     where: { email: { equals: h.email, mode: 'insensitive' } },
   });
@@ -51,7 +50,6 @@ async function upsertEmployee(tenantId: number, h: Hire) {
     const updated = await prisma.hrEmployee.update({
       where: { id: existing.id },
       data: {
-        tenantId,
         name: h.name,
         designation: h.designation,
         department: h.department,
@@ -63,7 +61,6 @@ async function upsertEmployee(tenantId: number, h: Hire) {
 
   const created = await prisma.hrEmployee.create({
     data: {
-      tenantId,
       name: h.name,
       email: h.email,
       phone: '',
@@ -77,11 +74,8 @@ async function upsertEmployee(tenantId: number, h: Hire) {
 }
 
 async function main() {
-  const tenantId = await getDefaultTenantId();
-  console.log(`Tenant: ${tenantId}\n`);
-
   for (const h of HIRES) {
-    const { action, row } = await upsertEmployee(tenantId, h);
+    const { action, row } = await upsertEmployee(h);
     console.log(`${action === 'created' ? '✅ Created' : '🔄 Updated'}  #${row.id}  ${row.employeeCode}  ${row.name} <${row.email}>  (${row.designation} · ${row.department})`);
   }
 }

@@ -8,10 +8,8 @@ const attachUserFromToken = (req: Request, token: string) => {
         id: payload.id,
         email: payload.email,
         role: payload.role as any,
-        tenantId: payload.tenantId ?? null,
         permissionRole: payload.permissionRole ?? null,
     };
-    req.tenantId = payload.tenantId ?? null;
 };
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {

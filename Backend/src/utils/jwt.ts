@@ -5,7 +5,6 @@ interface JWTPayload {
     id: number;
     email: string;
     role: string;
-    tenantId: number | null;
     permissionRole?: string | null;
 }
 

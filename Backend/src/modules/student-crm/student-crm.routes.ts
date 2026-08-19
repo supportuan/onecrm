@@ -1,14 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { UserRole } from '@prisma/client';
 import { authenticateToken } from '../../middleware/authenticate.js';
-import { tenantContextMiddleware } from '../../middleware/tenant-context.js';
 import { requirePermission } from '../rbac/rbac.middleware.js';
 import * as controller from './student-crm.controller.js';
 import { applicationDocUpload, profilePhotoUpload } from './student-crm.upload.js';
 
 const router = Router();
 
-router.use(authenticateToken, tenantContextMiddleware);
+router.use(authenticateToken);
 
 const view = requirePermission('VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM');
 const manage = requirePermission('MANAGE_STUDENT_CRM');

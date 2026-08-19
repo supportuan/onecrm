@@ -161,6 +161,5 @@ export const PERMISSION_TO_MODULE: Record<string, ModuleKey> = (() => {
   return map;
 })();
 
-// Modules enabled by default when a new tenant is created (super admin
-// can override at onboarding time).
-export const DEFAULT_TENANT_MODULES: ModuleKey[] = ['HR', 'ADMIN', 'RESOURCES'];
+// Full catalog for the solo ApplyUniNow organization.
+export const DEFAULT_TENANT_MODULES: ModuleKey[] = MODULE_CATALOG.map((m) => m.key);
