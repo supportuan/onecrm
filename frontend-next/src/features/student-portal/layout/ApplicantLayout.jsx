@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import StudentPortalGuard from '../components/StudentPortalGuard';
 import StudentPortalSidebar, { SIDEBAR_OPEN, SIDEBAR_COLLAPSED } from '../components/StudentPortalSidebar';
@@ -10,6 +11,10 @@ import { StudentPortalLayoutProvider } from './StudentPortalLayoutContext';
 import { STUDENT_SIDEBAR_STORAGE_KEY } from '@/lib/layout-shell';
 
 const STORAGE_KEY = STUDENT_SIDEBAR_STORAGE_KEY;
+
+const SoftBlobBackground = dynamic(() => import('@/components/SoftBlobBackground'), {
+  ssr: false,
+});
 
 export default function ApplicantLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -53,10 +58,11 @@ export default function ApplicantLayout({ children }) {
   return (
     <StudentPortalGuard>
       <div className="student-portal app-dark app-type-scale h-screen overflow-hidden text-brand antialiased">
+        <SoftBlobBackground offsetLeft={sidebarWidth} />
         <StudentPortalSidebar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
 
         <div
-          className="fixed inset-y-0 right-0 flex flex-col transition-[left] duration-200 ease-out"
+          className="fixed inset-y-0 right-0 z-10 flex flex-col transition-[left] duration-200 ease-out"
           style={{ left: sidebarWidth }}
         >
           <div className="z-20 flex-none">

@@ -15,6 +15,7 @@ import { fetchAllUniversitiesForCountry, listCountries } from '@/services/crmSet
 import { listWorkflowTemplates } from '@/services/studentCrmApi';
 import { displayStageLabel, getWorkflowIcon, isWorkflowStageComplete, resolveCountryProfile, sortWorkflowStages, stageAppliesToCountry } from '../workflowTemplateUi';
 import { formatDisplayDate, formatStamp, toDateInputValue } from '../dateFormat';
+import RequiredStatusIcon, { isFilledValue } from './RequiredStatusIcon';
 
 const EMPTY_LIST = [];
 
@@ -159,6 +160,7 @@ function GenericWorkflowSection({
     if (field.fieldType === 'CHECKBOX') {
       return (
         <label className="inline-flex items-center gap-2 text-sm text-neutral-700">
+          {field.required ? <RequiredStatusIcon submitted={Boolean(value)} /> : null}
           <input
             type="checkbox"
             checked={Boolean(value)}
@@ -300,6 +302,9 @@ function GenericWorkflowSection({
           <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
             {checklistItems.map((item) => (
               <label key={item.id} className="flex items-center gap-2 text-sm text-neutral-700">
+                {item.required !== false ? (
+                  <RequiredStatusIcon submitted={Boolean(checklistValues[item.id]?.completed)} />
+                ) : null}
                 <input
                   type="checkbox"
                   className="h-4 w-4 rounded border-neutral-300 accent-brand"
@@ -331,7 +336,14 @@ function GenericWorkflowSection({
           <div className="grid gap-3 md:grid-cols-2">
             {stage.fields.map((field) => (
               <div key={field.id} className="space-y-1.5">
-                {field.fieldType !== 'CHECKBOX' && <label className={labelClass}>{field.label}</label>}
+                {field.fieldType !== 'CHECKBOX' && (
+                  <label className={`${labelClass} inline-flex items-center gap-1.5`}>
+                    {field.required ? (
+                      <RequiredStatusIcon submitted={isFilledValue(fieldValues[field.id])} />
+                    ) : null}
+                    {field.label}
+                  </label>
+                )}
                 {renderInput(field)}
                 {field.helpText ? <p className="text-[11px] text-neutral-500">{field.helpText}</p> : null}
               </div>
@@ -374,7 +386,12 @@ function GenericWorkflowSection({
                   return (
                     <tr key={item.id} className="border-b border-neutral-100 last:border-0">
                       <td className="px-4 py-2.5 text-neutral-500">{index + 1}.</td>
-                      <td className="px-4 py-2.5 text-brand">{item.label}</td>
+                      <td className="px-4 py-2.5">
+                        <span className="inline-flex items-center gap-1.5 text-brand">
+                          {item.required !== false ? <RequiredStatusIcon submitted={done} /> : null}
+                          {item.label}
+                        </span>
+                      </td>
                       <td className="px-4 py-2.5">
                         <input
                           className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-brand focus:outline-none"
@@ -1006,19 +1023,18 @@ export default function SimpleWorkflowAccordion({
               className="w-full px-5 py-4 flex items-center justify-between gap-3 text-left hover:bg-neutral-50/60 transition-all"
             >
               <div className="flex items-center gap-3 min-w-0">
+                <RequiredStatusIcon submitted={complete} className="h-5 w-5" />
                 <div
-                  className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    complete ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                  }`}
+                  className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 bg-neutral-100 text-neutral-600"
                 >
                   <Icon size={18} />
                 </div>
                 <div className="min-w-0">
-                  <p className={`text-sm font-semibold ${complete ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  <p className="text-sm font-semibold text-brand">
                     {index + 1}. {displayStageLabel(stage)}
                   </p>
                   <p className="text-xs text-neutral-500">
-                    {complete ? 'Details filled' : 'Fields still need to be filled'}
+                    {complete ? 'Required fields submitted' : 'Required fields still need to be filled'}
                   </p>
                 </div>
               </div>

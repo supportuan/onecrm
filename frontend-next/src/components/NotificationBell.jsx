@@ -1,36 +1,23 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Trash2 } from 'lucide-react';
+import { Bell, CheckCheck, Settings, X } from 'lucide-react';
 import {
   getNotifications,
   getUnreadCount,
   markRead,
   markAllRead,
-  deleteNotification as deleteNotificationApi,
 } from '@/services/notificationsApi';
+import NotificationItem, { isMentionNotification } from '@/components/NotificationItem';
 
 const POLL_MS = 60_000;
-
-const formatRelative = (createdAt) => {
-  if (!createdAt) return '';
-  const date = new Date(createdAt);
-  const diff = Date.now() - date.getTime();
-  if (diff < 0) return 'just now';
-  const sec = Math.floor(diff / 1000);
-  const min = Math.floor(sec / 60);
-  const hr = Math.floor(min / 60);
-  const days = Math.floor(hr / 24);
-  if (days > 0) return `${days}d ago`;
-  if (hr > 0) return `${hr}h ago`;
-  if (min > 0) return `${min}m ago`;
-  return 'just now';
-};
 
 const NotificationBell = () => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState('all');
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -57,19 +44,16 @@ const NotificationBell = () => {
     }
   }, []);
 
-  // Initial badge load + polling.
   useEffect(() => {
     fetchCount();
     const t = setInterval(fetchCount, POLL_MS);
     return () => clearInterval(t);
   }, [fetchCount]);
 
-  // When the dropdown opens, fetch the list.
   useEffect(() => {
     if (open) fetchList();
   }, [open, fetchList]);
 
-  // Close on outside click.
   useEffect(() => {
     if (!open) return;
     const onDown = (e) => {
@@ -77,8 +61,15 @@ const NotificationBell = () => {
         setOpen(false);
       }
     };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   const handleMarkRead = async (id) => {
@@ -97,15 +88,6 @@ const NotificationBell = () => {
     } catch (_) {}
   };
 
-  const handleDelete = async (id) => {
-    const removed = items.find((n) => n.id === id);
-    try {
-      await deleteNotificationApi(id);
-      setItems((prev) => prev.filter((n) => n.id !== id));
-      if (removed && !removed.readAt) setUnread((c) => Math.max(0, c - 1));
-    } catch (_) {}
-  };
-
   const handleItemClick = (n) => {
     if (!n.readAt) handleMarkRead(n.id);
     if (n.link) {
@@ -114,6 +96,11 @@ const NotificationBell = () => {
     }
   };
 
+  const visibleItems = useMemo(
+    () => (tab === 'mentions' ? items.filter(isMentionNotification) : items),
+    [items, tab]
+  );
+
   return (
     <div className="relative" ref={containerRef}>
       <button
@@ -121,6 +108,7 @@ const NotificationBell = () => {
         onClick={() => setOpen((o) => !o)}
         className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-[var(--ui-text-muted)] transition hover:bg-brand-soft hover:text-brand active:scale-95"
         aria-label="notifications"
+        aria-expanded={open}
       >
         <Bell className="h-5 w-5" strokeWidth={1.75} />
         {unread > 0 && (
@@ -131,67 +119,87 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[340px] max-h-[480px] bg-white border border-[var(--ui-border)] rounded-[var(--ui-radius)] z-50 flex flex-col overflow-hidden">
-          <div className="px-4 py-3 border-b border-[var(--ui-border)] flex items-center justify-between">
-            <h3 className="ui-text-strong">Notifications</h3>
-            <button
-              onClick={handleMarkAll}
-              disabled={unread === 0}
-              className="ui-text-meta hover:text-[var(--ui-text)] disabled:opacity-40"
-            >
-              Mark all read
-            </button>
+        <div className="absolute right-0 z-50 mt-2 flex w-[min(420px,calc(100vw-1.5rem))] max-h-[min(640px,calc(100vh-5rem))] flex-col overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-[0_18px_50px_rgba(16,42,67,0.16)]">
+          <div className="px-5 pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-[22px] font-semibold tracking-tight text-neutral-900">Notifications</h3>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100 text-neutral-500 transition hover:bg-neutral-200 hover:text-neutral-800"
+                aria-label="Close notifications"
+              >
+                <X size={15} strokeWidth={2} />
+              </button>
+            </div>
+            <div className="mt-3 flex gap-5 border-b border-neutral-200">
+              {[
+                { id: 'all', label: 'View all' },
+                { id: 'mentions', label: 'Mentions' },
+              ].map((item) => {
+                const active = tab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setTab(item.id)}
+                    className={`-mb-px pb-2.5 text-[13px] transition ${
+                      active
+                        ? 'border-b-2 border-neutral-900 font-semibold text-neutral-900'
+                        : 'border-b-2 border-transparent font-medium text-neutral-400 hover:text-neutral-600'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {loading ? (
-              <div className="p-12 text-center ui-text-meta">Loading…</div>
-            ) : items.length === 0 ? (
-              <div className="p-12 text-center ui-text-meta">No notifications</div>
+              <div className="p-12 text-center text-[13px] text-neutral-400">Loading…</div>
+            ) : visibleItems.length === 0 ? (
+              <div className="p-12 text-center text-[13px] text-neutral-400">
+                {tab === 'mentions' ? 'No mentions yet' : 'No notifications'}
+              </div>
             ) : (
-              <ul className="divide-y divide-[var(--ui-border)]">
-                {items.map((n) => {
-                  const isRead = !!n.readAt;
-                  return (
-                    <li
-                      key={n.id}
-                      className={`group relative px-4 py-3 hover:bg-[var(--ui-bg-page)] transition cursor-pointer ${
-                        isRead ? '' : 'bg-[var(--ui-bg-page)]/50'
-                      }`}
-                      onClick={() => handleItemClick(n)}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-[13px] truncate ${isRead ? 'text-[var(--ui-text-secondary)]' : 'font-medium text-[var(--ui-text)]'}`}>
-                            {n.title}
-                          </p>
-                          <p className="ui-text-meta mt-0.5 line-clamp-2">{n.body}</p>
-                          <p className="ui-text-caption normal-case tracking-normal mt-1.5">{formatRelative(n.createdAt)}</p>
-                        </div>
-                        <button
-                          type="button"
-                          title="Delete"
-                          aria-label="Delete notification"
-                          className="shrink-0 rounded-lg p-1.5 text-neutral-400 opacity-0 transition hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(n.id);
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
+              <ul>
+                {visibleItems.map((n) => (
+                  <NotificationItem key={n.id} n={n} onClick={() => handleItemClick(n)} />
+                ))}
               </ul>
             )}
           </div>
 
-          <div className="px-4 py-2.5 border-t border-[var(--ui-border)]">
-            <a href="/notifications" className="block text-center ui-link">
-              View all
-            </a>
+          <div className="flex items-center justify-between gap-3 border-t border-neutral-200 px-5 py-3">
+            <div className="flex items-center gap-3">
+              <Link
+                href="/notifications"
+                onClick={() => setOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+                aria-label="Notification settings"
+                title="Notification settings"
+              >
+                <Settings size={16} strokeWidth={1.75} />
+              </Link>
+              <button
+                type="button"
+                onClick={handleMarkAll}
+                disabled={unread === 0}
+                className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#2563eb] transition hover:text-[#1d4ed8] disabled:opacity-40"
+              >
+                <CheckCheck size={15} strokeWidth={2} />
+                Mark all as read
+              </button>
+            </div>
+            <Link
+              href="/notifications"
+              onClick={() => setOpen(false)}
+              className="inline-flex shrink-0 items-center rounded-lg bg-[#2563eb] px-3.5 py-2 text-[12.5px] font-semibold text-white transition hover:bg-[#1d4ed8]"
+            >
+              View all notifications
+            </Link>
           </div>
         </div>
       )}

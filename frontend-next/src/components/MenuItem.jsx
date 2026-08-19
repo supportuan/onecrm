@@ -2,18 +2,31 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const MenuItem = ({ icon: Icon, label, path, onClick, nested = false, exact = false, children }) => {
+const MenuItem = ({
+  icon: Icon,
+  label,
+  path,
+  onClick,
+  nested = false,
+  exact = false,
+  charcoal = false,
+  children,
+}) => {
   const pathname = usePathname() || '';
   const active = path
     ? pathname === path || (!exact && pathname.startsWith(`${path}/`))
     : false;
+
+  const idleColor = charcoal
+    ? 'text-[#1c1c1c] hover:text-brand hover:bg-brand-soft/60'
+    : 'text-[var(--ui-text-muted)] hover:text-brand hover:bg-brand-soft/60';
 
   const baseClasses = `flex items-center gap-2.5 rounded-[var(--ui-radius)] py-1.5 text-[13px] transition-all duration-200 ease-out hover:translate-x-0.5 active:scale-[0.99] ${
     nested ? 'pl-8 pr-3' : 'px-3'
   } ${
     active
       ? 'font-medium text-brand bg-brand-soft'
-      : 'text-[var(--ui-text-muted)] hover:text-brand hover:bg-brand-soft/60'
+      : idleColor
   }`;
 
   const content = (

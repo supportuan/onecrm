@@ -445,26 +445,28 @@ export default function UniversityApplicationPanel({
                                 href={row.offerLetterFileUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="rounded-lg p-1.5 text-neutral-500 transition hover:bg-neutral-100 hover:text-brand"
-                                title="Preview offer letter"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                                title="View offer letter"
+                                aria-label="View offer letter"
                               >
-                                <Eye size={14} />
+                                <Eye size={15} />
                               </a>
                               <a
                                 href={row.offerLetterFileUrl}
                                 download={row.offerLetterFilename || undefined}
-                                className="rounded-lg p-1.5 text-emerald-600 transition hover:bg-emerald-50"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
                                 title="Download offer letter"
+                                aria-label="Download offer letter"
                               >
-                                <Download size={14} />
+                                <Download size={15} />
                               </a>
                               {canManage ? (
                                 <label
-                                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 transition hover:bg-amber-100"
+                                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
                                   title="Replace offer letter"
+                                  aria-label="Replace offer letter"
                                 >
-                                  {busy ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                                  Replace
+                                  {busy ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                                   <input
                                     type="file"
                                     className="hidden"
@@ -481,9 +483,12 @@ export default function UniversityApplicationPanel({
                             </div>
                           </div>
                         ) : canManage ? (
-                          <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 transition hover:bg-amber-100">
-                            {busy ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                            Upload
+                          <label
+                            className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                            title="Upload offer letter"
+                            aria-label="Upload offer letter"
+                          >
+                            {busy ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                             <input
                               type="file"
                               className="hidden"
@@ -525,10 +530,11 @@ export default function UniversityApplicationPanel({
                               href={row.courseLink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="rounded-lg p-1.5 text-neutral-500 transition hover:bg-neutral-100 hover:text-brand"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
                               title="Open course link"
+                              aria-label="Open course link"
                             >
-                              <ExternalLink size={14} />
+                              <ExternalLink size={15} />
                             </a>
                           ) : null}
                           {canManage && (
@@ -536,10 +542,11 @@ export default function UniversityApplicationPanel({
                               type="button"
                               onClick={() => remove(row)}
                               disabled={busy}
-                              className="rounded-lg p-1.5 text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
-                              title="Remove from shortlist"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 transition hover:bg-rose-50 disabled:opacity-40"
+                              title="Delete"
+                              aria-label="Remove university"
                             >
-                              {busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                              {busy ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                             </button>
                           )}
                         </div>

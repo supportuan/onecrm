@@ -266,6 +266,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
       label: item.label,
       path: item.path,
       subItems: item.subItems,
+      navTheme: item.navTheme,
       top: Math.max(8, rect.top - 8),
     });
   };
@@ -314,7 +315,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
 
             const navIdle = isCrimson
               ? "text-slate-600 hover:bg-[var(--module-crimson-soft)] hover:text-[var(--module-crimson)]"
-              : "text-slate-600 hover:bg-brand-soft hover:text-brand";
+              : "text-[#1c1c1c] hover:bg-brand-soft hover:text-brand";
             const navActive = isCrimson
               ? "bg-[var(--module-crimson)] text-white shadow-sm"
               : "app-nav-item-active bg-brand text-white";
@@ -403,6 +404,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
                             path={sub.path}
                             nested
                             exact={sub.path === item.path}
+                            charcoal={!isCrimson}
                           />
                         ))}
                       </div>
@@ -472,7 +474,9 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
             setFlyoutMenu(null);
           }}
         >
-          <p className="px-3 py-2 text-xs font-semibold text-neutral-400">
+          <p className={`px-3 py-2 text-xs font-semibold ${
+            flyoutMenu.navTheme === "crimson" ? "text-neutral-400" : "text-[#1c1c1c]"
+          }`}>
             {flyoutMenu.label}
           </p>
 
@@ -490,7 +494,9 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
                   ${location === sub.path ||
                     (sub.path !== flyoutMenu.path && location.startsWith(`${sub.path}/`))
                     ? "bg-brand text-white"
-                    : "text-slate-600 hover:bg-brand-soft hover:text-brand"
+                    : flyoutMenu.navTheme === "crimson"
+                      ? "text-slate-600 hover:bg-[var(--module-crimson-soft)] hover:text-[var(--module-crimson)]"
+                      : "text-[#1c1c1c] hover:bg-brand-soft hover:text-brand"
                   }
                 `}
               >

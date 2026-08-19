@@ -92,6 +92,7 @@ router.get('/applications/:id', studentSelfOr('VIEW_STUDENT_CRM', 'MANAGE_STUDEN
 router.post('/applications', manage, controller.createApplication);
 router.post('/applications/bulk-assign', manage, controller.bulkAssignApplications);
 router.put('/applications/:id', manage, controller.updateApplication);
+router.delete('/applications/:id', manage, controller.deleteApplication);
 router.post('/applications/:id/advance', manage, controller.advanceStage);
 
 // Application documents

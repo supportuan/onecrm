@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Check, Download, Eye, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { formatDisplayDate, formatStamp } from '../dateFormat';
 import { compressUploadFile } from '../compressUpload';
+import RequiredStatusIcon from './RequiredStatusIcon';
 
 const normalize = (value) =>
   String(value || '')
@@ -153,11 +154,13 @@ export default function GatheringChecklist({
     ...templateItems.map((item) => ({
       key: `tpl-${item.id}`,
       name: item.label,
+      required: item.required !== false,
       doc: docByName.get(normalize(item.label)) || null,
     })),
     ...extraDocuments.map((doc) => ({
       key: `doc-${doc.id}`,
       name: doc.name,
+      required: Boolean(doc.required),
       doc,
     })),
   ];
@@ -201,8 +204,12 @@ export default function GatheringChecklist({
 
         {templateItems.length ? (
           <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-            {templateItems.map((item) => (
+            {templateItems.map((item) => {
+              const doc = docByName.get(normalize(item.label));
+              const submitted = Boolean(doc?.fileUrl) || ['UPLOADED', 'VERIFIED'].includes(doc?.status);
+              return (
               <label key={item.id} className="flex items-center gap-2 text-sm text-neutral-700">
+                {item.required !== false ? <RequiredStatusIcon submitted={submitted} /> : null}
                 <input
                   type="checkbox"
                   className="h-4 w-4 rounded border-neutral-300 accent-brand"
@@ -214,7 +221,8 @@ export default function GatheringChecklist({
                 />
                 <span className="truncate">{item.label}</span>
               </label>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-neutral-500">No checklist items configured for this step.</p>
@@ -266,13 +274,13 @@ export default function GatheringChecklist({
           </div>
           {canManage && (
             <label
-              className={`ml-auto inline-flex cursor-pointer items-center gap-2 rounded-xl bg-brand px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-brand-hover ${
+              className={`ml-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-brand text-white transition-all hover:bg-brand-hover ${
                 uploadingNew ? 'pointer-events-none opacity-60' : ''
               }`}
-              title="Upload a document to this application"
+              title="Upload document"
+              aria-label="Upload document"
             >
-              {uploadingNew ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {uploadingNew ? 'Uploading…' : 'Upload Document'}
+              {uploadingNew ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
               <input
                 type="file"
                 className="hidden"
@@ -311,7 +319,14 @@ export default function GatheringChecklist({
                     <tr key={row.key} className="border-b border-neutral-100 align-top last:border-0">
                       <td className="px-4 py-3 text-neutral-500">{index + 1}.</td>
                       <td className="px-4 py-3">
-                        <p className="font-medium text-brand">{row.name}</p>
+                        <p className="inline-flex items-center gap-1.5 font-medium text-brand">
+                          {row.required ? (
+                            <RequiredStatusIcon
+                              submitted={hasFile || ['UPLOADED', 'VERIFIED'].includes(doc?.status)}
+                            />
+                          ) : null}
+                          {row.name}
+                        </p>
                         {doc?.filename ? (
                           <p className="mt-0.5 truncate font-mono text-[11px] text-neutral-500">{doc.filename}</p>
                         ) : null}
@@ -364,28 +379,30 @@ export default function GatheringChecklist({
                                 href={doc.fileUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="rounded-lg p-1.5 text-neutral-500 transition hover:bg-neutral-100 hover:text-brand"
-                                title="Preview"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                                title="View"
+                                aria-label="View document"
                               >
-                                <Eye size={14} />
+                                <Eye size={15} />
                               </a>
                               <a
                                 href={doc.fileUrl}
                                 download={doc.filename || undefined}
-                                className="rounded-lg p-1.5 text-emerald-600 transition hover:bg-emerald-50"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
                                 title="Download"
+                                aria-label="Download document"
                               >
-                                <Download size={14} />
+                                <Download size={15} />
                               </a>
                             </>
                           ) : null}
                           {canManage ? (
                             <label
-                              className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 transition hover:bg-amber-100"
-                              title={hasFile ? 'Add or replace file' : 'Add file'}
+                              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                              title={hasFile ? 'Replace file' : 'Upload file'}
+                              aria-label={hasFile ? 'Replace file' : 'Upload file'}
                             >
-                              {isUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                              Add
+                              {isUploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                               <input
                                 type="file"
                                 className="hidden"
@@ -407,10 +424,11 @@ export default function GatheringChecklist({
                                   ? handlers.onDocClearFile(doc.id)
                                   : handlers.onDocDelete?.(doc.id)
                               }
-                              className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-rose-700 transition hover:bg-rose-100"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 transition hover:bg-rose-50"
                               title="Delete uploaded file"
+                              aria-label="Delete uploaded file"
                             >
-                              <Trash2 size={13} /> Delete
+                              <Trash2 size={15} />
                             </button>
                           ) : null}
                           {canManage && doc?.status === 'UPLOADED' ? (
@@ -435,10 +453,11 @@ export default function GatheringChecklist({
                             <button
                               type="button"
                               onClick={() => handlers.onDocDelete?.(doc.id)}
-                              className="rounded-lg p-1.5 text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600"
-                              title="Remove this item"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 transition hover:bg-rose-50"
+                              title="Delete"
+                              aria-label="Delete document"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={15} />
                             </button>
                           ) : null}
                         </div>

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { PanelLeftClose } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 
 export const BRAND_NAME = 'OneCRM';
@@ -124,7 +124,7 @@ export function SidebarBrandHeader({
 }) {
   const brand = useTenantBrand();
 
-  const logoAndTitle = (
+  const brandRow = (
     <>
       <BrandMark
         src={brand.logoSrc}
@@ -140,39 +140,43 @@ export function SidebarBrandHeader({
     </>
   );
 
+  const brandBlock = (
+    <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 items-center gap-2">{brandRow}</div>
+      {subtitle ? (
+        <p className="mt-0.5 truncate text-[10px] font-medium leading-snug text-neutral-400">
+          {subtitle}
+        </p>
+      ) : null}
+    </div>
+  );
+
   return (
     <div
-      className={`app-shell-sidebar-header flex flex-none flex-col justify-center border-b border-neutral-100/80 ${
-        sidebarOpen ? 'gap-0.5 px-3' : 'items-center justify-center px-2'
+      className={`app-shell-sidebar-header relative flex flex-none flex-col justify-center border-b border-neutral-100/80 ${
+        sidebarOpen ? 'pl-3 pr-0' : 'items-center justify-center px-2'
       }`}
     >
       {sidebarOpen ? (
         <>
-          <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 pr-7">
             {homeHref ? (
-              <Link
-                href={homeHref}
-                className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-90"
-              >
-                {logoAndTitle}
+              <Link href={homeHref} className="block min-w-0 hover:opacity-90">
+                {brandBlock}
               </Link>
             ) : (
-              <div className="flex min-w-0 flex-1 items-center gap-2">{logoAndTitle}</div>
+              brandBlock
             )}
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
-              aria-label="Collapse sidebar"
-            >
-              <PanelLeftClose className="h-3.5 w-3.5" strokeWidth={1.75} />
-            </button>
           </div>
-          {subtitle ? (
-            <p className="truncate text-[10px] font-medium leading-none text-neutral-400">
-              {subtitle}
-            </p>
-          ) : null}
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="absolute right-0 top-[10px] inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-l-xl text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+          </button>
         </>
       ) : (
         <button

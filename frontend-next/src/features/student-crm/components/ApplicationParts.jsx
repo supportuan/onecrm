@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { listWorkflowTemplates } from '@/services/studentCrmApi';
+import PersonalDetailsFields, {
+  emptyPersonalForm,
+  personalFormToStudentPayload,
+  ExamDetailsFields,
+} from './PersonalDetailsFields';
 import {
   Plus,
   Trash2,
@@ -23,6 +28,7 @@ import {
   Loader2,
   Paperclip,
 } from 'lucide-react';
+import RequiredStatusIcon from './RequiredStatusIcon';
 import {
   APPLICATION_STAGES,
   DOC_STATUSES,
@@ -103,9 +109,9 @@ export const Field = ({ label, children }) => (
   </div>
 );
 
-export const Modal = ({ title, onClose, children }) => (
+export const Modal = ({ title, onClose, children, wide }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-md animate-in fade-in duration-200">
-    <div className="ui-surface w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+    <div className={`ui-surface w-full ${wide ? 'max-w-3xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-150`}>
       <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
         <h3 className="ui-text-h3">{title}</h3>
         <button
@@ -484,10 +490,10 @@ export const DocumentChecklist = ({
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {d.required ? (
+                            <RequiredStatusIcon submitted={hasFile || ['UPLOADED', 'VERIFIED'].includes(d.status)} />
+                          ) : null}
                           <p className="ui-text-strong">{d.name}</p>
-                          {d.required && (
-                            <span className="text-[10px] font-semibold text-rose-600 uppercase">required</span>
-                          )}
                           {isDragOver && (
                             <span className="text-[10px] font-semibold uppercase text-brand">Drop to upload</span>
                           )}
@@ -523,34 +529,37 @@ export const DocumentChecklist = ({
                             href={d.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 text-neutral-500 hover:text-brand hover:bg-neutral-100 rounded-lg transition"
-                            title="Preview"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                            title="View"
+                            aria-label="View document"
                           >
-                            <Eye size={14} />
+                            <Eye size={15} />
                           </a>
                           <a
                             href={d.fileUrl}
                             download={d.filename || undefined}
-                            className="p-2 text-neutral-500 hover:text-brand hover:bg-neutral-100 rounded-lg transition"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
                             title="Download"
+                            aria-label="Download document"
                           >
-                            <Download size={14} />
+                            <Download size={15} />
                           </a>
                         </>
                       )}
                       {(canManage || studentMayUpload(d)) && (
                         <label
-                          className={`p-2 rounded-lg transition cursor-pointer ${
+                          className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition ${
                             isUploading
                               ? 'text-neutral-400 bg-neutral-50'
-                              : 'text-neutral-500 hover:text-brand hover:bg-neutral-100'
+                              : 'text-neutral-600 hover:bg-neutral-100 hover:text-brand'
                           }`}
                           title={hasFile ? 'Replace file' : 'Upload file'}
+                          aria-label={hasFile ? 'Replace file' : 'Upload file'}
                         >
                           {isUploading ? (
-                            <Loader2 size={14} className="animate-spin" />
+                            <Loader2 size={15} className="animate-spin" />
                           ) : (
-                            <Upload size={14} />
+                            <Upload size={15} />
                           )}
                           <input
                             type="file"
@@ -608,11 +617,13 @@ export const DocumentChecklist = ({
                       )}
                       {canManage && (
                         <button
+                          type="button"
                           onClick={() => onDelete(d.id)}
-                          className="p-2 text-neutral-500 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
-                          title="Remove from checklist"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 transition hover:bg-rose-50"
+                          title="Delete"
+                          aria-label="Delete document"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={15} />
                         </button>
                       )}
                     </div>
@@ -740,25 +751,30 @@ export const OfferLetterPanel = ({ app, canManage, onSave, onUpload, uploading }
                 href={form.fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 ui-text-strong flex items-center gap-1.5 transition"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                title="View"
+                aria-label="View offer letter"
               >
-                <Eye size={13} /> View
+                <Eye size={15} />
               </a>
               <a
                 href={form.fileUrl}
                 download={form.filename || 'offer-letter'}
-                className="px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 ui-text-strong flex items-center gap-1.5 transition"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                title="Download"
+                aria-label="Download offer letter"
               >
-                <Download size={13} /> Download
+                <Download size={15} />
               </a>
               {canManage && (
                 <label
-                  className={`px-3 py-2 rounded-lg bg-brand hover:bg-brand-hover text-white ui-text-strong !text-white flex items-center gap-1.5 cursor-pointer transition ${
+                  className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-brand text-white transition hover:bg-brand-hover ${
                     uploading ? 'opacity-60 pointer-events-none' : ''
                   }`}
+                  title="Replace offer letter"
+                  aria-label="Replace offer letter"
                 >
-                  {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                  Replace
+                  {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                   <input
                     type="file"
                     className="hidden"
@@ -967,11 +983,11 @@ export const VisaPanel = ({
                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white rounded-lg border border-neutral-100"
               >
                 <div className="min-w-0">
-                  <p className="ui-text-strong truncate">
-                    {doc.name}
+                  <p className="ui-text-strong truncate inline-flex items-center gap-1.5">
                     {doc.required ? (
-                      <span className="text-rose-500 ml-1">*</span>
+                      <RequiredStatusIcon submitted={['UPLOADED', 'VERIFIED'].includes(doc.status)} />
                     ) : null}
+                    {doc.name}
                   </p>
                   <p className="text-[11px] text-neutral-500 mt-0.5">
                     {doc.status}
@@ -984,18 +1000,22 @@ export const VisaPanel = ({
                       href={doc.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2 py-1 text-xs border rounded-lg"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                      title="View"
+                      aria-label="View document"
                     >
-                      View
+                      <Eye size={15} />
                     </a>
                   )}
                   {canManage && onChecklistUpload && ['PENDING', 'REJECTED', 'UPLOADED'].includes(doc.status) && (
                     <label
-                      className={`px-2 py-1 text-xs border rounded-lg cursor-pointer bg-brand text-white ${
+                      className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand ${
                         uploadingDocId === doc.id ? 'opacity-60 pointer-events-none' : ''
                       }`}
+                      title="Upload"
+                      aria-label="Upload document"
                     >
-                      {uploadingDocId === doc.id ? 'Uploading…' : 'Upload'}
+                      {uploadingDocId === doc.id ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                       <input
                         type="file"
                         className="hidden"
@@ -1030,10 +1050,11 @@ export const VisaPanel = ({
                     <button
                       type="button"
                       onClick={() => onDeleteDoc(doc.id)}
-                      className="p-1 text-rose-600"
-                      title="Remove"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 transition hover:bg-rose-50"
+                      title="Delete"
+                      aria-label="Delete document"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={15} />
                     </button>
                   )}
                 </div>
@@ -1050,8 +1071,15 @@ export const VisaPanel = ({
                 <p className="ui-text-strong truncate">
                   {doc.label || doc.filename || `Document ${i + 1}`}
                 </p>
-                <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-xs border rounded-lg">
-                  View
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                  title="View"
+                  aria-label="View document"
+                >
+                  <Eye size={15} />
                 </a>
               </li>
             ))}
@@ -1096,12 +1124,13 @@ export const VisaPanel = ({
                   />
                 </Field>
                 <label
-                  className={`px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-hover text-white ui-text-strong !text-white flex items-center justify-center gap-1.5 cursor-pointer transition ${
+                  className={`inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-brand text-white transition hover:bg-brand-hover ${
                     uploading ? 'opacity-60 pointer-events-none' : ''
                   }`}
+                  title="Upload extra file"
+                  aria-label="Upload extra file"
                 >
-                  {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                  Extra file
+                  {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                   <input
                     type="file"
                     className="hidden"
@@ -1353,9 +1382,11 @@ export const ApplicationTasksPanel = ({
                     <button
                       type="button"
                       onClick={() => onDelete?.(task.id)}
-                      className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 transition hover:bg-rose-50"
+                      title="Delete"
+                      aria-label="Delete task"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={15} />
                     </button>
                   )}
                 </div>
@@ -1574,9 +1605,11 @@ export const StudentVisaPanel = ({ app, workflow = [], canUpload = false, onUplo
                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-neutral-800 truncate">
+                  <p className="text-sm font-medium text-neutral-800 truncate inline-flex items-center gap-1.5">
+                    {doc.required ? (
+                      <RequiredStatusIcon submitted={Boolean(doc.fileUrl) || ['UPLOADED', 'VERIFIED'].includes(doc.status)} />
+                    ) : null}
                     {doc.label || doc.filename || `Document ${i + 1}`}
-                    {doc.required ? <span className="text-rose-500 ml-1">*</span> : null}
                   </p>
                   {doc.status && (
                     <p className="text-[11px] text-neutral-500 mt-0.5">{doc.status}</p>
@@ -1588,9 +1621,11 @@ export const StudentVisaPanel = ({ app, workflow = [], canUpload = false, onUplo
                       href={doc.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-neutral-700 hover:text-brand underline"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand"
+                      title="View"
+                      aria-label="View document"
                     >
-                      View
+                      <Eye size={15} />
                     </a>
                   )}
                   {canUpload &&
@@ -1598,11 +1633,17 @@ export const StudentVisaPanel = ({ app, workflow = [], canUpload = false, onUplo
                     onUpload &&
                     ['PENDING', 'REJECTED'].includes(doc.status) && (
                       <label
-                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg bg-brand text-white cursor-pointer ${
+                        className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-brand ${
                           uploadingDocId === doc.id ? 'opacity-60 pointer-events-none' : ''
                         }`}
+                        title="Upload"
+                        aria-label="Upload document"
                       >
-                        {uploadingDocId === doc.id ? 'Uploading…' : 'Upload'}
+                        {uploadingDocId === doc.id ? (
+                          <Loader2 size={15} className="animate-spin" />
+                        ) : (
+                          <Upload size={15} />
+                        )}
                         <input
                           type="file"
                           className="hidden"
@@ -1658,45 +1699,36 @@ export const AuditTimeline = ({ app }) => (
 
 /* -------------------- Modals: new student / new application -------------------- */
 
-export const NewStudentModal = ({ onClose, onSave }) => {
-  const [form, setForm] = useState({ fullName: '', email: '', phone: '', preferredCountry: '' });
+export const NewStudentModal = ({ onClose, onSave, formOptions = {}, counsellors = [] }) => {
+  const [form, setForm] = useState(emptyPersonalForm);
+  const countries = formOptions.countries || [];
+  const industries = formOptions.industries || [];
+
   return (
-    <Modal title="New student" onClose={onClose}>
+    <Modal title="New student" onClose={onClose} wide>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!form.fullName || !form.email) return;
-          onSave(form);
+          if (!form.firstName || !form.lastName || !form.email) return;
+          onSave(personalFormToStudentPayload(form));
         }}
-        className="space-y-4 p-6"
+        className="space-y-5 p-6"
       >
-        <Field label="Full name *">
-          <input
-            required
-            value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-            className="ui-field"
-          />
-        </Field>
-        <Field label="Email *">
-          <input
-            required
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="ui-field"
-          />
-        </Field>
-        <Field label="Phone">
-          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="ui-field" />
-        </Field>
-        <Field label="Preferred country">
-          <input
-            value={form.preferredCountry}
-            onChange={(e) => setForm({ ...form, preferredCountry: e.target.value })}
-            className="ui-field"
-          />
-        </Field>
+        <div className="rounded-xl bg-neutral-100 px-5 py-3.5 text-sm font-medium text-neutral-600">
+          Fill up the mandatory details required...
+        </div>
+        <PersonalDetailsFields
+          form={form}
+          onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+          countries={countries}
+          industries={industries}
+          counsellors={counsellors}
+          requireIdentity
+        />
+        <ExamDetailsFields
+          form={form}
+          onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+        />
         <ModalFooter onClose={onClose} submitLabel="Create student" />
       </form>
     </Modal>

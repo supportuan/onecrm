@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { studyIdsFromProfile, toNumOrNull } from '../studyFormOptions';
 import { toDateInputValue } from '../dateFormat';
+import RequiredStatusIcon, { isFilledValue } from './RequiredStatusIcon';
 
 const STUDY_LEVELS = ['Certificate', 'Diploma', 'Bachelor', 'Master', 'PhD'];
 const INTAKE_MONTHS = ['Spring', 'Summer', 'Fall', 'Winter', 'January', 'May', 'September'];
@@ -27,9 +28,12 @@ const emptyExam = () => ({
   listening: '',
 });
 
-const Field = ({ label, children, className = '' }) => (
+const Field = ({ label, children, className = '', required = false, filled = false }) => (
   <div className={`space-y-1.5 ${className}`}>
-    <label className={labelClass}>{label}</label>
+    <label className={`${labelClass} inline-flex items-center gap-1.5`}>
+      {required ? <RequiredStatusIcon submitted={filled} /> : null}
+      {label}
+    </label>
     {children}
   </div>
 );
@@ -161,19 +165,19 @@ export default function StudentInfoPanel({
           ) : null}
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="First name">
+          <Field label="First name" required filled={isFilledValue(form.firstName)}>
             <input className={inputClass} value={form.firstName} disabled={locked} onChange={(e) => patch({ firstName: e.target.value })} />
           </Field>
-          <Field label="Last name">
+          <Field label="Last name" required filled={isFilledValue(form.lastName)}>
             <input className={inputClass} value={form.lastName} disabled={locked} onChange={(e) => patch({ lastName: e.target.value })} />
           </Field>
-          <Field label="Full name">
+          <Field label="Full name" required filled={isFilledValue(form.fullName)}>
             <input className={inputClass} value={form.fullName} disabled={locked} onChange={(e) => patch({ fullName: e.target.value })} />
           </Field>
-          <Field label="Email">
+          <Field label="Email" required filled={isFilledValue(form.email)}>
             <input className={inputClass} value={form.email} disabled />
           </Field>
-          <Field label="Phone">
+          <Field label="Phone" required filled={isFilledValue(form.phone)}>
             <input className={inputClass} value={form.phone} disabled={locked} onChange={(e) => patch({ phone: e.target.value })} />
           </Field>
           <Field label="Date of birth">
@@ -182,7 +186,7 @@ export default function StudentInfoPanel({
           <Field label="Nationality">
             <input className={inputClass} value={form.nationality} disabled={locked} onChange={(e) => patch({ nationality: e.target.value })} />
           </Field>
-          <Field label="Study destination">
+          <Field label="Study destination" required filled={isFilledValue(form.countryId) || isFilledValue(form.preferredCountry)}>
             <select
               className={inputClass}
               value={form.countryId}

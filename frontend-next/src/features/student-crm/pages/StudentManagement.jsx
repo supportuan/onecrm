@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -44,39 +44,17 @@ import {
 } from '../studyFormOptions';
 import CatalogCourseFields from '../components/CatalogCourseFields';
 import SimpleWorkflowAccordion from '../components/SimpleWorkflowAccordion';
+import PersonalDetailsFields, {
+  emptyPersonalForm,
+  personalFormToStudentPayload,
+  ExamDetailsFields,
+} from '../components/PersonalDetailsFields';
 import { resolveCatalogCountryId, pickCatalogCountry } from '../catalogCountry';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 
 const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
-const SELECT =
-  "w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none appearance-none cursor-pointer bg-[length:16px] bg-[right_12px_center] bg-no-repeat pr-10";
-/** Filled field used by the Edit Student form (label sits inside the box). */
-const FilledField = ({ label, children }) => (
-  <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5">
-    <span className="block text-[11px] font-medium text-neutral-500">{label}</span>
-    <div className="mt-0.5">{children}</div>
-  </div>
-);
-
-const FILLED_INPUT =
-  'w-full bg-transparent text-sm font-medium text-neutral-800 outline-none placeholder:text-neutral-400 disabled:text-neutral-500';
-const FILLED_SELECT = `${FILLED_INPUT} appearance-none cursor-pointer bg-[length:16px] bg-[right_0px_center] bg-no-repeat pr-6`;
-const FILLED_SELECT_BG = {
-  backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-};
-
-const STUDY_LEVELS = ['Certificate', 'Diploma', 'Bachelor', 'Master', 'PhD'];
-const INTAKE_MONTHS = ['Spring', 'Summer', 'Fall', 'Winter', 'January', 'May', 'September'];
-const INTAKE_YEARS = Array.from({ length: 8 }, (_, index) => String(new Date().getFullYear() + index));
-
-const SELECT_BG = {
-  backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-};
-
 /** Normalize API date (ISO string | Date | number) to YYYY-MM-DD for <input type="date">. */
 const toDateInput = (value) => {
   try {
@@ -321,13 +299,6 @@ export default function StudentManagement() {
   }, [profile?.studyPlans, selectedStudyPlanId]);
 
   const selectedStudyPlan = (profile?.studyPlans || []).find((plan) => plan.id === selectedStudyPlanId) || null;
-
-  const subjectOptions = useMemo(() => {
-    const industry = (formOptions.industries || []).find(
-      (item) => String(item.id) === String(form?.industryId || '')
-    );
-    return industry?.subIndustries?.length ? industry.subIndustries : industry?.studyAreas || [];
-  }, [formOptions.industries, form?.industryId]);
 
   const prefillFromStudyPlan = useCallback(
     (plan) => {
@@ -758,179 +729,16 @@ export default function StudentManagement() {
                       Fill up the mandatory details required...
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <FilledField label="First Name">
-                            <input
-                              className={FILLED_INPUT}
-                              value={form.firstName}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                            />
-                          </FilledField>
-                          <FilledField label="Last Name">
-                            <input
-                              className={FILLED_INPUT}
-                              value={form.lastName}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                            />
-                          </FilledField>
-                        </div>
-
-                        <FilledField label="Phone Number">
-                          <input
-                            className={FILLED_INPUT}
-                            value={form.phone}
-                            disabled={!canManage}
-                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                          />
-                        </FilledField>
-
-                        <FilledField label="Email">
-                          <input className={FILLED_INPUT} value={form.email} disabled />
-                        </FilledField>
-
-                        <FilledField label="Study Destination">
-                          <select
-                            className={FILLED_SELECT}
-                            style={FILLED_SELECT_BG}
-                            value={form.countryId}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) => {
-                              const country = formOptions.countries.find(
-                                (item) => String(item.id) === e.target.value
-                              );
-                              setForm({
-                                ...form,
-                                countryId: e.target.value,
-                                preferredCountry: country?.name || '',
-                              });
-                            }}
-                          >
-                            <option value="">Select destination</option>
-                            {formOptions.countries.map((country) => (
-                              <option key={country.id} value={country.id}>
-                                {country.name}
-                              </option>
-                            ))}
-                          </select>
-                        </FilledField>
-
-                        <FilledField label="Study Level">
-                          <select
-                            className={FILLED_SELECT}
-                            style={FILLED_SELECT_BG}
-                            value={form.level}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) => setForm({ ...form, level: e.target.value })}
-                          >
-                            <option value="">Select level</option>
-                            {STUDY_LEVELS.map((level) => (
-                              <option key={level} value={level}>
-                                {level}
-                              </option>
-                            ))}
-                          </select>
-                        </FilledField>
-                      </div>
-
-                      <div className="space-y-4">
-                        <FilledField label="Study Industry">
-                          <select
-                            className={FILLED_SELECT}
-                            style={FILLED_SELECT_BG}
-                            value={form.industryId}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                industryId: e.target.value,
-                                subIndustryId: '',
-                                studyAreaId: '',
-                              })
-                            }
-                          >
-                            <option value="">Select industry</option>
-                            {(formOptions.industries || []).map((industry) => (
-                              <option key={industry.id} value={industry.id}>
-                                {industry.name}
-                              </option>
-                            ))}
-                          </select>
-                        </FilledField>
-
-                        <FilledField label="Subject Industry">
-                          <select
-                            className={FILLED_SELECT}
-                            style={FILLED_SELECT_BG}
-                            value={form.subIndustryId || form.studyAreaId || ''}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) => setForm({ ...form, subIndustryId: e.target.value })}
-                          >
-                            <option value="">Select subject</option>
-                            {subjectOptions.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name}
-                              </option>
-                            ))}
-                          </select>
-                        </FilledField>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <FilledField label="Intake">
-                            <select
-                              className={FILLED_SELECT}
-                              style={FILLED_SELECT_BG}
-                              value={form.intakeMonth}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => setForm({ ...form, intakeMonth: e.target.value })}
-                            >
-                              <option value="">Select intake</option>
-                              {INTAKE_MONTHS.map((month) => (
-                                <option key={month} value={month}>
-                                  {month}
-                                </option>
-                              ))}
-                            </select>
-                          </FilledField>
-                          <FilledField label="Intake Year">
-                            <select
-                              className={FILLED_SELECT}
-                              style={FILLED_SELECT_BG}
-                              value={form.intakeYear}
-                              disabled={!canManage || profile.isEnrolled}
-                              onChange={(e) => setForm({ ...form, intakeYear: e.target.value })}
-                            >
-                              <option value="">Select year</option>
-                              {INTAKE_YEARS.map((year) => (
-                                <option key={year} value={year}>
-                                  {year}
-                                </option>
-                              ))}
-                            </select>
-                          </FilledField>
-                        </div>
-
-                        <FilledField label="POC">
-                          <select
-                            className={FILLED_SELECT}
-                            style={FILLED_SELECT_BG}
-                            value={form.contactId}
-                            disabled={!canManage || profile.isEnrolled}
-                            onChange={(e) => setForm({ ...form, contactId: e.target.value })}
-                          >
-                            <option value="">Unassigned</option>
-                            {counsellors.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.fullName}
-                              </option>
-                            ))}
-                          </select>
-                        </FilledField>
-                      </div>
-                    </div>
+                    <PersonalDetailsFields
+                      form={form}
+                      onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+                      countries={formOptions.countries}
+                      industries={formOptions.industries || []}
+                      counsellors={counsellors}
+                      locked={!canManage || profile.isEnrolled}
+                      phoneLocked={!canManage}
+                      emailLocked
+                    />
 
                     {canManage && !profile.isEnrolled && (
                       <div className="flex justify-end pt-1">
@@ -1203,6 +1011,8 @@ export default function StudentManagement() {
       {showNew && (
         <NewStudentModal
           countries={formOptions.countries}
+          industries={formOptions.industries || []}
+          counsellors={counsellors}
           onClose={() => setShowNew(false)}
           onCreated={async (student) => {
             setShowNew(false);
@@ -1245,35 +1055,15 @@ function Field({ label, children }) {
   );
 }
 
-function NewStudentModal({ countries = [], onClose, onCreated }) {
-  const [form, setForm] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    dob: '',
-    nationality: 'India',
-    preferredCountry: '',
-    countryId: '',
-    ieltsScore: '',
-    toeflScore: '',
-    greScore: '',
-    gmatScore: '',
-  });
+function NewStudentModal({ countries = [], industries = [], counsellors = [], onClose, onCreated }) {
+  const [form, setForm] = useState(emptyPersonalForm);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const res = await createStudent({
-        ...form,
-        countryId: form.countryId ? Number(form.countryId) : undefined,
-        ieltsScore: form.ieltsScore === '' ? undefined : Number(form.ieltsScore),
-        toeflScore: form.toeflScore === '' ? undefined : Number(form.toeflScore),
-        greScore: form.greScore === '' ? undefined : Number(form.greScore),
-        gmatScore: form.gmatScore === '' ? undefined : Number(form.gmatScore),
-        academicHistory: [],
-      });
+      const res = await createStudent(personalFormToStudentPayload(form));
       onCreated(res?.data);
     } catch (err) {
       alert(err?.message || 'Failed to create student');
@@ -1283,46 +1073,23 @@ function NewStudentModal({ countries = [], onClose, onCreated }) {
   };
 
   return (
-    <Modal title="New student" onClose={onClose}>
-      <form onSubmit={submit} className="p-6 space-y-4 max-w-lg">
-        <Field label="Full name *">
-          <input required className={INPUT} value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
-        </Field>
-        <Field label="Email *">
-          <input required type="email" className={INPUT} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        </Field>
-        <Field label="Phone">
-          <input className={INPUT} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        </Field>
-        <Field label="Date of birth">
-          <input type="date" className={INPUT} value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} />
-        </Field>
-        <Field label="Preferred country">
-          {countries.length ? (
-            <select
-              className={SELECT}
-              style={SELECT_BG}
-              value={form.countryId}
-              onChange={(e) => {
-                const country = countries.find((c) => String(c.id) === e.target.value);
-                setForm({
-                  ...form,
-                  countryId: e.target.value,
-                  preferredCountry: country?.name || '',
-                });
-              }}
-            >
-              <option value="">Select country</option>
-              {countries.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input className={INPUT} value={form.preferredCountry} onChange={(e) => setForm({ ...form, preferredCountry: e.target.value })} />
-          )}
-        </Field>
+    <Modal title="New student" onClose={onClose} wide>
+      <form onSubmit={submit} className="p-6 space-y-5">
+        <div className="rounded-xl bg-neutral-100 px-5 py-3.5 text-sm font-medium text-neutral-600">
+          Fill up the mandatory details required...
+        </div>
+        <PersonalDetailsFields
+          form={form}
+          onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+          countries={countries}
+          industries={industries}
+          counsellors={counsellors}
+          requireIdentity
+        />
+        <ExamDetailsFields
+          form={form}
+          onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+        />
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="ui-btn-secondary flex-1">
             Cancel
@@ -1457,10 +1224,10 @@ function NewAppModal({ student, countries = [], counsellors, prefill, onClose, o
   );
 }
 
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, wide }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/30">
-      <div className="ui-panel w-full max-w-xl max-h-[90vh] overflow-y-auto">
+      <div className={`ui-panel w-full ${wide ? 'max-w-3xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto`}>
         <div className="px-5 py-3 border-b border-neutral-200 flex justify-between items-center">
           <h3 className="text-sm font-semibold">{title}</h3>
           <button type="button" onClick={onClose} className="text-neutral-500 hover:text-neutral-800">

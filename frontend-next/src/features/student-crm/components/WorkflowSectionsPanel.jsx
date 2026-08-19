@@ -20,6 +20,7 @@ import {
 import StaffApplicationFees from './StaffApplicationFees';
 import { getWorkflowIcon } from '../workflowTemplateUi';
 import { toDateInputValue } from '../dateFormat';
+import RequiredStatusIcon, { isFilledValue } from './RequiredStatusIcon';
 
 const fallbackTabs = [
   { key: 'overview', label: 'Overview', icon: FileText, sectionType: 'STUDENT_INFO' },
@@ -101,6 +102,7 @@ function GenericWorkflowSection({ app, stage, canManage, onSaveProgress, onSaved
     if (field.fieldType === 'CHECKBOX') {
       return (
         <label className="inline-flex items-center gap-2 text-sm text-neutral-700">
+          {field.required ? <RequiredStatusIcon submitted={Boolean(value)} /> : null}
           <input
             type="checkbox"
             checked={Boolean(value)}
@@ -139,7 +141,14 @@ function GenericWorkflowSection({ app, stage, canManage, onSaveProgress, onSaved
           <div className="grid md:grid-cols-2 gap-3">
             {stage.fields.map((field) => (
               <div key={field.id} className="space-y-1.5">
-                {field.fieldType !== 'CHECKBOX' && <label className="ui-text-caption">{field.label}</label>}
+                {field.fieldType !== 'CHECKBOX' && (
+                  <label className="ui-text-caption inline-flex items-center gap-1.5">
+                    {field.required ? (
+                      <RequiredStatusIcon submitted={isFilledValue(fieldValues[field.id])} />
+                    ) : null}
+                    {field.label}
+                  </label>
+                )}
                 {renderInput(field)}
               </div>
             ))}
@@ -154,6 +163,9 @@ function GenericWorkflowSection({ app, stage, canManage, onSaveProgress, onSaved
             {stage.checklists.map((item) => (
               <div key={item.id} className="rounded-xl border border-neutral-200 px-3 py-3 space-y-2">
                 <label className="inline-flex items-center gap-2 text-sm text-neutral-700">
+                  {item.required !== false ? (
+                    <RequiredStatusIcon submitted={Boolean(checklistValues[item.id]?.completed)} />
+                  ) : null}
                   <input
                     type="checkbox"
                     checked={Boolean(checklistValues[item.id]?.completed)}
@@ -166,7 +178,6 @@ function GenericWorkflowSection({ app, stage, canManage, onSaveProgress, onSaved
                     }
                   />
                   {item.label}
-                  {item.required !== false && <span className="text-[10px] text-rose-600 font-semibold">Required</span>}
                 </label>
                 <input
                   className="ui-field"

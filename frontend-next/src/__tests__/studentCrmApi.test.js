@@ -31,6 +31,7 @@ import {
   getApplication,
   createApplication,
   updateApplication,
+  deleteApplication,
   advanceApplicationStage,
   addDocument,
   updateDocument,
@@ -213,6 +214,16 @@ describe('updateApplication', () => {
     const [url, init] = authFetch.mock.calls[0];
     expect(url).toBe(`${BASE}/applications/10`);
     expect(init.method).toBe('PUT');
+  });
+});
+
+describe('deleteApplication', () => {
+  it('calls DELETE /applications/:id', async () => {
+    ok({ id: 10 });
+    await deleteApplication(10);
+    const [url, init] = authFetch.mock.calls[0];
+    expect(url).toBe(`${BASE}/applications/10`);
+    expect(init.method).toBe('DELETE');
   });
 });
 

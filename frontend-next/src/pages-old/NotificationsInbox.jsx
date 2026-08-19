@@ -2,40 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCheck, Inbox, Trash2, RefreshCw, Filter } from 'lucide-react';
-import {
-  getNotifications,
-  markRead,
-  markAllRead,
-  deleteNotification as deleteNotificationApi,
-} from '@/services/notificationsApi';
-
-const CHANNEL_BADGE = {
-  EMAIL: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-  SMS: 'bg-sky-50 border-sky-200 text-sky-700',
-  WHATSAPP: 'bg-lime-50 border-lime-200 text-lime-700',
-  IN_APP: 'bg-neutral-100 border-neutral-200 text-brand',
-};
-
-const STATUS_BADGE = {
-  PENDING: 'bg-amber-50 border-amber-200 text-amber-700',
-  SENT: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-  FAILED: 'bg-rose-50 border-rose-200 text-rose-700',
-  READ: 'bg-neutral-50 border-neutral-200 text-neutral-600',
-};
-
-const formatRelative = (createdAt) => {
-  if (!createdAt) return '';
-  const diff = Date.now() - new Date(createdAt).getTime();
-  const sec = Math.floor(diff / 1000);
-  const min = Math.floor(sec / 60);
-  const hr = Math.floor(min / 60);
-  const days = Math.floor(hr / 24);
-  if (days > 0) return `${days}d ago`;
-  if (hr > 0) return `${hr}h ago`;
-  if (min > 0) return `${min}m ago`;
-  return 'just now';
-};
+import { Bell, CheckCheck, Inbox, RefreshCw } from 'lucide-react';
+import { getNotifications, markRead, markAllRead } from '@/services/notificationsApi';
+import NotificationItem from '@/components/NotificationItem';
 
 export default function NotificationsInbox() {
   const router = useRouter();
@@ -73,135 +42,77 @@ export default function NotificationsInbox() {
     } catch (_) {}
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await deleteNotificationApi(id);
-      setItems((prev) => prev.filter((n) => n.id !== id));
-    } catch (_) {}
-  };
-
   const unreadCount = items.filter((n) => !n.readAt).length;
 
+  const handleItemClick = (n) => {
+    if (!n.readAt) handleMarkRead(n.id);
+    if (n.link) router.push(n.link);
+  };
+
   return (
-    <div className="ui-page text-neutral-800 font-sans">
-      <div className="ui-container">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-brand flex items-center gap-3">
-            <Bell size={24} className="text-neutral-700" />
-            Notifications
-          </h1>
-          <p className="text-neutral-500 text-sm mt-1">Your full notification history across every module.</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setUnreadOnly((v) => !v)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition-all border ${
-              unreadOnly
-                ? 'bg-brand text-white border-neutral-900'
-                : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-brand'
-            }`}
-          >
-            <Filter size={12} /> {unreadOnly ? 'Unread only' : 'all'}
-          </button>
-          <button
-            onClick={fetchItems}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:text-brand transition-all"
-          >
-            <RefreshCw size={12} /> refresh
-          </button>
-          <button
-            onClick={handleMarkAll}
-            disabled={unreadCount === 0}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold bg-brand hover:bg-brand-hover text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <CheckCheck size={12} /> Mark all read
-          </button>
-        </div>
-      </div>
-
-      <div className="ui-panel overflow-hidden">
-        {loading ? (
-          <div className="p-16 text-center text-xs text-neutral-500">Loading...</div>
-        ) : items.length === 0 ? (
-          <div className="p-16 text-center text-neutral-500 flex flex-col items-center gap-3">
-            <Inbox size={36} className="text-neutral-600" />
-            <p className="text-xs font-semibold">{unreadOnly ? 'No unread notifications' : 'Nothing here yet'}</p>
-            <p className="text-[10px] text-neutral-500">Notifications you receive will appear here.</p>
+    <div className="ui-page text-neutral-800">
+      <div className="ui-container max-w-3xl">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-700">
+              <Bell size={18} />
+            </span>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Notifications</h1>
+              <p className="mt-0.5 text-sm text-neutral-500">Everything sent to your inbox.</p>
+            </div>
           </div>
-        ) : (
-          <ul className="divide-y divide-neutral-100">
-            {items.map((n) => {
-              const isRead = !!n.readAt;
-              return (
-                <li
-                  key={n.id}
-                  className={`p-5 hover:bg-neutral-50/50 transition flex items-start gap-4 ${isRead ? '' : 'bg-neutral-100/20'}`}
-                >
-                  <div className="mt-1.5">
-                    <span className={`block w-2.5 h-2.5 rounded-full ${isRead ? 'bg-slate-300' : 'bg-brand'}`} />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`text-sm ${isRead ? 'font-medium text-neutral-600' : 'font-semibold text-brand'}`}>
-                        {n.title}
-                      </p>
-                      <span
-                        className={`px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-widest rounded border ${
-                          CHANNEL_BADGE[n.channel] || 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                        }`}
-                      >
-                        {n.channel}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-widest rounded border ${
-                          STATUS_BADGE[n.status] || 'bg-neutral-50 border-neutral-200 text-neutral-600'
-                        }`}
-                      >
-                        {n.status}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-neutral-600">{n.body}</p>
-                    <div className="flex items-center gap-3 text-[10px] text-neutral-500">
-                      <span>{formatRelative(n.createdAt)}</span>
-                      {n.link && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!n.readAt) handleMarkRead(n.id);
-                            router.push(n.link);
-                          }}
-                          className="text-neutral-700 hover:text-brand font-semibold"
-                        >
-                          open →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {!isRead && (
-                      <button
-                        onClick={() => handleMarkRead(n.id)}
-                        className="px-3 py-1.5 bg-white border border-neutral-200 hover:border-neutral-400 text-neutral-600 hover:text-brand rounded-xl text-[10px] font-semibold transition"
-                      >
-                        Mark read
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(n.id)}
-                      className="p-2 text-neutral-500 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition"
-                      aria-label="delete"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setUnreadOnly((v) => !v)}
+              className={`rounded-lg border px-3 py-2 text-[12.5px] font-medium transition ${
+                unreadOnly
+                  ? 'border-neutral-900 bg-neutral-900 text-white'
+                  : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'
+              }`}
+            >
+              {unreadOnly ? 'Unread only' : 'View all'}
+            </button>
+            <button
+              type="button"
+              onClick={fetchItems}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50"
+              aria-label="Refresh"
+            >
+              <RefreshCw size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={handleMarkAll}
+              disabled={unreadCount === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563eb] px-3.5 py-2 text-[12.5px] font-semibold text-white transition hover:bg-[#1d4ed8] disabled:opacity-40"
+            >
+              <CheckCheck size={14} />
+              Mark all as read
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_8px_30px_rgba(16,42,67,0.06)]">
+          {loading ? (
+            <div className="p-16 text-center text-[13px] text-neutral-400">Loading…</div>
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 p-16 text-center text-neutral-400">
+              <Inbox size={28} />
+              <p className="text-sm font-medium text-neutral-600">
+                {unreadOnly ? 'No unread notifications' : 'Nothing here yet'}
+              </p>
+              <p className="text-[12.5px]">Notifications you receive will appear here.</p>
+            </div>
+          ) : (
+            <ul>
+              {items.map((n) => (
+                <NotificationItem key={n.id} n={n} onClick={() => handleItemClick(n)} />
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

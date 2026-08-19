@@ -471,6 +471,20 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
   }
 };
 
+export const deleteApplication = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const app = await assertApplicationAccess(req, id);
+    if (!app) return sendError(res, 'not found', null, 404);
+    const deleted = await service.deleteApplication(id, actor(req));
+    return sendSuccess(res, 'application deleted', deleted);
+  } catch (err: any) {
+    if (err?.message?.includes('not found')) return sendError(res, err.message, null, 404);
+    next(err);
+  }
+};
+
 export const bulkAssignApplications = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const ids = Array.isArray(req.body?.applicationIds) ? req.body.applicationIds : [];

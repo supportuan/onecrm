@@ -11,16 +11,18 @@ import {
   ChevronRight,
   CheckCircle2,
   AlertCircle,
-  Clock,
   X,
   Filter,
   UserRound,
+  Eye,
+  Trash2,
 } from 'lucide-react';
 import {
   listStudents,
   listApplications,
   createStudent,
   createApplication,
+  deleteApplication,
   listCounsellors,
   listPromotableLeads,
   promoteLead,
@@ -31,7 +33,8 @@ import {
 import { getFormOptions } from '@/services/crmSettingsApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import LogoLoader from '@/components/LogoLoader';
-import { APPLICATION_STAGES, getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
+import { getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
+import { countryFlagUrl } from '@/features/student-crm/countryFlag';
 import {
   NewStudentModal,
   NewApplicationModal,
@@ -43,18 +46,39 @@ import {
 
 const stageBadge = stageBadgeClass;
 
-const STAGE_FILTERS = [
-  { key: 'ALL', label: 'All' },
-  { key: 'DRAFT', label: 'Draft' },
-  { key: 'DOCUMENTS_PENDING', label: 'Docs pending' },
-  { key: 'SUBMITTED', label: 'Submitted' },
-  { key: 'UNDER_REVIEW', label: 'Under review' },
-  { key: 'OFFER_RECEIVED', label: 'Offer received' },
-  { key: 'OFFER_ACCEPTED', label: 'Offer accepted' },
-  { key: 'OFFER_REJECTED', label: 'Rejected' },
-  { key: 'VISA_PROCESS', label: 'Visa' },
-  { key: 'ENROLLED', label: 'Enrolled' },
-];
+const PROCESS_STAGE_LABELS = {
+  GATHERING_CHECKLIST: 'Gathering checklist',
+  UNIVERSITY_APPLICATION: 'University application',
+  FINANCIAL_EVIDENCE: 'Financial evidence',
+  AFTER_I20: 'After I-20',
+  PRE_CAS_PROCESS: 'Pre-CAS',
+  VISA_APPLICATION: 'Visa application',
+  PRE_DEPARTURE: 'Pre-departure',
+  ON_ARRIVAL: 'On arrival',
+  PRE_REQUISITE: 'Pre-requisite',
+};
+
+const DestinationFlag = ({ country }) => {
+  const src = countryFlagUrl(country);
+  if (!country) return <span className="text-[12px] text-neutral-400">—</span>;
+  return src ? (
+    <img
+      src={src}
+      alt={country}
+      title={country}
+      width={24}
+      height={18}
+      className="h-[18px] w-6 rounded-[3px] object-cover shadow-sm"
+    />
+  ) : (
+    <span
+      title={country}
+      className="inline-flex h-[18px] w-6 items-center justify-center rounded-[3px] bg-neutral-100 text-[9px] font-semibold text-neutral-500"
+    >
+      {country.slice(0, 2).toUpperCase()}
+    </span>
+  );
+};
 
 export default function ApplicationsList() {
   const router = useRouter();
@@ -68,11 +92,15 @@ export default function ApplicationsList() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState('');
-  const [stageFilter, setStageFilter] = useState('ALL');
   const [studentFilterId, setStudentFilterId] = useState(() => {
     const requestedStudentId = Number(searchParams.get('student'));
     return requestedStudentId > 0 ? requestedStudentId : null;
   });
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [pocFilter, setPocFilter] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const flash = (kind, msg) => {
@@ -93,6 +121,7 @@ export default function ApplicationsList() {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkCounsellorId, setBulkCounsellorId] = useState('');
   const [bulkAssigning, setBulkAssigning] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -157,30 +186,50 @@ export default function ApplicationsList() {
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
+    const fromTs = dateFrom ? new Date(dateFrom).getTime() : null;
+    const toTs = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : null;
     return allApps.filter((a) => {
-      if (stageFilter !== 'ALL' && a.stage !== stageFilter) return false;
       if (studentFilterId && a.studentId !== studentFilterId) return false;
+      if (countryFilter && (a.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
+      if (pocFilter) {
+        if (pocFilter === '__unassigned__') {
+          if (a.assignedTo) return false;
+        } else if (String(a.assignedTo?.id) !== pocFilter) return false;
+      }
+      if (fromTs || toTs) {
+        const created = a.createdAt ? new Date(a.createdAt).getTime() : null;
+        if (!created) return false;
+        if (fromTs && created < fromTs) return false;
+        if (toTs && created > toTs) return false;
+      }
       if (!term) return true;
-      const student = studentById.get(a.studentId);
+      const student = a.student || studentById.get(a.studentId);
       return (
         a.applicationCode?.toLowerCase().includes(term) ||
         a.university?.toLowerCase().includes(term) ||
         a.course?.toLowerCase().includes(term) ||
         a.country?.toLowerCase().includes(term) ||
         student?.fullName?.toLowerCase().includes(term) ||
-        student?.email?.toLowerCase().includes(term)
+        student?.email?.toLowerCase().includes(term) ||
+        student?.phone?.toLowerCase().includes(term)
       );
     });
-  }, [allApps, search, stageFilter, studentFilterId, studentById]);
+  }, [allApps, search, studentFilterId, countryFilter, pocFilter, dateFrom, dateTo, studentById]);
 
-  const stageCounts = useMemo(() => {
-    const counts = { ALL: allApps.length };
-    APPLICATION_STAGES.forEach((s) => (counts[s.key] = 0));
-    allApps.forEach((a) => {
-      counts[a.stage] = (counts[a.stage] || 0) + 1;
-    });
-    return counts;
+  const visaCount = useMemo(
+    () => allApps.filter((a) => a.stage === 'VISA_PROCESS').length,
+    [allApps]
+  );
+
+  const countryOptions = useMemo(() => {
+    const set = new Set();
+    allApps.forEach((a) => { if (a.country) set.add(a.country); });
+    return [...set].sort();
   }, [allApps]);
+
+  const activeFilterCount = [
+    dateFrom, dateTo, countryFilter, pocFilter,
+  ].filter(Boolean).length;
 
   const visibleLeads = canManage
     ? promotableLeads.filter((l) => !l.hasStudentProfile || !l.isStudentLoginCreated)
@@ -243,7 +292,21 @@ export default function ApplicationsList() {
     }
   };
 
-  const openAppRoute = (id) => router.push(`/student-crm/applications/${id}`);
+  const handleDeleteApplication = async (app, studentName) => {
+    if (!canManage) return;
+    const label = app.applicationCode || studentName || 'this application';
+    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
+    setDeletingId(app.id);
+    try {
+      await deleteApplication(app.id);
+      flash('ok', 'Application deleted');
+      await refresh();
+    } catch (e) {
+      flash('err', e?.message || 'failed to delete application');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredIds = useMemo(() => filtered.map((a) => a.id), [filtered]);
   const allFilteredSelected =
@@ -315,10 +378,10 @@ export default function ApplicationsList() {
         </div>
       )}
 
-      {/* Toolbar: compact stats + actions on one row */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      {/* Toolbar: stats, search, filters, new student — one row */}
+      <div className="mb-5 flex items-center gap-2 overflow-x-auto">
         {stats && (
-          <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
             {[
               ['Students', stats.totalStudents],
               ['Enrolled', stats.enrolled],
@@ -326,50 +389,75 @@ export default function ApplicationsList() {
                 'Active apps',
                 allApps.filter((a) => !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage)).length,
               ],
-              ['Visa', stageCounts.VISA_PROCESS || 0],
+              ['Visa', visaCount],
             ].map(([label, value]) => (
-              <div key={label} className="ui-surface px-3 py-1.5 min-w-[88px]">
-                <p className="text-[10px] font-medium text-neutral-500">{label}</p>
-                <p className="text-sm font-semibold text-brand tabular-nums leading-tight">
+              <div
+                key={label}
+                className="min-w-[76px] rounded-xl border border-white/55 bg-white/35 px-3 py-1.5 shadow-[0_8px_24px_rgba(19,71,144,0.06)] backdrop-blur-md"
+              >
+                <p className="text-[11px] font-semibold text-brand">{label}</p>
+                <p className="text-sm font-semibold tabular-nums leading-tight text-brand/80">
                   {value ?? '—'}
                 </p>
               </div>
             ))}
           </div>
         )}
-        <div className="flex items-center gap-2 flex-wrap ml-auto">
-          {canManage && visibleLeads.length > 0 && (
-            <button
-              type="button"
-              onClick={handlePromoteAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg ui-text-strong bg-amber-50 border border-amber-100 text-amber-800 hover:bg-amber-100 transition-all"
-            >
-              Import all leads
-              <span className="px-1.5 py-px rounded-full bg-amber-200/70 text-amber-900 text-[10px] font-semibold">
-                {visibleLeads.length}
-              </span>
-            </button>
-          )}
-          {canManage && (
-            <button
-              onClick={() => setShowNewStudent(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg ui-text-strong text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-all"
-            >
-              <GraduationCap size={13} /> New student
-            </button>
-          )}
-          {canManage && false && (
-            <button
-              onClick={() => {
-                setPickedStudent(null);
-                setShowPickStudent(true);
-              }}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg ui-text-strong !text-white bg-brand hover:bg-brand-hover transition-all"
-            >
-              <Plus size={13} /> New application
-            </button>
-          )}
+        <div className="relative min-w-[180px] flex-1">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search applications"
+            className="w-full rounded-xl border border-white/55 bg-white/35 py-2 pl-9 pr-3 text-[13px] text-brand placeholder-neutral-400 outline-none shadow-[0_8px_24px_rgba(19,71,144,0.06)] backdrop-blur-md transition-all focus:border-white/80 focus:bg-white/50"
+          />
         </div>
+        <button
+          type="button"
+          onClick={() => setShowAdvancedFilters((v) => !v)}
+          className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium backdrop-blur-md transition-all ${
+            showAdvancedFilters || activeFilterCount > 0
+              ? 'border-brand/30 bg-brand/80 text-white shadow-[0_8px_24px_rgba(19,71,144,0.18)]'
+              : 'border-white/55 bg-white/35 text-brand shadow-[0_8px_24px_rgba(19,71,144,0.06)] hover:bg-white/50'
+          }`}
+        >
+          <Filter size={13} />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="ml-0.5 rounded-full bg-white/25 px-1.5 py-px text-[10px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        {studentFilterId && (
+          <button
+            type="button"
+            onClick={() => setStudentFilterId(null)}
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-brand/30 bg-brand/80 px-3 py-2 text-[12px] font-medium text-white backdrop-blur-md"
+          >
+            {studentById.get(studentFilterId)?.fullName || 'Student'}
+            <X size={12} className="ml-0.5" />
+          </button>
+        )}
+        {canManage && visibleLeads.length > 0 && (
+          <button
+            type="button"
+            onClick={handlePromoteAll}
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-amber-200/60 bg-amber-50/50 px-3 py-2 text-[12px] font-medium text-amber-800 shadow-[0_8px_24px_rgba(19,71,144,0.06)] backdrop-blur-md transition-all hover:bg-amber-50/80"
+          >
+            Import leads
+            <span className="text-[10px] font-semibold">{visibleLeads.length}</span>
+          </button>
+        )}
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => setShowNewStudent(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/55 bg-white/35 px-3 py-2 text-[12px] font-medium text-brand shadow-[0_8px_24px_rgba(19,71,144,0.06)] backdrop-blur-md transition-all hover:bg-white/50"
+          >
+            <GraduationCap size={13} /> New student
+          </button>
+        )}
       </div>
 
       {/* Promotable leads — collapsible */}
@@ -421,59 +509,77 @@ export default function ApplicationsList() {
         </div>
       )}
 
-      {/* Filter bar */}
-      <div className="ui-surface mb-4 px-4 py-3 space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <div className="relative flex-1">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by code, student, university, course or country"
-              className="w-full pl-10 pr-3.5 py-2 bg-neutral-50/80 border border-neutral-200 rounded-lg text-[13px] text-brand placeholder-neutral-400 outline-none focus:border-neutral-400 focus:bg-white transition-all"
-            />
-          </div>
-          {studentFilterId && (
-            <button
-              type="button"
-              onClick={() => setStudentFilterId(null)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand text-white text-[12px] font-medium"
-            >
-              <Filter size={12} /> {studentById.get(studentFilterId)?.fullName || 'Student'}
-              <X size={12} className="ml-0.5" />
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {STAGE_FILTERS.map((s) => {
-            const count = stageCounts[s.key] ?? 0;
-            const active = stageFilter === s.key;
-            const isEmpty = count === 0 && s.key !== 'ALL';
-            return (
-              <button
-                key={s.key}
-                type="button"
-                onClick={() => setStageFilter(s.key)}
-                disabled={isEmpty}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${
-                  active
-                    ? 'bg-brand text-white'
-                    : isEmpty
-                    ? 'bg-neutral-50 text-neutral-300 cursor-not-allowed'
-                    : 'bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-brand'
-                }`}
+      {/* Advanced filters panel */}
+      {showAdvancedFilters && (
+        <div className="ui-surface mb-4 px-4 py-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Date range */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Date from</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] text-brand outline-none focus:border-neutral-400 focus:bg-white transition-all"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Date to</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] text-brand outline-none focus:border-neutral-400 focus:bg-white transition-all"
+              />
+            </div>
+            {/* Study destination */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Study destination</label>
+              <select
+                value={countryFilter}
+                onChange={(e) => setCountryFilter(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] text-brand outline-none focus:border-neutral-400 focus:bg-white transition-all"
               >
-                {s.label}
-                {count > 0 && (
-                  <span className={`text-[10.5px] font-semibold ${active ? 'text-white/70' : 'text-neutral-400'}`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                <option value="">All countries</option>
+                {countryOptions.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            {/* POC / Counsellor */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">POC (Counsellor)</label>
+              <select
+                value={pocFilter}
+                onChange={(e) => setPocFilter(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] text-brand outline-none focus:border-neutral-400 focus:bg-white transition-all"
+              >
+                <option value="">All</option>
+                <option value="__unassigned__">Unassigned</option>
+                {counsellors.map((c) => (
+                  <option key={c.id} value={String(c.id)}>{c.fullName}</option>
+                ))}
+              </select>
+            </div>
+            {activeFilterCount > 0 && (
+              <div className="lg:col-span-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateFrom('');
+                    setDateTo('');
+                    setCountryFilter('');
+                    setPocFilter('');
+                  }}
+                  className="flex items-center gap-1 text-[12px] text-rose-500 hover:text-rose-700 font-medium"
+                >
+                  <X size={13} /> Clear filters
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Bulk assign toolbar */}
       {canManage && selectedIds.size > 0 && (
@@ -527,11 +633,11 @@ export default function ApplicationsList() {
               <FileText size={18} className="text-neutral-400" />
             </div>
             <p className="ui-text-strong mt-4">No applications match these filters.</p>
-            <p className="ui-text-meta mt-1">Try clearing the search or stage filter.</p>
+            <p className="ui-text-meta mt-1">Try clearing the search or filters.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full min-w-[1080px] text-left">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50/60">
                   {canManage && (
@@ -548,34 +654,31 @@ export default function ApplicationsList() {
                       />
                     </th>
                   )}
-                  <th className="px-5 py-3 ui-text-caption uppercase">Student</th>
-                  <th className="px-5 py-3 ui-text-caption uppercase">Application</th>
-                  <th className="px-5 py-3 ui-text-caption uppercase">University & course</th>
-                  <th className="px-5 py-3 ui-text-caption uppercase">Stage</th>
-                  <th className="px-5 py-3 ui-text-caption uppercase">Deadline</th>
-                  <th className="px-5 py-3 ui-text-caption uppercase">Counsellor</th>
-                  <th className="px-3 py-3" />
+                  <th className="px-4 py-3 ui-text-caption uppercase">Student ID</th>
+                  <th className="px-4 py-3 ui-text-caption uppercase">Application date</th>
+                  <th className="px-4 py-3 ui-text-caption uppercase">Name</th>
+                  <th className="px-4 py-3 ui-text-caption uppercase">POC</th>
+                  <th className="px-4 py-3 ui-text-caption uppercase text-center">Study destination</th>
+                  <th className="px-4 py-3 ui-text-caption uppercase">Stage</th>
+                  <th className="px-4 py-3 ui-text-caption uppercase">Application status</th>
+                  <th className="px-4 py-3 ui-text-caption uppercase">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {filtered.map((a) => {
-                  const s = studentById.get(a.studentId);
-                  const initials = (s?.fullName || a.studentName || '?').split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
-                  const isOverdue =
-                    a.deadline &&
-                    new Date(a.deadline) < new Date() &&
-                    !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage);
+                  const s = a.student || studentById.get(a.studentId);
                   const isSelected = selectedIds.has(a.id);
+                  const pocName = a.assignedTo?.fullName || s?.contact?.fullName;
+                  const processStage = s?.processStage;
                   return (
                     <tr
                       key={a.id}
-                      onClick={() => openAppRoute(a.id)}
-                      className={`cursor-pointer transition-all ${
+                      className={`transition-all ${
                         isSelected ? 'bg-brand-soft/40 hover:bg-brand-soft/60' : 'hover:bg-neutral-50/70'
                       }`}
                     >
                       {canManage && (
-                        <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-4 py-3.5">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -585,33 +688,32 @@ export default function ApplicationsList() {
                           />
                         </td>
                       )}
-                      <td className="px-5 py-3.5">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setStudentFilterId(a.studentId);
-                          }}
-                          className="flex items-center gap-3 text-left"
-                        >
-                          <div className="w-9 h-9 rounded-full bg-neutral-100 text-neutral-700 flex items-center justify-center text-[12px] font-semibold shrink-0">
-                            {initials}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="ui-text-strong truncate">{s?.fullName || a.studentName || '—'}</p>
-                            <p className="text-[12px] text-neutral-500 truncate">{s?.email || ''}</p>
-                          </div>
-                        </button>
+                      <td className="px-4 py-3.5">
+                        <span className="text-[12px] font-mono text-neutral-700">{a.studentId}</span>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <p className="text-[12px] font-mono text-neutral-700">{a.applicationCode}</p>
-                        <p className="text-[11px] text-neutral-500 mt-0.5">{a.country}</p>
+                      <td className="px-4 py-3.5">
+                        <span className="text-[12px] text-neutral-600">{formatDate(a.createdAt)}</span>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <p className="ui-text-strong leading-snug">{a.university}</p>
-                        <p className="text-[12px] text-neutral-500 truncate max-w-xs">{a.course}</p>
+                      <td className="px-4 py-3.5">
+                        <p className="ui-text-strong truncate max-w-[180px]">{s?.fullName || a.studentName || '—'}</p>
+                        <p className="text-[12px] text-neutral-500 mt-0.5">{s?.phone || '—'}</p>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-4 py-3.5">
+                        <span className="text-[12px] text-neutral-600">
+                          {pocName || <span className="text-neutral-400">Unassigned</span>}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="flex justify-center">
+                          <DestinationFlag country={a.country || s?.preferredCountry} />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-[12px] text-neutral-700">
+                          {PROCESS_STAGE_LABELS[processStage] || processStage?.replace(/_/g, ' ') || '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
                         <span
                           className={`inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-md border ${stageBadge(
                             a.stage,
@@ -620,27 +722,29 @@ export default function ApplicationsList() {
                           {getStageLabel(a.stage)}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5">
-                        {a.deadline ? (
-                          <span
-                            className={`flex items-center gap-1.5 text-[12px] ${
-                              isOverdue ? 'text-rose-600 font-medium' : 'text-neutral-600'
-                            }`}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1">
+                          <Link
+                            href={`/student-crm/applications/${a.id}`}
+                            title="View"
+                            aria-label="View application"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-brand transition-all"
                           >
-                            <Clock size={12} className={isOverdue ? 'text-rose-500' : 'text-neutral-400'} />
-                            {formatDate(a.deadline)}
-                          </span>
-                        ) : (
-                          <span className="text-[12px] text-neutral-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className="text-[12px] text-neutral-600">
-                          {a.assignedTo?.fullName || <span className="text-neutral-400">Unassigned</span>}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3.5 text-right">
-                        <ChevronRight size={16} className="text-neutral-300" />
+                            <Eye size={15} />
+                          </Link>
+                          {canManage && (
+                            <button
+                              type="button"
+                              title="Delete"
+                              aria-label="Delete application"
+                              disabled={deletingId === a.id}
+                              onClick={() => handleDeleteApplication(a, s?.fullName)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50 disabled:opacity-50 transition-all"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -652,7 +756,14 @@ export default function ApplicationsList() {
       </div>
 
       {/* Modals */}
-      {showNewStudent && <NewStudentModal onClose={() => setShowNewStudent(false)} onSave={handleNewStudent} />}
+      {showNewStudent && (
+        <NewStudentModal
+          onClose={() => setShowNewStudent(false)}
+          onSave={handleNewStudent}
+          formOptions={formOptions}
+          counsellors={counsellors}
+        />
+      )}
       {showPickStudent && (
         <PickStudentModal
           students={students}

@@ -1126,7 +1126,17 @@ export const listApplications = async (opts: {
     orderBy: { createdAt: 'desc' },
     take: opts.limit ?? 200,
     include: {
-      student: { select: { id: true, fullName: true, email: true } },
+      student: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          processStage: true,
+          preferredCountry: true,
+          contact: { select: { id: true, fullName: true } },
+        },
+      },
       assignedTo: { select: { id: true, fullName: true } },
       workflowTemplate: {
         select: { id: true, name: true, country: { select: { id: true, name: true } } },
@@ -1322,6 +1332,16 @@ export const updateApplication = async (id: number, data: Record<string, any>, a
   }
 
   return getApplication(id);
+};
+
+export const deleteApplication = async (id: number, actor?: Actor) => {
+  const existing = await prisma.application.findFirst({
+    where: { id, ...(await resolveApplicationScopeWhere(actor)) },
+    select: { id: true, applicationCode: true },
+  });
+  if (!existing) throw new Error('application not found');
+  await prisma.application.delete({ where: { id: existing.id } });
+  return existing;
 };
 
 /** Assign many applications to one counsellor (or clear assignee when assignedToId is null). */

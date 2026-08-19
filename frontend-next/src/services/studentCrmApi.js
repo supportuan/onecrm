@@ -90,6 +90,8 @@ export const createApplication = async (payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications`, json(payload)));
 export const updateApplication = async (id, payload) =>
   handleResponse(await tenantFetch(`${API_URL}/applications/${id}`, putJson(payload)));
+export const deleteApplication = async (id) =>
+  handleResponse(await tenantFetch(`${API_URL}/applications/${id}`, { method: 'DELETE' }));
 
 export const bulkAssignApplications = async ({ applicationIds, assignedToId }) =>
   handleResponse(

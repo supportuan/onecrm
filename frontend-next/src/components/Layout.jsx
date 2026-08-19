@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
@@ -12,20 +13,9 @@ import {
 } from '@/lib/layout-shell';
 import { isCrimsonModulePath } from '@/lib/module-themes';
 
-const ApplicationWaveBlobs = () => (
-  <div className="app-wave-blobs" aria-hidden="true">
-    <svg viewBox="0 0 1200 360" preserveAspectRatio="none">
-      <path
-        className="app-wave-blob-primary"
-        d="M0 258C136 176 248 302 402 229C557 156 655 76 818 143C972 207 1054 119 1200 76V360H0V258Z"
-      />
-      <path
-        className="app-wave-blob-secondary"
-        d="M0 304C181 232 301 342 478 270C656 198 727 174 876 226C1025 278 1091 196 1200 158V360H0V304Z"
-      />
-    </svg>
-  </div>
-);
+const SoftBlobBackground = dynamic(() => import('./SoftBlobBackground'), {
+  ssr: false,
+});
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -77,7 +67,6 @@ const Layout = ({ children }) => {
   if (skipStaffShell) {
     return (
       <div className={isStudentPortal ? 'app-dark h-full min-h-0' : 'min-h-screen'}>
-        {isStudentPortal && <ApplicationWaveBlobs />}
         {children}
       </div>
     );
@@ -95,11 +84,11 @@ const Layout = ({ children }) => {
         isMarketingModule ? 'module-marketing' : ''
       } ${isCrimsonModule ? 'module-crimson' : ''}`}
     >
-      <ApplicationWaveBlobs />
+      <SoftBlobBackground offsetLeft={sidebarWidth} />
       <Sidebar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
 
       <div
-        className="fixed inset-y-0 right-0 flex flex-col transition-[left] duration-200 ease-out"
+        className="fixed inset-y-0 right-0 z-10 flex flex-col transition-[left] duration-200 ease-out"
         style={{ left: sidebarWidth }}
       >
         <div className="z-20 flex-none bg-[var(--ui-bg)]">
