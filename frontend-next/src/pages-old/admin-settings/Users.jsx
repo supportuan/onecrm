@@ -1115,7 +1115,9 @@ export default function UserManagementPage() {
                               </p>
 
                               <p className="mt-1 text-xs text-slate-500">
-                                Allow this option for selected role.
+                                {optionName === 'Attendance'
+                                  ? 'Includes clock-in/out and My HR self-service. Uncheck to opt out of attendance tracking.'
+                                  : 'Allow this option for selected role.'}
                               </p>
                             </div>
 

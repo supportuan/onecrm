@@ -45,6 +45,35 @@ const resolvePartnerForActor = async (actor?: Actor, agencyPartnerId?: number) =
   return null;
 };
 
+const buildAgencyStudentWhere = async (partner: Awaited<ReturnType<typeof resolvePartnerForActor>>) => {
+  if (partner) {
+    return {
+      deletedAt: null,
+      OR: [
+        { agencyReferrals: { some: { agencyPartnerId: partner.id } } },
+        ...(partner.agencyCode ? [{ source: partner.agencyCode }] : []),
+      ],
+    };
+  }
+
+  const agencyCodes = (
+    await prisma.agencyPartner.findMany({
+      where: { agencyCode: { not: '' } },
+      select: { agencyCode: true },
+    })
+  )
+    .map((row) => row.agencyCode)
+    .filter(Boolean);
+
+  return {
+    deletedAt: null,
+    OR: [
+      { agencyReferrals: { some: {} } },
+      ...(agencyCodes.length ? [{ source: { in: agencyCodes } }] : []),
+    ],
+  };
+};
+
 export const getStatistics = async (actor?: Actor, agencyPartnerId?: number) => {
   const partner = await resolvePartnerForActor(actor, agencyPartnerId);
   if (isAgencyPartnerUser(actor?.role) && !partner) {
@@ -61,36 +90,14 @@ export const getStatistics = async (actor?: Actor, agencyPartnerId?: number) => 
   }
 
   const partnerFilter = partner ? { agencyPartnerId: partner.id } : {};
+  const studentWhere = await buildAgencyStudentWhere(partner);
 
-  const [referrals, commissions, applications] = await Promise.all([
+  const [referrals, commissions, applications, studentIds] = await Promise.all([
     prisma.agencyReferral.count({ where: partnerFilter }),
     prisma.agencyCommission.findMany({ where: partnerFilter }),
-    partner
-      ? prisma.application.count({
-          where: {
-            student: {
-              OR: [
-                { agencyReferrals: { some: { agencyPartnerId: partner.id } } },
-                { source: partner.agencyCode },
-              ],
-            },
-          },
-        })
-      : prisma.application.count(),
+    prisma.application.count({ where: { student: studentWhere } }),
+    prisma.student.findMany({ where: studentWhere, select: { id: true, isEnrolled: true } }),
   ]);
-
-  const studentIds = partner
-    ? await prisma.student.findMany({
-        where: {
-          deletedAt: null,
-          OR: [
-            { agencyReferrals: { some: { agencyPartnerId: partner.id } } },
-            { source: partner.agencyCode },
-          ],
-        },
-        select: { id: true, isEnrolled: true },
-      })
-    : await prisma.student.findMany({ where: { deletedAt: null }, select: { id: true, isEnrolled: true } });
 
   const pending = commissions.filter((c) => c.status === CommissionStatus.PENDING);
   const approved = commissions.filter((c) => c.status === CommissionStatus.APPROVED);

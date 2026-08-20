@@ -10,12 +10,17 @@ import {
 } from '@/services/studentCrmApi';
 import { formatStamp } from '../dateFormat';
 import { compressUploadFile } from '../compressUpload';
+import RequiredStatusIcon, { isFilledValue } from './RequiredStatusIcon';
 
 export const APPLICATION_STATUS_OPTIONS = [
   'University Shortlisted',
   'Application Submitted',
   'Offer Letter Received',
   'Offer Letter Rejected',
+  'On Hold',
+  'Deferred',
+  'Visa Granted',
+  'Visa Refused',
 ];
 
 /**
@@ -46,7 +51,17 @@ export default function UniversityApplicationPanel({
   const statusOptions = useMemo(() => {
     const field = (stage?.fields || []).find((item) => item.fieldKey === 'application_status');
     const fromTemplate = Array.isArray(field?.optionsJson) ? field.optionsJson.map((o) => String(o?.value ?? o)) : [];
-    return fromTemplate.length ? fromTemplate : APPLICATION_STATUS_OPTIONS;
+    const extras = ['On Hold', 'Deferred', 'Visa Granted', 'Visa Refused'];
+    const base = fromTemplate.length ? fromTemplate : APPLICATION_STATUS_OPTIONS;
+    return [...base, ...extras.filter((item) => !base.some((option) => String(option).toLowerCase() === item.toLowerCase()))];
+  }, [stage]);
+
+  const requiredByKey = useMemo(() => {
+    const map = {};
+    (stage?.fields || []).forEach((field) => {
+      if (field?.fieldKey) map[field.fieldKey] = Boolean(field.required);
+    });
+    return map;
   }, [stage]);
 
   const catalog = useMemo(() => {
@@ -370,9 +385,19 @@ export default function UniversityApplicationPanel({
                   return (
                     <tr key={row.universityId} className="border-b border-neutral-100 last:border-0">
                       <td className="px-4 py-3 text-neutral-500">{index + 1}.</td>
-                      <td className="px-4 py-3 font-medium text-brand">{row.university?.name || `#${row.universityId}`}</td>
+                      <td className="px-4 py-3 font-medium text-brand">
+                        <span className="inline-flex items-center gap-1.5">
+                          {requiredByKey.select_university ? (
+                            <RequiredStatusIcon submitted={isFilledValue(row.university?.name)} />
+                          ) : null}
+                          {row.university?.name || `#${row.universityId}`}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
+                          {requiredByKey.application_status ? (
+                            <RequiredStatusIcon submitted={isFilledValue(draft.status || row.status)} />
+                          ) : null}
                           <select
                             className="w-40 rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs text-neutral-800 focus:border-brand focus:outline-none"
                             value={draft.status || ''}
@@ -409,6 +434,9 @@ export default function UniversityApplicationPanel({
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
+                          {requiredByKey.course_link ? (
+                            <RequiredStatusIcon submitted={isFilledValue(draft.courseLink || row.courseLink)} />
+                          ) : null}
                           <input
                             className="w-36 rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-brand focus:outline-none"
                             placeholder="Link..."
@@ -434,6 +462,11 @@ export default function UniversityApplicationPanel({
                         </div>
                       </td>
                       <td className="px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          {requiredByKey.received_offer_letters ? (
+                            <RequiredStatusIcon submitted={Boolean(row.offerLetterFileUrl)} />
+                          ) : null}
+                          <div className="min-w-0">
                         {row.offerLetterFileUrl ? (
                           <div className="space-y-1.5">
                             <p className="max-w-[160px] truncate font-mono text-[11px] text-neutral-500" title={row.offerLetterFilename || ''}>
@@ -504,6 +537,8 @@ export default function UniversityApplicationPanel({
                         ) : (
                           <span className="text-[11px] text-neutral-400">No file</span>
                         )}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         {row.isSelected ? (

@@ -7,15 +7,17 @@ import {
   AuditTimeline,
 } from './ApplicationParts';
 import StaffApplicationFees from './StaffApplicationFees';
+import ServiceFeesPanel from './ServiceFeesPanel';
 import DiscussionThread from './DiscussionThread';
 import GatheringChecklist from './GatheringChecklist';
 import StudentInfoPanel from './StudentInfoPanel';
 import UniversityApplicationPanel from './UniversityApplicationPanel';
 import { fetchAllUniversitiesForCountry, listCountries } from '@/services/crmSettingsApi';
-import { listWorkflowTemplates } from '@/services/studentCrmApi';
-import { displayStageLabel, getWorkflowIcon, isWorkflowStageComplete, resolveCountryProfile, sortWorkflowStages, stageAppliesToCountry } from '../workflowTemplateUi';
+import { listWorkflowTemplates, advanceApplicationStage } from '@/services/studentCrmApi';
+import { APPLICATION_STAGES, getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
+import { displayStageLabel, getWorkflowIcon, getWorkflowStageIconClass, isTemplateFieldSubmitted, isWorkflowStageComplete, resolveCountryProfile, sortWorkflowStages, stageAppliesToCountry } from '../workflowTemplateUi';
 import { formatDisplayDate, formatStamp, toDateInputValue } from '../dateFormat';
-import RequiredStatusIcon, { isFilledValue } from './RequiredStatusIcon';
+import RequiredStatusIcon from './RequiredStatusIcon';
 
 const EMPTY_LIST = [];
 
@@ -160,7 +162,7 @@ function GenericWorkflowSection({
     if (field.fieldType === 'CHECKBOX') {
       return (
         <label className="inline-flex items-center gap-2 text-sm text-neutral-700">
-          {field.required ? <RequiredStatusIcon submitted={Boolean(value)} /> : null}
+          {field.required ? <RequiredStatusIcon submitted={isTemplateFieldSubmitted(field, fieldValues, stage)} /> : null}
           <input
             type="checkbox"
             checked={Boolean(value)}
@@ -238,7 +240,14 @@ function GenericWorkflowSection({
           <div className="grid md:grid-cols-2 gap-3">
             {stage.fields.map((field) => (
               <div key={field.id} className="space-y-1.5">
-                {field.fieldType !== 'CHECKBOX' && <label className={labelClass}>{field.label}</label>}
+                {field.fieldType !== 'CHECKBOX' && (
+                  <label className={`${labelClass} inline-flex items-center gap-1.5`}>
+                    {field.required ? (
+                      <RequiredStatusIcon submitted={isTemplateFieldSubmitted(field, fieldValues, stage)} />
+                    ) : null}
+                    {field.label}
+                  </label>
+                )}
                 {renderInput(field)}
               </div>
             ))}
@@ -250,6 +259,9 @@ function GenericWorkflowSection({
             {checklistItems.map((item) => (
               <div key={item.id} className={checklistItemClass}>
                 <label className="inline-flex items-center gap-2 text-sm text-neutral-700">
+                  {item.required !== false ? (
+                    <RequiredStatusIcon submitted={Boolean(checklistValues[item.id]?.completed)} />
+                  ) : null}
                   <input
                     type="checkbox"
                     checked={Boolean(checklistValues[item.id]?.completed)}
@@ -339,7 +351,7 @@ function GenericWorkflowSection({
                 {field.fieldType !== 'CHECKBOX' && (
                   <label className={`${labelClass} inline-flex items-center gap-1.5`}>
                     {field.required ? (
-                      <RequiredStatusIcon submitted={isFilledValue(fieldValues[field.id])} />
+                      <RequiredStatusIcon submitted={isTemplateFieldSubmitted(field, fieldValues, stage)} />
                     ) : null}
                     {field.label}
                   </label>
@@ -671,6 +683,7 @@ export default function SimpleWorkflowAccordion({
             counsellors={counsellors}
             formOptions={formOptions}
             onSave={handlers.onSaveStudentInfo}
+            stage={stage}
           />
         );
       }
@@ -701,7 +714,19 @@ export default function SimpleWorkflowAccordion({
         );
       }
       if (stage.sectionType === 'FINANCE_CALCULATOR') {
-        return <StaffApplicationFees app={app} canManage={canManage} onSaved={onSaved} />;
+        return (
+          <div className="space-y-4">
+            <ServiceFeesPanel
+              app={app}
+              stage={stage}
+              canManage={canManage}
+              onSaveProgress={onSaveWorkflowProgress}
+              onSaved={onSaved}
+              variant="detail"
+            />
+            <StaffApplicationFees app={app} canManage={canManage} onSaved={onSaved} />
+          </div>
+        );
       }
       if (stage.sectionType === 'DISCUSSIONS') {
         return (
@@ -940,7 +965,19 @@ export default function SimpleWorkflowAccordion({
           />
         );
       case 'FINANCE_CALCULATOR':
-        return <StaffApplicationFees app={app} canManage={canManage} onSaved={onSaved} />;
+        return (
+          <div className="space-y-4">
+            <ServiceFeesPanel
+              app={app}
+              stage={stage}
+              canManage={canManage}
+              onSaveProgress={onSaveWorkflowProgress}
+              onSaved={onSaved}
+              variant={variant}
+            />
+            <StaffApplicationFees app={app} canManage={canManage} onSaved={onSaved} />
+          </div>
+        );
       case 'VISA_APPLICATION':
       case 'PRE_CAS_PROCESS':
       case 'PRE_DEPARTURE':
@@ -980,9 +1017,39 @@ export default function SimpleWorkflowAccordion({
                 {app?.country || 'Country not set'} · {app?.course || 'Course not set'} · {app?.workflowTemplate?.name || 'Default workflow'}
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 self-start rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-              <CircleDot size={12} />
-              {app?.stage || 'DRAFT'}
+            <div className="inline-flex items-center gap-2 self-start">
+              {canManage ? (
+                <select
+                  value={app?.stage || 'DRAFT'}
+                  onChange={async (e) => {
+                    const stage = e.target.value;
+                    if (!stage || stage === app?.stage) return;
+                    try {
+                      if (handlers.onStageChange) {
+                        await handlers.onStageChange(stage);
+                      } else {
+                        await advanceApplicationStage(app.id, { stage });
+                        onSaved?.({ silent: true });
+                      }
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium outline-none ${stageBadgeClass(app?.stage)}`}
+                  aria-label="Application status"
+                >
+                  {APPLICATION_STAGES.map((stage) => (
+                    <option key={stage.key} value={stage.key}>
+                      {stage.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${stageBadgeClass(app?.stage)}`}>
+                  <CircleDot size={12} />
+                  {getStageLabel(app?.stage) || 'Draft'}
+                </div>
+              )}
             </div>
           </div>
           <DestinationTemplateSwitcher
@@ -1008,6 +1075,8 @@ export default function SimpleWorkflowAccordion({
         const isOpen = openKeys.includes(stage.key);
         const Icon = getWorkflowIcon(stage.iconKey);
         const complete = isWorkflowStageComplete(stage, app);
+        const stepNumber = index + 1;
+        const hideVerification = stepNumber === 9 || stepNumber === 10;
         return (
           <div
             key={stage.key}
@@ -1023,19 +1092,21 @@ export default function SimpleWorkflowAccordion({
               className="w-full px-5 py-4 flex items-center justify-between gap-3 text-left hover:bg-neutral-50/60 transition-all"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <RequiredStatusIcon submitted={complete} className="h-5 w-5" />
+                {!hideVerification ? <RequiredStatusIcon submitted={complete} className="h-5 w-5" /> : null}
                 <div
-                  className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 bg-neutral-100 text-neutral-600"
+                  className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${getWorkflowStageIconClass(stepNumber)}`}
                 >
                   <Icon size={18} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-brand">
-                    {index + 1}. {displayStageLabel(stage)}
+                    {stepNumber}. {displayStageLabel(stage)}
                   </p>
-                  <p className="text-xs text-neutral-500">
-                    {complete ? 'Required fields submitted' : 'Required fields still need to be filled'}
-                  </p>
+                  {!hideVerification ? (
+                    <p className="text-xs text-neutral-500">
+                      {complete ? 'Required fields submitted' : 'Required fields still need to be filled'}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <ChevronDown size={16} className={`text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />

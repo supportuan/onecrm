@@ -36,7 +36,11 @@ const STAGE_FILTERS = [
   { value: 'OFFER_RECEIVED', label: 'Offer received' },
   { value: 'OFFER_ACCEPTED', label: 'Accepted' },
   { value: 'OFFER_REJECTED', label: 'Rejected' },
+  { value: 'ON_HOLD', label: 'On hold' },
+  { value: 'DEFERRED', label: 'Deferred' },
   { value: 'VISA_PROCESS', label: 'Visa' },
+  { value: 'VISA_GRANTED', label: 'Visa granted' },
+  { value: 'VISA_REFUSED', label: 'Visa refused' },
   { value: 'ENROLLED', label: 'Enrolled' },
 ];
 

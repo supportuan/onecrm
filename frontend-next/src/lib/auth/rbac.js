@@ -227,8 +227,6 @@ const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_'
 export function hasPermission(role, permission, permissionMap) {
   if (!role || !permission) return false;
   const normalizedRole = normalizeRole(role);
-  // SUPER_ADMIN and GLOBAL_ADMIN have full access; never gate them behind
-  // individual permission strings.
   if (normalizedRole === 'SUPER_ADMIN' || normalizedRole === 'GLOBAL_ADMIN') return true;
   const source = permissionMap && permissionMap[normalizedRole]
     ? permissionMap[normalizedRole]

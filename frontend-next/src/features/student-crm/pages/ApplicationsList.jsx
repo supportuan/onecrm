@@ -29,11 +29,12 @@ import {
   promoteAllLeads,
   getStatistics,
   bulkAssignApplications,
+  advanceApplicationStage,
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
 import LogoLoader from '@/components/LogoLoader';
-import { getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
+import { APPLICATION_STAGES, getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
 import { countryFlagUrl } from '@/features/student-crm/countryFlag';
 import {
   NewStudentModal,
@@ -100,7 +101,9 @@ export default function ApplicationsList() {
   const [dateTo, setDateTo] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [pocFilter, setPocFilter] = useState('');
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [stageFilter, setStageFilter] = useState(() => searchParams.get('stage') || '');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(() => Boolean(searchParams.get('stage')));
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
 
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const flash = (kind, msg) => {
@@ -166,8 +169,13 @@ export default function ApplicationsList() {
       router.replace(`/student-crm/applications/${requestedApplicationId}`);
       return;
     }
-
   }, [allApps, loading, router, searchParams]);
+
+  useEffect(() => {
+    const nextStage = searchParams.get('stage') || '';
+    setStageFilter(nextStage);
+    if (nextStage) setShowAdvancedFilters(true);
+  }, [searchParams]);
 
   const reloadLeads = async () => {
     try {
@@ -191,6 +199,7 @@ export default function ApplicationsList() {
     return allApps.filter((a) => {
       if (studentFilterId && a.studentId !== studentFilterId) return false;
       if (countryFilter && (a.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
+      if (stageFilter && a.stage !== stageFilter) return false;
       if (pocFilter) {
         if (pocFilter === '__unassigned__') {
           if (a.assignedTo) return false;
@@ -214,10 +223,26 @@ export default function ApplicationsList() {
         student?.phone?.toLowerCase().includes(term)
       );
     });
-  }, [allApps, search, studentFilterId, countryFilter, pocFilter, dateFrom, dateTo, studentById]);
+  }, [allApps, search, studentFilterId, countryFilter, pocFilter, stageFilter, dateFrom, dateTo, studentById]);
 
   const visaCount = useMemo(
     () => allApps.filter((a) => a.stage === 'VISA_PROCESS').length,
+    [allApps]
+  );
+  const holdCount = useMemo(
+    () => allApps.filter((a) => a.stage === 'ON_HOLD').length,
+    [allApps]
+  );
+  const deferredCount = useMemo(
+    () => allApps.filter((a) => a.stage === 'DEFERRED').length,
+    [allApps]
+  );
+  const visaGrantedCount = useMemo(
+    () => allApps.filter((a) => a.stage === 'VISA_GRANTED').length,
+    [allApps]
+  );
+  const visaRefusedCount = useMemo(
+    () => allApps.filter((a) => a.stage === 'VISA_REFUSED').length,
     [allApps]
   );
 
@@ -228,7 +253,7 @@ export default function ApplicationsList() {
   }, [allApps]);
 
   const activeFilterCount = [
-    dateFrom, dateTo, countryFilter, pocFilter,
+    dateFrom, dateTo, countryFilter, pocFilter, stageFilter,
   ].filter(Boolean).length;
 
   const visibleLeads = canManage
@@ -308,6 +333,23 @@ export default function ApplicationsList() {
     }
   };
 
+  const handleStatusChange = async (appId, stage) => {
+    if (!canManage || !stage) return;
+    setStatusUpdatingId(appId);
+    try {
+      await advanceApplicationStage(appId, { stage });
+      flash('ok', 'Application status updated');
+      await refresh();
+      getStatistics()
+        .then((r) => setStats(r?.data || null))
+        .catch(() => {});
+    } catch (e) {
+      flash('err', e?.message || 'failed to update status');
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
   const filteredIds = useMemo(() => filtered.map((a) => a.id), [filtered]);
   const allFilteredSelected =
     filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
@@ -383,23 +425,42 @@ export default function ApplicationsList() {
         {stats && (
           <div className="flex items-center gap-2 shrink-0">
             {[
-              ['Students', stats.totalStudents],
-              ['Enrolled', stats.enrolled],
+              ['Students', stats.totalStudents, ''],
+              ['Enrolled', stats.enrolled, 'ENROLLED'],
               [
                 'Active apps',
-                allApps.filter((a) => !['ENROLLED', 'OFFER_REJECTED'].includes(a.stage)).length,
+                allApps.filter((a) => !['ENROLLED', 'OFFER_REJECTED', 'ON_HOLD', 'DEFERRED', 'VISA_REFUSED'].includes(a.stage)).length,
+                '',
               ],
-              ['Visa', visaCount],
-            ].map(([label, value]) => (
-              <div
+              ['Visa', visaCount, 'VISA_PROCESS'],
+              ['On hold', holdCount, 'ON_HOLD'],
+              ['Deferred', deferredCount, 'DEFERRED'],
+              ['Visa granted', visaGrantedCount, 'VISA_GRANTED'],
+              ['Visa refused', visaRefusedCount, 'VISA_REFUSED'],
+            ].map(([label, value, stage]) => (
+              <button
                 key={label}
-                className="min-w-[76px] rounded-xl border border-white/55 bg-white/35 px-3 py-1.5 shadow-[0_8px_24px_rgba(19,71,144,0.06)] backdrop-blur-md"
+                type="button"
+                onClick={() => {
+                  if (!stage) return;
+                  setStageFilter((current) => (current === stage ? '' : stage));
+                  setShowAdvancedFilters(true);
+                }}
+                className={`min-w-[76px] rounded-xl border px-3 py-1.5 text-left shadow-[0_8px_24px_rgba(19,71,144,0.06)] backdrop-blur-md ${
+                  stage && stageFilter === stage
+                    ? 'border-brand/40 bg-brand/80 text-white'
+                    : 'border-white/55 bg-white/35'
+                }`}
               >
-                <p className="text-[11px] font-semibold text-brand">{label}</p>
-                <p className="text-sm font-semibold tabular-nums leading-tight text-brand/80">
+                <p className={`text-[11px] font-semibold ${stage && stageFilter === stage ? 'text-white' : 'text-brand'}`}>
+                  {label}
+                </p>
+                <p className={`text-sm font-semibold tabular-nums leading-tight ${
+                  stage && stageFilter === stage ? 'text-white' : 'text-brand/80'
+                }`}>
                   {value ?? '—'}
                 </p>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -546,6 +607,20 @@ export default function ApplicationsList() {
                 ))}
               </select>
             </div>
+            {/* Application status */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Application status</label>
+              <select
+                value={stageFilter}
+                onChange={(e) => setStageFilter(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-[13px] text-brand outline-none focus:border-neutral-400 focus:bg-white transition-all"
+              >
+                <option value="">All statuses</option>
+                {APPLICATION_STAGES.map((stage) => (
+                  <option key={stage.key} value={stage.key}>{stage.label}</option>
+                ))}
+              </select>
+            </div>
             {/* POC / Counsellor */}
             <div className="space-y-1">
               <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">POC (Counsellor)</label>
@@ -570,6 +645,7 @@ export default function ApplicationsList() {
                     setDateTo('');
                     setCountryFilter('');
                     setPocFilter('');
+                    setStageFilter('');
                   }}
                   className="flex items-center gap-1 text-[12px] text-rose-500 hover:text-rose-700 font-medium"
                 >
@@ -714,13 +790,32 @@ export default function ApplicationsList() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span
-                          className={`inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-md border ${stageBadge(
-                            a.stage,
-                          )}`}
-                        >
-                          {getStageLabel(a.stage)}
-                        </span>
+                        {canManage ? (
+                          <select
+                            value={a.stage || ''}
+                            disabled={statusUpdatingId === a.id}
+                            onChange={(e) => handleStatusChange(a.id, e.target.value)}
+                            className={`max-w-[180px] rounded-md border bg-white px-2 py-1 text-[11px] font-semibold uppercase tracking-wide outline-none ${stageBadge(a.stage)}`}
+                            aria-label="Application status"
+                          >
+                            {APPLICATION_STAGES.map((stage) => (
+                              <option key={stage.key} value={stage.key}>
+                                {stage.label}
+                              </option>
+                            ))}
+                            {a.stage && !APPLICATION_STAGES.some((stage) => stage.key === a.stage) ? (
+                              <option value={a.stage}>{getStageLabel(a.stage)}</option>
+                            ) : null}
+                          </select>
+                        ) : (
+                          <span
+                            className={`inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-md border ${stageBadge(
+                              a.stage,
+                            )}`}
+                          >
+                            {getStageLabel(a.stage)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1">

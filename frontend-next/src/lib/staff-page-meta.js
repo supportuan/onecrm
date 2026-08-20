@@ -57,6 +57,13 @@ export function getStaffPageMeta(pathname = '') {
   } else if (pathname.startsWith('/hr')) {
     title = 'Human Resource';
     description = 'Employee directory, recruitment, attendance, leave, performance, and payroll.';
+  } else if (
+    pathname === '/student-crm' ||
+    pathname === '/student-crm/' ||
+    pathname.startsWith('/student-crm/dashboard')
+  ) {
+    title = 'Dashboard';
+    description = 'Student pipeline, enrolments, and applications at a glance.';
   } else if (pathname.startsWith('/student-crm/student-management')) {
     title = 'Student Information Hub';
     description = '';

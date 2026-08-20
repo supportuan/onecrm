@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+    import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // ──────────────────────────────────────────────
 // Prisma mock
@@ -205,14 +205,14 @@ describe('getStudent', () => {
 
 // ═══════════════════════════════════════════════════════════
 // 3. createStudent
-// ═══════════════════════════════════════════════════════════
-describe('createStudent', () => {
-  it('creates a new student when email is unique', async () => {
-    (mockPrisma.student.findUnique as jest.Mock).mockResolvedValueOnce(null); // email check
-    const created = makeStudent({ id: 10 });
-    (mockPrisma.student.create as jest.Mock).mockResolvedValue(created);
-    (mockPrisma.student.findFirst as jest.Mock).mockResolvedValue(created); // getStudent
-    (mockPrisma.checkList.findMany as jest.Mock).mockResolvedValue([]);
+              // ═══════════════════════════════════════════════════════════
+              describe('createStudent', () => {
+                it('creates a new student when email is unique', async () => {
+                  (mockPrisma.student.findUnique as jest.Mock).mockResolvedValueOnce(null); // email check
+                  const created = makeStudent({ id: 10 });
+                  (mockPrisma.student.create as jest.Mock).mockResolvedValue(created);
+                  (mockPrisma.student.findFirst as jest.Mock).mockResolvedValue(created); // getStudent
+                  (mockPrisma.checkList.findMany as jest.Mock).mockResolvedValue([]);
 
     const result = await createStudent({
       fullName: 'Jane Doe',

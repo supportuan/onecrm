@@ -5,6 +5,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { studyIdsFromProfile, toNumOrNull } from '../studyFormOptions';
 import { toDateInputValue } from '../dateFormat';
 import RequiredStatusIcon, { isFilledValue } from './RequiredStatusIcon';
+import { EXAM_SCORE_TEMPLATE_FIELDS } from '../workflowTemplateUi';
 
 const STUDY_LEVELS = ['Certificate', 'Diploma', 'Bachelor', 'Master', 'PhD'];
 const INTAKE_MONTHS = ['Spring', 'Summer', 'Fall', 'Winter', 'January', 'May', 'September'];
@@ -77,10 +78,20 @@ export default function StudentInfoPanel({
   counsellors = [],
   formOptions = {},
   onSave,
+  stage = null,
 }) {
   const [form, setForm] = useState(() => formFromStudent(student));
   const [saving, setSaving] = useState(false);
   const locked = Boolean(student?.isEnrolled) || !canManage;
+  const examFieldsByKey = useMemo(
+    () => Object.fromEntries((stage?.fields || []).map((field) => [field.fieldKey, field])),
+    [stage?.fields]
+  );
+  const hasExamTemplate = EXAM_SCORE_TEMPLATE_FIELDS.some((field) => examFieldsByKey[field.fieldKey]);
+  const showExamField = (fieldKey) => !hasExamTemplate || Boolean(examFieldsByKey[fieldKey]);
+  const examFieldRequired = (fieldKey) =>
+    hasExamTemplate ? Boolean(examFieldsByKey[fieldKey]?.required) : true;
+  const examFieldLabel = (fieldKey, fallback) => examFieldsByKey[fieldKey]?.label || fallback;
 
   useEffect(() => {
     setForm(formFromStudent(student));
@@ -180,10 +191,10 @@ export default function StudentInfoPanel({
           <Field label="Phone" required filled={isFilledValue(form.phone)}>
             <input className={inputClass} value={form.phone} disabled={locked} onChange={(e) => patch({ phone: e.target.value })} />
           </Field>
-          <Field label="Date of birth">
+          <Field label="Date of birth" required filled={isFilledValue(form.dob)}>
             <input type="date" className={inputClass} value={toDateInputValue(form.dob)} disabled={locked} onChange={(e) => patch({ dob: e.target.value })} />
           </Field>
-          <Field label="Nationality">
+          <Field label="Nationality" required filled={isFilledValue(form.nationality)}>
             <input className={inputClass} value={form.nationality} disabled={locked} onChange={(e) => patch({ nationality: e.target.value })} />
           </Field>
           <Field label="Study destination" required filled={isFilledValue(form.countryId) || isFilledValue(form.preferredCountry)}>
@@ -204,7 +215,7 @@ export default function StudentInfoPanel({
               ))}
             </select>
           </Field>
-          <Field label="Study level">
+          <Field label="Study level" required filled={isFilledValue(form.level)}>
             <select className={inputClass} value={form.level} disabled={locked} onChange={(e) => patch({ level: e.target.value })}>
               <option value="">Select level</option>
               {STUDY_LEVELS.map((level) => (
@@ -214,7 +225,7 @@ export default function StudentInfoPanel({
               ))}
             </select>
           </Field>
-          <Field label="Study industry">
+          <Field label="Study industry" required filled={isFilledValue(form.industryId)}>
             <select
               className={inputClass}
               value={form.industryId}
@@ -229,7 +240,7 @@ export default function StudentInfoPanel({
               ))}
             </select>
           </Field>
-          <Field label="Subject">
+          <Field label="Subject" required filled={isFilledValue(form.subIndustryId || form.studyAreaId)}>
             <select
               className={inputClass}
               value={form.subIndustryId || form.studyAreaId || ''}
@@ -244,7 +255,7 @@ export default function StudentInfoPanel({
               ))}
             </select>
           </Field>
-          <Field label="Intake">
+          <Field label="Intake" required filled={isFilledValue(form.intakeMonth)}>
             <select className={inputClass} value={form.intakeMonth} disabled={locked} onChange={(e) => patch({ intakeMonth: e.target.value })}>
               <option value="">Select intake</option>
               {INTAKE_MONTHS.map((month) => (
@@ -254,7 +265,7 @@ export default function StudentInfoPanel({
               ))}
             </select>
           </Field>
-          <Field label="Intake year">
+          <Field label="Intake year" required filled={isFilledValue(form.intakeYear)}>
             <select className={inputClass} value={form.intakeYear} disabled={locked} onChange={(e) => patch({ intakeYear: e.target.value })}>
               <option value="">Select year</option>
               {INTAKE_YEARS.map((year) => (
@@ -264,7 +275,7 @@ export default function StudentInfoPanel({
               ))}
             </select>
           </Field>
-          <Field label="POC">
+          <Field label="POC" required filled={isFilledValue(form.contactId)}>
             <select className={inputClass} value={form.contactId} disabled={locked} onChange={(e) => patch({ contactId: e.target.value })}>
               <option value="">Unassigned</option>
               {counsellors.map((item) => (
@@ -274,7 +285,7 @@ export default function StudentInfoPanel({
               ))}
             </select>
           </Field>
-          <Field label="Work experience" className="md:col-span-2">
+          <Field label="Work experience" className="md:col-span-2" required filled={isFilledValue(form.workExperience)}>
             <input
               className={inputClass}
               value={form.workExperience}
@@ -300,7 +311,7 @@ export default function StudentInfoPanel({
         </div>
         {(form.educationDetails || []).map((row, index) => (
           <div key={`edu-${index}`} className="grid gap-3 rounded-xl border border-neutral-100 bg-neutral-50/70 p-3 md:grid-cols-4">
-            <Field label="Type">
+            <Field label="Type" required filled={isFilledValue(row.type)}>
               <select className={inputClass} value={row.type || 'UG'} disabled={locked} onChange={(e) => patchRow('educationDetails', index, { type: e.target.value })}>
                 {['SSC', 'HSC', 'UG', 'PG'].map((type) => (
                   <option key={type} value={type}>
@@ -309,13 +320,13 @@ export default function StudentInfoPanel({
                 ))}
               </select>
             </Field>
-            <Field label="Qualification">
+            <Field label="Qualification" required filled={isFilledValue(row.label)}>
               <input className={inputClass} value={row.label || ''} disabled={locked} onChange={(e) => patchRow('educationDetails', index, { label: e.target.value })} />
             </Field>
-            <Field label="Passing year">
+            <Field label="Passing year" required filled={isFilledValue(row.passing_year)}>
               <input className={inputClass} value={row.passing_year || ''} disabled={locked} onChange={(e) => patchRow('educationDetails', index, { passing_year: e.target.value })} />
             </Field>
-            <Field label="Grade">
+            <Field label="Grade" required filled={isFilledValue(row.grade)}>
               <div className="flex gap-2">
                 <input className={inputClass} value={row.grade || ''} disabled={locked} onChange={(e) => patchRow('educationDetails', index, { grade: e.target.value })} />
                 {!locked && form.educationDetails.length > 1 ? (
@@ -342,16 +353,16 @@ export default function StudentInfoPanel({
         </div>
         {(form.academicHistory || []).map((row, index) => (
           <div key={`ac-${index}`} className="grid gap-3 rounded-xl border border-neutral-100 bg-neutral-50/70 p-3 md:grid-cols-4">
-            <Field label="Degree">
+            <Field label="Degree" required filled={isFilledValue(row.degree)}>
               <input className={inputClass} value={row.degree || ''} disabled={locked} onChange={(e) => patchRow('academicHistory', index, { degree: e.target.value })} />
             </Field>
-            <Field label="Institution">
+            <Field label="Institution" required filled={isFilledValue(row.institution)}>
               <input className={inputClass} value={row.institution || ''} disabled={locked} onChange={(e) => patchRow('academicHistory', index, { institution: e.target.value })} />
             </Field>
-            <Field label="Year">
+            <Field label="Year" required filled={isFilledValue(row.year)}>
               <input className={inputClass} value={row.year || ''} disabled={locked} onChange={(e) => patchRow('academicHistory', index, { year: e.target.value })} />
             </Field>
-            <Field label="Grade">
+            <Field label="Grade" required filled={isFilledValue(row.grade)}>
               <div className="flex gap-2">
                 <input className={inputClass} value={row.grade || ''} disabled={locked} onChange={(e) => patchRow('academicHistory', index, { grade: e.target.value })} />
                 {!locked && form.academicHistory.length > 1 ? (
@@ -365,70 +376,126 @@ export default function StudentInfoPanel({
         ))}
       </div>
 
+      {showExamField('ielts_score') ||
+      showExamField('toefl_score') ||
+      showExamField('gre_score') ||
+      showExamField('gmat_score') ||
+      showExamField('exam_name') ||
+      showExamField('exam_overall') ||
+      showExamField('exam_reading') ||
+      showExamField('exam_writing') ||
+      showExamField('exam_speaking') ||
+      showExamField('exam_listening') ? (
       <div className={panelClass}>
-        <h4 className="text-sm font-semibold text-brand">Test scores</h4>
-        <div className="grid gap-3 md:grid-cols-4">
-          {[
-            ['ieltsScore', 'IELTS'],
-            ['toeflScore', 'TOEFL'],
-            ['greScore', 'GRE'],
-            ['gmatScore', 'GMAT'],
-          ].map(([key, label]) => (
-            <Field key={key} label={label}>
-              <input
-                type="number"
-                step="0.5"
-                className={inputClass}
-                value={form[key]}
-                disabled={locked}
-                onChange={(e) => patch({ [key]: e.target.value })}
-                placeholder="Score"
-              />
-            </Field>
-          ))}
-        </div>
-        <div className="flex items-center justify-between gap-3 pt-1">
-          <h4 className="text-sm font-semibold text-brand">Exam sections</h4>
-          {!locked ? (
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 text-xs font-medium text-brand"
-              onClick={() => patch({ asstExamSections: [...form.asstExamSections, emptyExam()] })}
-            >
-              <Plus size={12} /> Add exam
-            </button>
-          ) : null}
-        </div>
-        {(form.asstExamSections || []).map((row, index) => (
-          <div key={`ex-${index}`} className="grid gap-3 rounded-xl border border-neutral-100 bg-neutral-50/70 p-3 md:grid-cols-3">
-            <Field label="Exam">
-              <input className={inputClass} value={row.type || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { type: e.target.value })} />
-            </Field>
-            <Field label="Overall">
-              <input className={inputClass} value={row.overall_score || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { overall_score: e.target.value })} />
-            </Field>
-            <Field label="Reading">
-              <div className="flex gap-2">
-                <input className={inputClass} value={row.reading || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { reading: e.target.value })} />
+        {showExamField('ielts_score') ||
+        showExamField('toefl_score') ||
+        showExamField('gre_score') ||
+        showExamField('gmat_score') ? (
+          <>
+            <h4 className="text-sm font-semibold text-brand">Test scores</h4>
+            <div className="grid gap-3 md:grid-cols-4">
+              {[
+                ['ieltsScore', 'ielts_score', 'IELTS'],
+                ['toeflScore', 'toefl_score', 'TOEFL'],
+                ['greScore', 'gre_score', 'GRE'],
+                ['gmatScore', 'gmat_score', 'GMAT'],
+              ]
+                .filter(([, fieldKey]) => showExamField(fieldKey))
+                .map(([key, fieldKey, label]) => (
+                  <Field
+                    key={key}
+                    label={examFieldLabel(fieldKey, label)}
+                    required={examFieldRequired(fieldKey)}
+                    filled={isFilledValue(form[key])}
+                  >
+                    <input
+                      type="number"
+                      step="0.5"
+                      className={inputClass}
+                      value={form[key]}
+                      disabled={locked}
+                      onChange={(e) => patch({ [key]: e.target.value })}
+                      placeholder={examFieldsByKey[fieldKey]?.placeholder || 'Score'}
+                    />
+                  </Field>
+                ))}
+            </div>
+          </>
+        ) : null}
+        {showExamField('exam_name') ||
+        showExamField('exam_overall') ||
+        showExamField('exam_reading') ||
+        showExamField('exam_writing') ||
+        showExamField('exam_speaking') ||
+        showExamField('exam_listening') ? (
+          <>
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <h4 className="text-sm font-semibold text-brand">Exam sections</h4>
+              {!locked ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-brand"
+                  onClick={() => patch({ asstExamSections: [...form.asstExamSections, emptyExam()] })}
+                >
+                  <Plus size={12} /> Add exam
+                </button>
+              ) : null}
+            </div>
+            {(form.asstExamSections || []).map((row, index) => (
+              <div key={`ex-${index}`} className="grid gap-3 rounded-xl border border-neutral-100 bg-neutral-50/70 p-3 md:grid-cols-3">
+                {showExamField('exam_name') ? (
+                  <Field label={examFieldLabel('exam_name', 'Exam')} required={examFieldRequired('exam_name')} filled={isFilledValue(row.type)}>
+                    <select className={inputClass} value={row.type || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { type: e.target.value })}>
+                      <option value="">Select exam</option>
+                      {(Array.isArray(examFieldsByKey.exam_name?.optionsJson)
+                        ? examFieldsByKey.exam_name.optionsJson.map((option) => String(option?.value ?? option))
+                        : ['IELTS', 'TOEFL', 'PTE', 'GRE', 'GMAT', 'Duolingo', 'Other']
+                      ).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : null}
+                {showExamField('exam_overall') ? (
+                  <Field label={examFieldLabel('exam_overall', 'Overall')} required={examFieldRequired('exam_overall')} filled={isFilledValue(row.overall_score)}>
+                    <input className={inputClass} value={row.overall_score || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { overall_score: e.target.value })} />
+                  </Field>
+                ) : null}
+                {showExamField('exam_reading') ? (
+                  <Field label={examFieldLabel('exam_reading', 'Reading')} required={examFieldRequired('exam_reading')} filled={isFilledValue(row.reading)}>
+                    <input className={inputClass} value={row.reading || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { reading: e.target.value })} />
+                  </Field>
+                ) : null}
+                {showExamField('exam_writing') ? (
+                  <Field label={examFieldLabel('exam_writing', 'Writing')} required={examFieldRequired('exam_writing')} filled={isFilledValue(row.writing)}>
+                    <input className={inputClass} value={row.writing || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { writing: e.target.value })} />
+                  </Field>
+                ) : null}
+                {showExamField('exam_speaking') ? (
+                  <Field label={examFieldLabel('exam_speaking', 'Speaking')} required={examFieldRequired('exam_speaking')} filled={isFilledValue(row.speaking)}>
+                    <input className={inputClass} value={row.speaking || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { speaking: e.target.value })} />
+                  </Field>
+                ) : null}
+                {showExamField('exam_listening') ? (
+                  <Field label={examFieldLabel('exam_listening', 'Listening')} required={examFieldRequired('exam_listening')} filled={isFilledValue(row.listening)}>
+                    <input className={inputClass} value={row.listening || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { listening: e.target.value })} />
+                  </Field>
+                ) : null}
                 {!locked && form.asstExamSections.length > 1 ? (
-                  <button type="button" className="rounded-lg p-2 text-rose-500 hover:bg-rose-50" onClick={() => patch({ asstExamSections: form.asstExamSections.filter((_, i) => i !== index) })}>
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex items-end">
+                    <button type="button" className="rounded-lg p-2 text-rose-500 hover:bg-rose-50" onClick={() => patch({ asstExamSections: form.asstExamSections.filter((_, i) => i !== index) })}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 ) : null}
               </div>
-            </Field>
-            <Field label="Writing">
-              <input className={inputClass} value={row.writing || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { writing: e.target.value })} />
-            </Field>
-            <Field label="Speaking">
-              <input className={inputClass} value={row.speaking || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { speaking: e.target.value })} />
-            </Field>
-            <Field label="Listening">
-              <input className={inputClass} value={row.listening || ''} disabled={locked} onChange={(e) => patchRow('asstExamSections', index, { listening: e.target.value })} />
-            </Field>
-          </div>
-        ))}
+            ))}
+          </>
+        ) : null}
       </div>
+      ) : null}
     </div>
   );
 }

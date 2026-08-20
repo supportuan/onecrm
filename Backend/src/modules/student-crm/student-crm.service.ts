@@ -1390,7 +1390,11 @@ export const setStage = async (
     | 'OFFER_ACCEPTED'
     | 'OFFER_REJECTED'
     | 'VISA_PROCESS'
-    | 'ENROLLED',
+    | 'ENROLLED'
+    | 'ON_HOLD'
+    | 'DEFERRED'
+    | 'VISA_GRANTED'
+    | 'VISA_REFUSED',
   changedById?: number,
   notes?: string
 ) => {

@@ -105,6 +105,7 @@ describe('getStatistics', () => {
 
   it('returns correct counts for admin user (no partner scoping)', async () => {
     (isAgencyPartnerUser as jest.Mock).mockReturnValue(false);
+    mockPrisma.agencyPartner.findMany.mockResolvedValue([{ agencyCode: 'ACME-001' }]);
     mockPrisma.agencyReferral.count.mockResolvedValue(10);
     mockPrisma.agencyCommission.findMany.mockResolvedValue([
       { status: 'PAID', amount: 500, agencyPartnerId: 1 },
@@ -119,12 +120,24 @@ describe('getStatistics', () => {
     const result = await agencyCrmService.getStatistics({ id: 1, role: 'GLOBAL_ADMIN' });
 
     expect(result.totalReferrals).toBe(10);
+    expect(result.activeStudents).toBe(2);
     expect(result.totalApplications).toBe(15);
+    expect(mockPrisma.student.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { agencyReferrals: { some: {} } },
+            { source: { in: ['ACME-001'] } },
+          ]),
+        }),
+      })
+    );
     expect(typeof result.totalCommissionAmount).toBe('number');
   });
 
   it('calculates paidCommissions and pendingCommissions separately', async () => {
     (isAgencyPartnerUser as jest.Mock).mockReturnValue(false);
+    mockPrisma.agencyPartner.findMany.mockResolvedValue([]);
     mockPrisma.agencyReferral.count.mockResolvedValue(5);
     mockPrisma.agencyCommission.findMany.mockResolvedValue([
       { status: 'PAID', amount: 1000, agencyPartnerId: 1 },

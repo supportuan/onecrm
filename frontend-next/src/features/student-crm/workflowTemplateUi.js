@@ -3,10 +3,12 @@ import {
   Calculator,
   CheckCircle2,
   FileBadge2,
+  GraduationCap,
   History,
   ListChecks,
   MapPinCheck,
   MessageSquare,
+  NotebookPen,
   Plane,
   PlaneTakeoff,
   School,
@@ -26,6 +28,8 @@ export const WORKFLOW_ICON_MAP = {
   MapPinCheck,
   BadgeCheck,
   History,
+  GraduationCap,
+  NotebookPen,
 };
 
 export const WORKFLOW_ICON_OPTIONS = [
@@ -41,9 +45,145 @@ export const WORKFLOW_ICON_OPTIONS = [
   'MapPinCheck',
   'BadgeCheck',
   'History',
+  'GraduationCap',
+  'NotebookPen',
 ];
 
 export const getWorkflowIcon = (iconKey) => WORKFLOW_ICON_MAP[iconKey] || ListChecks;
+
+/** Blood-orange accent for workflow steps 9 and 10 (by display order). */
+export const getWorkflowStageIconClass = (stepNumber) => {
+  if (stepNumber === 9) return 'bg-[#FFEBE0] text-[#CC5500]';
+  if (stepNumber === 10) return 'bg-[#FFE4D6] text-[#BF360C]';
+  return 'bg-neutral-100 text-neutral-600';
+};
+
+export const SERVICE_FEE_EFFECT = {
+  BASE: 'base',
+  ADD: 'add',
+  DEDUCT: 'deduct',
+  TOTAL: 'total',
+};
+
+export const getServiceFeeEffect = (field) => {
+  const effect = field?.metadata?.feeEffect;
+  if (
+    effect === SERVICE_FEE_EFFECT.BASE ||
+    effect === SERVICE_FEE_EFFECT.DEDUCT ||
+    effect === SERVICE_FEE_EFFECT.TOTAL
+  ) {
+    return effect;
+  }
+  if (field?.fieldKey === 'total_funds_required') return SERVICE_FEE_EFFECT.TOTAL;
+  if (field?.fieldKey === 'tuition_fees') return SERVICE_FEE_EFFECT.BASE;
+  if (field?.fieldKey === 'deposits') return SERVICE_FEE_EFFECT.DEDUCT;
+  return SERVICE_FEE_EFFECT.ADD;
+};
+
+const amountForField = (fieldValues, field) => {
+  const amount = Number(fieldValues[field.id]);
+  return Number.isFinite(amount) ? amount : 0;
+};
+
+/** Total fees − Deposit + Remaining fees + Living cost = Result */
+export const SERVICE_FEE_FORMULA_LABEL =
+  'Total fees − Deposit + Remaining fees + Living cost = Result';
+
+export const computeServiceFeeTotal = (fieldValues = {}, fields = []) => {
+  const byKey = Object.fromEntries(
+    fields.filter((field) => field.fieldType === 'CURRENCY').map((field) => [field.fieldKey, field])
+  );
+
+  const totalFees = byKey.tuition_fees ? amountForField(fieldValues, byKey.tuition_fees) : 0;
+  const deposit = byKey.deposits ? amountForField(fieldValues, byKey.deposits) : 0;
+  const remaining = byKey.remaining_fee ? amountForField(fieldValues, byKey.remaining_fee) : 0;
+  const living = byKey.living_cost ? amountForField(fieldValues, byKey.living_cost) : 0;
+
+  if (byKey.tuition_fees || byKey.deposits || byKey.remaining_fee || byKey.living_cost) {
+    const result = totalFees - deposit + remaining + living;
+    return Math.max(0, Math.round(result * 100) / 100);
+  }
+
+  let total = 0;
+  fields.forEach((field) => {
+    if (field.fieldType !== 'CURRENCY') return;
+    const amount = amountForField(fieldValues, field);
+    const effect = getServiceFeeEffect(field);
+    if (effect === SERVICE_FEE_EFFECT.BASE || effect === SERVICE_FEE_EFFECT.ADD) total += amount;
+    if (effect === SERVICE_FEE_EFFECT.DEDUCT) total -= amount;
+  });
+  return Math.max(0, Math.round(total * 100) / 100);
+};
+
+export const SERVICE_FEE_TEMPLATE_FIELDS = [
+  {
+    fieldKey: 'tuition_fees',
+    label: 'Total fees',
+    fieldType: 'CURRENCY',
+    required: true,
+    placeholder: 'Amount',
+    metadata: { feeEffect: SERVICE_FEE_EFFECT.BASE },
+  },
+  {
+    fieldKey: 'deposits',
+    label: 'Deposit',
+    fieldType: 'CURRENCY',
+    required: true,
+    placeholder: 'Amount',
+    metadata: { feeEffect: SERVICE_FEE_EFFECT.DEDUCT },
+  },
+  {
+    fieldKey: 'remaining_fee',
+    label: 'Remaining fees',
+    fieldType: 'CURRENCY',
+    required: true,
+    placeholder: 'Amount',
+    metadata: { feeEffect: SERVICE_FEE_EFFECT.ADD },
+  },
+  {
+    fieldKey: 'living_cost',
+    label: 'Living cost',
+    fieldType: 'CURRENCY',
+    required: true,
+    placeholder: 'Amount',
+    helpText: 'Enter manually — included in result when filled',
+    metadata: { feeEffect: SERVICE_FEE_EFFECT.ADD, manualOnly: true },
+  },
+  {
+    fieldKey: 'total_funds_required',
+    label: 'Result',
+    fieldType: 'CURRENCY',
+    required: true,
+    placeholder: '',
+    metadata: { feeEffect: SERVICE_FEE_EFFECT.TOTAL },
+  },
+  {
+    fieldKey: 'service_fees_verified',
+    label: 'Verified',
+    fieldType: 'CHECKBOX',
+    required: true,
+    helpText: 'Staff must confirm these figures before this step turns green',
+  },
+];
+
+export const EXAM_SCORE_TEMPLATE_FIELDS = [
+  { fieldKey: 'ielts_score', label: 'IELTS', fieldType: 'NUMBER', required: true, placeholder: 'Score' },
+  { fieldKey: 'toefl_score', label: 'TOEFL', fieldType: 'NUMBER', required: true, placeholder: 'Score' },
+  { fieldKey: 'gre_score', label: 'GRE', fieldType: 'NUMBER', required: true, placeholder: 'Score' },
+  { fieldKey: 'gmat_score', label: 'GMAT', fieldType: 'NUMBER', required: true, placeholder: 'Score' },
+  {
+    fieldKey: 'exam_name',
+    label: 'Exam',
+    fieldType: 'SELECT',
+    required: true,
+    optionsJson: ['IELTS', 'TOEFL', 'PTE', 'GRE', 'GMAT', 'Duolingo', 'Other'],
+  },
+  { fieldKey: 'exam_overall', label: 'Overall', fieldType: 'NUMBER', required: true, placeholder: 'Overall score' },
+  { fieldKey: 'exam_reading', label: 'Reading', fieldType: 'NUMBER', required: true },
+  { fieldKey: 'exam_writing', label: 'Writing', fieldType: 'NUMBER', required: true },
+  { fieldKey: 'exam_speaking', label: 'Speaking', fieldType: 'NUMBER', required: true },
+  { fieldKey: 'exam_listening', label: 'Listening', fieldType: 'NUMBER', required: true },
+];
 
 const STAGE_DISPLAY_ORDER = [
   'STUDENT_INFO',
@@ -123,6 +263,19 @@ const hasValue = (value) => {
   return String(value).trim() !== '' && String(value).trim() !== 'Invalid Date';
 };
 
+export const isTemplateFieldSubmitted = (field, fieldValues = {}, stage) => {
+  const verifiedField = (stage?.fields || []).find((entry) => entry.fieldKey === 'service_fees_verified');
+  const verified = verifiedField ? hasValue(fieldValues[verifiedField.id]) : true;
+  if (field?.fieldKey === 'service_fees_verified') return verified;
+  if (getServiceFeeEffect(field) === SERVICE_FEE_EFFECT.TOTAL) {
+    return hasValue(fieldValues[field.id]);
+  }
+  if (verifiedField && stage?.sectionType === 'FINANCE_CALCULATOR') {
+    return verified && hasValue(fieldValues[field.id]);
+  }
+  return hasValue(fieldValues[field.id]);
+};
+
 const normalizeLabel = (value) =>
   String(value || '')
     .toLowerCase()
@@ -138,7 +291,12 @@ export const isWorkflowStageComplete = (stage, app) => {
     return Boolean(student?.fullName && (student?.email || student?.phone));
   }
   if (type === 'FINANCE_CALCULATOR') {
-    return (app?.fees || []).length > 0;
+    const verifiedField = (stage?.fields || []).find((field) => field.fieldKey === 'service_fees_verified');
+    if (verifiedField) {
+      const saved = (app?.workflowFieldValues || []).find((item) => item.fieldTemplateId === verifiedField.id)?.valueJson;
+      return hasValue(saved);
+    }
+    return false;
   }
   if (type === 'UNIVERSITY_APPLICATION') {
     return (student?.universities || []).length > 0;

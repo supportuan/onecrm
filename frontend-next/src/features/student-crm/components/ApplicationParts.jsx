@@ -34,6 +34,8 @@ import {
   DOC_STATUSES,
   VISA_STATUSES,
   OFFER_DECISION,
+  SIDE_STAGE_KEYS,
+  PAUSED_STAGE_KEYS,
   getStageLabel,
   getVisaStatusLabel,
   stageBadgeClass,
@@ -86,6 +88,7 @@ export const toDateInputValue = (value) => {
 
 export const stepState = (stageKey, currentStage) => {
   if (currentStage === stageKey) return 'active';
+  if (PAUSED_STAGE_KEYS.includes(currentStage)) return 'future';
   if (currentStage === 'OFFER_REJECTED') {
     if (['DRAFT', 'DOCUMENTS_PENDING', 'SUBMITTED', 'UNDER_REVIEW', 'OFFER_RECEIVED'].includes(stageKey)) {
       return 'passed';
@@ -93,9 +96,16 @@ export const stepState = (stageKey, currentStage) => {
     if (stageKey === 'OFFER_REJECTED') return 'active';
     return 'future';
   }
+  if (currentStage === 'VISA_REFUSED') {
+    if (['DRAFT', 'DOCUMENTS_PENDING', 'SUBMITTED', 'UNDER_REVIEW', 'OFFER_RECEIVED', 'OFFER_ACCEPTED', 'VISA_PROCESS'].includes(stageKey)) {
+      return 'passed';
+    }
+    if (stageKey === 'VISA_REFUSED') return 'active';
+    return 'future';
+  }
   const order = APPLICATION_STAGES.find((s) => s.key === stageKey)?.order ?? 0;
   const currentOrder = APPLICATION_STAGES.find((s) => s.key === currentStage)?.order ?? 0;
-  if (stageKey === 'OFFER_REJECTED') return 'branch';
+  if (SIDE_STAGE_KEYS.includes(stageKey)) return 'branch';
   if (order < currentOrder) return 'passed';
   return 'future';
 };
@@ -260,7 +270,8 @@ export const ApplicationMetaEditor = ({ app, counsellors, canManage, onSave }) =
 /* -------------------- Stage stepper -------------------- */
 
 export const StageStepper = ({ app, onJump }) => {
-  const visibleStages = APPLICATION_STAGES.filter((s) => s.key !== 'OFFER_REJECTED');
+  const visibleStages = APPLICATION_STAGES.filter((s) => !SIDE_STAGE_KEYS.includes(s.key));
+  const pausedLabel = app.stage === 'ON_HOLD' ? 'On hold' : app.stage === 'DEFERRED' ? 'Deferred' : null;
   return (
     <div className="ui-surface px-6 py-5">
       <div className="flex items-end justify-between mb-5">
@@ -275,6 +286,16 @@ export const StageStepper = ({ app, onJump }) => {
         {app.stage === 'OFFER_REJECTED' && (
           <span className="px-2.5 py-1 rounded-md bg-rose-50 border border-rose-100 text-rose-700 text-[11px] font-semibold uppercase tracking-wide">
             Offer rejected
+          </span>
+        )}
+        {app.stage === 'VISA_REFUSED' && (
+          <span className="px-2.5 py-1 rounded-md bg-rose-50 border border-rose-100 text-rose-700 text-[11px] font-semibold uppercase tracking-wide">
+            Visa refused
+          </span>
+        )}
+        {pausedLabel && (
+          <span className={`px-2.5 py-1 rounded-md border text-[11px] font-semibold uppercase tracking-wide ${stageBadgeClass(app.stage)}`}>
+            {pausedLabel}
           </span>
         )}
       </div>
@@ -335,6 +356,56 @@ export const StageStepper = ({ app, onJump }) => {
             >
               Mark rejected
             </button>
+          </div>
+        </div>
+      )}
+      {['VISA_PROCESS', 'VISA_GRANTED'].includes(app.stage) && onJump && (
+        <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between flex-wrap gap-2">
+          <p className="ui-text-meta">Visa outcome:</p>
+          <div className="flex gap-2">
+            {app.stage !== 'VISA_GRANTED' && (
+              <button
+                type="button"
+                onClick={() => onJump('VISA_GRANTED')}
+                className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 text-emerald-700 text-[12px] font-medium transition-all"
+              >
+                Mark visa granted
+              </button>
+            )}
+            {app.stage !== 'VISA_REFUSED' && (
+              <button
+                type="button"
+                onClick={() => onJump('VISA_REFUSED')}
+                className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-100 text-rose-700 text-[12px] font-medium transition-all"
+              >
+                Mark visa refused
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {onJump && (
+        <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between flex-wrap gap-2">
+          <p className="ui-text-meta">Park this file without moving the workflow:</p>
+          <div className="flex gap-2">
+            {app.stage !== 'ON_HOLD' && (
+              <button
+                type="button"
+                onClick={() => onJump('ON_HOLD')}
+                className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[12px] font-medium transition-all"
+              >
+                Mark on hold
+              </button>
+            )}
+            {app.stage !== 'DEFERRED' && (
+              <button
+                type="button"
+                onClick={() => onJump('DEFERRED')}
+                className="px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-100 text-violet-700 text-[12px] font-medium transition-all"
+              >
+                Mark deferred
+              </button>
+            )}
           </div>
         </div>
       )}

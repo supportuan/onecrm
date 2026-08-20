@@ -11,6 +11,11 @@ import { navMenu } from "../lib/menu";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { usePermissions } from "@/lib/auth/PermissionsContext";
 import { MODULE_PERMISSION_MAP } from "@/lib/auth/rbac";
+import {
+  hasConfiguredModuleAccess,
+  hasHrSelfServiceAccess,
+  moduleHasAnyAccess,
+} from "@/lib/auth/module-access";
 import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
 import { SIDEBAR_COLLAPSED, SIDEBAR_OPEN } from "@/lib/layout-shell";
 import { SidebarBrandHeader } from "@/components/AppBrand";
@@ -45,22 +50,19 @@ const getPermissionOptionName = (subLabel) => {
   return subLabel;
 };
 
-const hasConfiguredModuleAccess = (moduleAccess) => {
-  if (!moduleAccess || typeof moduleAccess !== "object") return false;
-
-  return Object.values(moduleAccess).some((options) =>
-    Object.values(options || {}).some(
-      (actions) => Array.isArray(actions) && actions.length > 0
-    )
-  );
-};
-
 const filterSubItemsByModuleAccess = (item, access) =>
   item.subItems?.filter((sub) => {
     const optName = getPermissionOptionName(sub.label);
     const accessKey = item.accessKey || item.label;
 
-    if (accessKey === "Marketing" && sub.label === "Dashboard") {
+    if (sub.label === "My HR") {
+      return hasHrSelfServiceAccess(access);
+    }
+
+    if (
+      (accessKey === "Marketing" && (sub.label === "Dashboard" || sub.label === "Performance Console")) ||
+      (accessKey === "Student CRM" && sub.label === "Dashboard")
+    ) {
       return Object.values(access[accessKey] || {}).some(
         (actions) => Array.isArray(actions) && actions.length > 0
       );
@@ -93,17 +95,16 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
 
     const moduleVisible = (item) => {
       const accessKey = item.accessKey || item.label;
+
+      if (hasConfiguredModuleAccess(user.moduleAccess)) {
+        if (!item.subItems) {
+          return moduleHasAnyAccess(user.moduleAccess, accessKey);
+        }
+        return moduleHasAnyAccess(user.moduleAccess, accessKey);
+      }
+
       const required = MODULE_PERMISSION_MAP[accessKey];
       if (!required) return true;
-
-      const configuredOptions = user.moduleAccess?.[accessKey];
-      const hasExplicitModuleAccess =
-        configuredOptions &&
-        Object.values(configuredOptions).some(
-          (actions) => Array.isArray(actions) && actions.length > 0
-        );
-      if (hasExplicitModuleAccess) return true;
-
       return can(required);
     };
 
@@ -157,10 +158,11 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
         let moduleAccessSubItems = filterSubItemsByModuleAccess(item, access)
           .filter(audienceAllows);
 
-        // Knowledge Hub / HR are permission-driven for staff. Existing users may
-        // predate moduleAccess entries, so merge any permitted sidebar links.
-        // Keep navMenu order (e.g. My HR between Employee Directory and Recruitment).
-        if (item.accessKey === "Resources" || item.accessKey === "HR") {
+        // Legacy users without moduleAccess still get permission-driven HR/Resources links.
+        if (
+          !hasConfiguredModuleAccess(user.moduleAccess) &&
+          (item.accessKey === "Resources" || item.accessKey === "HR")
+        ) {
           const allowedPaths = new Set([
             ...moduleAccessSubItems.map((sub) => sub.path),
             ...item.subItems.filter(subVisible).map((sub) => sub.path),
@@ -226,7 +228,10 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
 
   const isSectionActive = (item) =>
     location === item.path ||
-    item.subItems?.some((sub) => location.startsWith(sub.path));
+    (item.path && location.startsWith(`${item.path}/`)) ||
+    item.subItems?.some(
+      (sub) => location === sub.path || location.startsWith(`${sub.path}/`)
+    );
 
   const toggleSection = (label) => {
     setOpenSections((prev) => {
@@ -338,16 +343,17 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
                         }
                       }}
                       onClick={() => {
+                        const dest = item.homePath || item.path;
                         if (!sidebarOpen) {
-                          if (item.path) {
-                            router.push(item.path);
+                          if (dest) {
+                            router.push(dest);
                             setFlyoutMenu(null);
                           }
                           return;
                         }
 
-                        if (item.path) {
-                          router.push(item.path);
+                        if (dest) {
+                          router.push(dest);
                         }
 
                         toggleSection(item.label);

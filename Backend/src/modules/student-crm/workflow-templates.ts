@@ -31,7 +31,7 @@ export type WorkflowTemplateSeed = {
 };
 
 /** Bump when the canonical stage/field/checklist spec below changes. */
-export const DEFAULT_WORKFLOW_SEED_VERSION = 4;
+export const DEFAULT_WORKFLOW_SEED_VERSION = 7;
 
 export type CountryProfile = 'uk' | 'usa' | 'canada' | 'australia' | 'generic';
 
@@ -124,7 +124,7 @@ const checklist = (kind: string, labels: string[]) =>
 
 export const DEFAULT_WORKFLOW_ICON_KEYS = {
   STUDENT_INFO: 'User',
-  DISCUSSIONS: 'MessageSquare',
+  DISCUSSIONS: 'NotebookPen',
   APPLICATION_PROCESS: 'ListChecks',
   UNIVERSITY_APPLICATION: 'School',
   SELECTION_OF_UNIVERSITY: 'CheckCircle2',
@@ -133,7 +133,7 @@ export const DEFAULT_WORKFLOW_ICON_KEYS = {
   VISA_APPLICATION: 'Plane',
   PRE_DEPARTURE: 'PlaneTakeoff',
   ON_ARRIVAL: 'MapPinCheck',
-  ENROLMENT_CONFIRMATION: 'BadgeCheck',
+  ENROLMENT_CONFIRMATION: 'GraduationCap',
   LOGS_INFO: 'History',
 } as const;
 
@@ -164,6 +164,22 @@ export const buildDefaultWorkflowTemplateSeed = (countryName: string): WorkflowT
           { fieldKey: 'intake', label: 'Intake', fieldType: 'TEXT', placeholder: 'Fall 2023' },
           { fieldKey: 'student_date', label: 'Student Date', fieldType: 'DATE' },
           { fieldKey: 'poc_name_phone', label: 'POC Name & Phone', fieldType: 'TEXT' },
+          { fieldKey: 'ielts_score', label: 'IELTS', fieldType: 'NUMBER', required: true, placeholder: 'Score' },
+          { fieldKey: 'toefl_score', label: 'TOEFL', fieldType: 'NUMBER', required: true, placeholder: 'Score' },
+          { fieldKey: 'gre_score', label: 'GRE', fieldType: 'NUMBER', required: true, placeholder: 'Score' },
+          { fieldKey: 'gmat_score', label: 'GMAT', fieldType: 'NUMBER', required: true, placeholder: 'Score' },
+          {
+            fieldKey: 'exam_name',
+            label: 'Exam',
+            fieldType: 'SELECT',
+            required: true,
+            optionsJson: ['IELTS', 'TOEFL', 'PTE', 'GRE', 'GMAT', 'Duolingo', 'Other'],
+          },
+          { fieldKey: 'exam_overall', label: 'Overall', fieldType: 'NUMBER', required: true, placeholder: 'Overall score' },
+          { fieldKey: 'exam_reading', label: 'Reading', fieldType: 'NUMBER', required: true },
+          { fieldKey: 'exam_writing', label: 'Writing', fieldType: 'NUMBER', required: true },
+          { fieldKey: 'exam_speaking', label: 'Speaking', fieldType: 'NUMBER', required: true },
+          { fieldKey: 'exam_listening', label: 'Listening', fieldType: 'NUMBER', required: true },
         ],
       },
       {
@@ -173,11 +189,18 @@ export const buildDefaultWorkflowTemplateSeed = (countryName: string): WorkflowT
         sectionType: 'FINANCE_CALCULATOR',
         metadata: { hint: content.currencyHint },
         fields: [
-          { fieldKey: 'tuition_fees', label: 'Tuition fees', fieldType: 'CURRENCY' },
-          { fieldKey: 'deposits', label: 'Deposits', fieldType: 'CURRENCY' },
-          { fieldKey: 'remaining_fee', label: 'Remaining fee', fieldType: 'CURRENCY' },
-          { fieldKey: 'living_cost', label: 'Living cost', fieldType: 'CURRENCY', helpText: content.livingHelp },
-          { fieldKey: 'total_funds_required', label: 'Total funds Required', fieldType: 'CURRENCY' },
+          { fieldKey: 'tuition_fees', label: 'Total fees', fieldType: 'CURRENCY', required: true, placeholder: 'Amount', metadata: { feeEffect: 'base' } },
+          { fieldKey: 'deposits', label: 'Deposit', fieldType: 'CURRENCY', required: true, placeholder: 'Amount', metadata: { feeEffect: 'deduct' } },
+          { fieldKey: 'remaining_fee', label: 'Remaining fees', fieldType: 'CURRENCY', required: true, placeholder: 'Amount', metadata: { feeEffect: 'add' } },
+          { fieldKey: 'living_cost', label: 'Living cost', fieldType: 'CURRENCY', required: true, placeholder: 'Amount', helpText: 'Enter manually — included in result when filled', metadata: { feeEffect: 'add', manualOnly: true } },
+          { fieldKey: 'total_funds_required', label: 'Result', fieldType: 'CURRENCY', required: true, placeholder: '', metadata: { feeEffect: 'total' } },
+          {
+            fieldKey: 'service_fees_verified',
+            label: 'Verified',
+            fieldType: 'CHECKBOX',
+            required: true,
+            helpText: 'Staff must confirm these figures before this step turns green',
+          },
         ],
       },
       {
@@ -217,6 +240,10 @@ export const buildDefaultWorkflowTemplateSeed = (countryName: string): WorkflowT
               'Application Submitted',
               'Offer Letter Received',
               'Offer Letter Rejected',
+              'On Hold',
+              'Deferred',
+              'Visa Granted',
+              'Visa Refused',
             ],
           },
           { fieldKey: 'last_updated_status', label: 'Last Updated Status', fieldType: 'TEXT' },

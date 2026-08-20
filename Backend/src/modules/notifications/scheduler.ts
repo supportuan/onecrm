@@ -1,7 +1,15 @@
 import { prisma } from '../../prisma.js';
+import { ApplicationStage } from '@prisma/client';
 import { notify } from './notifications.service.js';
 
-const TERMINAL_STAGES = new Set(['ENROLLED', 'OFFER_REJECTED']);
+const TERMINAL_STAGES = new Set<ApplicationStage>([
+  ApplicationStage.ENROLLED,
+  ApplicationStage.OFFER_REJECTED,
+  ApplicationStage.ON_HOLD,
+  ApplicationStage.DEFERRED,
+  ApplicationStage.VISA_REFUSED,
+]);
+const TERMINAL_STAGE_LIST = [...TERMINAL_STAGES];
 const OVERDUE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -14,7 +22,7 @@ export const checkOverdueApplications = async (): Promise<void> => {
     where: {
       deadline: { lt: now },
       assignedToId: { not: null },
-      stage: { notIn: ['ENROLLED', 'OFFER_REJECTED'] },
+      stage: { notIn: TERMINAL_STAGE_LIST },
     },
     include: { student: true },
   });
@@ -62,7 +70,7 @@ export const checkOverdueApplicationTasks = async (): Promise<void> => {
       dueDate: { lt: now },
       assignedToId: { not: null },
       status: { in: ['PENDING', 'IN_PROGRESS'] },
-      application: { stage: { notIn: ['ENROLLED', 'OFFER_REJECTED'] } },
+      application: { stage: { notIn: TERMINAL_STAGE_LIST } },
     },
     include: {
       application: { include: { student: true } },

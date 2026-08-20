@@ -22,11 +22,6 @@ export const authorizePermission = (moduleName: string, optionName: string, requ
 
         const { id, role } = req.user;
 
-        // SUPER_ADMIN & GLOBAL_ADMIN bypass all permission checks
-        if (role === 'SUPER_ADMIN' || role === 'GLOBAL_ADMIN') {
-            return next();
-        }
-
         try {
             const user = await prisma.user.findUnique({
                 where: { id },
@@ -35,6 +30,16 @@ export const authorizePermission = (moduleName: string, optionName: string, requ
 
             if (!user) {
                 return sendError(res, 'User not found', null, 404);
+            }
+
+            const { hasConfiguredModuleAccess } = await import('../utils/role-permissions.js');
+            if (
+                (role === 'SUPER_ADMIN' || role === 'GLOBAL_ADMIN') &&
+                !hasConfiguredModuleAccess(
+                    user.moduleAccess as Record<string, Record<string, string[]>> | null,
+                )
+            ) {
+                return next();
             }
 
             let access = user.moduleAccess as Record<string, Record<string, string[]>> | null;

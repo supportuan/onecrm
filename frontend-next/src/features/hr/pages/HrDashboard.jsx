@@ -22,7 +22,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { hasPermission } from '@/lib/auth/rbac';
+import { usePermissions } from '@/lib/auth/PermissionsContext';
 import {
   getMyAttendance,
   submitRemoteClockIn,
@@ -41,9 +41,10 @@ const QUICK_LINKS = [
 
 export default function HrDashboard() {
   const { user } = useAuth();
+  const { can } = usePermissions();
   const role = user?.role;
 
-  const can = (perm) => hasPermission(role, perm);
+  const operator = !isHrSelfServiceOnly(user);
 
   const [clockState, setClockState] = useState({ status: 'unknown', lastEvent: null });
   const [clockBusy, setClockBusy] = useState(false);
@@ -65,8 +66,9 @@ export default function HrDashboard() {
     setTimeout(() => setToast({ kind: '', msg: '' }), 3000);
   };
 
-  // Load today's clock state for the signed-in user
+  // Load today's clock state only when attendance self-service is enabled.
   useEffect(() => {
+    if (!can('VIEW_ATTENDANCE')) return;
     let mounted = true;
     (async () => {
       try {
@@ -85,7 +87,7 @@ export default function HrDashboard() {
     return () => {
       mounted = false;
     };
-  }, [user?.id]);
+  }, [user?.id, user?.moduleAccess]);
 
   useEffect(() => {
     if (!can('VIEW_HR')) return;
@@ -150,7 +152,6 @@ export default function HrDashboard() {
     }
   };
 
-  const operator = !isHrSelfServiceOnly(role);
   const allowedLinks = QUICK_LINKS.filter((l) => {
     if (!can(l.perm)) return false;
     // My HR is for staff self-service; other links show for anyone with the permission.

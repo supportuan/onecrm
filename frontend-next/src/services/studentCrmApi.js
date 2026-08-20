@@ -4,7 +4,15 @@ const API_URL = '/api/student-crm';
 
 const handleResponse = async (res) => {
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
+    let errorData = {};
+    try {
+      errorData = await res.json();
+    } catch {
+      errorData = {};
+    }
+    if (res.status === 401) {
+      throw new Error(errorData.message || 'Session expired — please sign in again');
+    }
     throw new Error(errorData.message || `HTTP error ${res.status}`);
   }
   return res.json();

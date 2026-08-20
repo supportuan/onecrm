@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { ChevronDown, Copy, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import {
   cloneWorkflowTemplate,
   createWorkflowTemplate,
@@ -10,21 +10,11 @@ import {
   resetWorkflowTemplate,
   updateWorkflowTemplate,
 } from '@/services/studentCrmApi';
-import { getWorkflowIcon, WORKFLOW_ICON_OPTIONS, workflowSectionTypeLabel } from '@/features/student-crm/workflowTemplateUi';
-
-const SECTION_TYPES = [
-  'STUDENT_INFO',
-  'DISCUSSIONS',
-  'APPLICATION_PROCESS',
-  'UNIVERSITY_APPLICATION',
-  'FINANCE_CALCULATOR',
-  'PRE_CAS_PROCESS',
-  'VISA_APPLICATION',
-  'PRE_DEPARTURE',
-  'ON_ARRIVAL',
-  'ENROLMENT_CONFIRMATION',
-  'LOGS_INFO',
-];
+import {
+  EXAM_SCORE_TEMPLATE_FIELDS,
+  SERVICE_FEE_TEMPLATE_FIELDS,
+  workflowSectionTypeLabel,
+} from '@/features/student-crm/workflowTemplateUi';
 
 const emptyStage = (index = 0) => ({
   key: `custom_stage_${index + 1}`,
@@ -61,6 +51,8 @@ const normalizeTemplateForEdit = (template) => ({
               placeholder: field.placeholder || '',
               helpText: field.helpText || '',
               sortOrder: field.sortOrder ?? fieldIndex,
+              optionsJson: field.optionsJson ?? null,
+              metadata: field.metadata ?? null,
             }))
           : [],
         checklists: Array.isArray(stage.checklists)
@@ -81,6 +73,8 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState(() => normalizeTemplateForEdit(null));
+  const [expandedStage, setExpandedStage] = useState(0);
+  const [showOptions, setShowOptions] = useState(false);
 
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === selectedId) || null,
@@ -115,6 +109,7 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
   useEffect(() => {
     if (selectedTemplate) {
       setForm(normalizeTemplateForEdit(selectedTemplate));
+      setExpandedStage(0);
     }
   }, [selectedTemplate]);
 
@@ -124,6 +119,30 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
       stages: prev.stages.map((stage, stageIndex) =>
         stageIndex === index ? { ...stage, ...updater, sortOrder: index } : stage
       ),
+    }));
+  };
+
+  const appendPresetFields = (stageIndex, presets) => {
+    setForm((prev) => ({
+      ...prev,
+      stages: prev.stages.map((stage, idx) => {
+        if (idx !== stageIndex) return stage;
+        const existing = new Set(stage.fields.map((field) => field.fieldKey));
+        const extra = presets.filter((field) => !existing.has(field.fieldKey)).map(
+          (field, fieldIndex) => ({
+            fieldKey: field.fieldKey,
+            label: field.label,
+            fieldType: field.fieldType,
+            required: field.required !== false,
+            placeholder: field.placeholder || '',
+            helpText: field.helpText || '',
+            sortOrder: stage.fields.length + fieldIndex,
+            optionsJson: field.optionsJson,
+            metadata: field.metadata ?? null,
+          })
+        );
+        return extra.length ? { ...stage, fields: [...stage.fields, ...extra] } : stage;
+      }),
     }));
   };
 
@@ -140,7 +159,7 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
                   fieldKey: `field_${stage.fields.length + 1}`,
                   label: `Field ${stage.fields.length + 1}`,
                   fieldType: 'TEXT',
-                  required: false,
+                  required: true,
                   placeholder: '',
                   helpText: '',
                   sortOrder: stage.fields.length,
@@ -201,23 +220,23 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
       };
       if (form.id) {
         await updateWorkflowTemplate(form.id, payload);
-        onMessage?.('Workflow template updated');
+        onMessage?.('Template saved');
       } else {
         const res = await createWorkflowTemplate(payload);
-        onMessage?.('Workflow template created');
+        onMessage?.('Template created');
         setSelectedId(res?.data?.id || null);
       }
       await loadTemplates();
     } catch (err) {
-      onMessage?.(err.message || 'Failed to save workflow template');
+      onMessage?.(err.message || 'Failed to save template');
     }
   };
 
   const removeTemplate = async (id) => {
-    if (!window.confirm('Delete this workflow template?')) return;
+    if (!window.confirm('Delete this template?')) return;
     try {
       await deleteWorkflowTemplate(id);
-      onMessage?.('Workflow template deleted');
+      onMessage?.('Template deleted');
       await loadTemplates();
     } catch (err) {
       onMessage?.(err.message || 'Delete failed');
@@ -225,10 +244,10 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
   };
 
   const restoreTemplate = async (id) => {
-    if (!window.confirm('Restore the default 12 steps? Saved progress for this template is cleared.')) return;
+    if (!window.confirm('Restore default steps? This resets the template structure.')) return;
     try {
       await resetWorkflowTemplate(id);
-      onMessage?.('Workflow template restored to default steps');
+      onMessage?.('Template restored to defaults');
       await loadTemplates();
     } catch (err) {
       onMessage?.(err.message || 'Restore failed');
@@ -238,24 +257,34 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
   const duplicateTemplate = async (id) => {
     try {
       await cloneWorkflowTemplate(id);
-      onMessage?.('Workflow template cloned');
+      onMessage?.('Template cloned');
       await loadTemplates();
     } catch (err) {
       onMessage?.(err.message || 'Clone failed');
     }
   };
 
+  const selectTemplate = (id) => {
+    if (id === 'new') {
+      setSelectedId(null);
+      setForm(normalizeTemplateForEdit({ countryId, stages: [emptyStage(0)] }));
+      setExpandedStage(0);
+      return;
+    }
+    const template = templates.find((row) => row.id === Number(id));
+    if (template) {
+      setSelectedId(template.id);
+      setForm(normalizeTemplateForEdit(template));
+      setExpandedStage(0);
+    }
+  };
+
   return (
-    <div className="ui-panel p-5 space-y-4">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div>
-          <h2 className="font-semibold text-sm">Country workflow templates</h2>
-          <p className="text-xs text-neutral-500 mt-1">
-            Admin-editable custom modules that drive stage names, icons, fields, and checklists per country.
-          </p>
-        </div>
-        <div className="flex gap-2 items-center">
-          <select className="ui-field min-w-[220px]" value={countryId} onChange={(e) => setCountryId(e.target.value)}>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="min-w-[160px] flex-1">
+          <label className="text-xs text-neutral-500">Filter by country</label>
+          <select className="ui-field mt-1" value={countryId} onChange={(e) => setCountryId(e.target.value)}>
             <option value="">All countries</option>
             {countries.map((country) => (
               <option key={country.id} value={country.id}>
@@ -263,66 +292,70 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
               </option>
             ))}
           </select>
-          {canManage && (
-            <button
-              type="button"
-              className="ui-btn-primary"
-              onClick={() => {
-                setSelectedId(null);
-                setForm(normalizeTemplateForEdit({ countryId, stages: [emptyStage(0)] }));
-              }}
-            >
-              <Plus size={14} /> New template
-            </button>
-          )}
         </div>
+        <div className="min-w-[200px] flex-[2]">
+          <label className="text-xs text-neutral-500">Template</label>
+          <select
+            className="ui-field mt-1"
+            value={selectedId ?? (form.id ? form.id : 'new')}
+            onChange={(e) => selectTemplate(e.target.value)}
+            disabled={loading}
+          >
+            {canManage ? <option value="new">+ New template</option> : null}
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+                {template.isDefault ? ' (default)' : ''}
+                {template.country?.name ? ` — ${template.country.name}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        {canManage ? (
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="ui-btn-primary" onClick={saveTemplate}>
+              <Save size={14} /> Save
+            </button>
+            {form.id ? (
+              <>
+                <button type="button" className="ui-btn-secondary" onClick={() => restoreTemplate(form.id)}>
+                  <RotateCcw size={14} /> Reset
+                </button>
+                <button type="button" className="ui-btn-secondary" onClick={() => duplicateTemplate(form.id)}>
+                  <Copy size={14} /> Clone
+                </button>
+                <button type="button" className="ui-btn-secondary text-rose-600" onClick={() => removeTemplate(form.id)}>
+                  <Trash2 size={14} />
+                </button>
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
-      <div className="grid xl:grid-cols-[320px_minmax(0,1fr)] gap-4">
-        <div className="ui-surface p-4 space-y-3">
-          {loading ? (
-            <p className="text-sm text-neutral-500">Loading workflow templates...</p>
-          ) : templates.length === 0 ? (
-            <p className="text-sm text-neutral-500">No custom module templates yet for this country.</p>
-          ) : (
-            templates.map((template) => (
-              <button
-                key={template.id}
-                type="button"
-                onClick={() => setSelectedId(template.id)}
-                className={`w-full text-left rounded-xl border px-3 py-3 transition ${
-                  template.id === selectedId
-                    ? 'border-brand bg-brand/5'
-                    : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50/70'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium text-sm text-brand">{template.name}</p>
-                  {template.isDefault && (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                      Default
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {template.country?.name || 'No country'} · {template.stages?.length || 0} sections
-                </p>
-              </button>
-            ))
-          )}
-        </div>
-
-        <div className="ui-surface p-4 space-y-4">
-          <div className="grid md:grid-cols-2 gap-3">
+      {loading ? (
+        <p className="text-sm text-neutral-500">Loading templates…</p>
+      ) : templates.length === 0 && !form.name && !canManage ? (
+        <p className="text-sm text-neutral-500">No templates available.</p>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="ui-text-caption">Template name</label>
-              <input className="ui-field" value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} />
+              <label className="text-xs text-neutral-500">Template name</label>
+              <input
+                className="ui-field mt-1"
+                value={form.name}
+                disabled={!canManage}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. United Kingdom default"
+              />
             </div>
             <div>
-              <label className="ui-text-caption">Country</label>
+              <label className="text-xs text-neutral-500">Country</label>
               <select
-                className="ui-field"
+                className="ui-field mt-1"
                 value={form.countryId}
+                disabled={!canManage}
                 onChange={(e) => setForm((prev) => ({ ...prev, countryId: e.target.value }))}
               >
                 <option value="">Select country</option>
@@ -333,273 +366,297 @@ export default function WorkflowTemplateAdmin({ countries = [], canManage, onMes
                 ))}
               </select>
             </div>
-            <div className="md:col-span-2">
-              <label className="ui-text-caption">Description</label>
-              <textarea
-                className="ui-field"
-                rows={2}
-                value={form.description}
-                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              />
+          </div>
+
+          {canManage ? (
+            <button
+              type="button"
+              className="text-xs text-neutral-500 hover:text-brand"
+              onClick={() => setShowOptions((open) => !open)}
+            >
+              {showOptions ? 'Hide' : 'Show'} extra options
+            </button>
+          ) : null}
+
+          {showOptions ? (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50/60 p-3 space-y-3">
+              <div>
+                <label className="text-xs text-neutral-500">Description</label>
+                <textarea
+                  className="ui-field mt-1"
+                  rows={2}
+                  value={form.description}
+                  disabled={!canManage}
+                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.isActive}
+                    disabled={!canManage}
+                    onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+                  />
+                  Active
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.isDefault}
+                    disabled={!canManage}
+                    onChange={(e) => setForm((prev) => ({ ...prev, isDefault: e.target.checked }))}
+                  />
+                  Default for country
+                </label>
+              </div>
             </div>
-          </div>
+          ) : null}
 
-          <div className="flex flex-wrap gap-3 text-sm">
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
-              />
-              Active
-            </label>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={form.isDefault}
-                onChange={(e) => setForm((prev) => ({ ...prev, isDefault: e.target.checked }))}
-              />
-              Default for country
-            </label>
-          </div>
-
-          <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              Sections ({form.stages.length})
+            </p>
             {form.stages.map((stage, stageIndex) => {
-              const StageIcon = getWorkflowIcon(stage.iconKey);
+              const open = expandedStage === stageIndex;
+              const summary = [
+                stage.fields.length ? `${stage.fields.length} fields` : null,
+                stage.checklists.length ? `${stage.checklists.length} checklist` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ');
+
               return (
-                <div key={`${stage.key}-${stageIndex}`} className="ui-panel p-4 space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand">
-                        <StageIcon size={18} />
-                      </div>
+                <div key={`${stage.key}-${stageIndex}`} className="rounded-xl border border-neutral-200 overflow-hidden">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-neutral-50/80"
+                    onClick={() => setExpandedStage(open ? -1 : stageIndex)}
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-brand">
+                        {stageIndex + 1}. {stage.label}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {workflowSectionTypeLabel(stage.sectionType)}
+                        {summary ? ` · ${summary}` : ''}
+                      </p>
+                    </div>
+                    <ChevronDown size={16} className={`shrink-0 text-neutral-400 transition ${open ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {open ? (
+                    <div className="border-t border-neutral-100 px-4 py-4 space-y-4 bg-neutral-50/40">
                       <div>
-                        <p className="text-sm font-semibold text-brand">{stage.label}</p>
-                        <p className="text-xs text-neutral-500">{workflowSectionTypeLabel(stage.sectionType)}</p>
+                        <label className="text-xs text-neutral-500">Section name</label>
+                        <input
+                          className="ui-field mt-1"
+                          value={stage.label}
+                          disabled={!canManage}
+                          onChange={(e) => updateStage(stageIndex, { label: e.target.value })}
+                        />
                       </div>
-                    </div>
-                    {canManage && (
-                      <button
-                        type="button"
-                        className="text-rose-600 hover:text-rose-700"
-                        onClick={() =>
-                          setForm((prev) => ({
-                            ...prev,
-                            stages: prev.stages.filter((_, idx) => idx !== stageIndex).map((row, idx) => ({ ...row, sortOrder: idx })),
-                          }))
-                        }
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
 
-                  <div className="grid lg:grid-cols-4 gap-3">
-                    <div>
-                      <label className="ui-text-caption">Label</label>
-                      <input className="ui-field" value={stage.label} onChange={(e) => updateStage(stageIndex, { label: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="ui-text-caption">Key</label>
-                      <input className="ui-field" value={stage.key} onChange={(e) => updateStage(stageIndex, { key: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="ui-text-caption">Section type</label>
-                      <select
-                        className="ui-field"
-                        value={stage.sectionType}
-                        onChange={(e) => updateStage(stageIndex, { sectionType: e.target.value })}
-                      >
-                        {SECTION_TYPES.map((type) => (
-                          <option key={type} value={type}>
-                            {workflowSectionTypeLabel(type)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="ui-text-caption">Icon</label>
-                      <select
-                        className="ui-field"
-                        value={stage.iconKey}
-                        onChange={(e) => updateStage(stageIndex, { iconKey: e.target.value })}
-                      >
-                        {WORKFLOW_ICON_OPTIONS.map((icon) => (
-                          <option key={icon} value={icon}>
-                            {icon}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid xl:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-brand">Fields</p>
-                        {canManage && (
-                          <button type="button" className="ui-btn-secondary" onClick={() => addField(stageIndex)}>
-                            <Plus size={13} /> Add field
-                          </button>
-                        )}
-                      </div>
-                      {stage.fields.length === 0 ? (
-                        <p className="text-xs text-neutral-500">No custom fields for this section.</p>
-                      ) : (
-                        stage.fields.map((field, fieldIndex) => (
-                          <div key={`${field.fieldKey}-${fieldIndex}`} className="rounded-xl border border-neutral-200 p-3 space-y-2">
-                            <div className="grid grid-cols-2 gap-2">
-                              <input
-                                className="ui-field"
-                                value={field.label}
-                                onChange={(e) =>
-                                  setForm((prev) => ({
-                                    ...prev,
-                                    stages: prev.stages.map((row, idx) =>
-                                      idx === stageIndex
-                                        ? {
-                                            ...row,
-                                            fields: row.fields.map((entry, idx2) =>
-                                              idx2 === fieldIndex ? { ...entry, label: e.target.value } : entry
-                                            ),
-                                          }
-                                        : row
-                                    ),
-                                  }))
-                                }
-                              />
-                              <select
-                                className="ui-field"
-                                value={field.fieldType}
-                                onChange={(e) =>
-                                  setForm((prev) => ({
-                                    ...prev,
-                                    stages: prev.stages.map((row, idx) =>
-                                      idx === stageIndex
-                                        ? {
-                                            ...row,
-                                            fields: row.fields.map((entry, idx2) =>
-                                              idx2 === fieldIndex ? { ...entry, fieldType: e.target.value } : entry
-                                            ),
-                                          }
-                                        : row
-                                    ),
-                                  }))
-                                }
-                              >
-                                {['TEXT', 'TEXTAREA', 'NUMBER', 'DATE', 'URL', 'CURRENCY', 'CHECKBOX', 'SELECT'].map((type) => (
-                                  <option key={type} value={type}>
-                                    {type}
-                                  </option>
-                                ))}
-                              </select>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium text-neutral-700">Fields</p>
+                          {canManage ? (
+                            <div className="flex flex-wrap gap-1">
+                              {stage.sectionType === 'STUDENT_INFO' &&
+                              EXAM_SCORE_TEMPLATE_FIELDS.some(
+                                (field) => !stage.fields.some((entry) => entry.fieldKey === field.fieldKey)
+                              ) ? (
+                                <button
+                                  type="button"
+                                  className="text-xs text-brand hover:underline"
+                                  onClick={() => appendPresetFields(stageIndex, EXAM_SCORE_TEMPLATE_FIELDS)}
+                                >
+                                  + Exam scores
+                                </button>
+                              ) : null}
+                              {stage.sectionType === 'FINANCE_CALCULATOR' &&
+                              SERVICE_FEE_TEMPLATE_FIELDS.some(
+                                (field) => !stage.fields.some((entry) => entry.fieldKey === field.fieldKey)
+                              ) ? (
+                                <button
+                                  type="button"
+                                  className="text-xs text-brand hover:underline"
+                                  onClick={() => appendPresetFields(stageIndex, SERVICE_FEE_TEMPLATE_FIELDS)}
+                                >
+                                  + Service fees
+                                </button>
+                              ) : null}
+                              <button type="button" className="text-xs text-brand hover:underline" onClick={() => addField(stageIndex)}>
+                                + Field
+                              </button>
                             </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-brand">Checklist items</p>
-                        {canManage && (
-                          <button type="button" className="ui-btn-secondary" onClick={() => addChecklist(stageIndex)}>
-                            <Plus size={13} /> Add item
-                          </button>
+                          ) : null}
+                        </div>
+                        {stage.fields.length === 0 ? (
+                          <p className="text-xs text-neutral-500">No fields.</p>
+                        ) : (
+                          <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-100 bg-white">
+                            {stage.fields.map((field, fieldIndex) => (
+                              <li key={`${field.fieldKey}-${fieldIndex}`} className="flex items-center gap-2 px-3 py-2">
+                                <input
+                                  className="ui-field flex-1 py-1.5 text-sm"
+                                  value={field.label}
+                                  disabled={!canManage}
+                                  onChange={(e) =>
+                                    setForm((prev) => ({
+                                      ...prev,
+                                      stages: prev.stages.map((row, idx) =>
+                                        idx === stageIndex
+                                          ? {
+                                              ...row,
+                                              fields: row.fields.map((entry, idx2) =>
+                                                idx2 === fieldIndex ? { ...entry, label: e.target.value } : entry
+                                              ),
+                                            }
+                                          : row
+                                      ),
+                                    }))
+                                  }
+                                />
+                                <label className="inline-flex shrink-0 items-center gap-1 text-xs text-neutral-600">
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(field.required)}
+                                    disabled={!canManage}
+                                    onChange={(e) =>
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        stages: prev.stages.map((row, idx) =>
+                                          idx === stageIndex
+                                            ? {
+                                                ...row,
+                                                fields: row.fields.map((entry, idx2) =>
+                                                  idx2 === fieldIndex ? { ...entry, required: e.target.checked } : entry
+                                                ),
+                                              }
+                                            : row
+                                        ),
+                                      }))
+                                    }
+                                  />
+                                  Req
+                                </label>
+                                {canManage ? (
+                                  <button
+                                    type="button"
+                                    className="shrink-0 text-neutral-400 hover:text-rose-600"
+                                    onClick={() =>
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        stages: prev.stages.map((row, idx) =>
+                                          idx === stageIndex
+                                            ? { ...row, fields: row.fields.filter((_, idx2) => idx2 !== fieldIndex) }
+                                            : row
+                                        ),
+                                      }))
+                                    }
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
                         )}
                       </div>
-                      {stage.checklists.length === 0 ? (
-                        <p className="text-xs text-neutral-500">No checklist items for this section.</p>
-                      ) : (
-                        stage.checklists.map((item, itemIndex) => (
-                          <div key={`${item.itemKey}-${itemIndex}`} className="rounded-xl border border-neutral-200 p-3 flex gap-3 items-center">
-                            <input
-                              className="ui-field flex-1"
-                              value={item.label}
-                              onChange={(e) =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  stages: prev.stages.map((row, idx) =>
-                                    idx === stageIndex
-                                      ? {
-                                          ...row,
-                                          checklists: row.checklists.map((entry, idx2) =>
-                                            idx2 === itemIndex ? { ...entry, label: e.target.value } : entry
-                                          ),
-                                        }
-                                      : row
-                                  ),
-                                }))
-                              }
-                            />
-                            <label className="text-xs inline-flex items-center gap-2 whitespace-nowrap">
-                              <input
-                                type="checkbox"
-                                checked={item.required !== false}
-                                onChange={(e) =>
-                                  setForm((prev) => ({
-                                    ...prev,
-                                    stages: prev.stages.map((row, idx) =>
-                                      idx === stageIndex
-                                        ? {
-                                            ...row,
-                                            checklists: row.checklists.map((entry, idx2) =>
-                                              idx2 === itemIndex ? { ...entry, required: e.target.checked } : entry
-                                            ),
-                                          }
-                                        : row
-                                    ),
-                                  }))
-                                }
-                              />
-                              Required
-                            </label>
-                          </div>
-                        ))
-                      )}
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium text-neutral-700">Checklist</p>
+                          {canManage ? (
+                            <button type="button" className="text-xs text-brand hover:underline" onClick={() => addChecklist(stageIndex)}>
+                              + Item
+                            </button>
+                          ) : null}
+                        </div>
+                        {stage.checklists.length === 0 ? (
+                          <p className="text-xs text-neutral-500">No checklist items.</p>
+                        ) : (
+                          <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-100 bg-white">
+                            {stage.checklists.map((item, itemIndex) => (
+                              <li key={`${item.itemKey}-${itemIndex}`} className="flex items-center gap-2 px-3 py-2">
+                                <input
+                                  className="ui-field flex-1 py-1.5 text-sm"
+                                  value={item.label}
+                                  disabled={!canManage}
+                                  onChange={(e) =>
+                                    setForm((prev) => ({
+                                      ...prev,
+                                      stages: prev.stages.map((row, idx) =>
+                                        idx === stageIndex
+                                          ? {
+                                              ...row,
+                                              checklists: row.checklists.map((entry, idx2) =>
+                                                idx2 === itemIndex ? { ...entry, label: e.target.value } : entry
+                                              ),
+                                            }
+                                          : row
+                                      ),
+                                    }))
+                                  }
+                                />
+                                <label className="inline-flex shrink-0 items-center gap-1 text-xs text-neutral-600">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.required !== false}
+                                    disabled={!canManage}
+                                    onChange={(e) =>
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        stages: prev.stages.map((row, idx) =>
+                                          idx === stageIndex
+                                            ? {
+                                                ...row,
+                                                checklists: row.checklists.map((entry, idx2) =>
+                                                  idx2 === itemIndex ? { ...entry, required: e.target.checked } : entry
+                                                ),
+                                              }
+                                            : row
+                                        ),
+                                      }))
+                                    }
+                                  />
+                                  Req
+                                </label>
+                                {canManage ? (
+                                  <button
+                                    type="button"
+                                    className="shrink-0 text-neutral-400 hover:text-rose-600"
+                                    onClick={() =>
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        stages: prev.stages.map((row, idx) =>
+                                          idx === stageIndex
+                                            ? {
+                                                ...row,
+                                                checklists: row.checklists.filter((_, idx2) => idx2 !== itemIndex),
+                                              }
+                                            : row
+                                        ),
+                                      }))
+                                    }
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               );
             })}
-            {canManage && (
-              <button
-                type="button"
-                className="ui-btn-secondary"
-                onClick={() =>
-                  setForm((prev) => ({
-                    ...prev,
-                    stages: [...prev.stages, emptyStage(prev.stages.length)],
-                  }))
-                }
-              >
-                <Plus size={14} /> Add section
-              </button>
-            )}
           </div>
-
-          {canManage && (
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="ui-btn-primary" onClick={saveTemplate}>
-                <Save size={14} /> Save template
-              </button>
-              {form.id && (
-                <>
-                  <button type="button" className="ui-btn-secondary" onClick={() => duplicateTemplate(form.id)}>
-                    <Copy size={14} /> Clone
-                  </button>
-                  <button type="button" className="ui-btn-secondary" onClick={() => restoreTemplate(form.id)}>
-                    <RotateCcw size={14} /> Restore defaults
-                  </button>
-                  <button type="button" className="ui-btn-secondary text-rose-600" onClick={() => removeTemplate(form.id)}>
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

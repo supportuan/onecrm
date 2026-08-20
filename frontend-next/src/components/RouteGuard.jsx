@@ -8,6 +8,11 @@ import {
   isAgencyPartnerRole,
   isAgentBlockedPath,
 } from '@/features/agency-crm/agentPortal';
+import {
+  hasConfiguredModuleAccess,
+  hasHrSelfServiceAccess,
+  moduleHasAnyAccess,
+} from '@/lib/auth/module-access';
 
 /**
  * Maps URL path prefixes to their module and option names in the permission system.
@@ -24,6 +29,7 @@ const ROUTE_PERMISSION_MAP = [
 
   // Student CRM
   { path: '/student-crm/student-management', module: 'Student CRM', option: 'Student Management' },
+  { path: '/student-crm/dashboard', module: 'Student CRM', option: null },
   { path: '/student-crm/applications', module: 'Student CRM', option: 'Applications' },
   { path: '/student-crm/visa-management', module: 'Student CRM', option: 'Visa Management' },
   { path: '/student-crm/counselling', module: 'Student CRM', option: 'Counselling' },
@@ -70,15 +76,22 @@ const ROUTE_PERMISSION_MAP = [
  */
 function hasRouteAccess(pathname, user) {
   if (!user) return false;
-  if (user.role === 'SUPER_ADMIN') return true;
 
-  // Partner users never enter admin partner-ops screens.
   if (isAgencyPartnerRole(user.role) && isAgentBlockedPath(pathname)) {
     return false;
   }
 
   const access = user.moduleAccess;
-  if (!access || Object.keys(access).length === 0) return true; // fallback: don't block if no permissions stored yet
+  const configured = hasConfiguredModuleAccess(access);
+
+  if (pathname.startsWith('/hr/me')) {
+    if (!configured) return user.role !== 'STUDENT';
+    return hasHrSelfServiceAccess(access);
+  }
+
+  if (user.role === 'SUPER_ADMIN' && !configured) return true;
+
+  if (!configured) return true; // legacy users without stored module matrix
 
   // Find the matching route rule (most specific first since array is ordered specific→general)
   const rule = ROUTE_PERMISSION_MAP.find((r) => pathname.startsWith(r.path));
@@ -88,18 +101,15 @@ function hasRouteAccess(pathname, user) {
     return false;
   }
 
-  const moduleData = access[rule.module];
-  if (!moduleData) return false; // module not in user's access → blocked
+  if (!moduleHasAnyAccess(access, rule.module)) return false;
 
   if (rule.option === null) {
-    // Module-level check: at least one option must have any action
-    return Object.values(moduleData).some(
+    return Object.values(access[rule.module] || {}).some(
       (actions) => Array.isArray(actions) && actions.length > 0
     );
   }
 
-  // Specific option check
-  const actions = moduleData[rule.option];
+  const actions = access[rule.module]?.[rule.option];
   return Array.isArray(actions) && actions.length > 0;
 }
 

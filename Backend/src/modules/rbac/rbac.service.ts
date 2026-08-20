@@ -4,7 +4,12 @@ import {
   DEFAULT_ROLE_PERMISSIONS,
   SYSTEM_ROLES,
 } from './rbac.constants.js';
-import { isForbiddenRoleName, slugifyRoleName } from '../../utils/role-permissions.js';
+import {
+  hasConfiguredModuleAccess,
+  isForbiddenRoleName,
+  moduleAccessToPermissions,
+  slugifyRoleName,
+} from '../../utils/role-permissions.js';
 
 let cache: Record<string, string[]> | null = null;
 
@@ -67,6 +72,33 @@ export const hasPermission = async (
   if (role === 'SUPER_ADMIN' || role === 'GLOBAL_ADMIN') return true;
   const perms = await getPermissionsForRole(role);
   return required.some((p) => perms.includes(p));
+};
+
+export const resolveEffectivePermissions = async (user: {
+  role: string;
+  permissionRole?: string | null;
+  moduleAccess?: Record<string, Record<string, string[]>> | null;
+}): Promise<string[]> => {
+  const role = user.permissionRole ?? user.role;
+  if (hasConfiguredModuleAccess(user.moduleAccess)) {
+    return moduleAccessToPermissions(user.moduleAccess);
+  }
+  if (role === 'SUPER_ADMIN' || role === 'GLOBAL_ADMIN') {
+    return [...ALL_PERMISSIONS];
+  }
+  return getPermissionsForRole(role);
+};
+
+export const hasUserPermission = async (
+  user: {
+    role: string;
+    permissionRole?: string | null;
+    moduleAccess?: Record<string, Record<string, string[]>> | null;
+  },
+  required: string[],
+): Promise<boolean> => {
+  const effective = await resolveEffectivePermissions(user);
+  return required.some((p) => effective.includes(p));
 };
 
 export const updateRolePermissions = async (

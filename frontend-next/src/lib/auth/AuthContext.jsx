@@ -33,12 +33,18 @@ export const AuthProvider = ({ children }) => {
       const { default: authFetch } = await import('@/lib/api');
       const res = await authFetch('/api/auth/me');
       if (!res.ok) {
-        if (res.status !== 401) {
-          console.warn('[Permissions Sync] Profile sync failed:', res.status);
+        if (res.status === 401) {
+          clearSession();
         }
         return;
       }
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        console.warn('[Permissions Sync] Profile response was not JSON');
+        return;
+      }
       if (data?.success && data?.data) {
         setUser(data.data);
         localStorage.setItem('currentUser', JSON.stringify(data.data));
@@ -56,7 +62,13 @@ export const AuthProvider = ({ children }) => {
     if (storedAccess && storedRefresh && storedUser) {
       setAccessToken(storedAccess);
       setRefreshToken(storedRefresh);
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        clearStoredSession();
+        setLoading(false);
+        return;
+      }
       syncAccessToken(storedAccess);
       persistAccessTokenCookie(storedAccess);
       syncProfile();

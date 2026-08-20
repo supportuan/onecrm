@@ -18,9 +18,10 @@ import {
   VisaPanel,
 } from './ApplicationParts';
 import StaffApplicationFees from './StaffApplicationFees';
-import { getWorkflowIcon } from '../workflowTemplateUi';
+import ServiceFeesPanel from './ServiceFeesPanel';
+import { getWorkflowIcon, isTemplateFieldSubmitted } from '../workflowTemplateUi';
 import { toDateInputValue } from '../dateFormat';
-import RequiredStatusIcon, { isFilledValue } from './RequiredStatusIcon';
+import RequiredStatusIcon from './RequiredStatusIcon';
 
 const fallbackTabs = [
   { key: 'overview', label: 'Overview', icon: FileText, sectionType: 'STUDENT_INFO' },
@@ -102,7 +103,7 @@ function GenericWorkflowSection({ app, stage, canManage, onSaveProgress, onSaved
     if (field.fieldType === 'CHECKBOX') {
       return (
         <label className="inline-flex items-center gap-2 text-sm text-neutral-700">
-          {field.required ? <RequiredStatusIcon submitted={Boolean(value)} /> : null}
+          {field.required ? <RequiredStatusIcon submitted={isTemplateFieldSubmitted(field, fieldValues, stage)} /> : null}
           <input
             type="checkbox"
             checked={Boolean(value)}
@@ -144,7 +145,7 @@ function GenericWorkflowSection({ app, stage, canManage, onSaveProgress, onSaved
                 {field.fieldType !== 'CHECKBOX' && (
                   <label className="ui-text-caption inline-flex items-center gap-1.5">
                     {field.required ? (
-                      <RequiredStatusIcon submitted={isFilledValue(fieldValues[field.id])} />
+                      <RequiredStatusIcon submitted={isTemplateFieldSubmitted(field, fieldValues, stage)} />
                     ) : null}
                     {field.label}
                   </label>
@@ -298,14 +299,14 @@ export default function WorkflowSectionsPanel({
       case 'FINANCE_CALCULATOR':
         return (
           <>
-            <StaffApplicationFees app={app} canManage={canManage} onSaved={onSaved} />
-            <GenericWorkflowSection
+            <ServiceFeesPanel
               app={app}
               stage={stage}
               canManage={canManage}
               onSaveProgress={onSaveWorkflowProgress}
               onSaved={onSaved}
             />
+            <StaffApplicationFees app={app} canManage={canManage} onSaved={onSaved} />
           </>
         );
       case 'VISA_APPLICATION':

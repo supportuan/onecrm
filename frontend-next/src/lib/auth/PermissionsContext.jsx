@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './AuthContext';
-import { ROLE_PERMISSIONS, ALL_PERMISSIONS, SYSTEM_ROLES, hasAnyPermission } from './rbac';
+import { ROLE_PERMISSIONS, ALL_PERMISSIONS, SYSTEM_ROLES } from './rbac';
+import { userCan } from './module-access';
 
 const RBAC_BASE = '/api/rbac';
 
@@ -133,10 +134,9 @@ export const PermissionsProvider = ({ children }) => {
   const can = useCallback(
     (permission) => {
       if (!user?.role) return false;
-      const effectiveRole = user.permissionRole || user.role;
-      return hasAnyPermission(effectiveRole, permission, permissionMap);
+      return userCan(user, permission, permissionMap);
     },
-    [user, permissionMap]
+    [user, permissionMap],
   );
 
   const value = useMemo(

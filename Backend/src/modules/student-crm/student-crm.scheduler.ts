@@ -1,10 +1,18 @@
 import { prisma } from '../../prisma.js';
+import { ApplicationStage } from '@prisma/client';
 import { notify } from '../notifications/notifications.service.js';
 import { getApplicationReadiness } from './application-gates.js';
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const DEADLINE_WINDOW_DAYS = 3;
-const TERMINAL_STAGES = new Set(['ENROLLED', 'OFFER_REJECTED']);
+const TERMINAL_STAGES = new Set<ApplicationStage>([
+  ApplicationStage.ENROLLED,
+  ApplicationStage.OFFER_REJECTED,
+  ApplicationStage.ON_HOLD,
+  ApplicationStage.DEFERRED,
+  ApplicationStage.VISA_REFUSED,
+]);
+const TERMINAL_STAGE_LIST = [...TERMINAL_STAGES];
 
 const recentNotification = async (
   recipientId: number,
@@ -69,7 +77,7 @@ export const checkUpcomingDeadlines = async (): Promise<void> => {
   const apps = await prisma.application.findMany({
     where: {
       deadline: { gte: now, lte: horizon },
-      stage: { notIn: ['ENROLLED', 'OFFER_REJECTED'] },
+      stage: { notIn: TERMINAL_STAGE_LIST },
     },
     include: { student: true },
   });

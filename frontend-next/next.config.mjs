@@ -41,7 +41,7 @@ const nextConfig = {
       { source: "/hr/kpi-dashboard", destination: "/hr/performance-reviews?tab=kpi", permanent: true },
       { source: "/hr/payroll-inputs", destination: "/hr/payroll?tab=run", permanent: true },
       { source: "/hr/payroll-deductions", destination: "/hr/payroll?tab=deductions", permanent: true },
-      { source: "/student-crm", destination: "/student-crm/applications", permanent: true },
+      { source: "/student-crm", destination: "/student-crm/dashboard", permanent: false },
       { source: "/admin-settings", destination: "/admin-settings/users", permanent: true },
       { source: "/users", destination: "/admin-settings/users", permanent: true },
     ];

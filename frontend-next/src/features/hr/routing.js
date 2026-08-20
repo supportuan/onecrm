@@ -1,4 +1,5 @@
 import { ROLE_PERMISSIONS } from '@/lib/auth/rbac';
+import { resolveEffectivePermissions } from '@/lib/auth/module-access';
 
 const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_');
 
@@ -16,23 +17,34 @@ const HR_OPERATOR_PERMS = [
 
 export const getRolePermissions = (role) => ROLE_PERMISSIONS[normalizeRole(role)] || [];
 
-export const hasHrModuleAccess = (role) => getRolePermissions(role).includes('VIEW_HR');
+export const getEffectivePermissions = (user, permissionMap) =>
+  user ? resolveEffectivePermissions(user, permissionMap) : [];
+
+export const hasHrModuleAccess = (userOrRole, permissionMap = null) => {
+  if (userOrRole && typeof userOrRole === 'object') {
+    return getEffectivePermissions(userOrRole, permissionMap).includes('VIEW_HR');
+  }
+  return getRolePermissions(userOrRole).includes('VIEW_HR');
+};
 
 /**
  * Employee self-service: has VIEW_HR plus leave/attendance/payslip access
  * but none of the HR operator capabilities.
  */
-export const isHrSelfServiceOnly = (role) => {
-  const perms = getRolePermissions(role);
+export const isHrSelfServiceOnly = (userOrRole, permissionMap = null) => {
+  const perms =
+    userOrRole && typeof userOrRole === 'object'
+      ? getEffectivePermissions(userOrRole, permissionMap)
+      : getRolePermissions(userOrRole);
   if (!perms.includes('VIEW_HR')) return false;
   const hasOperator = HR_OPERATOR_PERMS.some((p) => perms.includes(p));
   return !hasOperator;
 };
 
 /** Default landing route after login or home redirect. */
-export const getDefaultHrRoute = (role) => {
-  if (!hasHrModuleAccess(role)) return null;
+export const getDefaultHrRoute = (userOrRole, permissionMap = null) => {
+  if (!hasHrModuleAccess(userOrRole, permissionMap)) return null;
+  const role = typeof userOrRole === 'object' ? userOrRole?.role : userOrRole;
   if (role === 'HR') return '/hr/employee-directory';
-  // Staff (self-service) and operators both land on Overview.
   return '/hr';
 };

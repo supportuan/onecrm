@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
 import {
   getApplication,
   updateApplication,
+  advanceApplicationStage,
   addDocument,
   updateDocument,
   deleteDocument,
@@ -109,6 +110,17 @@ export default function ApplicationDetail({ applicationId }) {
       fetchDetail({ silent: true });
     } catch (e) {
       flash('err', e?.message || 'failed to update');
+    }
+  };
+
+  const handleStageChange = async (stage) => {
+    if (!app) return;
+    try {
+      await advanceApplicationStage(app.id, { stage });
+      flash('ok', 'Application status updated');
+      await fetchDetail({ silent: true });
+    } catch (e) {
+      flash('err', e?.message || 'failed to update status');
     }
   };
 
@@ -395,6 +407,7 @@ export default function ApplicationDetail({ applicationId }) {
           variant="detail"
           handlers={{
             onUpdateMeta: handleUpdateMeta,
+            onStageChange: handleStageChange,
             onSaveStudentInfo: handleSaveStudentInfo,
             onDocStatus: handleDocStatus,
             onDocApprove: handleDocApprove,

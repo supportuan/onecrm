@@ -72,9 +72,15 @@ export const navMenu = [
   {
     label: "Student Hub",
     accessKey: "Student CRM",
-    path: "/student-crm/applications",
+    path: "/student-crm",
+    homePath: "/student-crm/dashboard",
     icon: Users,
     subItems: [
+      {
+        label: "Dashboard",
+        path: "/student-crm/dashboard",
+        icon: LayoutDashboard,
+      },
       {
         label: "Application Tracking System",
         path: "/student-crm/applications",

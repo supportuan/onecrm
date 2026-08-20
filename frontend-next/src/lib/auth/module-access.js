@@ -1,34 +1,48 @@
-import { UserRole } from '@prisma/client';
+import { ROLE_PERMISSIONS } from './rbac';
 
-const RESERVED_SUPER = new Set(['SUPER_ADMIN', 'SUPERADMIN', 'SUPER ADMIN']);
+const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_');
+const fullAccessPermissions = () =>
+  ROLE_PERMISSIONS.GLOBAL_ADMIN || ROLE_PERMISSIONS.SUPER_ADMIN || [];
 
-/** Normalize a free-form role name into a stable RolePermission key. */
-export const slugifyRoleName = (name: string): string => {
-  const slug = name
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 64);
-  return slug || 'CUSTOM_ROLE';
+export const HR_SELF_SERVICE_OPTIONS = [
+  'Attendance',
+  'Leave Management',
+  'Payroll Inputs',
+];
+
+/** True when the user has an explicit per-module access matrix stored. */
+export const hasConfiguredModuleAccess = (moduleAccess) => {
+  if (!moduleAccess || typeof moduleAccess !== 'object') return false;
+  return Object.values(moduleAccess).some((options) =>
+    Object.values(options || {}).some(
+      (actions) => Array.isArray(actions) && actions.length > 0,
+    ),
+  );
 };
 
-export const isForbiddenRoleName = (name: string): boolean => {
-  const slug = slugifyRoleName(name);
-  return RESERVED_SUPER.has(slug) || slug.includes('SUPER_ADMIN');
+export const moduleHasAnyAccess = (moduleAccess, moduleName) => {
+  const opts = moduleAccess?.[moduleName];
+  if (!opts) return false;
+  return Object.values(opts).some(
+    (actions) => Array.isArray(actions) && actions.length > 0,
+  );
 };
 
-/** Map sidebar moduleAccess JSON to RBAC permission strings. */
-export const moduleAccessToPermissions = (
-  moduleAccess: Record<string, Record<string, string[]>> | null | undefined,
-): string[] => {
+export const hasHrSelfServiceAccess = (moduleAccess) => {
+  const hr = moduleAccess?.HR || {};
+  return HR_SELF_SERVICE_OPTIONS.some(
+    (option) => Array.isArray(hr[option]) && hr[option].length > 0,
+  );
+};
+
+/** Mirror Backend/src/utils/role-permissions.ts */
+export const moduleAccessToPermissions = (moduleAccess) => {
   if (!moduleAccess || typeof moduleAccess !== 'object' || Array.isArray(moduleAccess)) return [];
 
-  const perms = new Set<string>();
-  const hasEdit = (actions?: string[]) => Array.isArray(actions) && actions.includes('EDIT');
-  const hasView = (actions?: string[]) => Array.isArray(actions) && actions.length > 0;
-
-  const moduleOpts = (module: string) => moduleAccess[module] || {};
+  const perms = new Set();
+  const hasEdit = (actions) => Array.isArray(actions) && actions.includes('EDIT');
+  const hasView = (actions) => Array.isArray(actions) && actions.length > 0;
+  const moduleOpts = (module) => moduleAccess[module] || {};
 
   const marketing = moduleOpts('Marketing');
   if (Object.values(marketing).some(hasView)) perms.add('VIEW_MARKETING');
@@ -54,7 +68,7 @@ export const moduleAccessToPermissions = (
   const hrHasEdit = Object.values(hr).some(hasEdit);
   if (hrHasView || hrHasEdit) {
     perms.add('VIEW_HR');
-    if (hasView(hr['Attendance']) || hasEdit(hr['Attendance'])) {
+    if (hasView(hr.Attendance) || hasEdit(hr.Attendance)) {
       perms.add('VIEW_ATTENDANCE');
     }
     if (hasView(hr['Leave Management']) || hasEdit(hr['Leave Management'])) {
@@ -92,36 +106,25 @@ export const moduleAccessToPermissions = (
   return Array.from(perms);
 };
 
-export const hasConfiguredModuleAccess = (
-  moduleAccess: Record<string, Record<string, string[]>> | null | undefined,
-): boolean => {
-  if (!moduleAccess || typeof moduleAccess !== 'object') return false;
-  return Object.values(moduleAccess).some((options) =>
-    Object.values(options || {}).some(
-      (actions) => Array.isArray(actions) && actions.length > 0,
-    ),
-  );
+export const resolveEffectivePermissions = (user, permissionMap) => {
+  if (!user?.role) return [];
+
+  const role = user.permissionRole || user.role;
+  const normalizedRole = normalizeRole(role);
+
+  if (hasConfiguredModuleAccess(user.moduleAccess)) {
+    return moduleAccessToPermissions(user.moduleAccess);
+  }
+
+  if (normalizedRole === 'SUPER_ADMIN' || normalizedRole === 'GLOBAL_ADMIN') {
+    return fullAccessPermissions();
+  }
+
+  return permissionMap?.[normalizedRole] || ROLE_PERMISSIONS[normalizedRole] || [];
 };
 
-export const inferSystemRole = (roleName: string): UserRole => {
-  const slug = slugifyRoleName(roleName);
-  if (slug === 'GLOBAL_ADMIN' || slug === 'ADMIN') return UserRole.GLOBAL_ADMIN;
-  if (slug === 'HR' || slug.startsWith('HR_')) return UserRole.HR;
-  if (slug === 'STUDENT') return UserRole.STUDENT;
-  if (slug === 'AGENT' || slug.startsWith('AGENCY_')) return UserRole.AGENT;
-  if (slug === 'COUNSELLOR') return UserRole.COUNSELLOR;
-  if (slug === 'MARKETING_MANAGER') return UserRole.MARKETING_MANAGER;
-  if (slug === 'TELECALLER') return UserRole.TELECALLER;
-  return UserRole.COUNSELLOR;
+export const userCan = (user, requirement, permissionMap) => {
+  const required = Array.isArray(requirement) ? requirement : [requirement];
+  const effective = resolveEffectivePermissions(user, permissionMap);
+  return required.some((permission) => effective.includes(permission));
 };
-
-export const employeeSelfServiceModuleAccess = () => ({
-  HR: {
-    Attendance: ['VIEW', 'EDIT'],
-    'Leave Management': ['VIEW', 'EDIT'],
-    'Payroll Inputs': ['VIEW'],
-  },
-});
-
-export const employeeSelfServicePermissions = () =>
-  moduleAccessToPermissions(employeeSelfServiceModuleAccess() as Record<string, Record<string, string[]>>);
