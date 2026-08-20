@@ -32,7 +32,14 @@ export const requirePermission = (...required: string[]) => {
         return sendError(res, 'User not found', null, 401);
       }
 
-      const ok = await hasUserPermission(user, required);
+      const ok = await hasUserPermission(
+        {
+          role: user.role,
+          permissionRole: user.permissionRole,
+          moduleAccess: user.moduleAccess as Record<string, Record<string, string[]>> | null,
+        },
+        required,
+      );
       if (!ok) {
         return sendError(res, 'Forbidden: insufficient permissions', null, 403);
       }
