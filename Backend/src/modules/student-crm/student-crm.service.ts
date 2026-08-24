@@ -6,8 +6,8 @@ import { deleteStoredFile } from '../../lib/file-storage.js';
 import { getDefaultChecklist, type ChecklistItem } from './checklists.js';
 import { getDefaultVisaChecklist } from './visa-checklists.js';
 import { safeNotify } from '../notifications/recipients.js';
-import { getLoginUrl } from '../../utils/frontend-url.js';
-import { sendCampaignEmail } from '../marketing/services/email.service.js';
+import { sendStudentWelcomeCredentialsEmailAsync } from '../../lib/welcome-email.js';
+import { getStudentLoginUrl } from '../../utils/frontend-url.js';
 import { resolveApplicationScopeWhere, resolveStudentScopeWhere } from './scoping.js';
 import { computeProcessProgress, getStagesForCountry } from './stage-engine.js';
 import {
@@ -2320,20 +2320,13 @@ export const promoteLeadToStudent = async (
 
     // Only send welcome email if we just created the user (tempPassword set).
     if (tempPassword) {
-      const loginUrl = getLoginUrl();
-      sendCampaignEmail({
+      sendStudentWelcomeCredentialsEmailAsync({
         to: lead.email,
-        subject: 'Your ApplyUniNow student account',
-        html: `
-          <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:20px;">
-            <h2>Welcome, ${lead.fullName}</h2>
-            <p>Your student account has been created. Log in at <a href="${loginUrl}">${loginUrl}</a></p>
-            <p><strong>Email:</strong> ${lead.email}</p>
-            <p><strong>Temporary password:</strong> ${tempPassword}</p>
-            <p>You will be asked to set a new password on first login.</p>
-          </div>
-        `,
-      }).catch((err) => console.error('[Student welcome email]', err));
+        fullName: lead.fullName,
+        email: lead.email,
+        temporaryPassword: tempPassword,
+        loginUrl: getStudentLoginUrl(),
+      });
     }
   } else {
     // existing user

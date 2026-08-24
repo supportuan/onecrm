@@ -31,6 +31,7 @@ import { attachCommunicationWebSocket } from './modules/communication/communicat
 import countryRoutes from './modules/countries/country.routes.js';
 import { authenticateTokenOrCookie } from './middleware/authenticate.js';
 import { getJwtAccessSecret, getJwtRefreshSecret } from './utils/jwt.js';
+import { verifyEmailTransport } from './lib/email-transport.js';
 const app = express();
 const port = process.env.PORT || 4000;
 
@@ -96,6 +97,7 @@ server.listen(Number(port), '0.0.0.0', async () => {
     console.log('[ApplyUniNow] Student Hub scheduler started');
     startHrPerformanceReviewScheduler();
     warmIndustryCache().catch((err) => console.warn('[ApplyUniNow] Industry cache warm skipped', err));
+    verifyEmailTransport().catch((err) => console.warn('[ApplyUniNow] Email verify skipped', err));
   } catch (err) {
     console.error('[ApplyUniNow] Failed to initialize RBAC permissions', err);
   }

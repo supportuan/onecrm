@@ -26,6 +26,7 @@ jest.unstable_mockModule('../modules/marketing/services/email.service.js', () =>
   adminAgentNotification: jest.fn().mockResolvedValue(undefined),
   adminStudentNotification: jest.fn().mockResolvedValue(undefined),
   sendCampaignEmail: jest.fn().mockResolvedValue(undefined),
+  fireAndForgetEmail: jest.fn((promise: Promise<unknown>) => promise),
 }));
 
 const { prisma } = await import('../prisma.js');

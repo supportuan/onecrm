@@ -1,7 +1,7 @@
 import { prisma } from '../../prisma.js';
 import { UserRole } from '@prisma/client';
 import { hashPassword } from '../../utils/password.js';
-import { sendCampaignEmail } from '../marketing/services/email.service.js';
+import { sendWelcomeCredentialsEmailAsync, sendStudentWelcomeCredentialsEmailAsync } from '../../lib/welcome-email.js';
 import { safeNotify } from '../notifications/recipients.js';
 import { updateRolePermissions } from '../rbac/rbac.service.js';
 import {
@@ -12,7 +12,7 @@ import {
   slugifyRoleName,
 } from '../../utils/role-permissions.js';
 import { hrAccessRoleDefaults, userRoleToHrAccessRole } from '../hr/hr-access-role.js';
-import { getLoginUrl } from '../../utils/frontend-url.js';
+import { getLoginUrl, getStudentLoginUrl } from '../../utils/frontend-url.js';
 
 const allowedRoles = [
   UserRole.GLOBAL_ADMIN,
@@ -335,156 +335,24 @@ export const createUser = async (data: {
       );
     }
 
-    sendCampaignEmail({
-      to: normalizedEmail,
-      subject: 'Welcome to ApplyUniNow - Your Account Details',
-      
-
-      html: `
-          <div style="margin:0;padding:0;background:#f4f7fb;font-family:'Segoe UI',Arial,sans-serif;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
-              <tr>
-                <td align="center">
-
-                  <table width="650" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 25px rgba(0,0,0,.08);">
-
-                    <!-- Header -->
-                    <tr>
-                      <td style="background:#0f172a;padding:30px;text-align:center;">
-                        <h1 style="margin:0;color:#ffffff;font-size:30px;font-weight:700;">
-                          Welcome to ApplyUniNow
-                        </h1>
-                        <p style="margin-top:10px;color:#E0E7FF;font-size:15px;">
-                          Smart CRM Platform for Education & Business Management
-                        </p>
-                      </td>
-                    </tr>
-
-                    <!-- Body -->
-                    <tr>
-                      <td style="padding:40px;">
-
-                        <p style="font-size:17px;color:#334155;margin:0 0 20px;">
-                          Hello <strong>${data.fullName}</strong>,
-                        </p>
-
-                        <p style="font-size:15px;line-height:28px;color:#475569;margin-bottom:25px;">
-                          Congratulations! Your <strong>ApplyUniNow</strong> account has been successfully created.
-                          You have been assigned the role of
-                          <strong style="color:#4F46E5;">${displayRole}</strong>.
-                        </p>
-
-                        <!-- Login Credentials -->
-                        <table width="100%" cellpadding="0" cellspacing="0"
-                          style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;margin:25px 0;">
-                          <tr>
-                            <td style="padding:25px;">
-
-                              <h3 style="margin:0 0 18px;color:#1E293B;font-size:18px;">
-                                🔐 Login Credentials
-                              </h3>
-
-                              <table width="100%" cellpadding="8">
-                                <tr>
-                                  <td width="170" style="font-weight:600;color:#64748B;">
-                                    Email
-                                  </td>
-                                  <td style="color:#1E293B;">
-                                    ${data.email}
-                                  </td>
-                                </tr>
-
-                                <tr>
-                                  <td style="font-weight:600;color:#64748B;">
-                                    Temporary Password
-                                  </td>
-                                  <td style="color:#DC2626;font-weight:700;font-size:16px;">
-                                    ${temporaryPassword}
-                                  </td>
-                                </tr>
-
-                                <tr>
-                                  <td style="font-weight:600;color:#64748B;">
-                                    Role
-                                  </td>
-                                  <td style="color:#4F46E5;font-weight:600;">
-                                    ${displayRole}
-                                  </td>
-                                </tr>
-                              </table>
-
-                            </td>
-                          </tr>
-                        </table>
-
-                        <!-- Login Button -->
-                        <div style="text-align:center;margin:35px 0;">
-                          <a href="${getLoginUrl()}"
-                            style="background:#4F46E5;
-                                  color:#ffffff;
-                                  text-decoration:none;
-                                  padding:14px 35px;
-                                  border-radius:10px;
-                                  display:inline-block;
-                                  font-size:15px;
-                                  font-weight:600;">
-                            Login to ApplyUniNow
-                          </a>
-                        </div>
-
-                        <!-- Security Notice -->
-                        <div style="background:#FEFCE8;border-left:5px solid #EAB308;padding:18px;border-radius:8px;margin-top:25px;">
-                          <strong style="color:#92400E;">Security Reminder</strong>
-
-                          <p style="margin-top:10px;font-size:14px;color:#57534E;line-height:24px;">
-                            This password is temporary. For your security, you will be asked
-                            to create a new password immediately after your first login.
-                            Please do not share your login credentials with anyone.
-                          </p>
-                        </div>
-
-                        <p style="margin-top:35px;font-size:15px;color:#475569;line-height:26px;">
-                          If you experience any issues accessing your account,
-                          please contact your system administrator or our support team.
-                        </p>
-
-                        <p style="margin-top:30px;font-size:15px;color:#334155;">
-                          Best Regards,<br>
-                          <strong>ApplyUniNow Team</strong>
-                        </p>
-
-                      </td>
-                    </tr>
-
-                    <!-- Footer -->
-                    <tr>
-                      <td style="background:#F8FAFC;padding:25px;text-align:center;border-top:1px solid #E2E8F0;">
-
-                        <p style="margin:0;font-size:13px;color:#64748B;">
-                          © ${new Date().getFullYear()} ApplyUniNow. All Rights Reserved.
-                        </p>
-
-                        <p style="margin-top:8px;font-size:12px;color:#94A3B8;">
-                          This is an automated email. Please do not reply to this message.
-                        </p>
-
-                      </td>
-                    </tr>
-
-                  </table>
-
-                </td>
-              </tr>
-            </table>
-          </div>
-          `,
-    }).catch((err) => {
-      console.error(
-        '[Welcome Email Error] Failed to send email to:',
-        normalizedEmail,
-        err
-      );
-    });
+    if (systemRole === UserRole.STUDENT) {
+      sendStudentWelcomeCredentialsEmailAsync({
+        to: normalizedEmail,
+        fullName: data.fullName,
+        email: data.email,
+        temporaryPassword,
+        loginUrl: getStudentLoginUrl(),
+      });
+    } else {
+      sendWelcomeCredentialsEmailAsync({
+        to: normalizedEmail,
+        fullName: data.fullName,
+        email: data.email,
+        temporaryPassword,
+        displayRole,
+        loginUrl: getLoginUrl(),
+      });
+    }
 
     if (isApproved) {
       await safeNotify({

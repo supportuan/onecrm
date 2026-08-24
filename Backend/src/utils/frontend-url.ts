@@ -31,5 +31,11 @@ export const getFrontendBaseUrl = (req?: Pick<Request, 'headers'>): string => {
 export const getLoginUrl = (req?: Pick<Request, 'headers'>) =>
   `${getFrontendBaseUrl(req)}/login`;
 
+export const getAgentLoginUrl = (req?: Pick<Request, 'headers'>) =>
+  `${getFrontendBaseUrl(req)}/agent-login`;
+
+export const getStudentLoginUrl = (req?: Pick<Request, 'headers'>) =>
+  `${getFrontendBaseUrl(req)}/student-login`;
+
 export const getDashboardUrl = (req?: Pick<Request, 'headers'>) =>
   `${getFrontendBaseUrl(req)}/`;

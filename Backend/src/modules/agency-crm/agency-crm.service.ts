@@ -5,6 +5,8 @@ import { hasFullAgencyAccess, isAgencyPartnerUser } from './scoping.js';
 import { uniqueAgencyCode, syncUserAgencyDetails } from './agency-partner.lifecycle.js';
 import { createReferralWithDedup } from './agency-referral.service.js';
 import { DEFAULT_AGENT_CAPABILITIES, mergeCapabilities } from './agency-capabilities.js';
+import { sendWelcomeCredentialsEmailAsync } from '../../lib/welcome-email.js';
+import { getAgentLoginUrl } from '../../utils/frontend-url.js';
 
 type Actor = { id?: number; role?: string };
 
@@ -166,10 +168,12 @@ export const createPartner = async (data: {
   const agencyCode = await uniqueAgencyCode(data.agencyCode || slugCode(data.agencyName));
 
   let userId = data.userId;
+  let plainPassword: string | undefined;
   if (!userId) {
     if (!data.email || !data.fullName || !data.password) {
       throw new Error('email, fullName, and password are required when userId is not provided');
     }
+    plainPassword = data.password;
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) throw new Error('user with this email already exists');
     const { getDefaultModuleAccessByRole } = await import('../users/user.service.js');
@@ -219,6 +223,22 @@ export const createPartner = async (data: {
     country: partner.country,
     services: partner.services,
   });
+
+  if (plainPassword && data.email && data.fullName) {
+    sendWelcomeCredentialsEmailAsync(
+      {
+        to: data.email,
+        fullName: data.fullName,
+        email: data.email,
+        temporaryPassword: plainPassword,
+        displayRole: 'Agency Partner',
+        loginUrl: getAgentLoginUrl(),
+        statusNote:
+          'Your portal login is approved. Complete onboarding in the Agency CRM to activate referral sharing.',
+      },
+      'Agency Welcome Email'
+    );
+  }
 
   return partner;
 };

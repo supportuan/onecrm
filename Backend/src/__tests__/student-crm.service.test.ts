@@ -63,6 +63,11 @@ jest.unstable_mockModule('../modules/marketing/services/email.service.js', () =>
   sendCampaignEmail: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.unstable_mockModule('../lib/welcome-email.js', () => ({
+  sendStudentWelcomeCredentialsEmailAsync: jest.fn(),
+  sendWelcomeCredentialsEmailAsync: jest.fn(),
+}));
+
 jest.unstable_mockModule('../modules/student-crm/scoping.js', () => ({
   applicationScopeWhere: jest.fn().mockReturnValue({}),
   studentScopeWhere: jest.fn().mockReturnValue({}),

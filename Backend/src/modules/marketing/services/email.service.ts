@@ -1,4 +1,17 @@
-import { createEmailTransporter, getEmailFrom } from '../../../lib/email-transport.js';
+import { createEmailTransporter, getEmailFrom, isEmailConfigured } from '../../../lib/email-transport.js';
+
+export const fireAndForgetEmail = (
+  promise: Promise<unknown>,
+  label: string,
+  to?: string
+) => {
+  promise.catch((err) => {
+    console.error(
+      `[${label}] Failed to send email${to ? ` to ${to}` : ''}:`,
+      err?.message || err
+    );
+  });
+};
 
 export const sendCampaignEmail = async ({
     to,
@@ -9,21 +22,25 @@ export const sendCampaignEmail = async ({
     subject: string;
     html: string;
 }) => {
-    console.log('[EMAIL SERVICE] SMTP mode loaded');
-
-    if (!process.env.SMTP_HOST?.trim()) throw new Error('SMTP_HOST is not configured');
-    if (!process.env.SMTP_USER?.trim()) throw new Error('SMTP_USER is not configured');
-    if (!process.env.SMTP_PASS?.trim()) throw new Error('SMTP_PASS is not configured');
-    if (!getEmailFrom()) throw new Error('EMAIL_FROM is not configured');
+    if (!isEmailConfigured()) {
+        throw new Error('SMTP is not configured (SMTP_HOST, SMTP_USER, SMTP_PASS, EMAIL_FROM required)');
+    }
 
     const transporter = createEmailTransporter();
 
-    return transporter.sendMail({
-        from: getEmailFrom(),
-        to: to.trim(),
-        subject,
-        html,
-    });
+    try {
+        const info = await transporter.sendMail({
+            from: getEmailFrom(),
+            to: to.trim(),
+            subject,
+            html,
+        });
+        console.log('[EMAIL] Sent', subject, '→', to.trim(), info.messageId || '');
+        return info;
+    } catch (err: any) {
+        console.error('[EMAIL] Send failed', subject, '→', to.trim(), err?.message || err);
+        throw err;
+    }
 };
 
 export const adminAgentNotification = async ({

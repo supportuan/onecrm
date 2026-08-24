@@ -33,13 +33,19 @@ jest.unstable_mockModule("../modules/marketing/services/email.service.js", () =>
     sendCampaignEmail: jest.fn(() => Promise.resolve()),
 }));
 
+jest.unstable_mockModule("../lib/welcome-email.js", () => ({
+    sendWelcomeCredentialsEmailAsync: jest.fn(),
+    sendWelcomeCredentialsEmail: jest.fn(() => Promise.resolve()),
+    sendStudentWelcomeCredentialsEmailAsync: jest.fn(),
+}));
+
 jest.unstable_mockModule("../modules/notifications/recipients.js", () => ({
     safeNotify: jest.fn(() => Promise.resolve()),
 }));
 
 const userService = await import("../modules/users/user.service.js");
 const { hashPassword } = await import("../utils/password.js");
-const { sendCampaignEmail } = await import("../modules/marketing/services/email.service.js");
+const { sendWelcomeCredentialsEmailAsync, sendStudentWelcomeCredentialsEmailAsync } = await import("../lib/welcome-email.js");
 const { safeNotify } = await import("../modules/notifications/recipients.js");
 
 beforeEach(() => {
@@ -174,7 +180,7 @@ describe("user.service - createUser", () => {
             }),
         });
 
-        expect(sendCampaignEmail).toHaveBeenCalled();
+        expect(sendWelcomeCredentialsEmailAsync).toHaveBeenCalled();
         expect(safeNotify).toHaveBeenCalled();
         expect(result.id).toBe(1);
     });
@@ -276,6 +282,8 @@ describe("user.service - createUser", () => {
                 rating: "WARM",
             }),
         });
+        expect(sendStudentWelcomeCredentialsEmailAsync).toHaveBeenCalled();
+        expect(sendWelcomeCredentialsEmailAsync).not.toHaveBeenCalled();
     });
 
     it("should reject invalid role", async () => {

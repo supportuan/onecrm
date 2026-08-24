@@ -10,6 +10,10 @@ FRONTEND_PORT="${FRONTEND_PORT:-3000}"
   exit 1
 }
 
+if [ -z "${SMTP_HOST:-}" ] || [ -z "${SMTP_USER:-}" ] || [ -z "${SMTP_PASS:-}" ]; then
+  echo "[entrypoint] WARNING: SMTP_HOST/SMTP_USER/SMTP_PASS not set — transactional emails will fail." >&2
+fi
+
 cd /app/Backend
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
   echo "[entrypoint] prisma migrate deploy..."

@@ -2,7 +2,7 @@ import { prisma } from '../../prisma.js';
 import { UserRole } from '@prisma/client';
 import { hashPassword, comparePasswords } from '../../utils/password.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt.js';
-import { adminAgentNotification, adminStudentNotification, sendCampaignEmail } from '../marketing/services/email.service.js';
+import { adminAgentNotification, adminStudentNotification, fireAndForgetEmail, sendCampaignEmail } from '../marketing/services/email.service.js';
 import { safeNotify } from '../notifications/recipients.js';
 import { deleteStoredFile, resolveFileRef } from '../../lib/file-storage.js';
 import { getLoginUrl } from '../../utils/frontend-url.js';
@@ -53,7 +53,10 @@ export const register = async (data: RegisterData) => {
     },
   });
 
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || 'admin@onecrm.com';
+  const adminEmail =
+    process.env.ADMIN_NOTIFICATION_EMAIL?.trim() ||
+    process.env.SMTP_USER?.trim() ||
+    'sandeep@applyuninow.com';
 
   if (data.role === UserRole.AGENT) {
     // Notify admin
@@ -61,10 +64,11 @@ export const register = async (data: RegisterData) => {
       to: adminEmail,
       agentName: data.fullName,
       agentEmail: data.email,
-    }).catch(err => console.error('[Admin Agent Notification Error]', err));
+    }).catch((err) => console.error('[Admin Agent Notification Error]', err?.message || err));
 
     // Send Welcome Email to Agent
-    sendCampaignEmail({
+    fireAndForgetEmail(
+      sendCampaignEmail({
       to: data.email,
       subject: 'Welcome to ApplyUniNow - Agent Registration Received',
       html: `
@@ -182,7 +186,10 @@ export const register = async (data: RegisterData) => {
         </body>
         </html>
         `,
-    }).catch(err => console.error('[Agent Welcome Email Error]', err));
+      }),
+      'Agent Welcome Email',
+      data.email
+    );
   } else if (data.role === UserRole.STUDENT) {
     // Notify admin
     adminStudentNotification({
@@ -192,7 +199,8 @@ export const register = async (data: RegisterData) => {
     }).catch(err => console.error('[Admin Student Notification Error]', err));
 
     // Send Welcome Email to Student
-    sendCampaignEmail({
+    fireAndForgetEmail(
+      sendCampaignEmail({
       to: data.email,
       subject: 'Welcome to ApplyUniNow - Student Account Registered',
       
@@ -347,7 +355,10 @@ export const register = async (data: RegisterData) => {
           </body>
           </html>
           `,
-    }).catch(err => console.error('[Student Welcome Email Error]', err));
+      }),
+      'Student Welcome Email',
+      data.email
+    );
   }
 
   if (isApproved) {

@@ -44,6 +44,11 @@ jest.unstable_mockModule('../utils/password.js', () => ({
   hashPassword: jest.fn().mockResolvedValue('hashed_password'),
 }));
 
+jest.unstable_mockModule('../lib/welcome-email.js', () => ({
+  sendWelcomeCredentialsEmailAsync: jest.fn(),
+  sendStudentWelcomeCredentialsEmailAsync: jest.fn(),
+}));
+
 jest.unstable_mockModule('../modules/agency-crm/agency-partner.lifecycle.js', () => ({
   uniqueAgencyCode: jest.fn().mockResolvedValue('AGENCY-CODE-001'),
   syncUserAgencyDetails: jest.fn().mockResolvedValue(undefined),

@@ -8,8 +8,8 @@ export const safeNotify = async (
 ): Promise<void> => {
   try {
     await notify(opts);
-  } catch (_) {
-    /* swallow */
+  } catch (err: any) {
+    console.error('[safeNotify] Failed:', opts.templateKey, err?.message || err);
   }
 };
 

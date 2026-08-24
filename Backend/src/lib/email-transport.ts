@@ -16,14 +16,22 @@ export function getSmtpConfig(): SMTPTransport.Options {
     throw new Error('SMTP is not configured (SMTP_HOST, SMTP_USER, SMTP_PASS required)');
   }
 
+  const tlsReject =
+    process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== undefined
+      ? env('SMTP_TLS_REJECT_UNAUTHORIZED') !== 'false'
+      : true;
+
   return {
     host,
     port,
     secure,
     auth: { user, pass },
-    // Gmail on port 587 uses STARTTLS
+    // Gmail / Office365 on port 587 use STARTTLS
     requireTLS: port === 587,
-    tls: { minVersion: 'TLSv1.2' },
+    tls: {
+      minVersion: 'TLSv1.2' as const,
+      ...(tlsReject ? {} : { rejectUnauthorized: false }),
+    },
   };
 }
 
@@ -34,4 +42,26 @@ export function createEmailTransporter() {
 /** Sender header — prefers EMAIL_FROM, then legacy SMTP_FROM, then SMTP_USER. */
 export function getEmailFrom(): string {
   return env('EMAIL_FROM') || env('SMTP_FROM') || env('SMTP_USER');
+}
+
+export function isEmailConfigured(): boolean {
+  return Boolean(env('SMTP_HOST') && env('SMTP_USER') && env('SMTP_PASS') && getEmailFrom());
+}
+
+/** Verify SMTP connectivity at startup (non-fatal). */
+export async function verifyEmailTransport(): Promise<boolean> {
+  if (!isEmailConfigured()) {
+    console.warn('[EMAIL] SMTP not configured — emails will fail (set SMTP_HOST, SMTP_USER, SMTP_PASS, EMAIL_FROM)');
+    return false;
+  }
+
+  try {
+    const transporter = createEmailTransporter();
+    await transporter.verify();
+    console.log('[EMAIL] SMTP connection verified');
+    return true;
+  } catch (err: any) {
+    console.error('[EMAIL] SMTP verify failed:', err?.message || err);
+    return false;
+  }
 }
