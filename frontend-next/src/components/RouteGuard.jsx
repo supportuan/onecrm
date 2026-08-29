@@ -42,7 +42,6 @@ const ROUTE_PERMISSION_MAP = [
   { path: '/agency-crm/agency-management', module: 'Agency CRM', option: 'Agency Management', adminOnly: true },
   { path: '/agency-crm/agency-leads', module: 'Agency CRM', option: 'Agency Leads' },
   { path: '/agency-crm/universities', module: 'Agency CRM', option: 'University Directory' },
-  { path: '/agency-crm/onboarding', module: 'Agency CRM', option: 'Onboarding' },
   { path: '/agency-crm/communications', module: 'Agency CRM', option: 'Communications' },
   { path: '/agency-crm/co-branding-tools', module: 'Agency CRM', option: 'Co-branding Tools' },
   { path: '/agency-crm/commission-management', module: 'Agency CRM', option: 'Commission Management' },

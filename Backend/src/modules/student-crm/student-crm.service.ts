@@ -287,6 +287,7 @@ const studentDataFromPayload = (data: Record<string, any>) => {
     recGradeAchieved: data.recGradeAchieved ?? null,
     preStudyLoc: data.preStudyLoc ?? null,
     educationDetails: data.educationDetails ?? undefined,
+    enquiryDetails: data.enquiryDetails ?? undefined,
     asstExamSections: data.asstExamSections ?? undefined,
     academicHistory: data.academicHistory ?? undefined,
     ieltsScore: data.ieltsScore ?? null,
@@ -326,8 +327,8 @@ export const updateStudent = async (id: number, data: Record<string, any>, actor
     'preferredUniversityId', 'preferredCourseId', 'preferredCourse',
     'intakeMonth', 'intakeYear', 'studyMode', 'studyDuration', 'studyBudget',
     'studyAttendanceType', 'typeOfDegree', 'workExperience', 'recLevelAcademic', 'recGradeAchieved',
-    'preStudyLoc', 'educationDetails', 'asstExamSections', 'academicHistory',
-    'ieltsScore', 'toeflScore', 'greScore', 'gmatScore', 'contactId', 'notes', 'status',
+    'preStudyLoc', 'educationDetails', 'enquiryDetails', 'asstExamSections', 'academicHistory',
+    'ieltsScore', 'toeflScore', 'greScore', 'gmatScore', 'contactId', 'source', 'notes', 'status',
   ];
   const payload: any = {};
   for (const k of allowed) {

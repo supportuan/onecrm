@@ -1,5 +1,5 @@
-import AgencyOnboarding from '@/features/agency-crm/pages/AgencyOnboarding';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <AgencyOnboarding />;
+  redirect('/agency-crm/agency-leads');
 }

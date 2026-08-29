@@ -91,9 +91,6 @@ export function getStaffPageMeta(pathname = '') {
   } else if (pathname.startsWith('/agency-crm/universities')) {
     title = 'University Directory';
     description = '';
-  } else if (pathname.startsWith('/agency-crm/onboarding')) {
-    title = 'Onboarding';
-    description = '';
   } else if (pathname.startsWith('/agency-crm/communications')) {
     title = 'Communications';
     description = '';

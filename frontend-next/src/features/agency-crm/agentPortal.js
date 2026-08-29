@@ -17,7 +17,6 @@ export const isAgentBlockedPath = (pathname) =>
   );
 
 export const AGENT_HOME_PATH = '/agency-crm/agency-leads';
-export const AGENT_ONBOARDING_PATH = '/agency-crm/onboarding';
 export const AGENT_STUDENTS_PATH = '/agency-crm/agency-leads';
 export const AGENT_REFERRAL_PATH = '/agency-crm/co-branding-tools';
 
@@ -70,7 +69,7 @@ export const nextOnboardingAction = (stage) => {
       title: 'Upload your documents',
       detail: 'Add ID / KYC files, then submit them to move forward.',
       cta: 'Go to setup',
-      href: AGENT_ONBOARDING_PATH,
+      href: AGENT_HOME_PATH,
     };
   }
   if (stage === 'DOCS_SUBMITTED') {
@@ -78,13 +77,13 @@ export const nextOnboardingAction = (stage) => {
       title: 'Sign the agency agreement',
       detail: 'Accept the partner agreement to continue verification.',
       cta: 'Sign agreement',
-      href: AGENT_ONBOARDING_PATH,
+      href: AGENT_HOME_PATH,
     };
   }
   return {
     title: 'Waiting for admin approval',
     detail: 'Your documents and agreement are in. We will activate your account soon.',
     cta: 'View setup status',
-    href: AGENT_ONBOARDING_PATH,
+    href: AGENT_HOME_PATH,
   };
 };

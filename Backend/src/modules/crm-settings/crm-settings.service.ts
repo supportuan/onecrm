@@ -491,7 +491,31 @@ export const listCatalog = async (opts: {
 };
 
 /** Dropdown bundle for application forms (universities loaded per-country via listUniversities) */
+const STUDY_LEVELS = ['Certificate', 'Diploma', 'Bachelor', 'Master', 'PhD'];
+const INTAKE_MONTHS = ['Spring', 'Summer', 'Fall', 'Winter', 'January', 'May', 'September'];
+const EXAM_TYPES = ['IELTS', 'TOEFL', 'PTE', 'GRE', 'GMAT', 'Duolingo', 'Other'];
+const YES_NO = ['Yes', 'No'];
+const VISA_TYPES = ['Student visa', 'Visitor visa', 'Dependent visa', 'Other'];
+
 export const getFormOptions = async () => {
-  const [countries, industries] = await Promise.all([listCountries(), listIndustries()]);
-  return { countries, industries };
+  const year = new Date().getFullYear();
+  const [countries, industries, leadSources] = await Promise.all([
+    listCountries(),
+    listIndustries(),
+    prisma.leadSource.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, sourceType: true },
+    }),
+  ]);
+  return {
+    countries,
+    industries,
+    leadSources,
+    studyLevels: STUDY_LEVELS,
+    intakeMonths: INTAKE_MONTHS,
+    intakeYears: Array.from({ length: 8 }, (_, index) => String(year + index)),
+    examTypes: EXAM_TYPES,
+    yesNo: YES_NO,
+    visaTypes: VISA_TYPES,
+  };
 };

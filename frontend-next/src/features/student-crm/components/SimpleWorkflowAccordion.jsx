@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, CircleDot, FileText, GraduationCap, ShieldCheck, UserRound } from 'lucide-react';
-import {
-  ApplicationMetaEditor,
-  AuditTimeline,
-} from './ApplicationParts';
+import { AuditTimeline } from './ApplicationParts';
 import StaffApplicationFees from './StaffApplicationFees';
 import ServiceFeesPanel from './ServiceFeesPanel';
 import DiscussionThread from './DiscussionThread';
@@ -577,7 +574,6 @@ export default function SimpleWorkflowAccordion({
   app,
   canManage,
   counsellors = [],
-  studentForm = null,
   formOptions = {},
   handlers = {},
   onSaveWorkflowProgress,
@@ -598,18 +594,6 @@ export default function SimpleWorkflowAccordion({
   );
   const [openKeys, setOpenKeys] = useState([]);
   const countries = formOptions.countries || EMPTY_LIST;
-  const industries = formOptions.industries || EMPTY_LIST;
-  const selectedIndustry = studentForm
-    ? industries.find((item) => String(item.id) === String(studentForm.industryId || ''))
-    : null;
-  const subjectOptions =
-    selectedIndustry?.subIndustries?.length
-      ? selectedIndustry.subIndustries
-      : selectedIndustry?.studyAreas?.length
-        ? selectedIndustry.studyAreas
-        : [];
-  const intakeMonths = ['Spring', 'Summer', 'Fall', 'Winter', 'January', 'May', 'September'];
-  const intakeYears = Array.from({ length: 8 }, (_, index) => String(new Date().getFullYear() + index));
   const summaryItems = [
     { label: 'Student', value: app?.student?.fullName || 'Not linked', icon: UserRound },
     { label: 'University', value: app?.university || 'Pending', icon: GraduationCap },
@@ -753,192 +737,13 @@ export default function SimpleWorkflowAccordion({
     switch (stage.sectionType) {
       case 'STUDENT_INFO':
         return (
-          <div className="space-y-4">
-            {studentForm ? (
-              <div className="ui-panel p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="ui-text-caption">First name</label>
-                  <input
-                    className="ui-field"
-                    value={studentForm.firstName || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('firstName', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="ui-text-caption">Last name</label>
-                  <input
-                    className="ui-field"
-                    value={studentForm.lastName || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('lastName', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="ui-text-caption">Full name</label>
-                  <input
-                    className="ui-field"
-                    value={studentForm.fullName || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('fullName', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="ui-text-caption">Email</label>
-                  <input className="ui-field" value={studentForm.email || ''} disabled />
-                </div>
-                <div>
-                  <label className="ui-text-caption">Phone</label>
-                  <input
-                    className="ui-field"
-                    value={studentForm.phone || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('phone', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="ui-text-caption">Study industry</label>
-                  <select
-                    className="ui-field"
-                    value={studentForm.industryId || ''}
-                    disabled={!canManage}
-                    onChange={(e) => {
-                      handlers.onStudentFieldChange?.('industryId', e.target.value);
-                      handlers.onStudentFieldChange?.('subIndustryId', '');
-                      handlers.onStudentFieldChange?.('studyAreaId', '');
-                    }}
-                  >
-                    <option value="">Select industry</option>
-                    {industries.map((industry) => (
-                      <option key={industry.id} value={industry.id}>
-                        {industry.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="ui-text-caption">Subject industry</label>
-                  <select
-                    className="ui-field"
-                    value={studentForm.subIndustryId || studentForm.studyAreaId || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('subIndustryId', e.target.value)}
-                  >
-                    <option value="">Select subject</option>
-                    {subjectOptions.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="ui-text-caption">Email</label>
-                  <input className="ui-field" value={studentForm.email || ''} disabled />
-                </div>
-                <div>
-                  <label className="ui-text-caption">Intake</label>
-                  <select
-                    className="ui-field"
-                    value={studentForm.intakeMonth || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('intakeMonth', e.target.value)}
-                  >
-                    <option value="">Select intake</option>
-                    {intakeMonths.map((month) => (
-                      <option key={month} value={month}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="ui-text-caption">Intake year</label>
-                  <select
-                    className="ui-field"
-                    value={studentForm.intakeYear || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('intakeYear', e.target.value)}
-                  >
-                    <option value="">Select year</option>
-                    {intakeYears.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="ui-text-caption">Study destination</label>
-                  <select
-                    className="ui-field"
-                    value={studentForm.countryId || ''}
-                    disabled={!canManage}
-                    onChange={(e) => {
-                      const country = countries.find((item) => String(item.id) === e.target.value);
-                      handlers.onStudentFieldChange?.('countryId', e.target.value);
-                      handlers.onStudentFieldChange?.('preferredCountry', country?.name || '');
-                    }}
-                  >
-                    <option value="">Select destination</option>
-                    {countries.map((country) => (
-                      <option key={country.id} value={country.id}>
-                        {country.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="ui-text-caption">POC</label>
-                  <select
-                    className="ui-field"
-                    value={studentForm.contactId || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('contactId', e.target.value)}
-                  >
-                    <option value="">Select POC</option>
-                    {counsellors.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.fullName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="ui-text-caption">Study level</label>
-                  <select
-                    className="ui-field"
-                    value={studentForm.level || ''}
-                    disabled={!canManage}
-                    onChange={(e) => handlers.onStudentFieldChange?.('level', e.target.value)}
-                  >
-                    <option value="">Select level</option>
-                    {['Diploma', 'Bachelor', 'Master', 'PhD', 'Certificate'].map((level) => (
-                      <option key={level} value={level}>
-                        {level}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {canManage && handlers.onSaveStudentInfo ? (
-                  <div className="md:col-span-2 flex justify-end">
-                    <button type="button" className="ui-btn-primary" onClick={handlers.onSaveStudentInfo}>
-                      Save student information
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            ) : handlers.onUpdateMeta ? (
-              <ApplicationMetaEditor app={app} counsellors={counsellors} canManage={canManage} onSave={handlers.onUpdateMeta} />
-            ) : (
-              <div className="grid md:grid-cols-2 gap-3">
-                <div className="ui-surface p-3"><p className="ui-text-caption">Student</p><p className="ui-text-strong mt-1">{app.student?.fullName || '—'}</p></div>
-                <div className="ui-surface p-3"><p className="ui-text-caption">Country</p><p className="ui-text-strong mt-1">{app.country || '—'}</p></div>
-                <div className="ui-surface p-3"><p className="ui-text-caption">University</p><p className="ui-text-strong mt-1">{app.university || '—'}</p></div>
-                <div className="ui-surface p-3"><p className="ui-text-caption">Course</p><p className="ui-text-strong mt-1">{app.course || '—'}</p></div>
-              </div>
-            )}
-          </div>
+          <StudentInfoPanel
+            student={app.student}
+            canManage={canManage}
+            counsellors={counsellors}
+            formOptions={formOptions}
+            onSave={handlers.onSaveStudentInfo}
+          />
         );
       case 'APPLICATION_PROCESS':
         return (

@@ -29,7 +29,6 @@ import {
   getReferralEntityType,
   referralEntityBadgeClass,
   AGENT_REFERRAL_PATH,
-  AGENT_ONBOARDING_PATH,
 } from '../agentPortal';
 
 const INPUT =
@@ -220,11 +219,11 @@ export default function AgencyLeads() {
           )}
           {isAgent && (
             <Link
-              href={canShare ? AGENT_REFERRAL_PATH : AGENT_ONBOARDING_PATH}
+              href={AGENT_REFERRAL_PATH}
               className="ui-btn-secondary inline-flex items-center gap-2 text-sm !py-1.5"
             >
               <Link2 className="h-4 w-4" />
-              {canShare ? 'Get referral link' : 'Finish setup to share'}
+              Get referral link
             </Link>
           )}
         </div>
@@ -252,9 +251,9 @@ export default function AgencyLeads() {
                   </>
                 ) : (
                   <>
-                    Complete setup and wait for activation — then copy your link from{' '}
-                    <Link href={AGENT_ONBOARDING_PATH} className="text-brand underline-offset-2 hover:underline">
-                      Setup
+                    Wait for admin activation — then copy your link from{' '}
+                    <Link href={AGENT_REFERRAL_PATH} className="text-brand underline-offset-2 hover:underline">
+                      Referral &amp; Branding
                     </Link>
                     .
                   </>
@@ -468,11 +467,11 @@ export default function AgencyLeads() {
               )}
               {isAgent && (
                 <Link
-                  href={canShare ? AGENT_REFERRAL_PATH : AGENT_ONBOARDING_PATH}
+                  href={AGENT_REFERRAL_PATH}
                   className="ui-btn-secondary mt-4 inline-flex items-center gap-2 text-sm"
                 >
                   <Link2 className="h-4 w-4" />
-                  {canShare ? 'Get referral link' : 'Finish setup to share'}
+                  Get referral link
                 </Link>
               )}
             </div>

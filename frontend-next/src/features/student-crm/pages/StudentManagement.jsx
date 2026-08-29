@@ -22,7 +22,6 @@ import {
   getApplication,
   createStudent,
   updateStudent,
-  createApplication,
   listCounsellors,
   setStudentEnrolled,
   updateChecklistValue,
@@ -34,7 +33,6 @@ import {
   uploadApplicationDocument,
   notifyMissingDocs,
   saveWorkflowProgress,
-  listWorkflowTemplates,
 } from '@/services/studentCrmApi';
 import { getFormOptions } from '@/services/crmSettingsApi';
 import {
@@ -42,13 +40,9 @@ import {
   toNumOrNull,
   toSelectId,
 } from '../studyFormOptions';
-import CatalogCourseFields from '../components/CatalogCourseFields';
-import SimpleWorkflowAccordion from '../components/SimpleWorkflowAccordion';
-import PersonalDetailsFields, {
-  emptyPersonalForm,
-  personalFormToStudentPayload,
-  ExamDetailsFields,
-} from '../components/PersonalDetailsFields';
+import PersonalDetailsFields from '../components/PersonalDetailsFields';
+import StudentEnquiryForm from '../components/StudentEnquiryForm';
+import { emptyEnquiryForm, enquiryFormToStudentPayload } from '../studentEnquiryForm';
 import { resolveCatalogCountryId, pickCatalogCountry } from '../catalogCountry';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
@@ -145,9 +139,6 @@ export default function StudentManagement() {
   const [counsellors, setCounsellors] = useState([]);
   const [formOptions, setFormOptions] = useState({ countries: [], industries: [] });
   const [showNew, setShowNew] = useState(false);
-  const [showNewApp, setShowNewApp] = useState(false);
-  const [appModalContext, setAppModalContext] = useState(null);
-  const [selectedStudyPlanId, setSelectedStudyPlanId] = useState(null);
   const [toast, setToast] = useState({ kind: '', msg: '' });
   const [archiving, setArchiving] = useState(false);
   const [docsAppId, setDocsAppId] = useState(null);
@@ -224,7 +215,6 @@ export default function StudentManagement() {
   useEffect(() => {
     if (!profile) {
       setForm(null);
-      setSelectedStudyPlanId(null);
       return;
     }
     const history = Array.isArray(profile.academicHistory)
@@ -286,38 +276,6 @@ export default function StudentManagement() {
       asstExamSections: exams.length ? exams : [emptyExam()],
     });
   }, [profile, formOptions.countries]);
-
-  useEffect(() => {
-    const plans = profile?.studyPlans || [];
-    if (!plans.length) {
-      setSelectedStudyPlanId(null);
-      return;
-    }
-    if (!plans.some((plan) => plan.id === selectedStudyPlanId)) {
-      setSelectedStudyPlanId(plans[0].id);
-    }
-  }, [profile?.studyPlans, selectedStudyPlanId]);
-
-  const selectedStudyPlan = (profile?.studyPlans || []).find((plan) => plan.id === selectedStudyPlanId) || null;
-
-  const prefillFromStudyPlan = useCallback(
-    (plan) => {
-      if (!plan) return null;
-      const countryId =
-        resolveCatalogCountryId(plan.countryId ?? plan.countryRef?.id) || plan.countryId || plan.countryRef?.id || '';
-      return {
-        studyPlanId: plan.id,
-        country: plan.country || plan.countryRef?.name || '',
-        countryId: countryId ? String(countryId) : '',
-        university: plan.university || plan.universityRef?.name || '',
-        universityId: plan.universityId ? String(plan.universityId) : plan.universityRef?.id ? String(plan.universityRef.id) : '',
-        course: plan.course || plan.courseRef?.name || '',
-        courseId: plan.courseId ? String(plan.courseId) : plan.courseRef?.id ? String(plan.courseRef.id) : '',
-        intake: plan.intake || '',
-      };
-    },
-    []
-  );
 
   const saveProfile = async () => {
     if (!form || !selectedId) return false;
@@ -690,18 +648,6 @@ export default function StudentManagement() {
                         {archiving ? 'Archiving…' : 'Download & archive'}
                       </button>
                     )}
-                    {canManage && false && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAppModalContext(prefillFromStudyPlan(selectedStudyPlan));
-                          setShowNewApp(true);
-                        }}
-                        className="ui-btn-secondary inline-flex items-center gap-2"
-                      >
-                        <Plus size={14} /> New application
-                      </button>
-                    )}
                   </div>
                 </div>
 
@@ -1010,8 +956,7 @@ export default function StudentManagement() {
 
       {showNew && (
         <NewStudentModal
-          countries={formOptions.countries}
-          industries={formOptions.industries || []}
+          formOptions={formOptions}
           counsellors={counsellors}
           onClose={() => setShowNew(false)}
           onCreated={async (student) => {
@@ -1019,26 +964,6 @@ export default function StudentManagement() {
             await loadStudents();
             if (student?.id) setSelectedId(student.id);
             flash('Student created');
-          }}
-        />
-      )}
-
-      {showNewApp && profile && (
-        <NewAppModal
-          student={profile}
-          countries={formOptions.countries}
-          counsellors={counsellors}
-          prefill={appModalContext}
-          onClose={() => {
-            setShowNewApp(false);
-            setAppModalContext(null);
-          }}
-          onCreated={async () => {
-            setShowNewApp(false);
-            setAppModalContext(null);
-            await loadProfile();
-            await loadStudents();
-            flash('Application created');
           }}
         />
       )}
@@ -1055,15 +980,20 @@ function Field({ label, children }) {
   );
 }
 
-function NewStudentModal({ countries = [], industries = [], counsellors = [], onClose, onCreated }) {
-  const [form, setForm] = useState(emptyPersonalForm);
+function NewStudentModal({ formOptions = {}, countries = [], industries = [], counsellors = [], onClose, onCreated }) {
+  const [form, setForm] = useState(emptyEnquiryForm);
   const [busy, setBusy] = useState(false);
+  const options = {
+    ...formOptions,
+    countries: formOptions.countries || countries,
+    industries: formOptions.industries || industries,
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const res = await createStudent(personalFormToStudentPayload(form));
+      const res = await createStudent(enquiryFormToStudentPayload(form));
       onCreated(res?.data);
     } catch (err) {
       alert(err?.message || 'Failed to create student');
@@ -1075,20 +1005,12 @@ function NewStudentModal({ countries = [], industries = [], counsellors = [], on
   return (
     <Modal title="New student" onClose={onClose} wide>
       <form onSubmit={submit} className="p-6 space-y-5">
-        <div className="rounded-xl bg-neutral-100 px-5 py-3.5 text-sm font-medium text-neutral-600">
-          Fill up the mandatory details required...
-        </div>
-        <PersonalDetailsFields
+        <StudentEnquiryForm
           form={form}
-          onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
-          countries={countries}
-          industries={industries}
+          onChange={setForm}
+          formOptions={options}
           counsellors={counsellors}
           requireIdentity
-        />
-        <ExamDetailsFields
-          form={form}
-          onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
         />
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="ui-btn-secondary flex-1">
@@ -1103,131 +1025,10 @@ function NewStudentModal({ countries = [], industries = [], counsellors = [], on
   );
 }
 
-function NewAppModal({ student, countries = [], counsellors, prefill, onClose, onCreated }) {
-  const initialCountryId =
-    prefill?.countryId != null && prefill.countryId !== ''
-      ? String(prefill.countryId)
-      : student.countryId != null
-        ? String(student.countryId)
-        : countries.find((c) => c.name === student.preferredCountry)?.id != null
-          ? String(countries.find((c) => c.name === student.preferredCountry).id)
-          : '';
-
-  const [form, setForm] = useState({
-    country: prefill?.country || student.preferredCountry || '',
-    countryId: initialCountryId,
-    workflowTemplateId: '',
-    university: prefill?.university || '',
-    universityId: prefill?.universityId ? String(prefill.universityId) : '',
-    course: prefill?.course || '',
-    courseId: prefill?.courseId ? String(prefill.courseId) : '',
-    intake: prefill?.intake || '',
-    deadline: '',
-    assignedToId: '',
-    notes: '',
-  });
-  const [busy, setBusy] = useState(false);
-  const [workflowTemplates, setWorkflowTemplates] = useState([]);
-
-  useEffect(() => {
-    if (!form.countryId) {
-      setWorkflowTemplates([]);
-      setForm((prev) => ({ ...prev, workflowTemplateId: '' }));
-      return;
-    }
-    listWorkflowTemplates({ countryId: Number(form.countryId) })
-      .then((res) => {
-        const rows = Array.isArray(res?.data) ? res.data : [];
-        setWorkflowTemplates(rows);
-        setForm((prev) => {
-          const defaultTemplate = rows.find((item) => item.isDefault) || rows[0] || null;
-          if (rows.some((item) => String(item.id) === String(prev.workflowTemplateId))) return prev;
-          return { ...prev, workflowTemplateId: defaultTemplate ? String(defaultTemplate.id) : '' };
-        });
-      })
-      .catch(() => setWorkflowTemplates([]));
-  }, [form.countryId]);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.country || !form.university || !form.course) return;
-    setBusy(true);
-    try {
-      await createApplication({
-        studentId: student.id,
-        studyPlanId: prefill?.studyPlanId || undefined,
-        workflowTemplateId: form.workflowTemplateId ? Number(form.workflowTemplateId) : undefined,
-        country: form.country,
-        university: form.university,
-        course: form.course,
-        intake: form.intake || undefined,
-        deadline: form.deadline || undefined,
-        assignedToId: form.assignedToId ? Number(form.assignedToId) : undefined,
-        notes: form.notes || undefined,
-      });
-      onCreated();
-    } catch (err) {
-      alert(err?.message || 'Failed to create application');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal title={`New application · ${student.fullName}`} onClose={onClose}>
-      <form onSubmit={submit} className="p-6 space-y-4 max-w-lg">
-        <CatalogCourseFields
-          countries={countries}
-          value={form}
-          onChange={(catalog) => setForm((prev) => ({ ...prev, ...catalog }))}
-          inputClass={INPUT}
-        />
-        <Field label="Intake">
-          <input className={INPUT} value={form.intake} onChange={(e) => setForm({ ...form, intake: e.target.value })} placeholder="Fall 2026" />
-        </Field>
-        <Field label="Deadline">
-          <input type="date" className={INPUT} value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-        </Field>
-        <Field label="Workflow template">
-          <select className={INPUT} value={form.workflowTemplateId} onChange={(e) => setForm({ ...form, workflowTemplateId: e.target.value })}>
-            <option value="">Select template</option>
-            {workflowTemplates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Assign counsellor">
-          <select className={INPUT} value={form.assignedToId} onChange={(e) => setForm({ ...form, assignedToId: e.target.value })}>
-            <option value="">Unassigned</option>
-            {counsellors.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.fullName}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Notes">
-          <textarea className={INPUT} rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        </Field>
-        <div className="flex gap-3 pt-2">
-          <button type="button" onClick={onClose} className="ui-btn-secondary flex-1">
-            Cancel
-          </button>
-          <button type="submit" disabled={busy} className="ui-btn-primary flex-1">
-            {busy ? 'Creating...' : 'Create application'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
 function Modal({ title, onClose, children, wide }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/30">
-      <div className={`ui-panel w-full ${wide ? 'max-w-3xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto`}>
+      <div className={`ui-panel w-full ${wide ? 'max-w-4xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto`}>
         <div className="px-5 py-3 border-b border-neutral-200 flex justify-between items-center">
           <h3 className="text-sm font-semibold">{title}</h3>
           <button type="button" onClick={onClose} className="text-neutral-500 hover:text-neutral-800">

@@ -88,7 +88,7 @@ describe("user.service - getDefaultModuleAccessByRole", () => {
             expect(access["Agency CRM"]["Dashboard"]).toEqual(["VIEW"]);
             expect(access["Agency CRM"]["Agency Leads"]).toEqual(["VIEW"]);
             expect(access["Agency CRM"]["University Directory"]).toEqual(["VIEW"]);
-            expect(access["Agency CRM"]["Onboarding"]).toEqual(["VIEW"]);
+            expect(access["Agency CRM"]["Onboarding"]).toBeUndefined();
             expect(access["Agency CRM"]["Agency Management"]).toBeUndefined();
         }
     });

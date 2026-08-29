@@ -3,10 +3,9 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { toNumOrNull } from '../studyFormOptions';
 import RequiredStatusIcon, { isFilledValue } from './RequiredStatusIcon';
+import { INTAKE_MONTHS, STUDY_LEVELS, intakeYears } from '../studentFormOptions';
 
-const STUDY_LEVELS = ['Certificate', 'Diploma', 'Bachelor', 'Master', 'PhD'];
-const INTAKE_MONTHS = ['Spring', 'Summer', 'Fall', 'Winter', 'January', 'May', 'September'];
-const INTAKE_YEARS = Array.from({ length: 8 }, (_, index) => String(new Date().getFullYear() + index));
+const INTAKE_YEARS = intakeYears();
 
 const FilledField = ({ label, children, required = false, filled = false }) => (
   <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5">

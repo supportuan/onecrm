@@ -120,13 +120,6 @@ export const navMenu = [
         audience: "all",
       },
       {
-        label: "Onboarding",
-        agentLabel: "My Profile & Onboarding",
-        path: "/agency-crm/onboarding",
-        icon: FileText,
-        audience: "all",
-      },
-      {
         label: "Communications",
         agentLabel: "Notifications",
         path: "/agency-crm/communications",

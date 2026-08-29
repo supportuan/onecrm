@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import {
-  AGENT_ONBOARDING_PATH,
+  AGENT_HOME_PATH,
   isAgencyPartnerRole,
   isAgentBlockedPath,
 } from '@/features/agency-crm/agentPortal';
@@ -22,7 +22,7 @@ export default function AgencyCrmLayout({ children }) {
   useEffect(() => {
     if (loading || !user || !isAgent) return;
     if (isAgentBlockedPath(pathname)) {
-      router.replace(AGENT_ONBOARDING_PATH);
+      router.replace(AGENT_HOME_PATH);
     }
   }, [loading, user, isAgent, pathname, router]);
 

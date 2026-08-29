@@ -5,8 +5,7 @@ import { Copy, Layers, Save } from 'lucide-react';
 import { getMyPartner, listPartners, updatePartner } from '@/services/agencyCrmApi';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
-import { isAgencyPartnerRole, canShareReferralLink, AGENT_ONBOARDING_PATH } from '../agentPortal';
-import Link from 'next/link';
+import { isAgencyPartnerRole, canShareReferralLink } from '../agentPortal';
 
 const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
@@ -161,9 +160,6 @@ export default function CoBrandingTools() {
                 <p className="text-xs text-amber-900/80">
                   Current stage: {partner.onboardingStage || '—'}. Links for inactive partners are rejected.
                 </p>
-                <Link href={AGENT_ONBOARDING_PATH} className="inline-flex text-sm font-medium text-brand hover:underline">
-                  Go to setup →
-                </Link>
               </div>
             )}
           </div>

@@ -3,11 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { listWorkflowTemplates } from '@/services/studentCrmApi';
-import PersonalDetailsFields, {
-  emptyPersonalForm,
-  personalFormToStudentPayload,
-  ExamDetailsFields,
-} from './PersonalDetailsFields';
+import StudentEnquiryForm from './StudentEnquiryForm';
+import { emptyEnquiryForm, enquiryFormToStudentPayload } from '../studentEnquiryForm';
 import {
   Plus,
   Trash2,
@@ -41,7 +38,6 @@ import {
   stageBadgeClass,
 } from '@/features/student-crm/constants';
 import CatalogCourseFields from './CatalogCourseFields';
-
 const stageBadge = stageBadgeClass;
 
 const normalizeVisaDocs = (raw) => {
@@ -121,7 +117,7 @@ export const Field = ({ label, children }) => (
 
 export const Modal = ({ title, onClose, children, wide }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand/40 backdrop-blur-md animate-in fade-in duration-200">
-    <div className={`ui-surface w-full ${wide ? 'max-w-3xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-150`}>
+    <div className={`ui-surface w-full ${wide ? 'max-w-4xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-150`}>
       <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
         <h3 className="ui-text-h3">{title}</h3>
         <button
@@ -1771,34 +1767,24 @@ export const AuditTimeline = ({ app }) => (
 /* -------------------- Modals: new student / new application -------------------- */
 
 export const NewStudentModal = ({ onClose, onSave, formOptions = {}, counsellors = [] }) => {
-  const [form, setForm] = useState(emptyPersonalForm);
-  const countries = formOptions.countries || [];
-  const industries = formOptions.industries || [];
+  const [form, setForm] = useState(emptyEnquiryForm);
 
   return (
     <Modal title="New student" onClose={onClose} wide>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!form.firstName || !form.lastName || !form.email) return;
-          onSave(personalFormToStudentPayload(form));
+          if (!form.fullName || !form.email) return;
+          onSave(enquiryFormToStudentPayload(form));
         }}
         className="space-y-5 p-6"
       >
-        <div className="rounded-xl bg-neutral-100 px-5 py-3.5 text-sm font-medium text-neutral-600">
-          Fill up the mandatory details required...
-        </div>
-        <PersonalDetailsFields
+        <StudentEnquiryForm
           form={form}
-          onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
-          countries={countries}
-          industries={industries}
+          onChange={setForm}
+          formOptions={formOptions}
           counsellors={counsellors}
           requireIdentity
-        />
-        <ExamDetailsFields
-          form={form}
-          onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
         />
         <ModalFooter onClose={onClose} submitLabel="Create student" />
       </form>

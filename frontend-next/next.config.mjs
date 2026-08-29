@@ -42,6 +42,7 @@ const nextConfig = {
       { source: "/hr/payroll-inputs", destination: "/hr/payroll?tab=run", permanent: true },
       { source: "/hr/payroll-deductions", destination: "/hr/payroll?tab=deductions", permanent: true },
       { source: "/student-crm", destination: "/student-crm/dashboard", permanent: false },
+      { source: "/agency-crm/onboarding", destination: "/agency-crm/agency-leads", permanent: false },
       { source: "/admin-settings", destination: "/admin-settings/users", permanent: true },
       { source: "/users", destination: "/admin-settings/users", permanent: true },
     ];

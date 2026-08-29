@@ -38,7 +38,7 @@ const emptyForm = () => ({
   notes: '',
 });
 
-/** Admin partner-ops screen. Agents use the portal shell (onboarding / my students). */
+/** Admin partner-ops screen. Agents use the portal shell (referrals / commissions). */
 export default function AgencyManagement() {
   const { user } = useAuth();
   const { name: orgName } = useTenantBrand();
@@ -146,8 +146,8 @@ export default function AgencyManagement() {
               Agency Management is an administrator screen. Use the Agent Hub for your profile,
               students, and commissions.
             </p>
-            <a href="/agency-crm/onboarding" className="ui-btn-primary inline-flex">
-              Go to onboarding
+            <a href="/agency-crm/agency-leads" className="ui-btn-primary inline-flex">
+              Go to my referrals
             </a>
           </div>
         </div>

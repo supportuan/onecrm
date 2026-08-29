@@ -965,6 +965,7 @@ model Student {
   recGradeAchieved    String?
   preStudyLoc         String?
   educationDetails    Json?
+  enquiryDetails      Json?
   asstExamSections    Json?
   academicHistory     Json?
   ieltsScore          Float?
