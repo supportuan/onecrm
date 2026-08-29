@@ -87,7 +87,7 @@ export const getCourseForUser = async (actor: { userId: number; role: UserRole }
       createdBy: { select: userSelect },
     },
   });
-  if (!course) notFound('Course');
+  if (!course) return notFound('Course');
 
   const enrollment = await prisma.trainingEnrollment.findUnique({
     where: { courseId_userId: { courseId, userId: actor.userId } },
@@ -109,7 +109,7 @@ export const getCourseForUser = async (actor: { userId: number; role: UserRole }
 
 export const enrollSelf = async (actor: { userId: number; role: UserRole }, courseId: number) => {
   const course = await prisma.trainingCourse.findFirst({ where: { id: courseId, deletedAt: null } });
-  if (!course) notFound('Course');
+  if (!course) return notFound('Course');
   if (!course.isPublished || !roleMatchesAudience(actor.role, course.targetRoles)) {
     throw new TrainingError('Course is not available', 403);
   }
@@ -154,7 +154,7 @@ export const completeLesson = async (actor: { userId: number; role: UserRole }, 
     where: { id: lessonId },
     include: { course: true },
   });
-  if (!lesson || lesson.course.deletedAt) notFound('Lesson');
+  if (!lesson || lesson.course.deletedAt) return notFound('Lesson');
 
   let enrollment = await prisma.trainingEnrollment.findUnique({
     where: { courseId_userId: { courseId: lesson.courseId, userId: actor.userId } },
@@ -225,7 +225,7 @@ export const updateCourse = async (
   },
 ) => {
   const existing = await prisma.trainingCourse.findFirst({ where: { id: courseId, deletedAt: null } });
-  if (!existing) notFound('Course');
+  if (!existing) return notFound('Course');
 
   const data: Prisma.TrainingCourseUpdateInput = {};
   if (body.title !== undefined) {
@@ -253,7 +253,7 @@ export const updateCourse = async (
 
 export const deleteCourse = async (courseId: number) => {
   const existing = await prisma.trainingCourse.findFirst({ where: { id: courseId, deletedAt: null } });
-  if (!existing) notFound('Course');
+  if (!existing) return notFound('Course');
   await prisma.trainingCourse.update({
     where: { id: courseId },
     data: { deletedAt: new Date(), isPublished: false },
@@ -266,7 +266,7 @@ export const addLesson = async (
   body: { title?: string; content?: string; videoUrl?: string; durationMin?: unknown; sortOrder?: unknown },
 ) => {
   const existing = await prisma.trainingCourse.findFirst({ where: { id: courseId, deletedAt: null } });
-  if (!existing) notFound('Course');
+  if (!existing) return notFound('Course');
   const title = String(body.title || '').trim();
   if (title.length < 2) throw new TrainingError('Lesson title is required');
 
@@ -299,7 +299,7 @@ export const updateLesson = async (
   },
 ) => {
   const lesson = await prisma.trainingLesson.findUnique({ where: { id: lessonId } });
-  if (!lesson) notFound('Lesson');
+  if (!lesson) return notFound('Lesson');
 
   const data: Prisma.TrainingLessonUpdateInput = {};
   if (body.title !== undefined) {
@@ -320,7 +320,7 @@ export const updateLesson = async (
 
 export const deleteLesson = async (lessonId: number) => {
   const lesson = await prisma.trainingLesson.findUnique({ where: { id: lessonId } });
-  if (!lesson) notFound('Lesson');
+  if (!lesson) return notFound('Lesson');
   await prisma.trainingLesson.delete({ where: { id: lessonId } });
   const enrollments = await prisma.trainingEnrollment.findMany({
     where: { courseId: lesson.courseId },
@@ -332,7 +332,7 @@ export const deleteLesson = async (lessonId: number) => {
 
 export const listEnrollments = async (courseId: number) => {
   const existing = await prisma.trainingCourse.findFirst({ where: { id: courseId, deletedAt: null } });
-  if (!existing) notFound('Course');
+  if (!existing) return notFound('Course');
 
   const rows = await prisma.trainingEnrollment.findMany({
     where: { courseId },
@@ -348,7 +348,6 @@ export const listEnrollments = async (courseId: number) => {
     id: row.id,
     user: row.user,
     enrolledAt: row.enrolledAt,
-    completedAt: row.completedAt,
     ...withProgress(row),
   }));
 };
@@ -358,8 +357,8 @@ export const assignEnrollment = async (actor: { userId: number }, courseId: numb
     prisma.trainingCourse.findFirst({ where: { id: courseId, deletedAt: null } }),
     prisma.user.findUnique({ where: { id: userId }, select: { id: true, isActive: true } }),
   ]);
-  if (!course) notFound('Course');
-  if (!user || !user.isActive) notFound('User');
+  if (!course) return notFound('Course');
+  if (!user || !user.isActive) return notFound('User');
 
   return prisma.trainingEnrollment.upsert({
     where: { courseId_userId: { courseId, userId } },
@@ -375,7 +374,7 @@ export const assignEnrollment = async (actor: { userId: number }, courseId: numb
 
 export const removeEnrollment = async (enrollmentId: number) => {
   const existing = await prisma.trainingEnrollment.findUnique({ where: { id: enrollmentId } });
-  if (!existing) notFound('Enrollment');
+  if (!existing) return notFound('Enrollment');
   await prisma.trainingEnrollment.delete({ where: { id: enrollmentId } });
   return { id: enrollmentId };
 };
