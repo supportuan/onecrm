@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Loader2, PlayCircle } from 'lucide-react';
 import { completeTrainingLesson, enrollInCourse, getTrainingCourse } from '@/services/trainingApi';
 
 export default function CoursePlayer() {
   const params = useParams();
+  const pathname = usePathname() || '';
   const id = Number(params?.id);
+  const backHref = pathname.startsWith('/applicant') ? '/applicant/training' : '/training';
   const [course, setCourse] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function CoursePlayer() {
 
   return (
     <div className="ui-container space-y-4">
-      <Link href="/training" className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-brand">
+      <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-brand">
         <ArrowLeft className="h-4 w-4" /> Back to training
       </Link>
       {msg && <div className="ui-panel p-3 text-sm">{msg}</div>}

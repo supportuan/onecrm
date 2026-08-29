@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { getDefaultHrRoute } from '@/features/hr/routing';
 import { useAppearanceStore } from '@/lib/stores/appearanceStore';
 import { BrandMark, useTenantBrand } from '@/components/AppBrand';
+import LoginVideoBackground from '@/components/LoginVideoBackground';
 
 const LuminaFluidBackground = dynamic(() => import('@/components/LuminaFluidBackground'), {
   ssr: false,
@@ -75,7 +76,7 @@ function LoginBrandMark({ light = false, onDark = false, centered = false, large
   return (
     <div className={`flex items-center ${large ? 'gap-3' : 'gap-2'} ${centered ? 'justify-center' : ''}`}>
       <div
-        className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-neutral-950 ${
+        className={`relative shrink-0 overflow-hidden rounded-lg ${
           large ? 'h-12 w-12' : 'h-8 w-8'
         } ${
           light ? 'shadow-sm ring-1 ring-black/10' : 'ring-1 ring-white/15'
@@ -87,7 +88,6 @@ function LoginBrandMark({ light = false, onDark = false, centered = false, large
           width={large ? 48 : 32}
           height={large ? 48 : 32}
           priority
-          className="h-[78%] w-[78%] object-contain"
         />
       </div>
       <div className={`min-w-0 leading-tight ${centered ? 'text-left' : ''}`}>
@@ -132,6 +132,7 @@ export default function LoginPage() {
   const [isMobile, setIsMobile] = useState(null);
   const [enableFluid, setEnableFluid] = useState(false);
   const [enableMobileShader, setEnableMobileShader] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia('(max-width: 767px)');
@@ -141,6 +142,7 @@ export default function LoginPage() {
     const sync = () => {
       const mobile = mobileQuery.matches;
       setIsMobile(mobile);
+      setPrefersReducedMotion(reduceMotion.matches);
       setEnableFluid(!reduceMotion.matches && !mobile && !coarse.matches);
       setEnableMobileShader(mobile && !reduceMotion.matches);
     };
@@ -174,6 +176,8 @@ export default function LoginPage() {
       window.removeEventListener('keydown', onKey);
     };
   }, [privacyOpen]);
+
+  const showVideo = Boolean(brand.loginBackgroundUrl) && !prefersReducedMotion;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -224,7 +228,12 @@ export default function LoginPage() {
         <div className="min-h-screen w-full bg-black" aria-hidden="true" />
       ) : isMobile ? (
         <div className="relative flex min-h-screen w-full flex-col">
-          {enableMobileShader ? (
+          {showVideo ? (
+            <>
+              <LoginVideoBackground src={brand.loginBackgroundUrl} />
+              <div className="pointer-events-none absolute inset-0 bg-black/20" aria-hidden="true" />
+            </>
+          ) : enableMobileShader ? (
             themeId === 'aurora' ? (
               <AuroraBackground />
             ) : (
@@ -238,7 +247,8 @@ export default function LoginPage() {
             />
           )}
 
-          <div className="relative z-10 flex min-h-[100dvh] flex-col px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className={`relative z-10 flex min-h-[100dvh] flex-col px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] ${showVideo ? 'justify-center' : ''}`}>
+            <div className={showVideo ? 'rounded-2xl bg-white/92 px-4 py-5 shadow-xl backdrop-blur-sm' : ''}>
             <div className="login-mobile-reveal login-mobile-reveal-1 flex shrink-0 items-center justify-between">
               <LoginBrandMark light />
               <PrivacyInfoButton onClick={() => setPrivacyOpen(true)} light />
@@ -342,11 +352,17 @@ export default function LoginPage() {
                 </div>
               </form>
             </div>
+            </div>
           </div>
         </div>
       ) : (
         <div className="relative flex min-h-screen w-full items-center justify-center bg-black px-6 py-12">
-          {enableFluid ? (
+          {showVideo ? (
+            <>
+              <LoginVideoBackground src={brand.loginBackgroundUrl} />
+              <div className="pointer-events-none absolute inset-0 bg-black/45" aria-hidden="true" />
+            </>
+          ) : enableFluid ? (
             <LuminaFluidBackground fluidColor={theme.fluidColor} rainbow />
           ) : (
             <div

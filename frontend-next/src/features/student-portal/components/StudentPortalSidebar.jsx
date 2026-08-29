@@ -8,6 +8,7 @@ import {
   UserRound,
   Library,
   MessageSquare,
+  GraduationCap,
 } from 'lucide-react';
 import { SidebarBrandHeader } from '@/components/AppBrand';
 import { SIDEBAR_OPEN, SIDEBAR_COLLAPSED } from '@/lib/layout-shell';
@@ -17,6 +18,7 @@ export { SIDEBAR_OPEN, SIDEBAR_COLLAPSED };
 const NAV = [
   { label: 'Applications', href: '/applicant/applications', icon: FileText },
   { label: 'Messages', href: '/applicant/messages', icon: MessageSquare },
+  { label: 'Training', href: '/applicant/training', icon: GraduationCap },
   { label: 'Knowledge Hub', href: '/applicant/resources', icon: Library },
   { label: 'Payments', href: '/applicant/payments', icon: CreditCard },
   { label: 'Profile', href: '/applicant/profile/view', icon: UserRound },

@@ -133,8 +133,10 @@ export default function ApplicationsList() {
         listApplications({ limit: 500 }),
         listStudents({ limit: 500 }),
       ]);
-      setAllApps(Array.isArray(appsRes?.data) ? appsRes.data : []);
-      setStudents(Array.isArray(studentsRes?.data) ? studentsRes.data : []);
+      const appsPayload = appsRes?.data ?? appsRes;
+      const studentsPayload = studentsRes?.data ?? studentsRes;
+      setAllApps(Array.isArray(appsPayload) ? appsPayload : []);
+      setStudents(Array.isArray(studentsPayload) ? studentsPayload : []);
       setSelectedIds(new Set());
     } catch (e) {
       flash('err', e?.message || 'failed to load');
@@ -513,6 +515,15 @@ export default function ApplicationsList() {
         {canManage && (
           <button
             type="button"
+            onClick={() => setShowPickStudent(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/55 bg-white/35 px-3 py-2 text-[12px] font-medium text-brand shadow-[0_8px_24px_rgba(19,71,144,0.06)] backdrop-blur-md transition-all hover:bg-white/50"
+          >
+            <Plus size={13} /> New application
+          </button>
+        )}
+        {canManage && (
+          <button
+            type="button"
             onClick={() => setShowNewStudent(true)}
             className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/55 bg-white/35 px-3 py-2 text-[12px] font-medium text-brand shadow-[0_8px_24px_rgba(19,71,144,0.06)] backdrop-blur-md transition-all hover:bg-white/50"
           >
@@ -702,6 +713,25 @@ export default function ApplicationsList() {
         {loading ? (
           <div className="flex items-center justify-center p-16">
             <LogoLoader label="Loading applications…" size="md" />
+          </div>
+        ) : allApps.length === 0 ? (
+          <div className="p-16 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-neutral-200 mx-auto flex items-center justify-center">
+              <FileText size={18} className="text-neutral-400" />
+            </div>
+            <p className="ui-text-strong mt-4">No applications yet.</p>
+            <p className="ui-text-meta mt-1">
+              The Students count is profiles. Applications appear here after a university is shortlisted or you create one.
+            </p>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => setShowPickStudent(true)}
+                className="ui-btn-primary mt-4 inline-flex items-center gap-1.5"
+              >
+                <Plus size={14} /> New application
+              </button>
+            )}
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-16 text-center">

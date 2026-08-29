@@ -27,6 +27,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Star,
+  Palette,
   Target,
   Users,
   Wallet,
@@ -206,6 +207,12 @@ export const navMenu = [
         icon: Key,
         permission: ["VIEW_ADMIN", "MANAGE_ADMINS"],
       },
+      {
+        label: "Appearance",
+        path: "/admin-settings/branding",
+        icon: Palette,
+        permission: ["VIEW_ADMIN", "MANAGE_SYSTEM", "MANAGE_ADMINS"],
+      },
     ],
   },
   {
@@ -219,12 +226,14 @@ export const navMenu = [
     path: "/operations",
     icon: Settings2,
     navTheme: "crimson",
+    installFeature: "sampleModules",
   },
   {
     label: "Finance",
     path: "/finance",
     icon: Wallet,
     navTheme: "crimson",
+    installFeature: "sampleModules",
   },
   {
     label: "Inventory Management",
@@ -232,6 +241,7 @@ export const navMenu = [
     path: "/inventory-management",
     icon: Boxes,
     navTheme: "crimson",
+    installFeature: "sampleModules",
   },
   {
     label: "Project Management",
@@ -239,30 +249,35 @@ export const navMenu = [
     path: "/project-management",
     icon: FolderKanban,
     navTheme: "crimson",
+    installFeature: "sampleModules",
   },
   {
     label: "Chatbot & Events",
     path: "/chatbot-events",
     icon: Bot,
     navTheme: "crimson",
+    installFeature: "sampleModules",
   },
   {
     label: "Blogs & News",
     path: "/blogs-news",
     icon: Newspaper,
     navTheme: "crimson",
+    installFeature: "sampleModules",
   },
   {
     label: "AI Insights",
     path: "/ai-insights",
     icon: BrainCircuit,
     navTheme: "crimson",
+    installFeature: "sampleModules",
   },
   {
     label: "Connector",
     path: "/connector",
     icon: Plug,
     navTheme: "crimson",
+    installFeature: "sampleModules",
     subItems: [
       {
         label: "LinkedIn Plugin",
@@ -276,5 +291,6 @@ export const navMenu = [
     path: "/archive",
     icon: Archive,
     navTheme: "crimson",
+    installFeature: "sampleModules",
   },
 ];

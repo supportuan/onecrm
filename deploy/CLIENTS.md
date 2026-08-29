@@ -51,7 +51,8 @@ Set these in that client's env file. The login page reads `GET /api/org/branding
 - [ ] `LOGIN_THEME` — `brand` | `aurora` | `mist`
 - [ ] `LOGIN_THEME_LOCKED=true` if users must not switch themes
 - [ ] `SHOW_ALLIED_SERVICES=true` only for ApplyUniNow (sister-brand page)
-- [ ] `ENABLED_MODULES` if this copy should hide modules (e.g. `HR,MARKETING,ADMIN`)
+- [ ] `SHOW_SAMPLE_MODULES=true` only for ApplyUniNow (placeholder nav: Operations, Finance, Inventory, …)
+- [ ] `ENABLED_MODULES` if this copy should hide live modules (e.g. `HR,MARKETING,ADMIN`)
 - [ ] `EMAIL_FROM` display name matches `ORG_NAME`
 
 After boot, open that client's `/login` and confirm name, logo, theme, and that a test user from another copy **cannot** sign in.

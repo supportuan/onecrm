@@ -22,6 +22,7 @@ const FILE_URL_FIELDS = new Set([
   'attachmentUrl',
   'logo',
   'logoUrl',
+  'loginBackgroundUrl',
   'url',
   'profilePhotoUrl',
   'offerLetterFileUrl',

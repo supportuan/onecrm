@@ -24,6 +24,9 @@ export function getStaffPageMeta(pathname = '') {
   } else if (pathname === '/admin-settings/roles-permissions') {
     title = 'Roles & Permissions';
     description = 'Manage role responsibilities, member assignments, and access permissions.';
+  } else if (pathname === '/admin-settings/branding') {
+    title = 'Appearance';
+    description = 'Customize the logo, login screen, and Allied Services cards.';
   } else if (pathname.startsWith('/marketing')) {
     title = 'Performance Console';
     description = 'Clean, focused insight into lead movement, sources, and actions that need attention.';
@@ -114,13 +117,13 @@ export function getStaffPageMeta(pathname = '') {
     description = 'Curated knowledge for in-house teams, academics, and agents.';
   } else if (pathname.startsWith('/training/manage')) {
     title = 'Manage Training';
-    description = 'Create courses, lessons, and assign training.';
+    description = 'IELTS and visa classes — 1-on-1 or group, with handpicked students.';
   } else if (pathname.startsWith('/training/courses')) {
     title = 'Course';
     description = 'Work through lessons and track your progress.';
   } else if (pathname.startsWith('/training')) {
     title = 'Training';
-    description = 'Your assigned courses and the training catalog.';
+    description = 'IELTS preparation and visa training classes.';
   } else if (pathname.startsWith('/allied-services')) {
     title = 'Allied Services';
     description = '';

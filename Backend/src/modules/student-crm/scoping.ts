@@ -26,7 +26,7 @@ export const studentSelfWhere = (user: ScopeUser) => {
   return withTenant({ deletedAt: null, OR: or }, user);
 };
 
-/** Counsellor: assigned records; Student: own profile/applications only */
+/** Counsellor: same students as the student file (ATS must not hide sibling apps). */
 export const applicationScopeWhere = (user?: ScopeUser) => {
   if (!user?.id || hasFullCrmAccess(user.role)) {
     return withTenant({}, user);
@@ -34,7 +34,23 @@ export const applicationScopeWhere = (user?: ScopeUser) => {
   if (isStudentRole(user.role)) {
     return { student: studentSelfWhere(user) };
   }
-  return withTenant({ assignedToId: user.id }, user);
+  return withTenant(
+    {
+      OR: [
+        { assignedToId: user.id },
+        {
+          student: {
+            deletedAt: null,
+            OR: [
+              { contactId: user.id },
+              { applications: { some: { assignedToId: user.id } } },
+            ],
+          },
+        },
+      ],
+    },
+    user,
+  );
 };
 
 export const studentScopeWhere = (user?: ScopeUser) => {

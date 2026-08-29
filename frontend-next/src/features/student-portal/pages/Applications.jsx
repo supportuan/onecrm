@@ -87,7 +87,9 @@ export default function ApplicationsPage() {
     try {
       const [pRes, aRes] = await Promise.all([getMyStudent(), listMyApplications()]);
       const p = pRes?.data || null;
-      const items = Array.isArray(aRes?.data) ? aRes.data : [];
+      const fromApi = Array.isArray(aRes?.data) ? aRes.data : [];
+      const fromProfile = Array.isArray(p?.applications) ? p.applications : [];
+      const items = fromApi.length ? fromApi : fromProfile;
       setProfile(p);
       setApps(items);
 

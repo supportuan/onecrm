@@ -52,14 +52,13 @@ export default function StudentLoginPage() {
     <AuthPageShell>
       <div className="w-full rounded-[24px] border border-white/70 bg-white/[0.86] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-black/[0.04] backdrop-blur-2xl backdrop-saturate-150 transition-shadow duration-500 hover:shadow-[0_34px_110px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,1)] sm:p-10">
         <div className="mb-7 flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8eef8] p-1.5 ring-1 ring-white/20">
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl ring-1 ring-white/20">
             <BrandMark
               src={brand.logoSrc}
               alt={brand.name}
-              width={36}
-              height={36}
+              width={44}
+              height={44}
               priority
-              className="h-8 w-8 object-contain"
             />
           </div>
           <div className="leading-tight">

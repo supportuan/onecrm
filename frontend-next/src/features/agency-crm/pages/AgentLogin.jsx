@@ -135,14 +135,13 @@ export default function AgentLogin() {
       >
         <div className="mb-8">
           <div className="mb-7 flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8eef8] p-1.5 ring-1 ring-white/20">
+            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl ring-1 ring-white/20">
               <BrandMark
                 src={brand.logoSrc}
                 alt={brand.name}
-                width={36}
-                height={36}
+                width={44}
+                height={44}
                 priority
-                className="h-8 w-8 object-contain"
               />
             </div>
             <div className="leading-tight">

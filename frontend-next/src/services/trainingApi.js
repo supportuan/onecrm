@@ -82,5 +82,62 @@ export const assignTrainingEnrollment = async (courseId, userId) =>
 export const removeTrainingEnrollment = async (id) =>
   handleResponse(await authFetch(`${API_URL}/admin/enrollments/${id}`, { method: 'DELETE' }));
 
-export const searchTrainingUsers = async (q) =>
-  handleResponse(await authFetch(`${API_URL}/admin/users?q=${encodeURIComponent(q || '')}`));
+export const searchTrainingUsers = async (q, audience) => {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (audience) params.set('audience', audience);
+  return handleResponse(await authFetch(`${API_URL}/admin/users?${params.toString()}`));
+};
+
+export const listTrainingClasses = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.programType) params.set('programType', filters.programType);
+  if (filters.deliveryMode) params.set('deliveryMode', filters.deliveryMode);
+  const qs = params.toString();
+  return handleResponse(await authFetch(`${API_URL}/admin/classes${qs ? `?${qs}` : ''}`));
+};
+
+export const getTrainingClass = async (id) =>
+  handleResponse(await authFetch(`${API_URL}/classes/${id}`));
+
+export const createTrainingClass = async (body) =>
+  handleResponse(
+    await authFetch(`${API_URL}/admin/classes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+
+export const updateTrainingClass = async (id, body) =>
+  handleResponse(
+    await authFetch(`${API_URL}/admin/classes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+
+export const deleteTrainingClass = async (id) =>
+  handleResponse(await authFetch(`${API_URL}/admin/classes/${id}`, { method: 'DELETE' }));
+
+export const addTrainingClassStudent = async (classId, userId) =>
+  handleResponse(
+    await authFetch(`${API_URL}/admin/classes/${classId}/students`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    }),
+  );
+
+export const removeTrainingClassStudent = async (seatId) =>
+  handleResponse(await authFetch(`${API_URL}/admin/seats/${seatId}`, { method: 'DELETE' }));
+
+export const setTrainingSeatPayment = async (seatId, paymentStatus) =>
+  handleResponse(
+    await authFetch(`${API_URL}/admin/seats/${seatId}/payment`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentStatus }),
+    }),
+  );

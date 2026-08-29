@@ -33,7 +33,7 @@ export default function LogoLoader({
       <div className={`logo-loader relative ${dims.ring}`}>
         <span className="logo-loader-ring" aria-hidden="true" />
         <div
-          className={`logo-loader-mark absolute inset-0 m-auto flex ${dims.box} items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-brand/10`}
+          className={`logo-loader-mark absolute inset-0 m-auto overflow-hidden ${dims.box} rounded-2xl bg-white shadow-sm ring-1 ring-brand/10`}
         >
           {isLocalStatic ? (
             <Image
@@ -41,7 +41,7 @@ export default function LogoLoader({
               alt=""
               width={dims.img}
               height={dims.img}
-              className="object-contain"
+              className="h-full w-full object-cover"
               priority
             />
           ) : (
@@ -51,7 +51,7 @@ export default function LogoLoader({
               alt=""
               width={dims.img}
               height={dims.img}
-              className="object-contain"
+              className="h-full w-full object-cover"
             />
           )}
         </div>

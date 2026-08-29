@@ -1,18 +1,22 @@
-import { Prisma, TrainingCourseCategory, TrainingEnrollmentStatus, type UserRole } from '@prisma/client';
+import { Prisma, TrainingCourseCategory, TrainingEnrollmentStatus, UserRole } from '@prisma/client';
 import { prisma } from '../../prisma.js';
 import { normalizeTargetRoles, roleMatchesAudience } from '../resources/resources.audience.js';
+import { TrainingError } from './training-errors.js';
+import { listMyBatches } from './training-classes.js';
+
+export { TrainingError } from './training-errors.js';
 
 const CATEGORIES = new Set<string>(Object.values(TrainingCourseCategory));
+const STAFF_ROLES = new Set<UserRole>([
+  UserRole.SUPER_ADMIN,
+  UserRole.GLOBAL_ADMIN,
+  UserRole.HR,
+  UserRole.COUNSELLOR,
+  UserRole.MARKETING_MANAGER,
+  UserRole.TELECALLER,
+]);
 const userSelect = { id: true, fullName: true, email: true, role: true } as const;
 const lessonOrder = [{ sortOrder: 'asc' as const }, { id: 'asc' as const }];
-
-export class TrainingError extends Error {
-  status: number;
-  constructor(message: string, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
 
 const notFound = (what: string): never => {
   throw new TrainingError(`${what} not found`, 404);
@@ -51,7 +55,7 @@ const withProgress = (row: {
 };
 
 export const listDashboard = async (actor: { userId: number; role: UserRole }) => {
-  const [enrollments, published] = await Promise.all([
+  const [enrollments, published, myClasses] = await Promise.all([
     prisma.trainingEnrollment.findMany({
       where: { userId: actor.userId, course: { deletedAt: null } },
       include: {
@@ -65,10 +69,12 @@ export const listDashboard = async (actor: { userId: number; role: UserRole }) =
       include: { _count: { select: { lessons: true, enrollments: true } } },
       orderBy: { updatedAt: 'desc' },
     }),
+    listMyBatches(actor),
   ]);
 
   const enrolledIds = new Set(enrollments.map((row) => row.courseId));
   return {
+    myClasses,
     myCourses: enrollments.map((row) => ({
       ...row.course,
       enrollment: withProgress(row),
@@ -379,11 +385,20 @@ export const removeEnrollment = async (enrollmentId: number) => {
   return { id: enrollmentId };
 };
 
-export const listAssignableUsers = async (q?: string) => {
+export const listAssignableUsers = async (q?: string, audience?: string) => {
   const query = String(q || '').trim();
+  const kind = String(audience || '').toUpperCase();
+  const roleFilter =
+    kind === 'STUDENT'
+      ? { role: UserRole.STUDENT }
+      : kind === 'STAFF' || kind === 'TRAINER'
+        ? { role: { in: [...STAFF_ROLES] } }
+        : {};
+
   return prisma.user.findMany({
     where: {
       isActive: true,
+      ...roleFilter,
       ...(query
         ? {
             OR: [

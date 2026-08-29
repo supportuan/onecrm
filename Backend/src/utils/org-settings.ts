@@ -1,5 +1,5 @@
 import { prisma } from '../prisma.js';
-import { resolveFileRef } from '../lib/file-storage.js';
+import { publicAlliedServices, type AlliedServiceItem } from '../modules/org/allied-services.js';
 import {
   AUN_STATIC_LOGO_PATH,
   DEFAULT_ORG_NAME,
@@ -13,6 +13,7 @@ import {
   getPublicLogoUrl,
   isLoginThemeLocked,
   showAlliedServices,
+  showSampleModules,
 } from './org-identity.js';
 
 export {
@@ -39,7 +40,11 @@ export type OrgBranding = {
   loginHeadline: string;
   loginTheme: string;
   loginThemeLocked: boolean;
+  loginBackgroundUrl: string | null;
   showAlliedServices: boolean;
+  showSampleModules: boolean;
+  alliedHeading: string;
+  alliedServices: AlliedServiceItem[];
   privacyCopy: string;
   websiteUrl: string | null;
   tenantName: string;
@@ -49,21 +54,27 @@ export type OrgBranding = {
 export const resolveOrgBranding = async (): Promise<OrgBranding> => {
   const org = await ensureOrgSettings();
   const name = (org.name || '').trim() || getOrgName();
-  const logoFromDb = (await resolveFileRef(org.logoUrl)) || null;
-  const logoUrl =
-    logoFromDb ||
-    getPublicLogoUrl() ||
-    (name === DEFAULT_ORG_NAME ? AUN_STATIC_LOGO_PATH : null);
+  const logoUrl = org.logoUrl
+    ? `/api/org/logo?v=${org.updatedAt.getTime()}`
+    : getPublicLogoUrl() || (name === DEFAULT_ORG_NAME ? AUN_STATIC_LOGO_PATH : null);
+  const allied = publicAlliedServices(org.alliedServices);
+  const loginBackgroundUrl = org.loginBackgroundUrl
+    ? `/api/org/login-background?v=${org.updatedAt.getTime()}`
+    : null;
 
   return {
     name,
-    tagline: getOrgTagline(),
+    tagline: (org.tagline || '').trim() || getOrgTagline(),
     logoUrl,
     productName: getProductName(),
-    loginHeadline: getLoginHeadline(),
+    loginHeadline: (org.loginHeadline || '').trim() || getLoginHeadline(),
     loginTheme: getLoginTheme(),
     loginThemeLocked: isLoginThemeLocked(),
+    loginBackgroundUrl,
     showAlliedServices: showAlliedServices(),
+    showSampleModules: showSampleModules(),
+    alliedHeading: allied.heading,
+    alliedServices: allied.items,
     privacyCopy: getPrivacyCopy(),
     websiteUrl: getOrgWebsiteUrl(),
     tenantName: name,

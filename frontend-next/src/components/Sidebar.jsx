@@ -27,6 +27,7 @@ const getPermissionOptionName = (subLabel) => {
   if (subLabel === "System Settings") return "Settings";
   if (subLabel === "Content Management") return "Settings";
   if (subLabel === "Branding") return "Settings";
+  if (subLabel === "Appearance") return "Settings";
   if (subLabel === "Recruitment") return "Recruitment Tracker";
   if (subLabel === "Leave") return "Leave Management";
   if (subLabel === "Performance") return "Performance Reviews";
@@ -83,7 +84,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
 
   const { user } = useAuth();
   const { can } = usePermissions();
-  const { showAlliedServices } = useTenantBrand();
+  const { showAlliedServices, showSampleModules } = useTenantBrand();
 
   const [openSections, setOpenSections] = useState({});
   const [flyoutMenu, setFlyoutMenu] = useState(null);
@@ -96,6 +97,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
 
     const moduleVisible = (item) => {
       if (item.installFeature === "alliedServices" && !showAlliedServices) return false;
+      if (item.installFeature === "sampleModules" && !showSampleModules) return false;
 
       const enabled = user.enabledModules;
       if (item.moduleKey && Array.isArray(enabled) && enabled.length > 0) {
@@ -200,7 +202,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
         });
       })
       .filter(Boolean);
-  }, [user, can, showAlliedServices]);
+  }, [user, can, showAlliedServices, showSampleModules]);
 
   const sectionKeys = useMemo(
     () => filteredNavMenu.map((item) => item.label),

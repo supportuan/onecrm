@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { UserRole } from '@prisma/client';
 import { sendError, sendSuccess } from '../../utils/response.js';
 import * as service from './training.service.js';
+import * as classes from './training-classes.js';
 
 const numId = (raw: unknown) => {
   const n = Number(raw);
@@ -171,8 +172,99 @@ export const removeEnrollment = async (req: Request, res: Response, next: NextFu
 
 export const listUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.listAssignableUsers(typeof req.query.q === 'string' ? req.query.q : '');
+    const data = await service.listAssignableUsers(
+      typeof req.query.q === 'string' ? req.query.q : '',
+      typeof req.query.audience === 'string' ? req.query.audience : '',
+    );
     return sendSuccess(res, 'users', data);
+  } catch (err) {
+    handle(err, res, next);
+  }
+};
+
+export const listClasses = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await classes.listAdminBatches({
+      programType: typeof req.query.programType === 'string' ? req.query.programType : undefined,
+      deliveryMode: typeof req.query.deliveryMode === 'string' ? req.query.deliveryMode : undefined,
+    });
+    return sendSuccess(res, 'training classes', data);
+  } catch (err) {
+    handle(err, res, next);
+  }
+};
+
+export const getClass = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const data = await classes.getBatch(id, actor(req));
+    return sendSuccess(res, 'training class', data);
+  } catch (err) {
+    handle(err, res, next);
+  }
+};
+
+export const createClass = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await classes.createBatch(actor(req), req.body || {});
+    return sendSuccess(res, 'class created', data, 201);
+  } catch (err) {
+    handle(err, res, next);
+  }
+};
+
+export const updateClass = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const data = await classes.updateBatch(id, req.body || {});
+    return sendSuccess(res, 'class updated', data);
+  } catch (err) {
+    handle(err, res, next);
+  }
+};
+
+export const removeClass = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const data = await classes.deleteBatch(id);
+    return sendSuccess(res, 'class deleted', data);
+  } catch (err) {
+    handle(err, res, next);
+  }
+};
+
+export const addClassStudent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    const userId = numId(req.body?.userId);
+    if (!id || !userId) return sendError(res, 'class id and userId are required', null, 400);
+    const data = await classes.addBatchMember(actor(req), id, userId);
+    return sendSuccess(res, 'student added', data);
+  } catch (err) {
+    handle(err, res, next);
+  }
+};
+
+export const removeClassStudent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const data = await classes.removeBatchMember(id);
+    return sendSuccess(res, 'student removed', data);
+  } catch (err) {
+    handle(err, res, next);
+  }
+};
+
+export const setClassSeatPayment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = numId(req.params.id);
+    if (!id) return sendError(res, 'invalid id', null, 400);
+    const data = await classes.setMemberPaymentStatus(id, req.body?.paymentStatus);
+    return sendSuccess(res, 'seat payment updated', data);
   } catch (err) {
     handle(err, res, next);
   }

@@ -44,8 +44,8 @@ export const PERMISSION_CATEGORIES = [
     title: 'Training',
     key: 'training',
     permissions: [
-      { key: 'VIEW_TRAINING', name: 'view training', desc: 'access the training catalog, enroll in courses, and complete lessons.' },
-      { key: 'MANAGE_TRAINING', name: 'manage training', desc: 'create courses, lessons, and assign training to users.' },
+      { key: 'VIEW_TRAINING', name: 'view training', desc: 'see IELTS and visa classes, enroll in materials, and complete lessons.' },
+      { key: 'MANAGE_TRAINING', name: 'manage training', desc: 'create 1-on-1 or group classes, assign trainers, and handpick students.' },
     ],
   },
   {

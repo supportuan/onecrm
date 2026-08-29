@@ -15,27 +15,24 @@ import {
 
 export { BRAND_LOGO_SRC, BRAND_NAME, BRAND_TAGLINE, AUN_LOGO_SRC };
 
-/** Local static marks use next/image; tenant/upload URLs use <img>. */
+/** Local static marks use next/image; tenant/upload URLs use <img>. Fills the parent box. */
 export function BrandMark({
   src,
   alt = '',
   className = '',
-  width = 24,
-  height = 24,
   priority = false,
 }) {
   const resolved = src || BRAND_LOGO_SRC;
   const isLocalStatic = resolved.startsWith('/images/');
-
   if (isLocalStatic) {
     return (
       <Image
         src={resolved}
         alt={alt}
-        width={width}
-        height={height}
+        fill
+        sizes="96px"
         priority={priority}
-        className={`shrink-0 object-contain ${className}`}
+        className={`object-cover ${className}`}
       />
     );
   }
@@ -45,10 +42,20 @@ export function BrandMark({
     <img
       src={resolved}
       alt={alt}
-      width={width}
-      height={height}
-      className={`shrink-0 object-contain ${className}`}
+      className={`absolute inset-0 h-full w-full object-cover ${className}`}
     />
+  );
+}
+
+export function LogoBox({
+  className = 'h-8 w-8',
+  rounded = 'rounded-lg',
+  children,
+}) {
+  return (
+    <div className={`relative shrink-0 overflow-hidden bg-neutral-950 ${rounded} ${className}`}>
+      {children}
+    </div>
   );
 }
 
@@ -58,7 +65,7 @@ export function useTenantBrand() {
   const name = user?.tenantName || branding?.name || BRAND_NAME;
   const logoSrc = resolveBrandLogo(
     name,
-    user?.tenantLogoUrl || branding?.logoUrl || branding?.tenantLogoUrl,
+    branding?.logoUrl || branding?.tenantLogoUrl || user?.tenantLogoUrl,
   );
   return {
     logoSrc,
@@ -67,22 +74,27 @@ export function useTenantBrand() {
     loginHeadline: branding?.loginHeadline,
     privacyCopy: branding?.privacyCopy,
     loginThemeLocked: Boolean(branding?.loginThemeLocked),
+    loginBackgroundUrl: branding?.loginBackgroundUrl || null,
     showAlliedServices: Boolean(branding?.showAlliedServices),
-    hasCustomLogo: Boolean(user?.tenantLogoUrl || branding?.logoUrl),
+    showSampleModules: Boolean(branding?.showSampleModules),
+    alliedHeading: branding?.alliedHeading,
+    alliedServices: Array.isArray(branding?.alliedServices) ? branding.alliedServices : [],
+    hasCustomLogo: Boolean(branding?.logoUrl),
   };
 }
 
 export function AppLogo({ className = 'h-10 w-10', priority = false }) {
   const { logoSrc, name } = useTenantBrand();
   return (
-    <BrandMark
-      src={logoSrc}
-      alt={name}
-      width={56}
-      height={56}
-      priority={priority}
-      className={className}
-    />
+    <LogoBox className={className}>
+      <BrandMark
+        src={logoSrc}
+        alt={name}
+        width={56}
+        height={56}
+        priority={priority}
+      />
+    </LogoBox>
   );
 }
 
@@ -101,13 +113,14 @@ export function AppBrand({
 
   const inner = (
     <>
-      <BrandMark
-        src={brand.logoSrc}
-        alt={resolvedTitle}
-        width={36}
-        height={36}
-        className={logoClassName || (compact ? 'h-8 w-8' : 'h-9 w-9')}
-      />
+      <LogoBox className={logoClassName || (compact ? 'h-8 w-8' : 'h-9 w-9')}>
+        <BrandMark
+          src={brand.logoSrc}
+          alt={resolvedTitle}
+          width={36}
+          height={36}
+        />
+      </LogoBox>
       {!compact && (
         <div className="min-w-0 overflow-hidden">
           <p className={titleClassName}>{resolvedTitle}</p>
@@ -144,14 +157,15 @@ export function SidebarBrandHeader({
 
   const brandRow = (
     <>
-      <BrandMark
-        src={brand.logoSrc}
-        alt=""
-        width={24}
-        height={24}
-        priority
-        className="h-[22px] w-[22px]"
-      />
+      <LogoBox className="h-[22px] w-[22px]" rounded="rounded-md">
+        <BrandMark
+          src={brand.logoSrc}
+          alt=""
+          width={24}
+          height={24}
+          priority
+        />
+      </LogoBox>
       <p className="app-title-gradient truncate text-[17px] font-bold leading-none tracking-tight">
         {brand.name}
       </p>
@@ -204,13 +218,14 @@ export function SidebarBrandHeader({
           aria-label="Expand sidebar"
           title="Expand sidebar"
         >
-          <BrandMark
-            src={brand.logoSrc}
-            alt={brand.name}
-            width={24}
-            height={24}
-            className="h-[22px] w-[22px]"
-          />
+          <LogoBox className="h-8 w-8">
+            <BrandMark
+              src={brand.logoSrc}
+              alt={brand.name}
+              width={32}
+              height={32}
+            />
+          </LogoBox>
         </button>
       )}
     </div>

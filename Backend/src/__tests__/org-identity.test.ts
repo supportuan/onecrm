@@ -5,6 +5,7 @@ import {
   getOrgName,
   getProductName,
   showAlliedServices,
+  showSampleModules,
 } from '../utils/org-identity.js';
 
 describe('install identity (env)', () => {
@@ -13,6 +14,7 @@ describe('install identity (env)', () => {
     'PRODUCT_NAME',
     'LOGIN_THEME',
     'SHOW_ALLIED_SERVICES',
+    'SHOW_SAMPLE_MODULES',
     'ENABLED_MODULES',
   ];
   const snapshot: Record<string, string | undefined> = {};
@@ -54,6 +56,14 @@ describe('install identity (env)', () => {
     expect(showAlliedServices()).toBe(false);
     setEnv('SHOW_ALLIED_SERVICES', 'true');
     expect(showAlliedServices()).toBe(true);
+  });
+
+  it('hides sample modules for non-AUN installs unless opted in', () => {
+    setEnv('ORG_NAME', 'Client B');
+    setEnv('SHOW_SAMPLE_MODULES', undefined);
+    expect(showSampleModules()).toBe(false);
+    setEnv('SHOW_SAMPLE_MODULES', 'true');
+    expect(showSampleModules()).toBe(true);
   });
 });
 

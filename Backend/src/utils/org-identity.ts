@@ -54,11 +54,17 @@ export const getPublicLogoUrl = () => {
 export const getOrgWebsiteUrl = () =>
   envTrim('ORG_WEBSITE_URL').replace(/\/$/, '') || getFrontendOrigin() || null;
 
-export const showAlliedServices = () => {
-  const flag = envFlag('SHOW_ALLIED_SERVICES');
+/** Default-on for ApplyUniNow; other ORG_NAME installs must opt in. */
+const defaultOnForAun = (flagKey: string) => {
+  const flag = envFlag(flagKey);
   if (flag !== null) return flag;
   return !envTrim('ORG_NAME') || getOrgName() === DEFAULT_ORG_NAME;
 };
+
+export const showAlliedServices = () => defaultOnForAun('SHOW_ALLIED_SERVICES');
+
+/** Placeholder nav (Operations, Finance, Inventory, …). Hidden on other clients unless opted in. */
+export const showSampleModules = () => defaultOnForAun('SHOW_SAMPLE_MODULES');
 
 export const getPrivacyCopy = () => {
   const custom = envTrim('ORG_PRIVACY_COPY');

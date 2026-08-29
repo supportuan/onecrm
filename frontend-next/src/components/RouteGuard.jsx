@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { ShieldX } from 'lucide-react';
+import { useTenantBrand } from '@/components/AppBrand';
 import {
   isAgencyPartnerRole,
   isAgentBlockedPath,
@@ -13,6 +14,7 @@ import {
   hasHrSelfServiceAccess,
   moduleHasAnyAccess,
 } from '@/lib/auth/module-access';
+import { isCrimsonModulePath } from '@/lib/module-themes';
 
 /**
  * Maps URL path prefixes to their module and option names in the permission system.
@@ -31,6 +33,7 @@ const ROUTE_PERMISSION_MAP = [
   { path: '/student-crm/student-management', module: 'Student CRM', option: 'Student Management' },
   { path: '/student-crm/dashboard', module: 'Student CRM', option: null },
   { path: '/student-crm/applications', module: 'Student CRM', option: 'Applications' },
+  { path: '/applications', module: 'Student CRM', option: 'Applications' },
   { path: '/student-crm/visa-management', module: 'Student CRM', option: 'Visa Management' },
   { path: '/student-crm/counselling', module: 'Student CRM', option: 'Counselling' },
   { path: '/student-crm', module: 'Student CRM', option: null },
@@ -79,11 +82,20 @@ const ROUTE_PERMISSION_MAP = [
 /**
  * Checks if the user has access to the current route based on moduleAccess.
  */
-function hasRouteAccess(pathname, user) {
+function hasRouteAccess(pathname, user, { showSampleModules = true } = {}) {
   if (!user) return false;
 
   if (isAgencyPartnerRole(user.role) && isAgentBlockedPath(pathname)) {
     return false;
+  }
+
+  if (isCrimsonModulePath(pathname) && !showSampleModules) {
+    return false;
+  }
+
+  // Alias page redirects students to /applicant/applications.
+  if (user.role === 'STUDENT' && pathname.startsWith('/applications')) {
+    return true;
   }
 
   const access = user.moduleAccess;
@@ -141,11 +153,12 @@ const AccessDenied = () => (
 const RouteGuard = ({ children }) => {
   const pathname = usePathname();
   const { user, loading } = useAuth();
+  const { showSampleModules } = useTenantBrand();
 
   const allowed = useMemo(() => {
     if (loading || !user) return true; // still loading, don't block
-    return hasRouteAccess(pathname, user);
-  }, [pathname, user, loading]);
+    return hasRouteAccess(pathname, user, { showSampleModules });
+  }, [pathname, user, loading, showSampleModules]);
 
   if (!allowed) return <AccessDenied />;
 

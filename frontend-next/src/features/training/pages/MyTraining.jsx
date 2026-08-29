@@ -2,17 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, GraduationCap, Loader2, Plus } from 'lucide-react';
+import { BookOpen, GraduationCap, Loader2, Plus, Users } from 'lucide-react';
 import { enrollInCourse, getTrainingDashboard } from '@/services/trainingApi';
 import { usePermissions } from '@/lib/auth/PermissionsContext';
-
-const CATEGORY_LABELS = {
-  ONBOARDING: 'Onboarding',
-  COMPLIANCE: 'Compliance',
-  PRODUCT: 'Product',
-  SALES: 'Sales',
-  SOFT_SKILLS: 'Soft skills',
-};
+import {
+  PAYMENT_LABELS,
+  categoryLabel,
+  formatInrPaise,
+  formatWhen,
+  modeLabel,
+  programLabel,
+  statusLabel,
+} from '@/features/training/constants';
 
 const CourseCard = ({ course, actionLabel, onAction, busy, href }) => {
   const enrollment = course.enrollment;
@@ -26,7 +27,7 @@ const CourseCard = ({ course, actionLabel, onAction, busy, href }) => {
           )}
         </div>
         <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-brand-soft text-brand shrink-0">
-          {CATEGORY_LABELS[course.category] || course.category}
+          {categoryLabel(course.category)}
         </span>
       </div>
       {enrollment && (
@@ -57,10 +58,39 @@ const CourseCard = ({ course, actionLabel, onAction, busy, href }) => {
   );
 };
 
+const ClassCard = ({ row }) => {
+  const seat = row.mySeat;
+  return (
+    <div className="ui-panel p-5 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold text-neutral-900">{row.title}</p>
+          <p className="text-sm text-neutral-600 mt-1">
+            {programLabel(row.programType)} · {modeLabel(row.deliveryMode)}
+            {row.trainer?.fullName ? ` · ${row.trainer.fullName}` : ''}
+          </p>
+        </div>
+        <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-brand-soft text-brand shrink-0">
+          {statusLabel(row.status)}
+        </span>
+      </div>
+      <p className="ui-text-meta">
+        {row.memberCount}/{row.maxSeats} students · {formatWhen(row.scheduledAt)}
+      </p>
+      {seat && (
+        <p className="ui-text-meta">
+          {PAYMENT_LABELS[seat.paymentStatus] || seat.paymentStatus}
+          {row.feeAmountPaise != null ? ` · ${formatInrPaise(row.feeAmountPaise)}` : ''}
+        </p>
+      )}
+    </div>
+  );
+};
+
 export default function MyTraining() {
   const { can } = usePermissions();
   const canManage = can('MANAGE_TRAINING');
-  const [data, setData] = useState({ myCourses: [], catalog: [] });
+  const [data, setData] = useState({ myClasses: [], myCourses: [], catalog: [] });
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState('');
@@ -69,7 +99,7 @@ export default function MyTraining() {
     setLoading(true);
     try {
       const res = await getTrainingDashboard();
-      setData(res?.data || { myCourses: [], catalog: [] });
+      setData(res?.data || { myClasses: [], myCourses: [], catalog: [] });
     } catch (e) {
       setMsg(e.message || 'Failed to load training');
     } finally {
@@ -107,7 +137,7 @@ export default function MyTraining() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2 text-neutral-500">
           <GraduationCap className="h-5 w-5" />
-          <p className="ui-text-meta">Courses assigned to you and the open catalog.</p>
+          <p className="ui-text-meta">IELTS preparation and visa training — 1-on-1 or group.</p>
         </div>
         {canManage && (
           <Link href="/training/manage" className="ui-btn-primary inline-flex items-center gap-2">
@@ -119,9 +149,24 @@ export default function MyTraining() {
       {msg && <div className="ui-panel p-3 text-sm">{msg}</div>}
 
       <section className="space-y-3">
-        <h2 className="ui-text-h3">My courses</h2>
+        <h2 className="ui-text-h3 inline-flex items-center gap-2">
+          <Users className="h-4 w-4" /> My classes
+        </h2>
+        {!data.myClasses?.length ? (
+          <div className="ui-panel p-6 ui-text-meta">You are not in any IELTS or visa class yet.</div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {data.myClasses.map((row) => (
+              <ClassCard key={row.id} row={row} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="ui-text-h3">My materials</h2>
         {!data.myCourses?.length ? (
-          <div className="ui-panel p-6 ui-text-meta">You are not enrolled in any courses yet.</div>
+          <div className="ui-panel p-6 ui-text-meta">No self-paced materials assigned yet.</div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {data.myCourses.map((course) => (
@@ -134,7 +179,7 @@ export default function MyTraining() {
       <section className="space-y-3">
         <h2 className="ui-text-h3">Catalog</h2>
         {!data.catalog?.length ? (
-          <div className="ui-panel p-6 ui-text-meta">No published courses are available for you right now.</div>
+          <div className="ui-panel p-6 ui-text-meta">No published materials are available for you right now.</div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {data.catalog.map((course) => (

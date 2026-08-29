@@ -17,6 +17,9 @@ export function getStudentPageMeta(pathname = '') {
     description = 'Chat with your counsellor about applications and next steps.';
   } else if (pathname.startsWith('/applicant/resources')) {
     title = 'Knowledge Hub';
+  } else if (pathname.startsWith('/applicant/training')) {
+    title = 'Training';
+    description = 'IELTS preparation and visa training — 1-on-1 or group.';
   } else if (/\/applicant\/payments\/\d+\/receipt/.test(pathname)) {
     title = 'Payment Receipt';
   } else if (pathname.startsWith('/applicant/payments')) {

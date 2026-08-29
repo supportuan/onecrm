@@ -1,107 +1,19 @@
+'use client';
+
 import {
   ArrowUpRight,
-  Banknote,
-  BookOpenText,
-  BriefcaseBusiness,
-  Building2,
-  Code2,
-  Compass,
-  GraduationCap,
-  Handshake,
-  House,
-  Landmark,
-  Plane,
-  Users,
 } from 'lucide-react';
-
-const services = [
-  {
-    title: 'ApplyUniNow',
-    description:
-      'Explore destinations and universities, manage applications, and receive end-to-end study-abroad support.',
-    url: 'https://applyuninow.com',
-    icon: GraduationCap,
-  },
-  {
-    title: 'ApplyUniLoans',
-    description:
-      'Future-ready financing that makes education funding and study expenses simpler to plan.',
-    url: 'https://applyuniloans.com',
-    icon: Banknote,
-  },
-  {
-    title: 'ApplyUniHomes',
-    description:
-      'Find student-friendly housing and simplify accommodation planning before arrival.',
-    url: 'https://applyunihomes.com',
-    icon: House,
-  },
-  {
-    title: 'ApplyUniJobs',
-    description:
-      'Discover part-time opportunities, graduate roles, and support for long-term employability.',
-    url: 'https://applyunijobs.com',
-    icon: BriefcaseBusiness,
-  },
-  {
-    title: 'AUN Tech Consulting',
-    description:
-      'Future-ready ERP, CRM, and digital transformation consulting—planned and delivered simply.',
-    status: 'Coming soon',
-    icon: Code2,
-  },
-  {
-    title: 'AdminConnects',
-    description:
-      'Future-ready guidance connecting education administrators, partners, and operations.',
-    url: 'https://adminconnects.com',
-    icon: Handshake,
-  },
-  {
-    title: 'UniFeatures',
-    description:
-      'Student resources, the latest opportunities, and smarter admissions information in one place.',
-    url: 'https://unifeatures.com',
-    icon: Landmark,
-  },
-  {
-    title: 'InternationalStudentVisas',
-    description:
-      'Stay informed, organise documentation, and follow each step of the student visa journey.',
-    url: 'https://internationalstudentvisas.com',
-    icon: Plane,
-  },
-  {
-    title: 'AustraliaSkills',
-    description:
-      'Connect your skills with global opportunities through Australian assessment and migration guidance.',
-    url: 'https://australiaskills.com',
-    icon: Compass,
-  },
-  {
-    title: 'CanadaAdmits',
-    description:
-      'Connect students with Canadian universities and simplify admissions, documents, and study choices.',
-    url: 'https://canadaadmits.com',
-    icon: Building2,
-  },
-  {
-    title: 'PikoPop',
-    description:
-      'A digital platform for university services, online engagement, and student recruitment support.',
-    url: 'https://pikopop.com',
-    icon: BookOpenText,
-  },
-  {
-    title: 'DeFaComCon',
-    description:
-      'Build meaningful connections between students, institutions, and destination communities.',
-    url: 'https://defacomcon.com',
-    icon: Users,
-  },
-];
+import { useTenantBrand } from '@/components/AppBrand';
+import { ALLIED_HEADING_DEFAULT, ALLIED_SERVICE_ICONS, DEFAULT_ALLIED_SERVICES } from '@/lib/allied-services';
 
 export default function AlliedServices() {
+  const { alliedHeading, alliedServices } = useTenantBrand();
+  const heading = alliedHeading || ALLIED_HEADING_DEFAULT;
+  const services =
+    Array.isArray(alliedServices) && alliedServices.length
+      ? alliedServices
+      : DEFAULT_ALLIED_SERVICES.filter((item) => item.enabled);
+
   return (
     <div className="relative overflow-hidden rounded-2xl text-[var(--ui-text)]">
       <div
@@ -112,21 +24,22 @@ export default function AlliedServices() {
       <div className="relative z-10 mx-auto max-w-7xl pt-4">
         <div className="mb-5 flex justify-center">
           <h2 className="app-title-gradient text-3xl font-semibold tracking-tight sm:text-4xl">
-            One Platform, Multiple Services
+            {heading}
           </h2>
         </div>
         <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => {
-            const Icon = service.icon;
+            const Icon = ALLIED_SERVICE_ICONS[service.icon] || ALLIED_SERVICE_ICONS.GraduationCap;
+            const isPlaceholder = Boolean(service.placeholder) || !service.url;
             const card = (
               <>
                 <div className="relative flex w-full items-center justify-center">
                   <div className="app-gradient-icon">
                     <Icon className="h-5 w-5" strokeWidth={1.75} />
                   </div>
-                  {service.status ? (
+                  {isPlaceholder ? (
                     <span className="absolute right-0 rounded-full border border-brand/20 bg-brand-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand">
-                      {service.status}
+                      Coming soon
                     </span>
                   ) : (
                     <ArrowUpRight className="absolute right-0 h-4 w-4 text-[var(--ui-text-muted)] transition group-hover:text-brand" />
@@ -141,9 +54,9 @@ export default function AlliedServices() {
               </>
             );
 
-            return service.url ? (
+            return !isPlaceholder && service.url ? (
               <a
-                key={service.title}
+                key={service.id || service.title}
                 href={service.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -153,7 +66,7 @@ export default function AlliedServices() {
               </a>
             ) : (
               <div
-                key={service.title}
+                key={service.id || service.title}
                 className="app-glass-card group flex flex-col items-center rounded-2xl p-4 text-center"
               >
                 {card}

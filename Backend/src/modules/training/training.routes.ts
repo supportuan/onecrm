@@ -26,6 +26,16 @@ router.get('/admin/courses/:id/enrollments', requirePermission('MANAGE_TRAINING'
 router.post('/admin/courses/:id/enroll', requirePermission('MANAGE_TRAINING'), controller.assignEnrollment);
 router.delete('/admin/enrollments/:id', requirePermission('MANAGE_TRAINING'), controller.removeEnrollment);
 
+router.get('/admin/classes', requirePermission('MANAGE_TRAINING'), controller.listClasses);
+router.post('/admin/classes', requirePermission('MANAGE_TRAINING'), controller.createClass);
+router.put('/admin/classes/:id', requirePermission('MANAGE_TRAINING'), controller.updateClass);
+router.delete('/admin/classes/:id', requirePermission('MANAGE_TRAINING'), controller.removeClass);
+router.post('/admin/classes/:id/students', requirePermission('MANAGE_TRAINING'), controller.addClassStudent);
+router.delete('/admin/seats/:id', requirePermission('MANAGE_TRAINING'), controller.removeClassStudent);
+router.put('/admin/seats/:id/payment', requirePermission('MANAGE_TRAINING'), controller.setClassSeatPayment);
+
+router.get('/classes/:id', viewOrStudent, controller.getClass);
+
 router.get('/courses/:id', viewOrStudent, controller.getCourse);
 router.post('/courses/:id/enroll', viewOrStudent, controller.enroll);
 router.post('/lessons/:id/complete', viewOrStudent, controller.completeLesson);

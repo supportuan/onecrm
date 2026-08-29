@@ -575,10 +575,19 @@ export const uploadMyProfilePhoto = async (userId: number, fileUrl: string) => {
 };
 
 export const listMyApplications = async (userId: number) => {
-  const student = await getStudentByUserId(userId);
-  if (!student) return [];
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true },
+  });
+  const or: Record<string, unknown>[] = [{ student: { userId, deletedAt: null } }];
+  if (user?.email) {
+    or.push({
+      student: { email: { equals: user.email, mode: 'insensitive' }, deletedAt: null },
+    });
+  }
+
   return prisma.application.findMany({
-    where: { studentId: student.id },
+    where: { OR: or },
     orderBy: { createdAt: 'desc' },
     include: {
       documents: true,
@@ -815,11 +824,17 @@ export const upsertStudentUniversity = async (
       ids.push(result.university.id);
     }
     const uniqueIds = [...new Set(ids)];
-    return Promise.all(uniqueIds.map((universityId) => persistStudentUniversity(studentId, universityId, fieldData)));
+    const rows = await Promise.all(
+      uniqueIds.map((universityId) => persistStudentUniversity(studentId, universityId, fieldData)),
+    );
+    await Promise.all(rows.map((row) => ensureApplicationFromShortlist(student, row, actor)));
+    return rows;
   }
 
   const universityId = await resolveUniversityIdForStudent(student, data);
-  return persistStudentUniversity(studentId, universityId, fieldData);
+  const row = await persistStudentUniversity(studentId, universityId, fieldData);
+  await ensureApplicationFromShortlist(student, row, actor);
+  return row;
 };
 
 export const uploadStudentUniversityOfferLetter = async (
@@ -843,11 +858,12 @@ export const uploadStudentUniversityOfferLetter = async (
     offerLetterReceivedAt: new Date(),
     status: 'Offer Letter Received',
   });
-
-  if (data.applicationId && existing.isSelected) {
+  const syncedApp = await ensureApplicationFromShortlist(student, row, actor);
+  const applicationId = data.applicationId || syncedApp?.id;
+  if (applicationId) {
     try {
       await upsertOfferLetter(
-        data.applicationId,
+        applicationId,
         {
           fileUrl: data.fileUrl,
           filename: data.filename,
@@ -1083,6 +1099,128 @@ const APPLICATION_INCLUDE = {
   workflowChecklistValues: true,
 };
 
+const UNIVERSITY_STATUS_TO_STAGE: Record<string, string> = {
+  'University Shortlisted': 'DOCUMENTS_PENDING',
+  'Application Submitted': 'SUBMITTED',
+  'Offer Letter Received': 'OFFER_RECEIVED',
+  'Offer Letter Rejected': 'OFFER_REJECTED',
+  'On Hold': 'ON_HOLD',
+  'Deferred': 'DEFERRED',
+  'Visa Granted': 'VISA_GRANTED',
+  'Visa Refused': 'VISA_REFUSED',
+};
+
+const courseFromShortlist = (row: {
+  courseLink?: string | null;
+}, student: { preferredCourse?: string | null }) => {
+  if (student.preferredCourse?.trim()) return student.preferredCourse.trim();
+  const slug = String(row.courseLink || '')
+    .split('/')
+    .filter(Boolean)
+    .pop()
+    ?.replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[-_]+/g, ' ')
+    .trim();
+  if (slug) {
+    return slug.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+  return 'To be confirmed';
+};
+
+/** Turn a student university shortlist row into an ATS application if one does not already exist. */
+const ensureApplicationFromShortlist = async (
+  student: {
+    id: number;
+    contactId?: number | null;
+    preferredCountry?: string | null;
+    preferredCourse?: string | null;
+    country?: { name?: string | null } | null;
+  },
+  row: {
+    universityId?: number;
+    status?: string | null;
+    appliedIntake?: string | null;
+    offerIntake?: string | null;
+    courseLink?: string | null;
+    university?: { name?: string | null; country?: { name?: string | null } | null } | null;
+  },
+  actor?: Actor,
+) => {
+  const university = row.university?.name?.trim();
+  if (!university) return null;
+
+  const existing = await prisma.application.findFirst({
+    where: {
+      studentId: student.id,
+      university: { equals: university, mode: 'insensitive' },
+    },
+  });
+  if (existing) return existing;
+
+  const country =
+    student.preferredCountry ||
+    student.country?.name ||
+    row.university?.country?.name ||
+    'Unknown';
+  const plan = await prisma.studentStudyPlan.findFirst({
+    where: { studentId: student.id },
+    orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+    select: { id: true, intake: true },
+  });
+
+  try {
+    const created = await createApplication(
+      {
+        studentId: student.id,
+        studyPlanId: plan?.id,
+        country,
+        university,
+        course: courseFromShortlist(row, student),
+        intake: row.appliedIntake || row.offerIntake || plan?.intake || undefined,
+        assignedToId: student.contactId || undefined,
+      },
+      actor,
+    );
+    const stage = UNIVERSITY_STATUS_TO_STAGE[String(row.status || '')];
+    if (created?.id && stage && stage !== 'DOCUMENTS_PENDING') {
+      await prisma.application.update({ where: { id: created.id }, data: { stage: stage as any } });
+      await prisma.applicationStageEvent.create({
+        data: {
+          applicationId: created.id,
+          fromStage: 'DOCUMENTS_PENDING',
+          toStage: stage as any,
+          notes: 'synced from university shortlist',
+        },
+      });
+      return getApplication(created.id, actor);
+    }
+    return created;
+  } catch (err) {
+    console.warn(
+      '[student-crm] could not create application from university shortlist:',
+      (err as Error)?.message,
+    );
+    return null;
+  }
+};
+
+const syncApplicationsFromUniversityShortlists = async (actor?: Actor) => {
+  const studentWhere = await resolveStudentScopeWhere(actor);
+  const students = await prisma.student.findMany({
+    where: { AND: [studentWhere, { universities: { some: {} } }] },
+    include: {
+      country: true,
+      universities: { include: { university: { include: { country: true } } } },
+    },
+    take: 300,
+  });
+  for (const student of students) {
+    for (const row of student.universities) {
+      await ensureApplicationFromShortlist(student, row, actor);
+    }
+  }
+};
+
 export const listApplications = async (opts: {
   studentId?: number;
   stage?: string;
@@ -1093,19 +1231,24 @@ export const listApplications = async (opts: {
   limit?: number;
   actor?: Actor;
 } = {}) => {
-  const where: any = { ...(await resolveApplicationScopeWhere(opts.actor)) };
-  if (opts.studentId) where.studentId = opts.studentId;
-  if (opts.stage) where.stage = opts.stage;
-  if (opts.assignedToId) where.assignedToId = opts.assignedToId;
-  if (opts.workflowTemplateId) where.workflowTemplateId = opts.workflowTemplateId;
+  await syncApplicationsFromUniversityShortlists(opts.actor);
+  const scope = await resolveApplicationScopeWhere(opts.actor);
+  const extra: Record<string, unknown>[] = [];
+  if (opts.studentId) extra.push({ studentId: opts.studentId });
+  if (opts.stage) extra.push({ stage: opts.stage });
+  if (opts.assignedToId) extra.push({ assignedToId: opts.assignedToId });
+  if (opts.workflowTemplateId) extra.push({ workflowTemplateId: opts.workflowTemplateId });
   if (opts.search) {
-    where.OR = [
-      { applicationCode: { contains: opts.search, mode: 'insensitive' } },
-      { university: { contains: opts.search, mode: 'insensitive' } },
-      { country: { contains: opts.search, mode: 'insensitive' } },
-      { course: { contains: opts.search, mode: 'insensitive' } },
-    ];
+    extra.push({
+      OR: [
+        { applicationCode: { contains: opts.search, mode: 'insensitive' } },
+        { university: { contains: opts.search, mode: 'insensitive' } },
+        { country: { contains: opts.search, mode: 'insensitive' } },
+        { course: { contains: opts.search, mode: 'insensitive' } },
+      ],
+    });
   }
+  const where = extra.length ? { AND: [scope, ...extra] } : scope;
   return prisma.application.findMany({
     where,
     orderBy: { createdAt: 'desc' },
@@ -1220,7 +1363,7 @@ export const createApplication = async (data: {
           university: data.university,
           course: data.course,
           intake: data.intake || null,
-          assignedToId: data.assignedToId || null,
+          assignedToId: data.assignedToId || studentRow?.contactId || null,
           deadline: data.deadline ? new Date(data.deadline) : null,
           notes: data.notes || null,
           stage: 'DOCUMENTS_PENDING',

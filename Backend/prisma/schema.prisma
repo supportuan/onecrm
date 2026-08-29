@@ -44,12 +44,39 @@ enum TrainingCourseCategory {
   PRODUCT
   SALES
   SOFT_SKILLS
+  IELTS_PREP
+  VISA_TRAINING
 }
 
 enum TrainingEnrollmentStatus {
   NOT_STARTED
   IN_PROGRESS
   COMPLETED
+}
+
+enum TrainingProgramType {
+  IELTS_PREP
+  VISA_TRAINING
+}
+
+enum TrainingDeliveryMode {
+  ONE_ON_ONE
+  GROUP
+}
+
+enum TrainingBatchStatus {
+  DRAFT
+  OPEN
+  FULL
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TrainingSeatPaymentStatus {
+  UNPAID
+  PAID
+  WAIVED
 }
 
 enum CampaignType {
@@ -180,10 +207,14 @@ enum UserRole {
 // Single-organization branding (ApplyUniNow). One row, id = 1.
 // -----------------------------------------------------------------------------
 model OrgSettings {
-  id        Int      @id @default(1)
-  name      String   @default("ApplyUniNow")
-  logoUrl   String?
-  updatedAt DateTime @updatedAt
+  id                 Int      @id @default(1)
+  name               String   @default("ApplyUniNow")
+  logoUrl            String?
+  tagline            String?
+  loginHeadline      String?
+  loginBackgroundUrl String?
+  alliedServices     Json?
+  updatedAt          DateTime @updatedAt
 }
 
 enum AgencyPartnerStatus {
@@ -721,6 +752,10 @@ model User {
   trainingEnrollments     TrainingEnrollment[]
   trainingEnrollmentsAssigned TrainingEnrollment[] @relation("TrainingEnrollmentAssigner")
   trainingLessonProgress  TrainingLessonProgress[]
+  trainingBatchesAsTrainer TrainingBatch[]        @relation("TrainingBatchTrainer")
+  trainingBatchesCreated  TrainingBatch[]         @relation("TrainingBatchCreator")
+  trainingBatchMembers    TrainingBatchMember[]
+  trainingBatchMembersAssigned TrainingBatchMember[] @relation("TrainingBatchMemberAssigner")
 }
 
 model Notification {
@@ -1129,6 +1164,7 @@ model TrainingCourse {
   createdBy   User?                 @relation("TrainingCourseCreator", fields: [createdById], references: [id], onDelete: SetNull)
   lessons     TrainingLesson[]
   enrollments TrainingEnrollment[]
+  batches     TrainingBatch[]
 
   @@index([deletedAt])
   @@index([isPublished, deletedAt])
@@ -1183,6 +1219,52 @@ model TrainingLessonProgress {
 
   @@unique([enrollmentId, lessonId])
   @@index([userId])
+}
+
+model TrainingBatch {
+  id             Int                    @id @default(autoincrement())
+  title          String
+  programType    TrainingProgramType
+  deliveryMode   TrainingDeliveryMode   @default(ONE_ON_ONE)
+  maxSeats       Int                    @default(1)
+  status         TrainingBatchStatus    @default(OPEN)
+  trainerId      Int?
+  courseId       Int?
+  /// Placeholder for later Razorpay enrollment. Not charged yet.
+  feeAmountPaise Int?
+  scheduledAt    DateTime?
+  notes          String?                @db.Text
+  createdById    Int?
+  deletedAt      DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  trainer  User?                 @relation("TrainingBatchTrainer", fields: [trainerId], references: [id], onDelete: SetNull)
+  createdBy User?                @relation("TrainingBatchCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  course   TrainingCourse?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  members  TrainingBatchMember[]
+
+  @@index([deletedAt])
+  @@index([programType, status, deletedAt])
+  @@index([trainerId])
+}
+
+model TrainingBatchMember {
+  id            Int                       @id @default(autoincrement())
+  batchId       Int
+  userId        Int
+  assignedById  Int?
+  paymentStatus TrainingSeatPaymentStatus @default(UNPAID)
+  enrolledAt    DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  batch      TrainingBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy User?         @relation("TrainingBatchMemberAssigner", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([batchId, userId])
+  @@index([userId])
+  @@index([paymentStatus])
 }
 
 model Faq {
