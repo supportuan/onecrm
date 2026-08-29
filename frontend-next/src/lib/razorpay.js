@@ -24,7 +24,7 @@ export async function openRazorpayCheckout({
   orderId,
   amount,
   currency = 'INR',
-  name = 'ApplyUniNow',
+  name = 'OneCRM',
   description,
   prefill = {},
   onSuccess,

@@ -17,6 +17,7 @@ import {
 } from '@/services/agencyCrmApi';
 import { PARTNER_STATUS_LABELS, ONBOARDING_STAGE_LABELS, partnerStatusClass } from '../constants';
 import { isAgencyPartnerRole, ONBOARDING_STAGE_ORDER } from '../agentPortal';
+import { useTenantBrand } from '@/components/AppBrand';
 
 const INPUT =
   'w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:border-neutral-400 outline-none';
@@ -40,6 +41,7 @@ const emptyForm = () => ({
 /** Admin partner-ops screen. Agents use the portal shell (onboarding / my students). */
 export default function AgencyManagement() {
   const { user } = useAuth();
+  const { name: orgName } = useTenantBrand();
   const { can } = usePermissions();
   const canManage = can('MANAGE_AGENCY_CRM');
   const isFreelancer = isAgencyPartnerRole(user?.role);
@@ -350,7 +352,7 @@ export default function AgencyManagement() {
 
             {isFreelancer && selected && !showNew && (
               <p className="mb-4 text-xs text-neutral-500 rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
-                Your agency profile is contract-managed. Contact your ApplyUniNow admin to update details.
+                Your agency profile is contract-managed. Contact your {orgName} admin to update details.
                 Use your referral code below when sharing leads.
               </p>
             )}

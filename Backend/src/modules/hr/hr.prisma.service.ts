@@ -1892,11 +1892,10 @@ export const renderOfferLetterHtml = async (
 
   let companyName = ctx.companyName;
   if (!companyName) {
-    const { ensureOrgSettings } = await import('../../utils/org-settings.js');
+    const { ensureOrgSettings, getOrgName } = await import('../../utils/org-settings.js');
     const org = await ensureOrgSettings();
-    companyName = org.name;
+    companyName = org.name || getOrgName();
   }
-  companyName = companyName || 'ApplyUniNow';
 
   const variables: Record<string, string> = {
     candidateName: offer.candidateName,

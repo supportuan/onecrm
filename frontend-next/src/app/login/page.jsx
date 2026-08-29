@@ -10,7 +10,7 @@ import { Poppins } from 'next/font/google';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getDefaultHrRoute } from '@/features/hr/routing';
 import { useAppearanceStore } from '@/lib/stores/appearanceStore';
-import { BRAND_NAME, BRAND_TAGLINE } from '@/components/AppBrand';
+import { BrandMark, useTenantBrand } from '@/components/AppBrand';
 
 const LuminaFluidBackground = dynamic(() => import('@/components/LuminaFluidBackground'), {
   ssr: false,
@@ -29,8 +29,6 @@ const loginFont = Poppins({
   weight: ['400', '500', '600', '700'],
   variable: '--font-login-sans',
 });
-
-const PRIVACY_COPY = `${BRAND_NAME} uses your information to provide and personalize our services. We protect your data and do not share it with third parties for marketing without your consent. Please review our Privacy and Cookie Policies for more information.`;
 
 const fieldClass =
   'w-full rounded-md border border-white/15 bg-black py-1.5 pl-8 pr-3 text-[12px] text-white outline-none transition placeholder:text-white/35 hover:border-white/30 focus:border-white/45';
@@ -72,7 +70,8 @@ function PrivacyInfoButton({ onClick, light = false, size = 'md' }) {
   );
 }
 
-function LoginBrandMark({ theme, light = false, onDark = false, centered = false, large = false }) {
+function LoginBrandMark({ light = false, onDark = false, centered = false, large = false }) {
+  const { logoSrc, name, tagline } = useTenantBrand();
   return (
     <div className={`flex items-center ${large ? 'gap-3' : 'gap-2'} ${centered ? 'justify-center' : ''}`}>
       <div
@@ -82,14 +81,13 @@ function LoginBrandMark({ theme, light = false, onDark = false, centered = false
           light ? 'shadow-sm ring-1 ring-black/10' : 'ring-1 ring-white/15'
         }`}
       >
-        <Image
-          src="/images/favicon-star-gold.png"
-          alt=""
+        <BrandMark
+          src={logoSrc}
+          alt={name}
           width={large ? 48 : 32}
           height={large ? 48 : 32}
-          className="h-[78%] w-[78%] object-contain"
           priority
-          unoptimized
+          className="h-[78%] w-[78%] object-contain"
         />
       </div>
       <div className={`min-w-0 leading-tight ${centered ? 'text-left' : ''}`}>
@@ -104,14 +102,14 @@ function LoginBrandMark({ theme, light = false, onDark = false, centered = false
                 : 'text-[14px] text-slate-900'
           }`}
         >
-          {BRAND_NAME}
+          {name}
         </p>
         <p
           className={`${large ? 'mt-0.5 text-[13px]' : 'text-[9px]'} ${
             onDark ? 'text-white/70' : 'text-slate-500'
           }`}
         >
-          {BRAND_TAGLINE}
+          {tagline}
         </p>
       </div>
     </div>
@@ -122,6 +120,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const { loginThemeId: themeId, loginTheme: theme } = useAppearanceStore();
+  const brand = useTenantBrand();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -241,7 +240,7 @@ export default function LoginPage() {
 
           <div className="relative z-10 flex min-h-[100dvh] flex-col px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
             <div className="login-mobile-reveal login-mobile-reveal-1 flex shrink-0 items-center justify-between">
-              <LoginBrandMark theme={theme} light />
+              <LoginBrandMark light />
               <PrivacyInfoButton onClick={() => setPrivacyOpen(true)} light />
             </div>
 
@@ -251,7 +250,7 @@ export default function LoginPage() {
                   Sign in.
                 </h1>
                 <p className="mt-1.5 max-w-[17.5rem] text-[13px] leading-snug text-slate-600">
-                  Continue your journey with {BRAND_NAME}.
+                  Continue your journey with {brand.name}.
                 </p>
               </div>
 
@@ -372,11 +371,11 @@ export default function LoginPage() {
             }`}
           >
             <div className="mb-4 flex w-full justify-center">
-              <LoginBrandMark theme={theme} onDark centered large />
+              <LoginBrandMark onDark centered large />
             </div>
 
             <h1 className="whitespace-nowrap text-center text-[1rem] font-semibold leading-tight tracking-tight text-white sm:text-[1.1rem]">
-              Your journey starts with a quick login
+              {brand.loginHeadline || 'Your journey starts with a quick login'}
             </h1>
 
             <form className="mx-auto mt-5 w-full max-w-[300px] space-y-3 text-left" onSubmit={handleSubmit} noValidate>
@@ -515,7 +514,7 @@ export default function LoginPage() {
             >
               Privacy &amp; data use
             </h2>
-            <p className="mt-3 text-[13px] leading-relaxed text-slate-600">{PRIVACY_COPY}</p>
+            <p className="mt-3 text-[13px] leading-relaxed text-slate-600">{brand.privacyCopy}</p>
           </div>
         </div>
       )}

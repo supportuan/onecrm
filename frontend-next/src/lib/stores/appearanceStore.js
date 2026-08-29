@@ -28,6 +28,7 @@ function readStoredThemeId() {
 
 let currentThemeId = DEFAULT_LOGIN_THEME_ID;
 let storageHydrated = false;
+let themeLocked = false;
 
 function ensureHydrated() {
   if (storageHydrated || !isBrowser()) return;
@@ -50,11 +51,12 @@ export function getLoginTheme() {
   return LOGIN_BG_THEMES.find((t) => t.id === currentThemeId) || LOGIN_BG_THEMES[0];
 }
 
-export function setLoginThemeId(nextId) {
+export function setLoginThemeId(nextId, { persist = true } = {}) {
   ensureHydrated();
+  if (themeLocked) return;
   if (!LOGIN_BG_THEMES.some((t) => t.id === nextId)) return;
   currentThemeId = nextId;
-  if (isBrowser()) {
+  if (persist && isBrowser()) {
     try {
       window.localStorage.setItem(LOGIN_THEME_STORAGE_KEY, nextId);
     } catch {
@@ -63,6 +65,38 @@ export function setLoginThemeId(nextId) {
   }
   applyAppearanceTheme(nextId);
   emit();
+}
+
+function hasStoredTheme() {
+  if (!isBrowser()) return false;
+  try {
+    const stored = window.localStorage.getItem(LOGIN_THEME_STORAGE_KEY);
+    return LOGIN_BG_THEMES.some((t) => t.id === stored);
+  } catch {
+    return false;
+  }
+}
+
+/** Apply this install's default login theme. Locked installs ignore user picks. */
+export function applyInstallLoginTheme(themeId, { locked = false } = {}) {
+  ensureHydrated();
+  themeLocked = Boolean(locked);
+  if (!LOGIN_BG_THEMES.some((t) => t.id === themeId)) return;
+  if (locked) {
+    currentThemeId = themeId;
+    applyAppearanceTheme(themeId);
+    emit();
+    return;
+  }
+  if (!hasStoredTheme()) {
+    currentThemeId = themeId;
+    applyAppearanceTheme(themeId);
+    emit();
+  }
+}
+
+export function isLoginThemeLocked() {
+  return themeLocked;
 }
 
 function subscribe(listener) {

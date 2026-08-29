@@ -112,6 +112,15 @@ export function getStaffPageMeta(pathname = '') {
   } else if (pathname.startsWith('/resources')) {
     title = 'Knowledge Hub';
     description = 'Curated knowledge for in-house teams, academics, and agents.';
+  } else if (pathname.startsWith('/training/manage')) {
+    title = 'Manage Training';
+    description = 'Create courses, lessons, and assign training.';
+  } else if (pathname.startsWith('/training/courses')) {
+    title = 'Course';
+    description = 'Work through lessons and track your progress.';
+  } else if (pathname.startsWith('/training')) {
+    title = 'Training';
+    description = 'Your assigned courses and the training catalog.';
   } else if (pathname.startsWith('/allied-services')) {
     title = 'Allied Services';
     description = '';

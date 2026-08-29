@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { login as loginRequest } from '@/lib/apiService';
 import AuthPageShell from '@/components/AuthPageShell';
+import { BrandMark, useTenantBrand } from '@/components/AppBrand';
 
 const fieldClass =
   'w-full rounded-xl border border-white/80 bg-white/65 px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none backdrop-blur-md transition duration-200 placeholder:text-slate-400 hover:bg-white/80 focus:border-blue-400 focus:bg-white/90 focus:ring-2 focus:ring-blue-500/15';
@@ -15,6 +15,7 @@ const fieldClass =
 export default function StudentLoginPage() {
   const router = useRouter();
   const { saveSession } = useAuth();
+  const brand = useTenantBrand();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -52,18 +53,17 @@ export default function StudentLoginPage() {
       <div className="w-full rounded-[24px] border border-white/70 bg-white/[0.86] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-black/[0.04] backdrop-blur-2xl backdrop-saturate-150 transition-shadow duration-500 hover:shadow-[0_34px_110px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,1)] sm:p-10">
         <div className="mb-7 flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8eef8] p-1.5 ring-1 ring-white/20">
-            <Image
-              src="/images/applyUniNow.png"
-              alt="Apply UniNow"
+            <BrandMark
+              src={brand.logoSrc}
+              alt={brand.name}
               width={36}
               height={36}
-              className="h-8 w-8 object-contain"
               priority
-              unoptimized
+              className="h-8 w-8 object-contain"
             />
           </div>
           <div className="leading-tight">
-            <p className="text-[13px] font-semibold text-slate-900">Apply UniNow</p>
+            <p className="text-[13px] font-semibold text-slate-900">{brand.name}</p>
             <p className="text-[11px] text-slate-500">Student portal</p>
           </div>
         </div>

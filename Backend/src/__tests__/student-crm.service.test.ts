@@ -1,103 +1,104 @@
-    import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
+const mockFn = () => jest.fn<(...args: any[]) => any>();
 
 // ──────────────────────────────────────────────
 // Prisma mock
 // ──────────────────────────────────────────────
 const mockPrisma = {
   student: {
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
+    findMany: mockFn(),
+    findFirst: mockFn(),
+    findUnique: mockFn(),
+    create: mockFn(),
+    update: mockFn(),
   },
   application: {
-    count: jest.fn(),
+    count: mockFn(),
   },
   user: {
-    findUnique: jest.fn(),
+    findUnique: mockFn(),
   },
   lead: {
-    findFirst: jest.fn(),
+    findFirst: mockFn(),
   },
   country: {
-    findFirst: jest.fn(),
+    findFirst: mockFn(),
   },
   checkList: {
-    findMany: jest.fn(),
+    findMany: mockFn(),
   },
   countryChecklist: {
-    findMany: jest.fn(),
+    findMany: mockFn(),
   },
   studentChecklist: {
-    findMany: jest.fn(),
-    createMany: jest.fn(),
-    upsert: jest.fn(),
+    findMany: mockFn(),
+    createMany: mockFn(),
+    upsert: mockFn(),
   },
   studentStudyPlan: {
-    count: jest.fn(),
-    create: jest.fn(),
+    count: mockFn(),
+    create: mockFn(),
   },
-  $transaction: jest.fn(),
+  $transaction: mockFn(),
 };
 
 jest.unstable_mockModule('../prisma.js', () => ({ prisma: mockPrisma }));
 
 jest.unstable_mockModule('../utils/password.js', () => ({
-  hashPassword: jest.fn().mockResolvedValue('hashed_pw'),
+  hashPassword: mockFn().mockResolvedValue('hashed_pw'),
 }));
 
 jest.unstable_mockModule('../lib/file-storage.js', () => ({
-  deleteStoredFile: jest.fn().mockResolvedValue(undefined),
+  deleteStoredFile: mockFn().mockResolvedValue(undefined),
 }));
 
 jest.unstable_mockModule('../modules/student-crm/checklists.js', () => ({
-  getDefaultChecklist: jest.fn().mockReturnValue([]),
+  getDefaultChecklist: mockFn().mockReturnValue([]),
 }));
 
 jest.unstable_mockModule('../modules/notifications/recipients.js', () => ({
-  safeNotify: jest.fn().mockResolvedValue(undefined),
+  safeNotify: mockFn().mockResolvedValue(undefined),
 }));
 
 jest.unstable_mockModule('../modules/marketing/services/email.service.js', () => ({
-  sendCampaignEmail: jest.fn().mockResolvedValue(undefined),
+  sendCampaignEmail: mockFn().mockResolvedValue(undefined),
 }));
 
 jest.unstable_mockModule('../lib/welcome-email.js', () => ({
-  sendStudentWelcomeCredentialsEmailAsync: jest.fn(),
-  sendWelcomeCredentialsEmailAsync: jest.fn(),
+  sendStudentWelcomeCredentialsEmailAsync: mockFn(),
+  sendWelcomeCredentialsEmailAsync: mockFn(),
 }));
 
 jest.unstable_mockModule('../modules/student-crm/scoping.js', () => ({
-  applicationScopeWhere: jest.fn().mockReturnValue({}),
-  studentScopeWhere: jest.fn().mockReturnValue({}),
-  resolveApplicationScopeWhere: jest.fn().mockResolvedValue({}),
-  resolveStudentScopeWhere: jest.fn().mockResolvedValue({}),
+  applicationScopeWhere: mockFn().mockReturnValue({}),
+  studentScopeWhere: mockFn().mockReturnValue({}),
+  resolveApplicationScopeWhere: mockFn().mockResolvedValue({}),
+  resolveStudentScopeWhere: mockFn().mockResolvedValue({}),
 }));
 
 jest.unstable_mockModule('../modules/student-crm/stage-engine.js', () => ({
-  computeProcessProgress: jest.fn().mockReturnValue(0),
-  getStagesForCountry: jest.fn().mockReturnValue([]),
+  computeProcessProgress: mockFn().mockReturnValue(0),
+  getStagesForCountry: mockFn().mockReturnValue([]),
 }));
 
 jest.unstable_mockModule('../modules/student-crm/visa-workflows.js', () => ({
-  appendVisaDocument: jest.fn(),
-  getVisaWorkflowForCountry: jest.fn().mockReturnValue(null),
-  normalizeVisaDocuments: jest.fn().mockReturnValue([]),
+  appendVisaDocument: mockFn(),
+  getVisaWorkflowForCountry: mockFn().mockReturnValue(null),
+  normalizeVisaDocuments: mockFn().mockReturnValue([]),
 }));
 
 jest.unstable_mockModule('../modules/student-crm/application-gates.js', () => ({
-  assertStageAdvanceAllowed: jest.fn().mockResolvedValue(undefined),
+  assertStageAdvanceAllowed: mockFn().mockResolvedValue(undefined),
 }));
 
 jest.unstable_mockModule('../modules/student-crm/payments.service.js', () => ({
-  seedDefaultApplicationFee: jest.fn().mockResolvedValue(undefined),
+  seedDefaultApplicationFee: mockFn().mockResolvedValue(undefined),
 }));
 
 // ──────────────────────────────────────────────
 // Dynamic imports (after mocks)
 // ──────────────────────────────────────────────
-const { prisma } = await import('../prisma.js');
 const {
   listStudents,
   getStudent,
@@ -131,12 +132,12 @@ beforeEach(() => {
     typeof cb === 'function' ? cb(mockPrisma) : Promise.all(cb)
   );
   // Suppress ensureStudentChecklistsAndProgress side effects
-  (mockPrisma.student.findUnique as jest.Mock).mockResolvedValue(null);
-  (mockPrisma.checkList.findMany as jest.Mock).mockResolvedValue([]);
-  (mockPrisma.countryChecklist.findMany as jest.Mock).mockResolvedValue([]);
-  (mockPrisma.studentChecklist.findMany as jest.Mock).mockResolvedValue([]);
-  (mockPrisma.studentStudyPlan.count as jest.Mock).mockResolvedValue(1);
-  (mockPrisma.studentStudyPlan.create as jest.Mock).mockResolvedValue({});
+  mockPrisma.student.findUnique.mockResolvedValue(null);
+  mockPrisma.checkList.findMany.mockResolvedValue([]);
+  mockPrisma.countryChecklist.findMany.mockResolvedValue([]);
+  mockPrisma.studentChecklist.findMany.mockResolvedValue([]);
+  mockPrisma.studentStudyPlan.count.mockResolvedValue(1);
+  mockPrisma.studentStudyPlan.create.mockResolvedValue({});
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -145,7 +146,7 @@ beforeEach(() => {
 describe('listStudents', () => {
   it('returns all students without filters', async () => {
     const students = [makeStudent()];
-    (mockPrisma.student.findMany as jest.Mock).mockResolvedValue(students);
+    mockPrisma.student.findMany.mockResolvedValue(students);
 
     const result = await listStudents({});
 
@@ -157,27 +158,27 @@ describe('listStudents', () => {
   });
 
   it('applies search filter across name, email, and phone', async () => {
-    (mockPrisma.student.findMany as jest.Mock).mockResolvedValue([]);
+    mockPrisma.student.findMany.mockResolvedValue([]);
 
     await listStudents({ search: 'Jane' });
 
-    const [[call]] = (mockPrisma.student.findMany as jest.Mock).mock.calls as any;
+    const [[call]] = mockPrisma.student.findMany.mock.calls as any;
     const orClause = call.where.AND?.find((c: any) => c.OR);
     expect(orClause).toBeDefined();
     expect(JSON.stringify(orClause)).toContain('Jane');
   });
 
   it('respects custom limit', async () => {
-    (mockPrisma.student.findMany as jest.Mock).mockResolvedValue([]);
+    mockPrisma.student.findMany.mockResolvedValue([]);
 
     await listStudents({ limit: 10 });
 
-    const [[call]] = (mockPrisma.student.findMany as jest.Mock).mock.calls as any;
+    const [[call]] = mockPrisma.student.findMany.mock.calls as any;
     expect(call.take).toBe(10);
   });
 
   it('returns empty array when no students exist', async () => {
-    (mockPrisma.student.findMany as jest.Mock).mockResolvedValue([]);
+    mockPrisma.student.findMany.mockResolvedValue([]);
 
     const result = await listStudents({});
     expect(result).toEqual([]);
@@ -190,7 +191,7 @@ describe('listStudents', () => {
 describe('getStudent', () => {
   it('returns the student when found', async () => {
     const student = makeStudent({ id: 5 });
-    (mockPrisma.student.findFirst as jest.Mock).mockResolvedValue(student);
+    mockPrisma.student.findFirst.mockResolvedValue(student);
 
     const result = await getStudent(5);
 
@@ -201,7 +202,7 @@ describe('getStudent', () => {
   });
 
   it('returns null when student does not exist', async () => {
-    (mockPrisma.student.findFirst as jest.Mock).mockResolvedValue(null);
+    mockPrisma.student.findFirst.mockResolvedValue(null);
 
     const result = await getStudent(999);
     expect(result).toBeNull();
@@ -210,14 +211,14 @@ describe('getStudent', () => {
 
 // ═══════════════════════════════════════════════════════════
 // 3. createStudent
-              // ═══════════════════════════════════════════════════════════
-              describe('createStudent', () => {
-                it('creates a new student when email is unique', async () => {
-                  (mockPrisma.student.findUnique as jest.Mock).mockResolvedValueOnce(null); // email check
-                  const created = makeStudent({ id: 10 });
-                  (mockPrisma.student.create as jest.Mock).mockResolvedValue(created);
-                  (mockPrisma.student.findFirst as jest.Mock).mockResolvedValue(created); // getStudent
-                  (mockPrisma.checkList.findMany as jest.Mock).mockResolvedValue([]);
+// ═══════════════════════════════════════════════════════════
+describe('createStudent', () => {
+  it('creates a new student when email is unique', async () => {
+    mockPrisma.student.findUnique.mockResolvedValueOnce(null);
+    const created = makeStudent({ id: 10 });
+    mockPrisma.student.create.mockResolvedValue(created);
+    mockPrisma.student.findFirst.mockResolvedValue(created);
+    mockPrisma.checkList.findMany.mockResolvedValue([]);
 
     const result = await createStudent({
       fullName: 'Jane Doe',
@@ -232,8 +233,8 @@ describe('getStudent', () => {
 
   it('returns existing student when email already exists', async () => {
     const existing = makeStudent({ id: 3 });
-    (mockPrisma.student.findUnique as jest.Mock).mockResolvedValueOnce(existing);
-    (mockPrisma.student.findFirst as jest.Mock).mockResolvedValue(existing);
+    mockPrisma.student.findUnique.mockResolvedValueOnce(existing);
+    mockPrisma.student.findFirst.mockResolvedValue(existing);
 
     const result = await createStudent({ fullName: 'Jane Doe', email: 'jane@example.com' });
 
@@ -250,19 +251,20 @@ describe('updateStudent', () => {
     const existing = makeStudent({ id: 1 });
     const updated = makeStudent({ id: 1, fullName: 'Jane Updated' });
 
-    (mockPrisma.student.findFirst as jest.Mock)
-      .mockResolvedValueOnce(existing) // existence check
-      .mockResolvedValueOnce(updated); // re-fetch after update
-    (mockPrisma.student.update as jest.Mock).mockResolvedValue(updated);
-    (mockPrisma.student.findUnique as jest.Mock).mockResolvedValue(null);
+    mockPrisma.student.findFirst
+      .mockResolvedValueOnce(existing)
+      .mockResolvedValueOnce(updated);
+    mockPrisma.student.update.mockResolvedValue(updated);
+    mockPrisma.student.findUnique.mockResolvedValue(null);
 
     const result = await updateStudent(1, { fullName: 'Jane Updated' });
 
     expect(mockPrisma.student.update).toHaveBeenCalled();
+    expect(result).toBeDefined();
   });
 
   it('throws an error when student is not found', async () => {
-    (mockPrisma.student.findFirst as jest.Mock).mockResolvedValue(null);
+    mockPrisma.student.findFirst.mockResolvedValue(null);
 
     await expect(updateStudent(999, { fullName: 'Ghost' })).rejects.toThrow('student not found');
   });

@@ -7,6 +7,7 @@ import { safeNotify } from '../notifications/recipients.js';
 import { deleteStoredFile, resolveFileRef } from '../../lib/file-storage.js';
 import { getLoginUrl } from '../../utils/frontend-url.js';
 import { resolveOrgBranding } from '../../utils/org-settings.js';
+import { getOrgName, getPublicLogoUrl } from '../../utils/org-identity.js';
 
 interface RegisterData {
   fullName: string;
@@ -56,21 +57,26 @@ export const register = async (data: RegisterData) => {
   const adminEmail =
     process.env.ADMIN_NOTIFICATION_EMAIL?.trim() ||
     process.env.SMTP_USER?.trim() ||
-    'sandeep@applyuninow.com';
+    '';
+
+  const orgName = getOrgName();
+  const logoUrl = getPublicLogoUrl();
 
   if (data.role === UserRole.AGENT) {
     // Notify admin
-    adminAgentNotification({
-      to: adminEmail,
-      agentName: data.fullName,
-      agentEmail: data.email,
-    }).catch((err) => console.error('[Admin Agent Notification Error]', err?.message || err));
+    if (adminEmail) {
+      adminAgentNotification({
+        to: adminEmail,
+        agentName: data.fullName,
+        agentEmail: data.email,
+      }).catch((err) => console.error('[Admin Agent Notification Error]', err?.message || err));
+    }
 
     // Send Welcome Email to Agent
     fireAndForgetEmail(
       sendCampaignEmail({
       to: data.email,
-      subject: 'Welcome to ApplyUniNow - Agent Registration Received',
+      subject: `Welcome to ${orgName} - Agent Registration Received`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -89,7 +95,7 @@ export const register = async (data: RegisterData) => {
                   <tr>
                     <td style="background:#0f172a;padding:28px;text-align:center;">
                       <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;">
-                        ApplyUniNow
+                        ${orgName}
                       </h1>
                       <p style="margin-top:8px;color:#cbd5e1;font-size:14px;">
                         Agent Registration Confirmation
@@ -108,7 +114,7 @@ export const register = async (data: RegisterData) => {
                       <p style="font-size:15px;color:#4b5563;line-height:1.8;">
                         Thank you for registering as an
                         <strong>Agent</strong> with
-                        <strong>ApplyUniNow</strong>.
+                        <strong>${orgName}</strong>.
                       </p>
 
                       <div style="
@@ -136,7 +142,7 @@ export const register = async (data: RegisterData) => {
                         <li>Your application will be reviewed by our administrators.</li>
                         <li>Your agency details will be verified.</li>
                         <li>Once approved, you'll receive another email confirming your account activation.</li>
-                        <li>After approval, you can log in and start managing student applications through the ApplyUniNow portal.</li>
+                        <li>After approval, you can log in and start managing student applications through the ${orgName} portal.</li>
                       </ul>
 
                       <table width="100%" cellpadding="0" cellspacing="0" style="margin:30px 0;background:#eff6ff;border-radius:10px;">
@@ -151,12 +157,12 @@ export const register = async (data: RegisterData) => {
 
                       <p style="font-size:14px;color:#4b5563;line-height:1.8;">
                         We appreciate your interest in partnering with us and look
-                        forward to welcoming you to the ApplyUniNow Agent Network.
+                        forward to welcoming you to the ${orgName} Agent Network.
                       </p>
 
                       <p style="margin-top:30px;font-size:15px;color:#111827;">
                         Regards,<br/>
-                        <strong>ApplyUniNow Team</strong>
+                        <strong>${orgName} Team</strong>
                       </p>
 
                     </td>
@@ -171,7 +177,7 @@ export const register = async (data: RegisterData) => {
                       </p>
 
                       <p style="margin-top:10px;color:#94a3b8;font-size:12px;">
-                        © ${new Date().getFullYear()} ApplyUniNow. All rights reserved.
+                        © ${new Date().getFullYear()} ${orgName}. All rights reserved.
                       </p>
 
                     </td>
@@ -192,17 +198,19 @@ export const register = async (data: RegisterData) => {
     );
   } else if (data.role === UserRole.STUDENT) {
     // Notify admin
-    adminStudentNotification({
-      to: adminEmail,
-      studentName: data.fullName,
-      studentEmail: data.email,
-    }).catch(err => console.error('[Admin Student Notification Error]', err));
+    if (adminEmail) {
+      adminStudentNotification({
+        to: adminEmail,
+        studentName: data.fullName,
+        studentEmail: data.email,
+      }).catch(err => console.error('[Admin Student Notification Error]', err));
+    }
 
     // Send Welcome Email to Student
     fireAndForgetEmail(
       sendCampaignEmail({
       to: data.email,
-      subject: 'Welcome to ApplyUniNow - Student Account Registered',
+      subject: `Welcome to ${orgName} - Student Account Registered`,
       
       html: `
           <!DOCTYPE html>
@@ -225,18 +233,18 @@ export const register = async (data: RegisterData) => {
                       <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                           <td width="70" valign="middle">
-                            <img
-                              src="https://your-domain.com/logo.png"
-                              alt="ApplyUniNow"
+                            ${logoUrl ? `<img
+                              src="${logoUrl}"
+                              alt="${orgName}"
                               width="52"
                               height="52"
                               style="display:block;border-radius:8px;"
-                            />
+                            />` : ''}
                           </td>
 
                           <td valign="middle">
                             <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">
-                              ApplyUniNow
+                              ${orgName}
                             </h1>
 
                             <p style="margin:6px 0 0;color:#cbd5e1;font-size:14px;">
@@ -259,7 +267,7 @@ export const register = async (data: RegisterData) => {
 
                       <p style="margin-top:20px;font-size:15px;line-height:1.8;color:#475569;">
                         Thank you for registering with
-                        <strong>ApplyUniNow</strong>.
+                        <strong>${orgName}</strong>.
                         Your student account has been created successfully.
                       </p>
 
@@ -318,14 +326,14 @@ export const register = async (data: RegisterData) => {
                             font-weight:600;
                           "
                         >
-                          Login to ApplyUniNow
+                          Login to ${orgName}
                         </a>
 
                       </div>
 
                       <p style="margin-top:40px;color:#111827;font-size:15px;">
                         Regards,<br/>
-                        <strong>ApplyUniNow Team</strong>
+                        <strong>${orgName} Team</strong>
                       </p>
 
                     </td>
@@ -340,7 +348,7 @@ export const register = async (data: RegisterData) => {
                       </p>
 
                       <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
-                        © ${new Date().getFullYear()} ApplyUniNow. All rights reserved.
+                        © ${new Date().getFullYear()} ${orgName}. All rights reserved.
                       </p>
 
                     </td>
@@ -455,7 +463,7 @@ export const login = async (email: string, password: string, loginType?: 'studen
     throw new Error('Agent account has not been approved by an administrator yet');
   }
 
-  // ApplyUniNow is a single organization.
+  // This install is a single organization.
   const loginUser = user;
 
   const isFirstLogin = loginUser.lastLogin === null;

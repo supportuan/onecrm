@@ -38,6 +38,20 @@ enum ResourceCategory {
   AGENTS
 }
 
+enum TrainingCourseCategory {
+  ONBOARDING
+  COMPLIANCE
+  PRODUCT
+  SALES
+  SOFT_SKILLS
+}
+
+enum TrainingEnrollmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
 enum CampaignType {
   EMAIL
   SMS
@@ -703,6 +717,10 @@ model User {
   hrCandidateStageChanges HrCandidateStageEvent[] @relation("HrCandidateStageChangedBy")
   resourcesUploaded       Resource[]              @relation("ResourceUploader")
   resourceAcknowledgements ResourceAcknowledgement[]
+  trainingCoursesCreated  TrainingCourse[]        @relation("TrainingCourseCreator")
+  trainingEnrollments     TrainingEnrollment[]
+  trainingEnrollmentsAssigned TrainingEnrollment[] @relation("TrainingEnrollmentAssigner")
+  trainingLessonProgress  TrainingLessonProgress[]
 }
 
 model Notification {
@@ -1092,6 +1110,78 @@ model ResourceAcknowledgement {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([resourceId, userId])
+  @@index([userId])
+}
+
+model TrainingCourse {
+  id          Int                    @id @default(autoincrement())
+  title       String
+  description String?                @db.Text
+  category    TrainingCourseCategory @default(ONBOARDING)
+  /// Audience keys: ALL, STUDENT, AGENT, STAFF
+  targetRoles Json                   @default("[\"ALL\"]")
+  isPublished Boolean                @default(false)
+  createdById Int?
+  deletedAt   DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  createdBy   User?                 @relation("TrainingCourseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  lessons     TrainingLesson[]
+  enrollments TrainingEnrollment[]
+
+  @@index([deletedAt])
+  @@index([isPublished, deletedAt])
+}
+
+model TrainingLesson {
+  id          Int      @id @default(autoincrement())
+  courseId    Int
+  title       String
+  content     String?  @db.Text
+  videoUrl    String?
+  durationMin Int?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course   TrainingCourse           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress TrainingLessonProgress[]
+
+  @@index([courseId, sortOrder])
+}
+
+model TrainingEnrollment {
+  id           Int                       @id @default(autoincrement())
+  courseId     Int
+  userId       Int
+  status       TrainingEnrollmentStatus  @default(NOT_STARTED)
+  assignedById Int?
+  enrolledAt   DateTime                  @default(now())
+  completedAt  DateTime?
+  updatedAt    DateTime                  @updatedAt
+
+  course     TrainingCourse           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy User?                    @relation("TrainingEnrollmentAssigner", fields: [assignedById], references: [id], onDelete: SetNull)
+  progress   TrainingLessonProgress[]
+
+  @@unique([courseId, userId])
+  @@index([userId])
+}
+
+model TrainingLessonProgress {
+  id           Int      @id @default(autoincrement())
+  enrollmentId Int
+  lessonId     Int
+  userId       Int
+  completedAt  DateTime @default(now())
+
+  enrollment TrainingEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     TrainingLesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
   @@index([userId])
 }
 

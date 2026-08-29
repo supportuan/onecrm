@@ -3,16 +3,21 @@ import * as authService from './auth.service.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
 import { registerSchema, loginSchema, refreshTokenSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema, acceptPolicySchema } from './auth.schema.js';
 import { MODULE_CATALOG } from '../rbac/rbac.constants.js';
+import { getEnabledModules } from '../rbac/tenant-modules.service.js';
 import crypto from 'crypto';
 import { createEmailTransporter, getEmailFrom } from '../../lib/email-transport.js';
 import { getFrontendBaseUrl } from '../../utils/frontend-url.js';
+import { getOrgName, getPublicLogoUrl } from '../../utils/org-identity.js';
 
-
-
-// ApplyUniNow is a single organization; every role has the full module catalog.
 const allModuleKeys = () => MODULE_CATALOG.map((m) => m.key);
 
-const resolveEnabledModules = async (): Promise<string[]> => allModuleKeys();
+const resolveEnabledModules = async (): Promise<string[]> => {
+  try {
+    return Array.from(await getEnabledModules());
+  } catch {
+    return allModuleKeys();
+  }
+};
 
 const createResetToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -233,6 +238,8 @@ const resolveFrontendBaseUrl = getFrontendBaseUrl;
 export const sendResetEmail = async (email: string, token: string, req?: Request) => {
     const frontendUrl = resolveFrontendBaseUrl(req);
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    const orgName = getOrgName();
+    const logoUrl = getPublicLogoUrl();
 
     console.info(`Password reset email queued for recipient`);
     // Do not log the reset URL/token — that enables account takeover from logs.
@@ -242,7 +249,7 @@ export const sendResetEmail = async (email: string, token: string, req?: Request
     await transporter.sendMail({
         from: getEmailFrom(),
         to: email,
-        subject: "Reset your ApplyUniNow password",
+        subject: `Reset your ${orgName} password`,
         //     html: `
         //   <div style="font-family: Arial, sans-serif;">
         //     <h2>Password Reset</h2>
@@ -281,18 +288,18 @@ export const sendResetEmail = async (email: string, token: string, req?: Request
                         <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                             <td width="70" valign="middle">
-                            <img
-                                src="https://your-domain.com/logo.png"
-                                alt="ApplyUniNow"
+                            ${logoUrl ? `<img
+                                src="${logoUrl}"
+                                alt="${orgName}"
                                 width="52"
                                 height="52"
                                 style="display:block;border-radius:8px;"
-                            />
+                            />` : ''}
                             </td>   
 
                             <td valign="middle">
                             <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;">
-                                ApplyUniNow
+                                ${orgName}
                             </h1>
 
                             <p style="margin:6px 0 0;color:#cbd5e1;font-size:14px;">
@@ -315,7 +322,7 @@ export const sendResetEmail = async (email: string, token: string, req?: Request
 
                         <p style="margin-top:20px;font-size:15px;line-height:1.8;color:#475569;">
                         We received a request to reset the password for your
-                        <strong>ApplyUniNow</strong> account.
+                        <strong>${orgName}</strong> account.
                         </p>
 
                         <div style="
@@ -388,7 +395,7 @@ export const sendResetEmail = async (email: string, token: string, req?: Request
 
                         <p style="margin-top:35px;font-size:15px;color:#111827;">
                         Regards,<br/>
-                        <strong>ApplyUniNow Team</strong>
+                        <strong>${orgName} Team</strong>
                         </p>
 
                     </td>
@@ -403,7 +410,7 @@ export const sendResetEmail = async (email: string, token: string, req?: Request
                         </p>
 
                         <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
-                        © ${new Date().getFullYear()} ApplyUniNow. All rights reserved.
+                        © ${new Date().getFullYear()} ${orgName}. All rights reserved.
                         </p>
 
                     </td>

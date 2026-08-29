@@ -194,6 +194,7 @@
 
 
 import { GoogleAdsApi, enums } from 'google-ads-api';
+import { getOrgName } from '../../../utils/org-identity.js';
 
 const client = new GoogleAdsApi({
   client_id: process.env.GOOGLE_ADS_CLIENT_ID!,
@@ -367,7 +368,7 @@ export const launchGoogleCampaign = async (campaign: any, leads: any[] = []) => 
           final_urls: [landingPageUrl],
           responsive_search_ad: {
             headlines: [
-              { text: headlines[0] || 'ApplyUniNow' },
+              { text: headlines[0] || getOrgName() },
               { text: headlines[1] || 'Study Abroad Help' },
               { text: headlines[2] || 'Apply To Universities' },
             ],
@@ -380,7 +381,7 @@ export const launchGoogleCampaign = async (campaign: any, leads: any[] = []) => 
               {
                 text:
                   descriptions[1] ||
-                  'Start your study abroad journey with ApplyUniNow.',
+                  `Start your study abroad journey with ${getOrgName()}.`,
               },
             ],
           },

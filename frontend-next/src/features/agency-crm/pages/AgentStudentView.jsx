@@ -13,6 +13,7 @@ import {
 } from '@/services/agencyCrmApi';
 import { openRazorpayCheckout } from '@/lib/razorpay';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useTenantBrand } from '@/components/AppBrand';
 import { getStageLabel, stageBadgeClass } from '@/features/student-crm/constants';
 
 const formatMoney = (paise, currency = 'INR') =>
@@ -30,6 +31,7 @@ const feeIsPaid = (fee, payments = []) =>
 
 function ApplicationPanel({ app, canPayFees }) {
   const { user } = useAuth();
+  const { name: brandName } = useTenantBrand();
   const [detail, setDetail] = useState(null);
   const [poc, setPoc] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,6 +88,7 @@ function ApplicationPanel({ app, canPayFees }) {
         orderId: order.orderId,
         amount: order.amount,
         currency: order.currency,
+        name: brandName,
         description: order.feeLabel || fee.label,
         prefill: { name: user?.fullName, email: user?.email },
         onSuccess: async (rzpRes) => {

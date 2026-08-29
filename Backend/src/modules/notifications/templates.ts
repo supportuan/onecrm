@@ -7,6 +7,7 @@
  * optional click-through link from the variables supplied at dispatch time.
  */
 import { getDashboardUrl, getLoginUrl } from '../../utils/frontend-url.js';
+import { getOrgName } from '../../utils/org-identity.js';
 
 export type NotificationChannelKey = 'EMAIL' | 'SMS' | 'WHATSAPP' | 'IN_APP';
 
@@ -336,9 +337,10 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
       const name = fallbackVar(v.name, 'there');
       const role = fallbackVar(v.role, 'team member');
 
-      const title = 'Welcome to ApplyUniNow';
+      const orgName = getOrgName();
+      const title = `Welcome to ${orgName}`;
 
-      const body = `Hi ${name}, your ApplyUniNow account has been created successfully. You are signed in as ${role}. You can now access your dashboard and start using your assigned modules.`;
+      const body = `Hi ${name}, your ${orgName} account has been created successfully. You are signed in as ${role}. You can now access your dashboard and start using your assigned modules.`;
 
       const html = `
       <!DOCTYPE html>
@@ -352,7 +354,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
                 <tr>
                   <td style="background:#0f172a;padding:30px;text-align:center;">
                     <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;">
-                      ApplyUniNow
+                      ${orgName}
                     </h1>
                     <p style="margin:8px 0 0;color:#cbd5e1;font-size:14px;">
                       Account Ready
@@ -367,7 +369,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
                     </h2>
 
                     <p style="margin-top:18px;font-size:15px;line-height:1.8;color:#4b5563;">
-                      Your ApplyUniNow account has been created successfully.
+                      Your ${orgName} account has been created successfully.
                       You are signed in as <strong>${role}</strong>.
                     </p>
 
@@ -385,7 +387,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
 
                     <p style="margin-top:30px;color:#111827;font-size:15px;">
                       Regards,<br/>
-                      <strong>ApplyUniNow Team</strong>
+                      <strong>${orgName} Team</strong>
                     </p>
                   </td>
                 </tr>
@@ -393,7 +395,7 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
                 <tr>
                   <td style="background:#f8fafc;padding:18px;text-align:center;border-top:1px solid #e5e7eb;">
                     <p style="margin:0;color:#64748b;font-size:12px;">
-                      This is an automated notification from ApplyUniNow.
+                      This is an automated notification from ${orgName}.
                     </p>
                   </td>
                 </tr>

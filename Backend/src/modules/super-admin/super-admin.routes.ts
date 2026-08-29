@@ -10,7 +10,7 @@ router.use(authenticateToken, isSuperAdmin);
 router.use((_req, res) => {
   sendError(
     res,
-    'Multi-tenant administration has been removed. ApplyUniNow runs as a single organization.',
+    'This install runs as a single organization. Multi-tenant administration has been removed.',
     null,
     410,
   );

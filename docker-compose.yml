@@ -1,7 +1,10 @@
-# One CRM — one container. Secrets stay in env file (never commit).
+# One CRM — one image, one container per client copy. Secrets stay in that
+# client's env file (never commit). Isolation = separate Compose project + env.
 #
-#   cp Backend/.env.production.example prod.env   # fill values
-#   ENV_FILE=./prod.env docker compose up -d --build
+#   cp Backend/.env.production.example deploy/clients/aun.env   # fill values
+#   docker compose --env-file deploy/compose/aun.env up -d --build
+#
+# See deploy/CLIENTS.md for the four-client checklist.
 
 services:
   onecrm:

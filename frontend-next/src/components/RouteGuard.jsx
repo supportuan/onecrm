@@ -50,6 +50,11 @@ const ROUTE_PERMISSION_MAP = [
   { path: '/resources/manage', module: 'Resources', option: 'Manage Resources' },
   { path: '/resources', module: 'Resources', option: 'Resource Library' },
 
+  // Training
+  { path: '/training/manage', module: 'Training', option: 'Manage Training' },
+  { path: '/training/courses', module: 'Training', option: 'My Training' },
+  { path: '/training', module: 'Training', option: 'My Training' },
+
   // HR
   { path: '/hr/employee-directory', module: 'HR', option: 'Employee Directory' },
   { path: '/hr/attendance', module: 'HR', option: 'Attendance' },

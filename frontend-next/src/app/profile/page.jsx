@@ -8,6 +8,7 @@ import { uploadProfilePhoto } from '@/lib/apiService';
 import { initials } from '@/lib/layout-shell';
 import { notifyStaffProfilePhotoUpdated } from '@/components/StaffAvatarLink';
 import { useAppearanceStore } from '@/lib/stores/appearanceStore';
+import { useTenantBrand } from '@/components/AppBrand';
 import LogoLoader from '@/components/LogoLoader';
 
 const panelClass =
@@ -160,13 +161,16 @@ export default function StaffProfilePage() {
 
 function AppearanceSection() {
   const { loginThemeId, themes, setLoginThemeId } = useAppearanceStore();
+  const { loginThemeLocked } = useTenantBrand();
 
   return (
     <section className={`${panelClass} space-y-4`}>
       <div className="border-b border-[var(--ui-border)] pb-3">
         <h3 className="text-[15px] font-semibold tracking-tight text-brand">Appearance</h3>
         <p className="mt-1 text-sm text-slate-500">
-          Choose Brand, Aurora, or Mist. Colors update across the app right away, and on the login screen.
+          {loginThemeLocked
+            ? 'This install locks the appearance theme. Contact an administrator to change it.'
+            : 'Choose Brand, Aurora, or Mist. Colors update across the app right away, and on the login screen.'}
         </p>
       </div>
 
@@ -183,7 +187,8 @@ function AppearanceSection() {
             <button
               key={theme.id}
               type="button"
-              onClick={() => setLoginThemeId(theme.id)}
+              onClick={() => !loginThemeLocked && setLoginThemeId(theme.id)}
+              disabled={loginThemeLocked}
               aria-pressed={active}
               className={`flex flex-1 items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition ${
                 active

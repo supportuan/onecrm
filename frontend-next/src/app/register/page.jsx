@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Briefcase,
@@ -13,6 +12,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import AuthPageShell from '@/components/AuthPageShell';
+import { BrandMark, useTenantBrand } from '@/components/AppBrand';
 import { registerUser } from '@/services/userApi';
 
 const inputClass =
@@ -20,6 +20,7 @@ const inputClass =
 
 function RegisterPageContent() {
   const router = useRouter();
+  const brand = useTenantBrand();
   const searchParams = useSearchParams();
   const requestedRole = (searchParams.get('role') || '').toUpperCase();
   const initialRole = requestedRole === 'AGENT' ? 'AGENT' : 'STUDENT';
@@ -132,18 +133,17 @@ function RegisterPageContent() {
       <div className="w-full rounded-[24px] border border-white/70 bg-white/[0.86] p-8 shadow-[0_30px_100px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-black/[0.04] backdrop-blur-2xl backdrop-saturate-150 sm:p-10">
         <div className="mb-7 flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8eef8] p-1.5 ring-1 ring-white/60">
-            <Image
-              src="/images/applyUniNow.png"
-              alt="Apply UniNow"
+            <BrandMark
+              src={brand.logoSrc}
+              alt={brand.name}
               width={36}
               height={36}
-              className="h-8 w-8 object-contain"
               priority
-              unoptimized
+              className="h-8 w-8 object-contain"
             />
           </div>
           <div className="leading-tight">
-            <p className="text-[13px] font-semibold text-slate-900">Apply UniNow</p>
+            <p className="text-[13px] font-semibold text-slate-900">{brand.name}</p>
             <p className="text-[11px] text-slate-500">Account registration</p>
           </div>
         </div>

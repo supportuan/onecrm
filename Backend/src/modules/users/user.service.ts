@@ -76,6 +76,10 @@ const MODULE_ACCESS_OPTIONS = [
     options: ["Resource Library", "Manage Resources"],
   },
   {
+    module: "Training",
+    options: ["My Training", "Manage Training"],
+  },
+  {
     module: "Student Portal",
     options: ["Applications", "Profile", "Payments", "Resources"],
   },
@@ -109,9 +113,12 @@ export const getDefaultModuleAccessByRole = (role: string) => {
   if (role === "HR") {
     giveModuleActions("HR", ["VIEW", "EDIT"]);
     giveModuleActions("Resources", ["VIEW"]);
+    giveModuleActions("Training", ["VIEW", "EDIT"]);
   } else if (role === "STUDENT") {
     giveModuleActions("Student Portal", ["VIEW"]);
     giveModuleActions("Resources", ["VIEW"]);
+    access["Training"] = access["Training"] || {};
+    access["Training"]["My Training"] = ["VIEW"];
   } else if (role === "AGENT" || role === "AGENCY_FREELANCER") {
     // Portal-scoped VIEW only — no Agency Management / MANAGE_AGENCY_CRM.
     // Fine-grained partner actions use AgencyPartner.capabilities.
@@ -130,22 +137,31 @@ export const getDefaultModuleAccessByRole = (role: string) => {
     });
     access["Resources"] = access["Resources"] || {};
     access["Resources"]["Resource Library"] = ["VIEW"];
+    access["Training"] = access["Training"] || {};
+    access["Training"]["My Training"] = ["VIEW"];
   } else if (role === "COUNSELLOR") {
     giveModuleActions("Marketing", ["VIEW"]);
     giveModuleActions("Student CRM", ["VIEW"]);
     giveModuleActions("Resources", ["VIEW"]);
+    access["Training"] = access["Training"] || {};
+    access["Training"]["My Training"] = ["VIEW"];
   } else if (role === "MARKETING_MANAGER") {
     giveModuleActions("Marketing", ["VIEW", "EDIT"]);
     giveModuleActions("Resources", ["VIEW"]);
+    access["Training"] = access["Training"] || {};
+    access["Training"]["My Training"] = ["VIEW"];
   } else if (role === "TELECALLER") {
     giveModuleActions("Marketing", ["VIEW"]);
     giveModuleActions("Student CRM", ["VIEW"]);
     giveModuleActions("Resources", ["VIEW"]);
+    access["Training"] = access["Training"] || {};
+    access["Training"]["My Training"] = ["VIEW"];
   } else if (role === "GLOBAL_ADMIN" || role === "SUPER_ADMIN") {
     giveModuleActions("Marketing", ["VIEW", "EDIT"]);
     giveModuleActions("Student CRM", ["VIEW", "EDIT"]);
     giveModuleActions("Agency CRM", ["VIEW", "EDIT"]);
     giveModuleActions("Resources", ["VIEW", "EDIT"]);
+    giveModuleActions("Training", ["VIEW", "EDIT"]);
     giveModuleActions("HR", ["VIEW", "EDIT"]);
     giveModuleActions("Admin & Settings", ["VIEW", "EDIT"]);
   }
@@ -164,8 +180,7 @@ export const getDefaultModuleAccessByRole = (role: string) => {
   return clean;
 };
 
-// A numeric org id restricts the result to ApplyUniNow; null means unscoped
-// (scripts / tests without request context).
+// Returns all users for this isolated install.
 export const getUsers = async (role?: UserRole) => {
   return prisma.user.findMany({
     where: {

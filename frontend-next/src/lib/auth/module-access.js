@@ -60,6 +60,10 @@ export const moduleAccessToPermissions = (moduleAccess) => {
   if (Object.values(resources).some(hasView)) perms.add('VIEW_RESOURCES');
   if (Object.values(resources).some(hasEdit)) perms.add('MANAGE_RESOURCES');
 
+  const training = moduleOpts('Training');
+  if (Object.values(training).some(hasView)) perms.add('VIEW_TRAINING');
+  if (Object.values(training).some(hasEdit)) perms.add('MANAGE_TRAINING');
+
   const studentPortal = moduleOpts('Student Portal');
   if (Object.values(studentPortal).some(hasView)) perms.add('VIEW_STUDENT_PORTAL');
 

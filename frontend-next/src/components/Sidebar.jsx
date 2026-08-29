@@ -18,7 +18,7 @@ import {
 } from "@/lib/auth/module-access";
 import { isAgencyPartnerRole } from "@/features/agency-crm/agentPortal";
 import { SIDEBAR_COLLAPSED, SIDEBAR_OPEN } from "@/lib/layout-shell";
-import { SidebarBrandHeader } from "@/components/AppBrand";
+import { SidebarBrandHeader, useTenantBrand } from "@/components/AppBrand";
 import { MODULE_CRIMSON } from "@/lib/module-themes";
 
 const getPermissionOptionName = (subLabel) => {
@@ -83,6 +83,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
 
   const { user } = useAuth();
   const { can } = usePermissions();
+  const { showAlliedServices } = useTenantBrand();
 
   const [openSections, setOpenSections] = useState({});
   const [flyoutMenu, setFlyoutMenu] = useState(null);
@@ -94,13 +95,23 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
     const isAgent = isAgencyPartnerRole(user.role);
 
     const moduleVisible = (item) => {
+      if (item.installFeature === "alliedServices" && !showAlliedServices) return false;
+
+      const enabled = user.enabledModules;
+      if (item.moduleKey && Array.isArray(enabled) && enabled.length > 0) {
+        if (!enabled.includes(item.moduleKey)) return false;
+      }
+
       const accessKey = item.accessKey || item.label;
 
       if (hasConfiguredModuleAccess(user.moduleAccess)) {
-        if (!item.subItems) {
-          return moduleHasAnyAccess(user.moduleAccess, accessKey);
+        if (moduleHasAnyAccess(user.moduleAccess, accessKey)) return true;
+        if (!(accessKey in (user.moduleAccess || {}))) {
+          const required = MODULE_PERMISSION_MAP[accessKey];
+          if (!required) return true;
+          return can(required);
         }
-        return moduleHasAnyAccess(user.moduleAccess, accessKey);
+        return false;
       }
 
       const required = MODULE_PERMISSION_MAP[accessKey];
@@ -155,8 +166,13 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
       .map((item) => {
         if (!item.subItems) return withAgentLabels(item);
 
+        const accessKey = item.accessKey || item.label;
         let moduleAccessSubItems = filterSubItemsByModuleAccess(item, access)
           .filter(audienceAllows);
+
+        if (!(accessKey in (access || {}))) {
+          moduleAccessSubItems = item.subItems.filter(subVisible);
+        }
 
         // Legacy users without moduleAccess still get permission-driven HR/Resources links.
         if (
@@ -184,7 +200,7 @@ const Sidebar = ({ sidebarOpen, onToggleSidebar }) => {
         });
       })
       .filter(Boolean);
-  }, [user, can]);
+  }, [user, can, showAlliedServices]);
 
   const sectionKeys = useMemo(
     () => filteredNavMenu.map((item) => item.label),

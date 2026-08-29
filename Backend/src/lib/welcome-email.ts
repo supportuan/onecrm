@@ -1,5 +1,6 @@
 import { fireAndForgetEmail, sendCampaignEmail } from '../modules/marketing/services/email.service.js';
 import { getStudentLoginUrl } from '../utils/frontend-url.js';
+import { getOrgName, getOrgTagline } from '../utils/org-identity.js';
 
 export type WelcomeCredentialsOpts = {
   to: string;
@@ -13,6 +14,8 @@ export type WelcomeCredentialsOpts = {
 };
 
 const buildWelcomeCredentialsHtml = (opts: WelcomeCredentialsOpts): string => {
+  const orgName = getOrgName();
+  const tagline = getOrgTagline();
   const statusBlock = opts.statusNote
     ? `
         <div style="background:#EFF6FF;border-left:5px solid #3B82F6;padding:18px;border-radius:8px;margin-top:25px;">
@@ -29,10 +32,10 @@ const buildWelcomeCredentialsHtml = (opts: WelcomeCredentialsOpts): string => {
                     <tr>
                       <td style="background:#0f172a;padding:30px;text-align:center;">
                         <h1 style="margin:0;color:#ffffff;font-size:30px;font-weight:700;">
-                          Welcome to ApplyUniNow
+                          Welcome to ${orgName}
                         </h1>
                         <p style="margin-top:10px;color:#E0E7FF;font-size:15px;">
-                          Smart CRM Platform for Education & Business Management
+                          ${tagline}
                         </p>
                       </td>
                     </tr>
@@ -42,7 +45,7 @@ const buildWelcomeCredentialsHtml = (opts: WelcomeCredentialsOpts): string => {
                           Hello <strong>${opts.fullName}</strong>,
                         </p>
                         <p style="font-size:15px;line-height:28px;color:#475569;margin-bottom:25px;">
-                          Your <strong>ApplyUniNow</strong> account has been created.
+                          Your <strong>${orgName}</strong> account has been created.
                           You have been assigned the role of
                           <strong style="color:#4F46E5;">${opts.displayRole}</strong>.
                         </p>
@@ -73,7 +76,7 @@ const buildWelcomeCredentialsHtml = (opts: WelcomeCredentialsOpts): string => {
                         <div style="text-align:center;margin:35px 0;">
                           <a href="${opts.loginUrl}"
                             style="background:#4F46E5;color:#ffffff;text-decoration:none;padding:14px 35px;border-radius:10px;display:inline-block;font-size:15px;font-weight:600;">
-                            Sign in to ApplyUniNow
+                            Sign in to ${orgName}
                           </a>
                         </div>
                         ${statusBlock}
@@ -85,14 +88,14 @@ const buildWelcomeCredentialsHtml = (opts: WelcomeCredentialsOpts): string => {
                         </div>
                         <p style="margin-top:30px;font-size:15px;color:#334155;">
                           Best regards,<br>
-                          <strong>ApplyUniNow Team</strong>
+                          <strong>${orgName} Team</strong>
                         </p>
                       </td>
                     </tr>
                     <tr>
                       <td style="background:#F8FAFC;padding:25px;text-align:center;border-top:1px solid #E2E8F0;">
                         <p style="margin:0;font-size:13px;color:#64748B;">
-                          © ${new Date().getFullYear()} ApplyUniNow. All rights reserved.
+                          © ${new Date().getFullYear()} ${orgName}. All rights reserved.
                         </p>
                       </td>
                     </tr>
@@ -106,7 +109,7 @@ const buildWelcomeCredentialsHtml = (opts: WelcomeCredentialsOpts): string => {
 export const sendWelcomeCredentialsEmail = async (opts: WelcomeCredentialsOpts) =>
   sendCampaignEmail({
     to: opts.to,
-    subject: 'Welcome to ApplyUniNow - Your Account Details',
+    subject: `Welcome to ${getOrgName()} - Your Account Details`,
     html: buildWelcomeCredentialsHtml(opts),
   });
 

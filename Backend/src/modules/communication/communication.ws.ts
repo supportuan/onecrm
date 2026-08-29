@@ -200,5 +200,5 @@ export const attachCommunicationWebSocket = (server: HttpServer) => {
 
   wss.on('close', () => clearInterval(heartbeat));
 
-  console.log(`[ApplyUniNow] Communication WebSocket available at ${WS_PATH}`);
+  console.log(`[${process.env.ORG_NAME?.trim() || 'OneCRM'}] Communication WebSocket available at ${WS_PATH}`);
 };

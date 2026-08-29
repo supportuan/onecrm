@@ -1,9 +1,15 @@
 
+import { getOrgName, getOrgWebsiteUrl, getPublicLogoUrl } from '../../../utils/org-identity.js';
+
 export const buildCampaignEmailTemplate = (campaign: any, lead: any) => {
     const studentName = lead.fullName || lead.name || 'Student';
     const country = lead.preferredCountry || 'your preferred country';
     const course = lead.preferredCourse || lead.interestedIn || 'your preferred course';
     const campaignName = campaign.name || 'Study Abroad Campaign';
+    const orgName = getOrgName();
+    const websiteUrl = getOrgWebsiteUrl() || '';
+    const logoUrl = getPublicLogoUrl();
+    const year = new Date().getFullYear();
 
     return `
   <div style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
@@ -14,8 +20,8 @@ export const buildCampaignEmailTemplate = (campaign: any, lead: any) => {
             
             <tr>
               <td style="background:#111827;padding:24px;text-align:center;">
-                <img src="https://applyuninow.com/logo.png" alt="Apply UniNow" style="height:60px;margin-bottom:10px;" />
-                <h2 style="color:#ffffff;margin:0;font-size:22px;">Apply UniNow</h2>
+                ${logoUrl ? `<img src="${logoUrl}" alt="${orgName}" style="height:60px;margin-bottom:10px;" />` : ''}
+                <h2 style="color:#ffffff;margin:0;font-size:22px;">${orgName}</h2>
               </td>
             </tr>
 
@@ -30,9 +36,9 @@ export const buildCampaignEmailTemplate = (campaign: any, lead: any) => {
                 </p>
 
                 <p style="color:#374151;font-size:15px;line-height:1.7;">
-                  We are reaching out from <strong>Apply UniNow</strong>, a study abroad consultancy
-                  helping students find suitable universities, courses, scholarships, and visa guidance
-                  for their international education journey.
+                  We are reaching out from <strong>${orgName}</strong>
+                  about universities, courses, scholarships, and guidance
+                  for international education.
                 </p>
 
                 <p style="color:#374151;font-size:15px;line-height:1.7;">
@@ -67,7 +73,7 @@ export const buildCampaignEmailTemplate = (campaign: any, lead: any) => {
                 </p>
 
                 <div style="text-align:center;margin:30px 0;">
-                  <a href="https://applyuninow.com"
+                  <a href="${websiteUrl || '#'}"
                      style="background:#f59e0b;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:bold;display:inline-block;">
                     Explore Study Options
                   </a>
@@ -75,7 +81,7 @@ export const buildCampaignEmailTemplate = (campaign: any, lead: any) => {
 
                 <p style="color:#374151;font-size:15px;line-height:1.7;">
                   Best Regards,<br/>
-                  <strong>Apply UniNow Admissions Team</strong>
+                  <strong>${orgName} Admissions Team</strong>
                 </p>
               </td>
             </tr>
@@ -83,13 +89,13 @@ export const buildCampaignEmailTemplate = (campaign: any, lead: any) => {
             <tr>
               <td style="background:#f9fafb;padding:22px;text-align:center;border-top:1px solid #e5e7eb;">
                 <p style="margin:0;color:#374151;font-size:14px;">
-                  Apply UniNow &lt;noreply@applyuninow.com&gt;
+                  ${orgName}
                 </p>
                 <p style="margin:8px 0;color:#6b7280;font-size:13px;">
-                  Email: support@applyuninow.com | Website: www.applyuninow.com
+                  ${websiteUrl ? `Website: ${websiteUrl}` : ''}
                 </p>
                 <p style="margin:12px 0 0;color:#9ca3af;font-size:12px;">
-                  © 2026 Apply UniNow. All rights reserved.
+                  © ${year} ${orgName}. All rights reserved.
                 </p>
               </td>
             </tr>

@@ -27,10 +27,10 @@ const defaultPassword = 'welcome@123';
 async function ensureOrgAndRoles() {
   await prisma.orgSettings.upsert({
     where: { id: 1 },
-    create: { id: 1, name: 'ApplyUniNow' },
+    create: { id: 1, name: process.env.ORG_NAME?.trim() || 'ApplyUniNow' },
     update: {},
   });
-  console.log('✅ Org settings ready (ApplyUniNow)');
+  console.log(`✅ Org settings ready (${process.env.ORG_NAME?.trim() || 'ApplyUniNow'})`);
 
   for (const [role, permissions] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
     await prisma.rolePermission.upsert({

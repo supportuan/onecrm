@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import AuthPageShell from '@/components/AuthPageShell';
+import { BrandMark, useTenantBrand } from '@/components/AppBrand';
 
 const darkFieldClass =
   'w-full rounded-xl border border-white/80 bg-white/65 px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none backdrop-blur-md transition duration-200 placeholder:text-slate-400 hover:bg-white/80 focus:border-blue-400 focus:bg-white/90 focus:ring-2 focus:ring-blue-500/15';
@@ -27,6 +27,7 @@ const emptyRegister = {
 export default function AgentLogin() {
   const router = useRouter();
   const { login, logout } = useAuth();
+  const brand = useTenantBrand();
 
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -135,18 +136,17 @@ export default function AgentLogin() {
         <div className="mb-8">
           <div className="mb-7 flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e8eef8] p-1.5 ring-1 ring-white/20">
-              <Image
-                src="/images/applyUniNow.png"
-                alt="Apply UniNow"
+              <BrandMark
+                src={brand.logoSrc}
+                alt={brand.name}
                 width={36}
                 height={36}
-                className="h-8 w-8 object-contain"
                 priority
-                unoptimized
+                className="h-8 w-8 object-contain"
               />
             </div>
             <div className="leading-tight">
-              <p className="text-[13px] font-semibold text-slate-900">Apply UniNow</p>
+              <p className="text-[13px] font-semibold text-slate-900">{brand.name}</p>
               <p className="text-[11px] text-slate-500">Agency portal</p>
             </div>
           </div>

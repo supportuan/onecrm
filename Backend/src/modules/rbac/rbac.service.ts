@@ -38,6 +38,16 @@ export const seedRoleDefaults = async (): Promise<void> => {
         where: roleWhere(role),
         data: { permissions },
       });
+    } else {
+      const trainingPerms = permissions.filter(
+        (p) => (p === 'VIEW_TRAINING' || p === 'MANAGE_TRAINING') && !existing.permissions.includes(p),
+      );
+      if (trainingPerms.length > 0) {
+        await prisma.rolePermission.update({
+          where: roleWhere(role),
+          data: { permissions: [...existing.permissions, ...trainingPerms] },
+        });
+      }
     }
   }
   cache = null;

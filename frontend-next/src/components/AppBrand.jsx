@@ -4,13 +4,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
+import {
+  AUN_LOGO_SRC,
+  BRAND_LOGO_SRC,
+  BRAND_NAME,
+  BRAND_TAGLINE,
+  resolveBrandLogo,
+  useOrgBranding,
+} from '@/lib/branding/BrandingContext';
 
-export const BRAND_NAME = 'OneCRM';
-export const BRAND_TAGLINE = 'Intelligence Connecting Seamlessly!';
-export const BRAND_LOGO_SRC = '/images/applyUniNow.png';
+export { BRAND_LOGO_SRC, BRAND_NAME, BRAND_TAGLINE, AUN_LOGO_SRC };
 
 /** Local static marks use next/image; tenant/upload URLs use <img>. */
-function BrandMark({
+export function BrandMark({
   src,
   alt = '',
   className = '',
@@ -48,11 +54,21 @@ function BrandMark({
 
 export function useTenantBrand() {
   const { user } = useAuth();
+  const { branding } = useOrgBranding();
+  const name = user?.tenantName || branding?.name || BRAND_NAME;
+  const logoSrc = resolveBrandLogo(
+    name,
+    user?.tenantLogoUrl || branding?.logoUrl || branding?.tenantLogoUrl,
+  );
   return {
-    logoSrc: user?.tenantLogoUrl || BRAND_LOGO_SRC,
-    name: user?.tenantName || BRAND_NAME,
-    tagline: BRAND_TAGLINE,
-    hasCustomLogo: Boolean(user?.tenantLogoUrl),
+    logoSrc,
+    name,
+    tagline: branding?.tagline || BRAND_TAGLINE,
+    loginHeadline: branding?.loginHeadline,
+    privacyCopy: branding?.privacyCopy,
+    loginThemeLocked: Boolean(branding?.loginThemeLocked),
+    showAlliedServices: Boolean(branding?.showAlliedServices),
+    hasCustomLogo: Boolean(user?.tenantLogoUrl || branding?.logoUrl),
   };
 }
 
@@ -81,6 +97,7 @@ export function AppBrand({
 }) {
   const brand = useTenantBrand();
   const resolvedTitle = title ?? brand.name;
+  const resolvedSubtitle = subtitle === BRAND_TAGLINE ? brand.tagline : subtitle;
 
   const inner = (
     <>
@@ -94,7 +111,7 @@ export function AppBrand({
       {!compact && (
         <div className="min-w-0 overflow-hidden">
           <p className={titleClassName}>{resolvedTitle}</p>
-          {subtitle && <p className={subtitleClassName}>{subtitle}</p>}
+          {resolvedSubtitle && <p className={subtitleClassName}>{resolvedSubtitle}</p>}
         </div>
       )}
     </>
@@ -123,6 +140,7 @@ export function SidebarBrandHeader({
   homeHref = null,
 }) {
   const brand = useTenantBrand();
+  const resolvedSubtitle = subtitle === BRAND_TAGLINE ? brand.tagline : subtitle;
 
   const brandRow = (
     <>
@@ -143,9 +161,9 @@ export function SidebarBrandHeader({
   const brandBlock = (
     <div className="min-w-0 flex-1">
       <div className="flex min-w-0 items-center gap-2">{brandRow}</div>
-      {subtitle ? (
+      {resolvedSubtitle ? (
         <p className="mt-0.5 truncate text-[10px] font-medium leading-snug text-neutral-400">
-          {subtitle}
+          {resolvedSubtitle}
         </p>
       ) : null}
     </div>

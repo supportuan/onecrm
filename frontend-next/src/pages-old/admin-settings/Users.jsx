@@ -91,6 +91,10 @@ const MODULE_ACCESS_OPTIONS = [
     options: ["Resource Library", "Manage Resources"],
   },
   {
+    module: "Training",
+    options: ["My Training", "Manage Training"],
+  },
+  {
     module: "Student Portal",
     options: ["Applications", "Profile", "Payments", "Resources"],
   },
@@ -137,14 +141,18 @@ const getDefaultModuleAccessByRole = (role) => {
 
   if (role === "HR") giveModuleAccess("HR");
   if (role === "HR") giveModuleAccess("Resources");
+  if (role === "HR") giveModuleAccess("Training");
   if (role === "STUDENT") giveModuleAccess("Student Portal");
   if (role === "STUDENT") giveModuleAccess("Resources");
+  if (role === "STUDENT") giveModuleAccess("Training");
   if (role === "AGENT") giveModuleAccess("Agency CRM");
   if (role === "AGENT") giveModuleAccess("Resources");
+  if (role === "AGENT") giveModuleAccess("Training");
 
   if (role === "COUNSELLOR") {
     giveModuleAccess("Marketing");
     giveModuleAccess("Student CRM");
+    giveModuleAccess("Training");
   }
 
   if (role === "ADMIN") {
@@ -154,6 +162,7 @@ const getDefaultModuleAccessByRole = (role) => {
     giveModuleAccess("HR");
     giveModuleAccess("Admin & Settings");
     giveModuleAccess("Resources");
+    giveModuleAccess("Training");
   }
 
   return access;

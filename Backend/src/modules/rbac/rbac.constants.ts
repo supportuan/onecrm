@@ -14,6 +14,8 @@ export const MODULE_PERMISSIONS = [
   'MANAGE_AGENCY_CRM',
   'VIEW_RESOURCES',
   'MANAGE_RESOURCES',
+  'VIEW_TRAINING',
+  'MANAGE_TRAINING',
   'VIEW_STUDENT_PORTAL',
   'VIEW_HR',
   'VIEW_ADMIN',
@@ -51,6 +53,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   GLOBAL_ADMIN: [...ALL_PERMISSIONS],
   HR: [
     'VIEW_RESOURCES',
+    'VIEW_TRAINING', 'MANAGE_TRAINING',
     'VIEW_HR',
     'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
     'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
@@ -59,16 +62,19 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   COUNSELLOR: [
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
   MARKETING_MANAGER: [
     'VIEW_MARKETING', 'MANAGE_MARKETING',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'VIEW_REPORTS',
   ],
   TELECALLER: [
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
   // Both agent roles are portal-scoped VIEW. Partner ops (MANAGE) stay admin-only;
@@ -77,13 +83,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
   ],
   AGENT: [
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
   ],
-  STUDENT: ['VIEW_STUDENT_PORTAL', 'VIEW_RESOURCES'],
+  STUDENT: ['VIEW_STUDENT_PORTAL', 'VIEW_RESOURCES', 'VIEW_TRAINING'],
 };
 
 /**
@@ -105,6 +113,7 @@ export type ModuleKey =
   | 'STUDENT_CRM'
   | 'AGENCY_CRM'
   | 'RESOURCES'
+  | 'TRAINING'
   | 'ADMIN';
 
 export interface ModuleDefinition {
@@ -144,6 +153,11 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     permissions: ['VIEW_RESOURCES', 'MANAGE_RESOURCES'],
   },
   {
+    key: 'TRAINING',
+    label: 'Training',
+    permissions: ['VIEW_TRAINING', 'MANAGE_TRAINING'],
+  },
+  {
     key: 'ADMIN',
     label: 'Admin & Settings',
     permissions: ['VIEW_ADMIN', 'MANAGE_ADMINS', 'MANAGE_SYSTEM'],
@@ -161,5 +175,5 @@ export const PERMISSION_TO_MODULE: Record<string, ModuleKey> = (() => {
   return map;
 })();
 
-// Full catalog for the solo ApplyUniNow organization.
+// Full catalog unless this install sets ENABLED_MODULES.
 export const DEFAULT_TENANT_MODULES: ModuleKey[] = MODULE_CATALOG.map((m) => m.key);

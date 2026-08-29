@@ -30,7 +30,7 @@ router.post(
  * /api/marketing/public/website-leads:
  *   post:
  *     summary: Create a website lead
- *     description: Public API used by the ApplyUniNow website to create leads.
+ *     description: Public API used by this install's website to create leads.
  *     tags: [Marketing]
  *     security: []
  *     requestBody:

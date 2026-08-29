@@ -18,6 +18,7 @@ import {
   ONBOARDING_STAGE_ORDER,
   stageIndex,
 } from '../agentPortal';
+import { useTenantBrand } from '@/components/AppBrand';
 
 const StepIcon = ({ done, current }) => {
   if (done) return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />;
@@ -26,6 +27,7 @@ const StepIcon = ({ done, current }) => {
 };
 
 export default function AgencyOnboarding() {
+  const { name: orgName } = useTenantBrand();
   const [partner, setPartner] = useState(null);
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -199,10 +201,10 @@ export default function AgencyOnboarding() {
                 <p className="font-medium text-neutral-800">3. Sign agency agreement</p>
                 {allowSign && (
                   <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700 space-y-2 max-h-48 overflow-y-auto">
-                    <p className="font-semibold text-neutral-900">ApplyUniNow Agency Partner Agreement (v1)</p>
+                    <p className="font-semibold text-neutral-900">{orgName} Agency Partner Agreement (v1)</p>
                     <p>
                       By signing, you confirm that you are authorised to represent this agency, that KYC documents
-                      submitted are accurate, and that you will refer students in accordance with ApplyUniNow policies,
+                      submitted are accurate, and that you will refer students in accordance with {orgName} policies,
                       commission rules, and data-protection requirements.
                     </p>
                     <p>
@@ -211,7 +213,7 @@ export default function AgencyOnboarding() {
                       (for example enrolment or visa approval) and admin verification.
                     </p>
                     <p>
-                      ApplyUniNow may suspend or terminate partner access for fraud, document forgery, or policy breaches.
+                      {orgName} may suspend or terminate partner access for fraud, document forgery, or policy breaches.
                       This electronic acceptance records your IP address, user agent, and agreement version.
                     </p>
                     <label className="flex items-start gap-2 pt-1 cursor-pointer">

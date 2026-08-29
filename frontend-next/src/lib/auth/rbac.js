@@ -41,6 +41,14 @@ export const PERMISSION_CATEGORIES = [
     ],
   },
   {
+    title: 'Training',
+    key: 'training',
+    permissions: [
+      { key: 'VIEW_TRAINING', name: 'view training', desc: 'access the training catalog, enroll in courses, and complete lessons.' },
+      { key: 'MANAGE_TRAINING', name: 'manage training', desc: 'create courses, lessons, and assign training to users.' },
+    ],
+  },
+  {
     title: 'Human Resource — module access',
     key: 'hr_module',
     permissions: [
@@ -113,8 +121,8 @@ export const ALL_PERMISSIONS = PERMISSION_CATEGORIES.flatMap((c) =>
 );
 
 export const ROLE_DESCRIPTIONS = {
-  SUPER_ADMIN: 'platform owner. full access across ApplyUniNow.',
-  GLOBAL_ADMIN: 'organization administrator. full access inside ApplyUniNow.',
+  SUPER_ADMIN: 'platform owner. full access across this organization.',
+  GLOBAL_ADMIN: 'organization administrator. full access inside this organization.',
   HR: 'hr operators. full hr module access except admin-level system config.',
   MARKETING_MANAGER: 'marketing manager. owns leads, campaigns, automations and landing pages.',
   COUNSELLOR: 'counsellor / advisor. marketing + student crm management, self-service hr.',
@@ -150,6 +158,7 @@ export const MODULE_PERMISSION_MAP = {
   'Agency CRM': ['VIEW_AGENCY_CRM', 'MANAGE_AGENCY_CRM'],
   'Knowledge Hub': ['VIEW_RESOURCES', 'MANAGE_RESOURCES'],
   Resources: ['VIEW_RESOURCES', 'MANAGE_RESOURCES'],
+  Training: ['VIEW_TRAINING', 'MANAGE_TRAINING'],
   'Human Resource': ['VIEW_HR'],
   HR: ['VIEW_HR'],
   HRMS: ['VIEW_HR'],
@@ -169,6 +178,7 @@ export const MODULE_KEY_MAP = {
   'Agency CRM': 'AGENCY_CRM',
   'Knowledge Hub': 'RESOURCES',
   Resources: 'RESOURCES',
+  Training: 'TRAINING',
   'Human Resource': 'HR',
   HR: 'HR',
   HRMS: 'HR',
@@ -182,6 +192,7 @@ export const ROLE_PERMISSIONS = {
   GLOBAL_ADMIN: [...ALL_PERMISSIONS],
   HR: [
     'VIEW_RESOURCES',
+    'VIEW_TRAINING', 'MANAGE_TRAINING',
     'VIEW_HR',
     'VIEW_ALL_EMPLOYEES', 'MANAGE_EMPLOYEES', 'MANAGE_PAYROLL', 'VIEW_OWN_PAYSLIP',
     'VIEW_TEAM', 'MANAGE_TEAM', 'VIEW_ATTENDANCE', 'MANAGE_ATTENDANCE', 'VIEW_LEAVE', 'MANAGE_LEAVE',
@@ -190,16 +201,19 @@ export const ROLE_PERMISSIONS = {
   COUNSELLOR: [
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM', 'MANAGE_STUDENT_CRM',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
   MARKETING_MANAGER: [
     'VIEW_MARKETING', 'MANAGE_MARKETING',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE', 'VIEW_REPORTS',
   ],
   TELECALLER: [
     'VIEW_MARKETING', 'VIEW_STUDENT_CRM',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
     'VIEW_HR', 'VIEW_OWN_PAYSLIP', 'VIEW_ATTENDANCE', 'VIEW_LEAVE',
   ],
   // Both agent roles are portal-scoped VIEW. Partner ops stay admin-only;
@@ -208,13 +222,15 @@ export const ROLE_PERMISSIONS = {
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
   ],
   AGENT: [
     'VIEW_AGENCY_CRM',
     'VIEW_STUDENT_CRM',
     'VIEW_RESOURCES',
+    'VIEW_TRAINING',
   ],
-  STUDENT: ['VIEW_STUDENT_PORTAL', 'VIEW_RESOURCES'],
+  STUDENT: ['VIEW_STUDENT_PORTAL', 'VIEW_RESOURCES', 'VIEW_TRAINING'],
 };
 
 const normalizeRole = (role) => (role || '').toUpperCase().replace(/[-\s]/g, '_');

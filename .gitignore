@@ -17,6 +17,10 @@ Backend/.env
 Backend/.env.*
 !Backend/.env.production.example
 
+# Filled per-client runtime files (templates/examples stay tracked)
+deploy/clients/*.env
+!deploy/clients/_template.env
+
 # Project handover pack (generated docs / local artefacts)
 Project-Handover/
 Project-Handover.zip

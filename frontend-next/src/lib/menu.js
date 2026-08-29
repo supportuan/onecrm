@@ -43,6 +43,7 @@ export const navMenu = [
   {
     label: "Marketing",
     path: "/marketing",
+    moduleKey: "MARKETING",
     icon: Sparkles,
     subItems: [
       {
@@ -72,6 +73,7 @@ export const navMenu = [
   {
     label: "Student Hub",
     accessKey: "Student CRM",
+    moduleKey: "STUDENT_CRM",
     path: "/student-crm",
     homePath: "/student-crm/dashboard",
     icon: Users,
@@ -91,6 +93,7 @@ export const navMenu = [
   {
     label: "Agent Hub",
     accessKey: "Agency CRM",
+    moduleKey: "AGENCY_CRM",
     path: "/agency-crm/agency-management",
     icon: Folder,
     subItems: [
@@ -150,11 +153,13 @@ export const navMenu = [
     path: "/communication",
     icon: MessageSquare,
     accessKey: "Student Hub",
+    moduleKey: "STUDENT_CRM",
   },
 
   {
     label: "Human Resource",
     accessKey: "HR",
+    moduleKey: "HR",
     path: "/hr",
     icon: ShieldCheck,
     subItems: [
@@ -170,6 +175,7 @@ export const navMenu = [
   {
     label: "Knowledge Hub",
     accessKey: "Resources",
+    moduleKey: "RESOURCES",
     path: "/resources",
     icon: Library,
     subItems: [
@@ -178,8 +184,19 @@ export const navMenu = [
     ],
   },
   {
+    label: "Training",
+    path: "/training",
+    moduleKey: "TRAINING",
+    icon: GraduationCap,
+    subItems: [
+      { label: "My Training", path: "/training", icon: GraduationCap, permission: ["VIEW_TRAINING", "MANAGE_TRAINING"] },
+      { label: "Manage Training", path: "/training/manage", icon: ClipboardList, permission: ["MANAGE_TRAINING"] },
+    ],
+  },
+  {
     label: "Admin & Settings",
     path: "/admin-settings",
+    moduleKey: "ADMIN",
     icon: SlidersHorizontal,
     subItems: [
       { label: "Users", path: "/admin-settings/users", icon: Users, permission: ["MANAGE_EMPLOYEES", "MANAGE_ADMINS"] },
@@ -194,6 +211,7 @@ export const navMenu = [
   {
     label: "Allied Services",
     path: "/allied-services",
+    installFeature: "alliedServices",
     icon: BriefcaseBusiness,
   },
   {
