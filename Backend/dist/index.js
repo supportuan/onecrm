@@ -16,6 +16,7 @@ import uploadsRouter from './modules/uploads/uploads.routes.js';
 import agencyCrmRouter from './modules/agency-crm/agency-crm.routes.js';
 import agencyCrmPublicRouter from './modules/agency-crm/agency-crm.public.routes.js';
 import resourcesRouter from './modules/resources/resources.routes.js';
+import trainingRouter from './modules/training/training.routes.js';
 import superAdminRouter from './modules/super-admin/super-admin.routes.js';
 import path from 'path';
 import http from 'http';
@@ -30,15 +31,19 @@ import { attachCommunicationWebSocket } from './modules/communication/communicat
 import countryRoutes from './modules/countries/country.routes.js';
 import { authenticateTokenOrCookie } from './middleware/authenticate.js';
 import { getJwtAccessSecret, getJwtRefreshSecret } from './utils/jwt.js';
+import { verifyEmailTransport } from './lib/email-transport.js';
+import orgRouter from './modules/org/org.routes.js';
+import { getLogPrefix, getOrgName } from './utils/org-identity.js';
 const app = express();
 const port = process.env.PORT || 4000;
+const logPrefix = getLogPrefix();
 // Fail fast if JWT secrets are missing/default outside test.
 try {
     getJwtAccessSecret();
     getJwtRefreshSecret();
 }
 catch (err) {
-    console.error('[ApplyUniNow] Fatal JWT configuration error:', err.message);
+    console.error(`${logPrefix} Fatal JWT configuration error:`, err.message);
     process.exit(1);
 }
 app.use(cors());
@@ -47,9 +52,10 @@ app.use(express.json());
 setupSwagger(app);
 // Health check endpoint (must be registered before authenticated routers)
 app.get('/api/health', (req, res) => {
-    res.json({ success: true, status: 'ok', message: 'ApplyUniNow backend is running' });
+    res.json({ success: true, status: 'ok', message: `${getOrgName()} backend is running` });
 });
 // Mount Modular API Routes
+app.use('/api/org', orgRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/rbac', rbacRouter);
 app.use('/api', userRouter);
@@ -63,6 +69,7 @@ app.use('/api/uploads', uploadsRouter);
 app.use('/api/agency-crm/public', agencyCrmPublicRouter);
 app.use('/api/agency-crm', agencyCrmRouter);
 app.use('/api/resources', resourcesRouter);
+app.use('/api/training', trainingRouter);
 app.use('/api/super-admin', superAdminRouter);
 app.use('/uploads', authenticateTokenOrCookie, express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api/countries', countryRoutes);
@@ -71,24 +78,26 @@ app.use(errorHandler);
 const server = http.createServer(app);
 attachCommunicationWebSocket(server);
 server.listen(Number(port), '0.0.0.0', async () => {
-    console.log(`[ApplyUniNow] Backend server listening on http://127.0.0.1:${port}`);
-    console.log(`[ApplyUniNow] Swagger UI available at http://127.0.0.1:${port}/api-docs`);
-    console.log('[ApplyUniNow] Multi-tenant: ON (HR root models auto-scoped via ALS + Prisma extension)');
+    const org = getOrgName();
+    console.log(`${logPrefix} Backend server listening on http://127.0.0.1:${port}`);
+    console.log(`${logPrefix} Swagger UI available at http://127.0.0.1:${port}/api-docs`);
+    console.log(`${logPrefix} Isolated install: ${org} (one codebase, this copy's data only)`);
     try {
         await ensureDefaultTenantSeeded();
-        console.log('[ApplyUniNow] RBAC seeded for default tenant');
+        console.log(`${logPrefix} RBAC seeded for ${org}`);
         await backfillHrSeedsForExistingTenants();
-        console.log('[ApplyUniNow] HR defaults backfilled where missing');
+        console.log(`${logPrefix} HR defaults backfilled where missing`);
         await backfillStaffEmployees();
-        console.log('[ApplyUniNow] HR employee records ensured for staff users');
+        console.log(`${logPrefix} HR employee records ensured for staff users`);
         startNotificationScheduler();
-        console.log('[ApplyUniNow] Notification scheduler started');
+        console.log(`${logPrefix} Notification scheduler started`);
         startStudentCrmScheduler();
-        console.log('[ApplyUniNow] Student Hub scheduler started');
+        console.log(`${logPrefix} Student Hub scheduler started`);
         startHrPerformanceReviewScheduler();
-        warmIndustryCache().catch((err) => console.warn('[ApplyUniNow] Industry cache warm skipped', err));
+        warmIndustryCache().catch((err) => console.warn(`${logPrefix} Industry cache warm skipped`, err));
+        verifyEmailTransport().catch((err) => console.warn(`${logPrefix} Email verify skipped`, err));
     }
     catch (err) {
-        console.error('[ApplyUniNow] Failed to initialize RBAC permissions', err);
+        console.error(`${logPrefix} Failed to initialize RBAC permissions`, err);
     }
 });

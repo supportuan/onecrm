@@ -4,9 +4,9 @@ const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'ApplyUniNow API',
+            title: `${process.env.ORG_NAME || 'OneCRM'} API`,
             version: '1.0.0',
-            description: 'API documentation for the ApplyUniNow ecosystem',
+            description: 'API documentation for this CRM install',
         },
         servers: [
             {
